@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { HEADER_STYLES } from '../constants';
+import { ThemeContext } from '../theme/ThemeContext';
 
 const modes = [
   { label: 'Light', value: 'light' },
@@ -24,7 +24,7 @@ export default function SettingsScreen({ navigation }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity hitSlop={14} onPress={() => navigation.goBack()}>
           <Text className="text-blue-500 text-lg">Back</Text>
         </TouchableOpacity>
         <View className="flex-1 items-center">
@@ -48,6 +48,7 @@ export default function SettingsScreen({ navigation }: any) {
         {modes.map(mode => (
           <TouchableOpacity
             key={mode.value}
+            hitSlop={14}
             className={`flex-row items-center mb-4 p-4 rounded-lg border ${themeMode === mode.value ? 'border-blue-500' : 'border-gray-300'}`}
             style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
             onPress={() => setThemeMode(mode.value as any)}

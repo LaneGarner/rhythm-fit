@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   ScrollView,
   Text,
   TextInput,
@@ -29,8 +28,33 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isCompleted, setIsCompleted] = useState(activity?.completed || false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keyboard listeners
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      'keyboardWillShow',
+      e => {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      'keyboardWillHide',
+      () => {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener?.remove();
+      keyboardWillHideListener?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (isTimerRunning) {
@@ -127,14 +151,84 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     );
   }
 
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
+
+  const scrollToSetInput = (setId: string) => {
+    const inputRef = setInputRefs.current[setId];
+    if (inputRef && scrollViewRef.current) {
+      inputRef.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({
+            y: y - 100,
+            animated: true,
+          });
+        },
+        () => {
+          console.log('Failed to measure set input position');
+        }
+      );
+    }
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#F9FAFB' }}>
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingTop: 72,
+          paddingBottom: 16,
+          paddingHorizontal: 16,
+          backgroundColor: isDark ? '#111' : '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+        }}
+      >
+        <TouchableOpacity
+          hitSlop={14}
+          onPress={() => navigation.goBack()}
+          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
+        >
+          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
+            Back
+          </Text>
+        </TouchableOpacity>
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 66,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              color: isDark ? '#fff' : '#111',
+              textAlign: 'center',
+            }}
+          >
+            {activity.name}
+          </Text>
+        </View>
+      </View>
+
       <ScrollView
-        className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        className={`flex-1`}
+        contentContainerStyle={{
+          paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 200,
+        }}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        ref={scrollViewRef}
       >
         <View className="p-4 space-y-6">
           {/* Header */}
@@ -181,6 +275,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 <TouchableOpacity
                   onPress={handleStartTimer}
                   className="bg-green-500 px-6 py-2 rounded-lg"
+                  style={{ minWidth: 80, alignItems: 'center' }}
                 >
                   <Text className="text-white font-semibold">Start</Text>
                 </TouchableOpacity>
@@ -188,6 +283,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 <TouchableOpacity
                   onPress={handlePauseTimer}
                   className="bg-yellow-500 px-6 py-2 rounded-lg"
+                  style={{ minWidth: 80, alignItems: 'center' }}
                 >
                   <Text className="text-white font-semibold">Pause</Text>
                 </TouchableOpacity>
@@ -195,6 +291,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               <TouchableOpacity
                 onPress={handleResetTimer}
                 className="bg-red-500 px-6 py-2 rounded-lg"
+                style={{ minWidth: 80, alignItems: 'center' }}
               >
                 <Text className="text-white font-semibold">Reset</Text>
               </TouchableOpacity>
@@ -219,6 +316,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               </TouchableOpacity>
             </View>
 
+            {/* Add refs for set inputs */}
             {sets.map((set, index) => (
               <View
                 key={set.id}
@@ -240,6 +338,39 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                         isDark ? 'text-gray-300' : 'text-gray-600'
                       }`}
                     >
+                      Weight (lbs)
+                    </Text>
+                    <TextInput
+                      ref={ref => {
+                        setInputRefs.current[set.id] = ref;
+                      }}
+                      value={set.weight?.toString() || ''}
+                      onChangeText={text =>
+                        handleUpdateSet(set.id, { weight: parseInt(text) || 0 })
+                      }
+                      keyboardType="numeric"
+                      className={`px-3 py-2 border rounded-lg ${
+                        isDark
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                      placeholder="0"
+                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollToSetInput(set.id);
+                        }, 100);
+                      }}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm mb-1 ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
                       Reps
                     </Text>
                     <TextInput
@@ -255,29 +386,13 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       }`}
                       placeholder="0"
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
-                    >
-                      Weight (lbs)
-                    </Text>
-                    <TextInput
-                      value={set.weight?.toString() || ''}
-                      onChangeText={text =>
-                        handleUpdateSet(set.id, { weight: parseInt(text) || 0 })
-                      }
-                      keyboardType="numeric"
-                      className={`px-3 py-2 border rounded-lg ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder="0"
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollToSetInput(set.id);
+                        }, 100);
+                      }}
                     />
                   </View>
                 </View>
@@ -313,31 +428,25 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         </View>
       </ScrollView>
 
-      {/* Action Buttons */}
+      {/* Sticky Action Buttons */}
       <View
-        className={`absolute bottom-0 left-0 right-0 p-4 border-t ${
+        className={`absolute left-0 right-0 p-4 border-t ${
           isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
         }`}
+        style={{
+          bottom: isKeyboardVisible ? keyboardHeight : 0,
+          zIndex: 1000,
+        }}
       >
-        <View className="flex-row space-x-4">
-          <TouchableOpacity
-            onPress={handleSaveProgress}
-            className="flex-1 bg-gray-500 py-3 px-6 rounded-lg"
-          >
-            <Text className="text-white text-center font-semibold">
-              Save Progress
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleCompleteActivity}
-            className="flex-1 bg-green-500 py-3 px-6 rounded-lg"
-          >
-            <Text className="text-white text-center font-semibold">
-              Complete Activity
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={handleCompleteActivity}
+          className="bg-green-500 py-3 px-6 rounded-lg"
+        >
+          <Text className="text-white text-center font-semibold text-lg">
+            Complete Activity
+          </Text>
+        </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

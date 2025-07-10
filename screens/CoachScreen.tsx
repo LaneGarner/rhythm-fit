@@ -57,7 +57,7 @@ export default function CoachScreen({ navigation }: any) {
     {
       id: '1',
       type: 'bot',
-      text: "Hi! I'm your AI fitness coach powered by ChatGPT. I can help you create workout plans, suggest exercises, and provide motivation. What are your fitness goals?",
+      text: "Hi! I'm your AI fitness coach powered by ChatGPT. I can help you create activity plans, suggest exercises, and provide motivation. What are your fitness goals?",
       timestamp: new Date(),
     },
   ]);
@@ -229,20 +229,20 @@ export default function CoachScreen({ navigation }: any) {
     );
   };
 
-  // Parse workout creation requests from ChatGPT response
+  // Parse activity creation requests from ChatGPT response
   const parseActivityFromResponse = async (
     response: string,
     userInput: string
   ): Promise<any[]> => {
-    console.log('Parsing workout from response:', response);
+    console.log('Parsing activity from response:', response);
     console.log('User input:', userInput);
 
-    const workoutRequests = [];
+    const activityRequests = [];
 
-    // Look for workout creation patterns in the response
-    const workoutPatterns = [
+    // Look for activity creation patterns in the response
+    const activityPatterns = [
       /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
-      /(?:Workout|Exercise):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
+      /(?:Activity|Exercise):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
       /(?:Recurring|Weekly|Every week):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
       /(?:I'll add|I'll schedule|I'll create)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
       /(?:Adding|Scheduling|Creating)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
@@ -270,7 +270,7 @@ export default function CoachScreen({ navigation }: any) {
       return cleaned.trim();
     };
 
-    for (const pattern of workoutPatterns) {
+    for (const pattern of activityPatterns) {
       let match;
       while ((match = pattern.exec(response)) !== null) {
         const exercises = cleanExerciseName(match[1]);
@@ -351,7 +351,10 @@ export default function CoachScreen({ navigation }: any) {
                 category: 'Compound' as ExerciseCategory,
                 muscleGroups: ['Full Body' as MuscleGroup],
                 equipment: [],
-                difficulty: 'Beginner',
+                difficulty: 'Beginner' as
+                  | 'Beginner'
+                  | 'Intermediate'
+                  | 'Advanced',
                 description: '',
                 variations: [],
               };
@@ -398,7 +401,7 @@ export default function CoachScreen({ navigation }: any) {
         if (lowerDateText.includes('tomorrow')) {
           targetDate = targetDate.add(1, 'day');
         } else if (lowerDateText.includes('today')) {
-          // Keep today
+          // Keep today - allow activities for today
         } else if (
           lowerDateText.includes('next week') ||
           lowerDateText.includes('next')
@@ -453,7 +456,7 @@ export default function CoachScreen({ navigation }: any) {
           }
         }
 
-        workoutRequests.push({
+        activityRequests.push({
           date: targetDate.format('YYYY-MM-DD'),
           exercises: exerciseList,
           type: determineActivityType(exerciseList),
@@ -464,7 +467,7 @@ export default function CoachScreen({ navigation }: any) {
     }
 
     // If no patterns found, try to extract from user input context with better compound exercise handling
-    if (workoutRequests.length === 0) {
+    if (activityRequests.length === 0) {
       const userInputLower = userInput.toLowerCase();
 
       // Define compound exercise patterns to look for first
@@ -606,7 +609,7 @@ export default function CoachScreen({ navigation }: any) {
           }
         }
 
-        workoutRequests.push({
+        activityRequests.push({
           date: targetDate.format('YYYY-MM-DD'),
           exercises: foundExercises.map(toTitleCase),
           type: determineActivityType(foundExercises.map(toTitleCase)),
@@ -617,7 +620,9 @@ export default function CoachScreen({ navigation }: any) {
     }
 
     // If still no patterns found, try to extract exercise names from verbose AI responses
-    if (workoutRequests.length === 0) {
+    let extractedExercise: string | null = null;
+
+    if (activityRequests.length === 0) {
       // Look for exercise names in quotes or after "scheduled"
       const exercisePatterns = [
         /"([^"]+)"\s+(?:for|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|next\s+monday|next\s+tuesday|next\s+wednesday|next\s+thursday|next\s+friday|next\s+saturday|next\s+sunday)/gi,
@@ -675,47 +680,19 @@ export default function CoachScreen({ navigation }: any) {
               }
             }
 
-            workoutRequests.push({
+            console.log(
+              `Fallback: Extracted exercise "${exerciseName}" for ${dayText} from AI response`
+            );
+
+            activityRequests.push({
               date: targetDate.format('YYYY-MM-DD'),
               exercises: [exerciseName],
               type: determineActivityType([exerciseName]),
               isRecurring: false,
               weeksToRepeat: 1,
             });
+            break;
           }
-        }
-      }
-    }
-
-    // Final fallback: if AI response is too verbose, extract from user input
-    if (workoutRequests.length === 0) {
-      console.log(
-        'No workout patterns found in AI response, trying fallback parsing'
-      );
-
-      // First, try to extract from verbose AI response
-      const responseLower = response.toLowerCase();
-
-      // Look for verbose patterns in AI response
-      const verbosePatterns = [
-        /(.+?)\s+to\s+your\s+personal\s+(?:exercise\s+)?library/i,
-        /(.+?)\s+scheduled\s+it/i,
-        /(.+?)\s+the\s+new\s+exercise/i,
-        /(.+?)\s+exercise\s+to\s+your\s+personal\s+library/i,
-        /(.+?)\s+personal\s+exercise\s+library/i,
-        /(.+?)\s+to\s+your\s+personal\s+exercise\s+library\.\s+scheduled\s+it/i,
-        /(.+?)\s+personal\s+exercise\s+library\.\s+scheduled\s+it/i,
-      ];
-
-      let extractedExercise = null;
-      for (const pattern of verbosePatterns) {
-        const match = response.match(pattern);
-        if (match) {
-          extractedExercise = cleanExerciseName(match[1]);
-          console.log(
-            `Fallback: Extracted exercise "${extractedExercise}" from verbose AI response`
-          );
-          break;
         }
       }
 
@@ -795,7 +772,7 @@ export default function CoachScreen({ navigation }: any) {
                 `Fallback: Extracted exercise "${exerciseName}" for ${dayText} from user input`
               );
 
-              workoutRequests.push({
+              activityRequests.push({
                 date: targetDate.format('YYYY-MM-DD'),
                 exercises: [exerciseName],
                 type: determineActivityType([exerciseName]),
@@ -807,10 +784,106 @@ export default function CoachScreen({ navigation }: any) {
           }
         }
       }
+    }
 
-      // If we found an exercise from verbose AI response but no date, try to extract date from user input
-      if (extractedExercise && workoutRequests.length === 0) {
-        const userInputLower = userInput.toLowerCase();
+    // If we found an exercise from verbose AI response but no date, try to extract date from user input
+    if (extractedExercise && activityRequests.length === 0) {
+      const userInputLower = userInput.toLowerCase();
+      const dayPattern =
+        /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i;
+      const dayMatch = userInput.match(dayPattern);
+
+      if (dayMatch) {
+        const dayText = dayMatch[1].toLowerCase();
+        let targetDate = dayjs();
+
+        if (dayText === 'tomorrow') {
+          targetDate = targetDate.add(1, 'day');
+        } else if (dayText !== 'today') {
+          const dayIndex = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+          ].indexOf(dayText);
+          if (dayIndex !== -1) {
+            const currentDay = targetDate.day();
+            const daysToAdd = (dayIndex - currentDay + 7) % 7;
+            targetDate = targetDate.add(daysToAdd, 'day');
+          }
+        }
+
+        console.log(
+          `Fallback: Using extracted exercise "${extractedExercise}" with day "${dayText}" from user input`
+        );
+
+        activityRequests.push({
+          date: targetDate.format('YYYY-MM-DD'),
+          exercises: [extractedExercise],
+          type: determineActivityType([extractedExercise]),
+          isRecurring: false,
+          weeksToRepeat: 1,
+        });
+      }
+    }
+
+    // Final emergency fallback: if we still have no activity requests, force extract from user input
+    if (activityRequests.length === 0) {
+      console.log(
+        'No activity patterns found in AI response, trying fallback parsing'
+      );
+
+      const userInputLower = userInput.toLowerCase();
+
+      // Look for exercise keywords in user input
+      const exerciseKeywords = [
+        'deadlift',
+        'squat',
+        'bench',
+        'press',
+        'curl',
+        'row',
+        'cardio',
+        'yoga',
+        'run',
+        'bike',
+        'swim',
+        'push-up',
+        'pull-up',
+        'sit-up',
+        'plank',
+        'burpee',
+        'lunge',
+        'dip',
+        'chin-up',
+        'face pull',
+        'lateral raise',
+        'overhead press',
+        'leg press',
+        'lat pulldown',
+        'cable face pull',
+        'dumbbell lateral raise',
+      ];
+
+      let foundExercise = '';
+
+      for (const keyword of exerciseKeywords) {
+        if (userInputLower.includes(keyword)) {
+          // Find the full exercise name by looking for the word and surrounding context
+          const regex = new RegExp(`\\b\\w*${keyword}\\w*\\b`, 'i');
+          const match = userInput.match(regex);
+          if (match) {
+            foundExercise = cleanExerciseName(match[0]);
+            break;
+          }
+        }
+      }
+
+      if (foundExercise) {
+        // Extract day from user input
         const dayPattern =
           /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i;
         const dayMatch = userInput.match(dayPattern);
@@ -839,153 +912,21 @@ export default function CoachScreen({ navigation }: any) {
           }
 
           console.log(
-            `Fallback: Using extracted exercise "${extractedExercise}" with day "${dayText}" from user input`
+            `Emergency fallback: Created activity for "${foundExercise}" on ${dayText}`
           );
 
-          workoutRequests.push({
+          activityRequests.push({
             date: targetDate.format('YYYY-MM-DD'),
-            exercises: [extractedExercise],
-            type: determineActivityType([extractedExercise]),
+            exercises: [foundExercise],
+            type: determineActivityType([foundExercise]),
             isRecurring: false,
             weeksToRepeat: 1,
           });
         }
       }
-
-      // Final emergency fallback: if we still have no workout requests, force extract from user input
-      if (workoutRequests.length === 0) {
-        console.log('Emergency fallback: forcing extraction from user input');
-
-        // Extract any exercise-like words from user input
-        const userInputLower = userInput.toLowerCase();
-        const exerciseKeywords = [
-          'paddle',
-          'surf',
-          'windsurf',
-          'tennis',
-          'basketball',
-          'soccer',
-          'football',
-          'volleyball',
-          'baseball',
-          'hockey',
-          'golf',
-          'rock',
-          'climb',
-          'hike',
-          'ski',
-          'snowboard',
-          'skate',
-          'dance',
-          'martial',
-          'boxing',
-          'kickbox',
-          'crossfit',
-          'hiit',
-          'run',
-          'bike',
-          'swim',
-          'yoga',
-          'stretch',
-          'mobility',
-          'pilates',
-          'meditation',
-          'push',
-          'pull',
-          'sit',
-          'plank',
-          'burpee',
-          'mountain',
-          'jumping',
-          'dip',
-          'deadlift',
-          'squat',
-          'bench',
-          'press',
-          'curl',
-          'extension',
-          'row',
-          'pulldown',
-          'fly',
-          'lunge',
-          'shoulder',
-          'overhead',
-          'face',
-          'pulls',
-          'cable',
-          'lateral',
-          'raises',
-          'dumbbell',
-          'cardio',
-          'elliptical',
-          'treadmill',
-          'jog',
-          'walk',
-          'stroll',
-          'sauna',
-          'steam',
-          'massage',
-        ];
-
-        let foundExercise = null;
-        for (const keyword of exerciseKeywords) {
-          if (userInputLower.includes(keyword)) {
-            // Find the full exercise name by looking for the word and surrounding context
-            const regex = new RegExp(`\\b\\w*${keyword}\\w*\\b`, 'i');
-            const match = userInput.match(regex);
-            if (match) {
-              foundExercise = cleanExerciseName(match[0]);
-              break;
-            }
-          }
-        }
-
-        if (foundExercise) {
-          // Extract day from user input
-          const dayPattern =
-            /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i;
-          const dayMatch = userInput.match(dayPattern);
-
-          if (dayMatch) {
-            const dayText = dayMatch[1].toLowerCase();
-            let targetDate = dayjs();
-
-            if (dayText === 'tomorrow') {
-              targetDate = targetDate.add(1, 'day');
-            } else if (dayText !== 'today') {
-              const dayIndex = [
-                'sunday',
-                'monday',
-                'tuesday',
-                'wednesday',
-                'thursday',
-                'friday',
-                'saturday',
-              ].indexOf(dayText);
-              if (dayIndex !== -1) {
-                const currentDay = targetDate.day();
-                const daysToAdd = (dayIndex - currentDay + 7) % 7;
-                targetDate = targetDate.add(daysToAdd, 'day');
-              }
-            }
-
-            console.log(
-              `Emergency fallback: Created workout for "${foundExercise}" on ${dayText}`
-            );
-
-            workoutRequests.push({
-              date: targetDate.format('YYYY-MM-DD'),
-              exercises: [foundExercise],
-              type: determineActivityType([foundExercise]),
-              isRecurring: false,
-              weeksToRepeat: 1,
-            });
-          }
-        }
-      }
     }
 
-    return workoutRequests;
+    return activityRequests;
   };
 
   const determineActivityType = (exercises: string[]): ActivityType => {
@@ -1004,9 +945,33 @@ export default function CoachScreen({ navigation }: any) {
       exerciseStr.includes('fly') ||
       exerciseStr.includes('lunge') ||
       exerciseStr.includes('shoulder press') ||
-      exerciseStr.includes('overhead press')
+      exerciseStr.includes('overhead press') ||
+      exerciseStr.includes('hip thrust') ||
+      exerciseStr.includes('calf raise') ||
+      exerciseStr.includes('lateral raise') ||
+      exerciseStr.includes('leg extension') ||
+      exerciseStr.includes('leg curl')
     ) {
       return 'weight-training';
+    }
+
+    // Calisthenics - bodyweight exercises
+    if (
+      exerciseStr.includes('push-up') ||
+      exerciseStr.includes('pull-up') ||
+      exerciseStr.includes('sit-up') ||
+      exerciseStr.includes('plank') ||
+      exerciseStr.includes('burpee') ||
+      exerciseStr.includes('mountain climber') ||
+      exerciseStr.includes('jumping jack') ||
+      exerciseStr.includes('dip') ||
+      exerciseStr.includes('muscle-up') ||
+      exerciseStr.includes('handstand') ||
+      exerciseStr.includes('pistol squat') ||
+      exerciseStr.includes('l-sit') ||
+      exerciseStr.includes('planche')
+    ) {
+      return 'calisthenics';
     }
 
     // Cardio - running, cycling, swimming, rowing
@@ -1019,12 +984,51 @@ export default function CoachScreen({ navigation }: any) {
       exerciseStr.includes('rowing') ||
       exerciseStr.includes('elliptical') ||
       exerciseStr.includes('treadmill') ||
-      exerciseStr.includes('jog')
+      exerciseStr.includes('jog') ||
+      exerciseStr.includes('jump rope') ||
+      exerciseStr.includes('stair climber') ||
+      exerciseStr.includes('hiit')
     ) {
       return 'cardio';
     }
 
-    // Sports & Outdoor Activities
+    // Mobility - yoga, stretching, flexibility
+    if (
+      exerciseStr.includes('yoga') ||
+      exerciseStr.includes('stretch') ||
+      exerciseStr.includes('mobility') ||
+      exerciseStr.includes('pilates') ||
+      exerciseStr.includes('meditation') ||
+      exerciseStr.includes('breathing') ||
+      exerciseStr.includes('sun salutation') ||
+      exerciseStr.includes('downward dog') ||
+      exerciseStr.includes('pigeon pose') ||
+      exerciseStr.includes("child's pose") ||
+      exerciseStr.includes('cat-cow') ||
+      exerciseStr.includes('hip flexor stretch') ||
+      exerciseStr.includes('hamstring stretch') ||
+      exerciseStr.includes('shoulder stretch') ||
+      exerciseStr.includes('thoracic extension')
+    ) {
+      return 'mobility';
+    }
+
+    // Recovery - light activities, sauna, cold therapy
+    if (
+      exerciseStr.includes('walk') ||
+      exerciseStr.includes('stroll') ||
+      exerciseStr.includes('sauna') ||
+      exerciseStr.includes('steam') ||
+      exerciseStr.includes('massage') ||
+      exerciseStr.includes('foam rolling') ||
+      exerciseStr.includes('cold plunge') ||
+      exerciseStr.includes('ice bath') ||
+      exerciseStr.includes('cryotherapy')
+    ) {
+      return 'recovery';
+    }
+
+    // Sports - team and individual sports
     if (
       exerciseStr.includes('paddle') ||
       exerciseStr.includes('surf') ||
@@ -1046,58 +1050,23 @@ export default function CoachScreen({ navigation }: any) {
       exerciseStr.includes('boxing') ||
       exerciseStr.includes('kickbox') ||
       exerciseStr.includes('crossfit') ||
-      exerciseStr.includes('hiit')
+      exerciseStr.includes('kayaking') ||
+      exerciseStr.includes('paddleboarding') ||
+      exerciseStr.includes('skateboarding') ||
+      exerciseStr.includes('surfing') ||
+      exerciseStr.includes('barre')
     ) {
       return 'sports';
     }
 
-    // Yoga & Mobility
-    if (
-      exerciseStr.includes('yoga') ||
-      exerciseStr.includes('stretch') ||
-      exerciseStr.includes('mobility') ||
-      exerciseStr.includes('pilates') ||
-      exerciseStr.includes('meditation') ||
-      exerciseStr.includes('breathing')
-    ) {
-      return 'mobility';
-    }
-
-    // Bodyweight exercises
-    if (
-      exerciseStr.includes('push-up') ||
-      exerciseStr.includes('pull-up') ||
-      exerciseStr.includes('bodyweight') ||
-      exerciseStr.includes('sit-up') ||
-      exerciseStr.includes('plank') ||
-      exerciseStr.includes('burpee') ||
-      exerciseStr.includes('mountain climber') ||
-      exerciseStr.includes('jumping jack') ||
-      exerciseStr.includes('dip')
-    ) {
-      return 'bodyweight';
-    }
-
-    // Walking and light activities
-    if (
-      exerciseStr.includes('walk') ||
-      exerciseStr.includes('stroll') ||
-      exerciseStr.includes('hike') ||
-      exerciseStr.includes('sauna') ||
-      exerciseStr.includes('steam') ||
-      exerciseStr.includes('massage')
-    ) {
-      return 'recovery';
-    }
-
-    // Default to weight training for unknown exercises
-    return 'weight-training';
+    // Default to other for unknown exercises
+    return 'other';
   };
 
-  const createActivitiesFromRequest = (workoutRequests: any[]) => {
-    const createdWorkouts = [];
+  const createActivitiesFromRequest = (activityRequests: any[]) => {
+    const createdActivities = [];
 
-    for (const request of workoutRequests) {
+    for (const request of activityRequests) {
       // If there are multiple exercises, split into separate requests
       const exercises =
         request.exercises && request.exercises.length > 1
@@ -1107,13 +1076,13 @@ export default function CoachScreen({ navigation }: any) {
         for (const exercise of exercises) {
           if (request.isRecurring) {
             for (let week = 0; week < request.weeksToRepeat; week++) {
-              const workoutDate = dayjs(request.date).add(week * 7, 'day');
-              const workout: Activity = {
+              const activityDate = dayjs(request.date).add(week * 7, 'day');
+              const activity: Activity = {
                 id:
                   Date.now().toString() +
                   Math.random().toString(36).substr(2, 9) +
                   week,
-                date: workoutDate.format('YYYY-MM-DD'),
+                date: activityDate.format('YYYY-MM-DD'),
                 type: determineActivityType([exercise]),
                 name: toTitleCase(exercise),
                 emoji:
@@ -1123,13 +1092,13 @@ export default function CoachScreen({ navigation }: any) {
                     ]) as keyof typeof ACTIVITY_EMOJIS
                   ] || '💪',
                 completed: false,
-                notes: `Recurring workout (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
+                notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
               };
-              dispatch(addActivity(workout));
-              createdWorkouts.push(workout);
+              dispatch(addActivity(activity));
+              createdActivities.push(activity);
             }
           } else {
-            const workout: Activity = {
+            const activity: Activity = {
               id:
                 Date.now().toString() + Math.random().toString(36).substr(2, 9),
               date: request.date,
@@ -1144,34 +1113,34 @@ export default function CoachScreen({ navigation }: any) {
               completed: false,
               notes: `Created by AI coach based on your request`,
             };
-            dispatch(addActivity(workout));
-            createdWorkouts.push(workout);
+            dispatch(addActivity(activity));
+            createdActivities.push(activity);
           }
         }
       } else {
         // Single exercise or already split
         if (request.isRecurring) {
           for (let week = 0; week < request.weeksToRepeat; week++) {
-            const workoutDate = dayjs(request.date).add(week * 7, 'day');
-            const workout: Activity = {
+            const activityDate = dayjs(request.date).add(week * 7, 'day');
+            const activity: Activity = {
               id:
                 Date.now().toString() +
                 Math.random().toString(36).substr(2, 9) +
                 week,
-              date: workoutDate.format('YYYY-MM-DD'),
+              date: activityDate.format('YYYY-MM-DD'),
               type: request.type, // keep as enum value
               name: request.exercises.map(toTitleCase).join(', '),
               emoji:
                 ACTIVITY_EMOJIS[request.type as keyof typeof ACTIVITY_EMOJIS] ||
                 '💪',
               completed: false,
-              notes: `Recurring workout (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
+              notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
             };
-            dispatch(addActivity(workout));
-            createdWorkouts.push(workout);
+            dispatch(addActivity(activity));
+            createdActivities.push(activity);
           }
         } else {
-          const workout: Activity = {
+          const activity: Activity = {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             date: request.date,
             type: request.type, // keep as enum value
@@ -1182,16 +1151,16 @@ export default function CoachScreen({ navigation }: any) {
             completed: false,
             notes: `Created by AI coach based on your request`,
           };
-          dispatch(addActivity(workout));
-          createdWorkouts.push(workout);
+          dispatch(addActivity(activity));
+          createdActivities.push(activity);
         }
       }
     }
 
-    return createdWorkouts;
+    return createdActivities;
   };
 
-  const getWorkoutContext = (): string => {
+  const getActivityContext = (): string => {
     const recentActivities = activities.filter(a =>
       dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
     );
@@ -1213,29 +1182,33 @@ export default function CoachScreen({ navigation }: any) {
     let context = `Current activity context:\n`;
     context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
     context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
+    context += `- This week's activities: ${thisWeekActivities.length}\n`;
+    context += `- Upcoming activities: ${upcomingActivities.length}\n`;
 
     if (thisWeekActivities.length > 0) {
-      context += `- This week's activities (${startOfWeek.format('MMM D')} - ${endOfWeek.format('MMM D')}):\n`;
-      const activitiesByDay: { [key: string]: Activity[] } = {};
-      thisWeekActivities.forEach((a: Activity) => {
-        const dayName = dayjs(a.date).format('dddd');
-        if (!activitiesByDay[dayName]) {
-          activitiesByDay[dayName] = [];
-        }
-        activitiesByDay[dayName].push(a);
-      });
+      context += `\nThis week's activities:\n`;
+      const groupedByDay = thisWeekActivities.reduce(
+        (acc, activity) => {
+          const day = dayjs(activity.date).format('dddd');
+          if (!acc[day]) acc[day] = [];
+          acc[day].push(activity);
+          return acc;
+        },
+        {} as { [key: string]: Activity[] }
+      );
 
-      Object.keys(activitiesByDay).forEach(day => {
-        const dayActivities = activitiesByDay[day];
-        context += `  * ${day}: ${dayActivities.map((a: Activity) => a.name || a.type).join(', ')}\n`;
+      Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
+        context += `- ${day}: ${dayActivities
+          .map(a => `${a.emoji} ${a.name}`)
+          .join(', ')}\n`;
       });
     }
 
     if (upcomingActivities.length > 0) {
-      context += `- Upcoming activities:\n`;
-      upcomingActivities.forEach(a => {
-        const date = dayjs(a.date).format('MMM D');
-        context += `  * ${date}: ${a.name || a.type} (${a.completed ? 'completed' : 'pending'})\n`;
+      context += `\nUpcoming activities:\n`;
+      upcomingActivities.forEach(activity => {
+        const date = dayjs(activity.date).format('MMM D');
+        context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
       });
     }
 
@@ -1262,17 +1235,17 @@ export default function CoachScreen({ navigation }: any) {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // Create system prompt with workout context
-      const workoutContext = getWorkoutContext();
+      // Create system prompt with activity context
+      const activityContext = getActivityContext();
 
-      const systemPrompt = `You are an AI fitness coach. You can help users create workout plans, provide advice, and manage their fitness routine.
+      const systemPrompt = `You are an AI fitness coach. You can help users create activity plans, provide advice, and manage their fitness routine.
 
-${workoutContext}
+${activityContext}
 
 COMPREHENSIVE EXERCISE DATABASE:
 I have access to a detailed exercise database with the following information for each exercise:
 - Name (exact Title Case)
-- Workout Type (Weight Training, Cardio, HIIT, Yoga, etc.)
+- Activity Type (Weight Training, Cardio, HIIT, Yoga, etc.)
 - Category (Compound, Isolation, Cardiovascular, Core, etc.)
 - Muscle Groups targeted
 - Equipment needed
@@ -1282,7 +1255,7 @@ I have access to a detailed exercise database with the following information for
 AVAILABLE EXERCISES (use these exact names in Title Case):
 ${EXERCISE_DATABASE.map(ex => ex.name).join(', ')}
 
-AVAILABLE WORKOUT TYPES (use these exact names in Title Case):
+AVAILABLE ACTIVITY TYPES (use these exact names in Title Case):
 ${ACTIVITY_TYPES.map(wt => wt.label).join(', ')}
 
 EXERCISE CATEGORIES:
@@ -1305,64 +1278,64 @@ DYNAMIC EXERCISE SYSTEM:
 - The system will remember custom exercises for future use
 
 You can:
-1. Create workouts by mentioning "I've scheduled [exercises] for [date]"
-2. Create recurring workouts by mentioning "I've scheduled [exercises] for [day] (recurring weekly for X weeks)"
-3. Add new exercises to the user's library by simply using them in workout creation
+1. Create activities by mentioning "I've scheduled [exercises] for [date]"
+2. Create recurring activities by mentioning "I've scheduled [exercises] for [day] (recurring weekly for X weeks)"
+3. Add new exercises to the user's library by simply using them in activity creation
 4. Provide fitness advice and motivation
-5. Analyze workout patterns and suggest improvements
+5. Analyze activity patterns and suggest improvements
 6. Help with exercise form and technique
-7. Suggest exercises based on muscle groups, workout types, or categories
+7. Suggest exercises based on muscle groups, activity types, or categories
 8. Recommend exercise variations and progressions
 
-IMPORTANT WORKOUT SCHEDULING RULES:
-- When creating workouts, start from this week and schedule them on the specified day
-- For recurring workouts, default to 4 weeks unless specified otherwise
-- Don't move or modify existing workouts when adding new ones
+IMPORTANT ACTIVITY SCHEDULING RULES:
+- When creating activities, you can schedule them for today, tomorrow, or any day of the week
+- For recurring activities, default to 4 weeks unless specified otherwise
+- Don't move or modify existing activities when adding new ones
 - If duration is not specified, use 4 weeks as default
 - Be specific about the exercises and date
 - Don't ask follow-up questions unless absolutely necessary
-- When a user asks to add a workout, just create it with reasonable defaults
-- ALWAYS use Title Case for all workout and exercise names/types (e.g., "Bench Press", "Overhead Press", "Weight Training")
+- When a user asks to add an activity, just create it with reasonable defaults
+- ALWAYS use Title Case for all activity and exercise names/types (e.g., "Bench Press", "Overhead Press", "Weight Training")
 - ALWAYS use the exact exercise names the user requests (e.g., "Overhead Presses" not "Overhead, Presses")
 - Keep compound exercise names together (e.g., "Bench Press", "Deadlift", "Push-Ups")
 - If a user requests an exercise not in the available list, add it to their library automatically
-- Consider exercise categories and muscle groups when suggesting workouts
-- Match workout types appropriately (e.g., "Bench Press" is weight-training, "Run" is cardio, "Yoga Flow" is mobility)
+- Consider exercise categories and muscle groups when suggesting activities
+- Match activity types appropriately (e.g., "Bench Press" is weight-training, "Run" is cardio, "Yoga Flow" is mobility)
 
-WORKOUT COPYING INSTRUCTIONS:
-When a user asks to "copy" or "duplicate" workouts from one week to another:
-1. COPYING A SINGLE DAY: If they say "copy Monday's workouts to next Monday" or "duplicate Tuesday to next Tuesday":
-   - Find all workouts for the specified day of this week
-   - Create new workouts for the same day of next week (7 days later)
+ACTIVITY COPYING INSTRUCTIONS:
+When a user asks to "copy" or "duplicate" activities from one week to another:
+1. COPYING A SINGLE DAY: If they say "copy Monday's activities to next Monday" or "duplicate Tuesday to next Tuesday":
+   - Find all activities for the specified day of this week
+   - Create new activities for the same day of next week (7 days later)
    - Use the format: "I've scheduled [exercise names] for [next week's day]"
    - Example: "I've scheduled Bench Press and Deadlift for next Monday"
 
-2. COPYING AN ENTIRE WEEK: If they say "copy all workouts from this week to next week" or "duplicate this week's workouts":
-   - Find all workouts for each day of this week (Monday through Sunday)
-   - Create new workouts for the corresponding days of next week
+2. COPYING AN ENTIRE WEEK: If they say "copy all activities from this week to next week" or "duplicate this week's activities":
+   - Find all activities for each day of this week (Monday through Sunday)
+   - Create new activities for the corresponding days of next week
    - Use the format: "I've scheduled [exercise names] for [next week's day]" for each day
    - Example: "I've scheduled Squat and Leg Press for next Tuesday" and "I've scheduled Bench Press for next Wednesday"
 
-3. COPYING TO A SPECIFIC WEEK: If they say "copy this week's workouts to week of [date]" or "duplicate to [specific week]":
+3. COPYING TO A SPECIFIC WEEK: If they say "copy this week's activities to week of [date]" or "duplicate to [specific week]":
    - Calculate the target week based on the specified date
-   - Create new workouts for the corresponding days of that target week
+   - Create new activities for the corresponding days of that target week
    - Use the format: "I've scheduled [exercise names] for [target week's day]"
 
 CRITICAL COPYING RULES:
-- NEVER add workouts to the current week when copying - always create them for the target week
 - When copying to "next week", add 7 days to the current date
 - When copying to a specific week, calculate the correct dates based on the target week
 - Maintain the same day-of-week pattern (Monday stays Monday, Tuesday stays Tuesday, etc.)
 - Copy ALL exercises from each day, not just some of them
-- Use the exact same exercise names and workout types
+- Use the exact same exercise names and activity types
 - Don't modify or combine exercises when copying - keep them exactly as they are
 
-RESPONSE FORMAT FOR WORKOUT CREATION:
-When creating workouts, use this exact format: "I've scheduled [exercise names] for [day]"
+RESPONSE FORMAT FOR ACTIVITY CREATION:
+When creating activities, use this exact format: "I've scheduled [exercise names] for [day]"
 Examples:
 - "I've scheduled Overhead Presses for Monday"
 - "I've scheduled Bench Press and Deadlifts for Wednesday"
 - "I've scheduled Push-Ups and Pull-Ups for Friday"
+- "I've scheduled Deadlift for today"
 
 IMPORTANT: When adding new exercises that aren't in the database, just use the exercise name directly:
 - "I've scheduled Cable Face Pulls for Monday" (not "I've scheduled the new exercise Cable Face Pulls for Monday")
@@ -1384,12 +1357,13 @@ ONLY use: "I've scheduled [exercise name] for [day]"
 
 EXERCISE CATEGORIZATION GUIDELINES:
 When users add new exercises, the system will automatically categorize them based on the exercise name:
-- Weight Training: deadlift, squat, bench, press, curl, extension, row, pulldown, fly, lunge
-- Cardio: run, bike, cycling, swim, rowing, elliptical, treadmill, jog
-- Sports: paddle, surf, tennis, basketball, soccer, football, volleyball, baseball, hockey, golf, rock climb, hike, ski, snowboard, skate, dance, martial arts, boxing, kickbox, crossfit, hiit
-- Mobility: yoga, stretch, mobility, pilates, meditation, breathing
-- Bodyweight: push-up, pull-up, sit-up, plank, burpee, mountain climber, jumping jack, dip
-- Recovery: walk, stroll, sauna, steam, massage
+- Weight Training: deadlift, squat, bench, press, curl, extension, row, pulldown, fly, lunge, hip thrust, calf raise, lateral raise, leg extension, leg curl
+- Calisthenics: push-up, pull-up, sit-up, plank, burpee, mountain climber, jumping jack, dip, muscle-up, handstand, pistol squat, l-sit, planche
+- Cardio: run, bike, cycling, swim, rowing, elliptical, treadmill, jog, jump rope, stair climber, hiit
+- Mobility: yoga, stretch, mobility, pilates, meditation, breathing, sun salutation, downward dog, pigeon pose, child's pose, cat-cow, hip flexor stretch, hamstring stretch, shoulder stretch, thoracic extension
+- Recovery: walk, stroll, sauna, steam, massage, foam rolling, cold plunge, ice bath, cryotherapy
+- Sports: paddle, surf, tennis, basketball, soccer, football, volleyball, baseball, hockey, golf, rock climb, hike, ski, snowboard, skate, dance, martial arts, boxing, kickbox, crossfit, kayaking, paddleboarding, skateboarding, surfing, barre
+- Other: any other activities not fitting the above categories
 
 USER INPUT EXAMPLES:
 Users will say things like:
@@ -1397,20 +1371,21 @@ Users will say things like:
 - "Add bench press to Monday, 3 sets of 10 reps at 32.5 lbs"
 - "Add overhead presses to this Monday"
 - "Add face pulls to Monday"
-- "Copy Monday's workouts to next Monday"
-- "Copy all workouts from this week to next week"
-- "Duplicate Tuesday's workouts to next Tuesday"
-- "Copy this week's workouts to the week of July 15"
+- "Add deadlift to today"
+- "Copy Monday's activities to next Monday"
+- "Copy all activities from this week to next week"
+- "Duplicate Tuesday's activities to next Tuesday"
+- "Copy this week's activities to the week of July 15"
 
 Always respond with the simple format regardless of how the user phrases their request.
 
 COPYING EXAMPLES:
-When copying workouts, respond like this:
+When copying activities, respond like this:
 - "I've scheduled Bench Press and Deadlift for next Monday"
 - "I've scheduled Squat and Leg Press for next Tuesday"
 - "I've scheduled Dumbbell Row and Lat Pulldown for next Wednesday"
 
-Keep responses conversational and helpful. If creating workouts, be specific about the exercises, date, and recurrence. Don't get stuck in loops asking for more information.`;
+Keep responses conversational and helpful. If creating activities, be specific about the exercises, date, and recurrence. Don't get stuck in loops asking for more information.`;
 
       // Map conversation history to valid OpenAI roles (type-safe)
       const conversationHistory = messages
@@ -1424,20 +1399,20 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
           }
         });
 
-      // Lower temperature for workout creation (more consistent)
+      // Lower temperature for activity creation (more consistent)
       // Higher temperature for motivational responses (more creative)
       const getTemperature = (userInput: string): number => {
-        const workoutKeywords = [
+        const activityKeywords = [
           'add',
           'schedule',
           'create',
           'copy',
           'duplicate',
         ];
-        const isWorkoutRequest = workoutKeywords.some(keyword =>
+        const isActivityRequest = activityKeywords.some(keyword =>
           userInput.toLowerCase().includes(keyword)
         );
-        return isWorkoutRequest ? 0.3 : 0.7;
+        return isActivityRequest ? 0.3 : 0.7;
       };
 
       const response = await openai.chat.completions
@@ -1464,14 +1439,14 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
       console.log('AI Response:', botResponse);
       console.log('User Input:', currentInput);
 
-      // Check if the response contains workout creation
-      const workoutRequests = await parseActivityFromResponse(
+      // Check if the response contains activity creation
+      const activityRequests = await parseActivityFromResponse(
         botResponse,
         currentInput
       );
       let finalResponse = botResponse;
       // Remove the checkmark summary block
-      // if (workoutRequests.length > 0) { ... finalResponse += `\n\n${summary}`; }
+      // if (activityRequests.length > 0) { ... finalResponse += `\n\n${summary}`; }
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
@@ -1518,6 +1493,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
       <View className="flex-1">
         <ScrollView className="flex-1 px-4 pt-4">
           <TouchableOpacity
+            hitSlop={14}
             style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
             className="px-4 py-3 rounded-lg mb-4 flex-row items-center justify-center"
             onPress={startNewChat}
@@ -1549,6 +1525,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
           ) : (
             chatHistory.map(session => (
               <TouchableOpacity
+                hitSlop={14}
                 key={session.id}
                 className={`p-4 rounded-lg mb-3 border ${
                   isDark
@@ -1579,6 +1556,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
                     </Text>
                   </View>
                   <TouchableOpacity
+                    hitSlop={14}
                     onPress={() => deleteSession(session.id)}
                     className="p-2"
                   >
@@ -1614,6 +1592,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
         style={{ borderBottomColor: isDark ? '#222' : '#e5e7eb' }}
       >
         <TouchableOpacity
+          hitSlop={14}
           className={`flex-1 py-3 ${activeTab === 'chat' ? '' : ''}`}
           style={{
             backgroundColor:
@@ -1638,6 +1617,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          hitSlop={14}
           className={`flex-1 py-3 ${activeTab === 'history' ? '' : ''}`}
           style={{
             backgroundColor:
@@ -1778,6 +1758,7 @@ Keep responses conversational and helpful. If creating workouts, be specific abo
                 }}
               />
               <TouchableOpacity
+                hitSlop={14}
                 style={{
                   backgroundColor: isDark ? '#2563eb' : '#3b82f6',
                   opacity: isProcessing ? 0.5 : 1,

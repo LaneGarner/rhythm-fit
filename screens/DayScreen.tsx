@@ -13,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { HEADER_STYLES } from '../constants';
 import { deleteActivity, updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -85,7 +84,7 @@ export default function DayScreen({ navigation, route }: any) {
 
     Alert.alert(
       'Delete Activities',
-      `Are you sure you want to delete ${selectedActivities.size} activity${selectedActivities.size > 1 ? 'ies' : 'y'}?`,
+      `Are you sure you want to delete ${selectedActivities.size} activit${selectedActivities.size > 1 ? 'ies' : 'y'}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -351,44 +350,84 @@ export default function DayScreen({ navigation, route }: any) {
   );
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <View
+      className="flex-1"
+      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
+    >
       {/* Header */}
       <View
-        className={`${HEADER_STYLES} ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}
+        style={{
+          position: 'relative',
+          // height: 100,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingTop: 120,
+          paddingBottom: 0,
+          paddingHorizontal: 16,
+          backgroundColor: isDark ? '#111' : '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+        }}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={isDark ? '#FFFFFF' : '#000000'}
-          />
+        {/* Left: Back button */}
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            marginRight: 8,
+            position: 'absolute',
+            left: 16,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+        >
+          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
+            Back
+          </Text>
         </TouchableOpacity>
-        <View className="flex-1">
+        {/* Center: Title (absolutely centered) */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 44,
+            height: 88,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
           <Text
-            className={`text-xl font-semibold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
+            style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              color: isDark ? '#fff' : '#111',
+              textAlign: 'center',
+            }}
           >
             {formattedDate}
           </Text>
         </View>
+        {/* Right: Bulk button */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Activity')}
-          className="mr-2"
+          onPress={toggleBulkMode}
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
         >
-          <Ionicons
-            name="add"
-            size={24}
-            color={isDark ? '#FFFFFF' : '#000000'}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleBulkMode}>
           <Ionicons
             name={isBulkMode ? 'close' : 'list'}
             size={24}
-            color={isDark ? '#FFFFFF' : '#000000'}
+            color={isDark ? '#fff' : '#111'}
           />
         </TouchableOpacity>
       </View>
@@ -451,21 +490,65 @@ export default function DayScreen({ navigation, route }: any) {
         ) : (
           <View className="items-center py-12">
             <Text
-              className={`text-lg ${
+              className={`text-lg font-semibold ${
+                isDark ? 'text-gray-200' : 'text-gray-700'
+              }`}
+              style={{ textAlign: 'center' }}
+            >
+              No activities yet for this day
+            </Text>
+            <Text
+              className={`text-base mt-2 ${
                 isDark ? 'text-gray-400' : 'text-gray-500'
               }`}
+              style={{ textAlign: 'center', maxWidth: 260, lineHeight: 22 }}
             >
-              No activities for this day
+              Start your day strong! Tap the{' '}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Activity', { date })}
+                hitSlop={12}
+              >
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    color: '#2563eb',
+                    lineHeight: 20,
+                    top: 8,
+                  }}
+                >
+                  +
+                </Text>
+              </TouchableOpacity>{' '}
+              button below to add your first activity.
             </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Activity')}
-              className="mt-4 bg-blue-500 px-6 py-3 rounded-lg"
-            >
-              <Text className="text-white font-semibold">Add Activity</Text>
-            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Activity', { date })}
+        style={{
+          position: 'absolute',
+          bottom: 102,
+          right: 34,
+          backgroundColor: '#2563eb',
+          borderRadius: 32,
+          width: 56,
+          height: 56,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 5,
+        }}
+        activeOpacity={0.85}
+        accessibilityLabel="Add Activity"
+      >
+        <Ionicons name="add" size={32} color="#fff" />
+      </TouchableOpacity>
 
       <MoveToDateModal />
     </View>

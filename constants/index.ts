@@ -1,32 +1,20 @@
 export const ACTIVITY_EMOJIS = {
   'weight-training': '🏋️',
-  bodyweight: '💪',
+  calisthenics: '💪',
   cardio: '🏃',
   mobility: '🧘',
   recovery: '🛌',
   sports: '⚽',
   other: '🎯',
-  sauna: '🛁',
-  'cold-plunge': '🧊',
-  yoga: '🧘',
-  meditation: '🧘‍♀️',
-  golf: '⛳',
-  basketball: '🏀',
 } as const;
 
 export const ACTIVITY_TYPES = [
   { value: 'weight-training', label: 'Weight Training', emoji: '🏋️' },
-  { value: 'bodyweight', label: 'Bodyweight', emoji: '💪' },
+  { value: 'calisthenics', label: 'Calisthenics', emoji: '💪' },
   { value: 'cardio', label: 'Cardio', emoji: '🏃' },
   { value: 'mobility', label: 'Mobility', emoji: '🧘' },
   { value: 'recovery', label: 'Recovery', emoji: '🛌' },
   { value: 'sports', label: 'Sports', emoji: '⚽' },
-  { value: 'yoga', label: 'Yoga', emoji: '🧘' },
-  { value: 'meditation', label: 'Meditation', emoji: '🧘‍♀️' },
-  { value: 'golf', label: 'Golf', emoji: '⛳' },
-  { value: 'basketball', label: 'Basketball', emoji: '🏀' },
-  { value: 'sauna', label: 'Sauna', emoji: '🛁' },
-  { value: 'cold-plunge', label: 'Cold Plunge', emoji: '🧊' },
   { value: 'other', label: 'Other', emoji: '🎯' },
 ] as const;
 

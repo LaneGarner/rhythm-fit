@@ -613,6 +613,35 @@ export default function WeeklyScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('Activity', {
+            date: dayjs().format('YYYY-MM-DD'),
+          })
+        }
+        style={{
+          position: 'absolute',
+          bottom: 102,
+          right: 34,
+          backgroundColor: '#2563eb',
+          borderRadius: 32,
+          width: 56,
+          height: 56,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 5,
+        }}
+        activeOpacity={0.85}
+        accessibilityLabel="Add Activity"
+      >
+        <Ionicons name="add" size={32} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }

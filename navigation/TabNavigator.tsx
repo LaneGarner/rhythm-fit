@@ -1,10 +1,10 @@
-import React, { useContext } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import WeeklyScreen from '../screens/WeeklyScreen';
-import StatsScreen from '../screens/StatsScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, { useContext } from 'react';
+import { TouchableOpacity, View } from 'react-native';
 import CoachScreen from '../screens/CoachScreen';
+import StatsScreen from '../screens/StatsScreen';
+import WeeklyScreen from '../screens/WeeklyScreen';
 import { ThemeContext } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
@@ -18,7 +18,7 @@ const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      hitSlop={14}
       style={{
         flex: 1,
         alignItems: 'center',

@@ -31,6 +31,7 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
     >
       {/* Left: Settings Cog */}
       <TouchableOpacity
+        hitSlop={14}
         onPress={() => navigation.navigate('Settings')}
         className="p-2"
         accessibilityLabel="Settings"

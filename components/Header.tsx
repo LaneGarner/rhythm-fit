@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useContext } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { ThemeContext } from '../theme/ThemeContext';
 
 interface HeaderProps {
@@ -37,7 +37,11 @@ export default function Header({
     >
       {/* Left Action */}
       {leftAction ? (
-        <TouchableOpacity onPress={leftAction.onPress} className="p-2">
+        <TouchableOpacity
+          hitSlop={14}
+          onPress={leftAction.onPress}
+          className="p-2"
+        >
           {leftAction.icon ? (
             <Ionicons
               name={leftAction.icon as any}
@@ -76,7 +80,11 @@ export default function Header({
 
       {/* Right Action */}
       {rightAction ? (
-        <TouchableOpacity onPress={rightAction.onPress} className="p-2">
+        <TouchableOpacity
+          hitSlop={14}
+          onPress={rightAction.onPress}
+          className="p-2"
+        >
           {rightAction.icon ? (
             <Ionicons
               name={rightAction.icon as any}

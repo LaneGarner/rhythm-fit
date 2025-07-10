@@ -1,17 +1,23 @@
 export type ActivityType =
   | 'weight-training'
-  | 'bodyweight'
+  | 'calisthenics'
   | 'cardio'
   | 'mobility'
   | 'recovery'
   | 'sports'
-  | 'yoga'
-  | 'meditation'
-  | 'golf'
-  | 'basketball'
-  | 'sauna'
-  | 'cold-plunge'
   | 'other';
+
+export type RecurringPattern = 'daily' | 'weekly' | 'custom';
+export type RecurringFrequency = 'every' | 'this'; // for "this Monday" vs "every Monday"
+
+export interface RecurringConfig {
+  pattern: RecurringPattern;
+  frequency: RecurringFrequency;
+  daysOfWeek?: number[]; // 0=Sunday, 1=Monday, etc.
+  startDate: string;
+  endDate?: string;
+  occurrences?: number; // number of times to repeat
+}
 
 export interface Activity {
   id: string;
@@ -22,6 +28,7 @@ export interface Activity {
   completed: boolean;
   notes?: string;
   sets?: SetData[];
+  recurring?: RecurringConfig; // Add this field
 }
 
 export interface SetData {
