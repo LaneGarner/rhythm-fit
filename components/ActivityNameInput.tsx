@@ -1,7 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
-  Keyboard,
   ScrollView,
   Text,
   TextInput,
@@ -9,7 +9,11 @@ import {
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { findExerciseByName, searchExercises } from '../constants/exercises';
+import {
+  EXERCISE_DATABASE,
+  findExerciseByName,
+  searchExercises,
+} from '../constants/exercises';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
 
@@ -33,9 +37,8 @@ export default function ActivityNameInput({
   const [localValue, setLocalValue] = useState(value);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  // Overlay handler to close dropdown
-  const handleOverlayPress = () => setShowSuggestions(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
@@ -49,6 +52,25 @@ export default function ActivityNameInput({
     }
   }, [value]);
 
+  // Show suggestions immediately on focus
+  useEffect(() => {
+    if (isFocused) {
+      const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const recentActivities = activities
+        .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
+        .map(a => a.name)
+        .filter(Boolean)
+        .slice(0, 5);
+
+      const initialSuggestions = [
+        ...new Set([...allExercises.slice(0, 10), ...recentActivities]),
+      ];
+      setSuggestions(initialSuggestions);
+      setShowSuggestions(true);
+    }
+  }, [isFocused, activities]);
+
+  // Update suggestions based on input
   useEffect(() => {
     if (localValue.trim().length > 0) {
       const results = searchExercises(localValue);
@@ -61,21 +83,14 @@ export default function ActivityNameInput({
         .filter(
           name => name && name.toLowerCase().includes(localValue.toLowerCase())
         )
-        .slice(0, 5); // Limit to 5 recent suggestions
+        .slice(0, 5);
 
       // Combine and deduplicate
       const allSuggestions = [
         ...new Set([...suggestionNames, ...recentActivities]),
       ];
       setSuggestions(allSuggestions);
-      setShowSuggestions(allSuggestions.length > 0);
-
-      // If the input matches a known exercise, auto-select type and emoji
-      const exact = findExerciseByName(localValue.trim());
-      if (exact && onSelectSuggestion) {
-        onSelectSuggestion(exact.name, exact.type);
-      }
-    } else {
+    } else if (isFocused) {
       // Show recent activities even when input is empty
       const recentActivities = activities
         .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
@@ -83,32 +98,68 @@ export default function ActivityNameInput({
         .filter(Boolean)
         .slice(0, 5);
 
-      setSuggestions(recentActivities);
-      setShowSuggestions(recentActivities.length > 0);
+      const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const initialSuggestions = [
+        ...new Set([...allExercises.slice(0, 10), ...recentActivities]),
+      ];
+      setSuggestions(initialSuggestions);
     }
-  }, [localValue, activities]);
+  }, [localValue, activities, isFocused]);
 
   const handleSelectSuggestion = (suggestion: string) => {
+    console.log(
+      'ActivityNameInput: handleSelectSuggestion called with:',
+      suggestion
+    );
+    setIsSelectingSuggestion(true);
     setLocalValue(suggestion);
     setShowSuggestions(false);
-    Keyboard.dismiss();
     // Sync to parent
     onChangeText(suggestion);
+    console.log('ActivityNameInput: onChangeText called with:', suggestion);
     // Then call onSelectSuggestion with type if available
     if (onSelectSuggestion) {
       const exercise = findExerciseByName(suggestion);
+      console.log('ActivityNameInput: found exercise:', exercise);
       if (exercise) {
+        console.log(
+          'ActivityNameInput: calling onSelectSuggestion with type:',
+          suggestion,
+          exercise.type
+        );
         onSelectSuggestion(suggestion, exercise.type);
       } else {
+        console.log(
+          'ActivityNameInput: calling onSelectSuggestion without type:',
+          suggestion
+        );
         onSelectSuggestion(suggestion);
       }
+    } else {
+      console.log(
+        'ActivityNameInput: onSelectSuggestion callback not provided'
+      );
     }
+    // Reset the flag after a short delay
+    setTimeout(() => setIsSelectingSuggestion(false), 100);
   };
 
   const handleBlur = () => {
+    console.log(
+      'ActivityNameInput: handleBlur called, localValue:',
+      localValue,
+      'value:',
+      value,
+      'isSelectingSuggestion:',
+      isSelectingSuggestion
+    );
     setIsFocused(false);
-    // Sync to parent on blur
-    if (localValue !== value) {
+    // Don't sync to parent if we're in the middle of selecting a suggestion
+    if (!isSelectingSuggestion && localValue !== value) {
+      console.log(
+        'ActivityNameInput: syncing localValue to parent on blur:',
+        localValue
+      );
       onChangeText(localValue);
     }
     // Delay hiding suggestions to allow for touch events
@@ -117,8 +168,13 @@ export default function ActivityNameInput({
 
   const handleFocus = () => {
     setIsFocused(true);
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
+    setShowSuggestions(true);
+  };
+
+  const handleAddToLibrary = () => {
+    if (localValue.trim()) {
+      onAddToLibrary?.(localValue.trim());
+      setShowSuggestions(false);
     }
   };
 
@@ -130,138 +186,127 @@ export default function ActivityNameInput({
     !!onAddToLibrary;
 
   return (
-    <View className="relative" pointerEvents="box-none">
-      {/* Overlay to block background scroll/touches when dropdown is open */}
-      {showSuggestions && (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleOverlayPress}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 40,
-            backgroundColor: 'transparent',
-          }}
-        />
-      )}
+    <View className="relative">
       <TextInput
         ref={inputRef}
         value={localValue}
         onChangeText={setLocalValue}
         placeholder={placeholder}
         placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-        className={`px-4 py-3 border text-base ${
-          showSuggestions ? 'rounded-t-lg' : 'rounded-lg'
-        } ${
-          isDark
-            ? 'bg-gray-800 border-gray-600 text-white'
-            : 'bg-white border-gray-300 text-gray-900'
-        } ${error ? 'border-red-500' : ''}`}
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          borderWidth: 1,
+          borderRadius: 8,
+          fontSize: 16,
+          textAlignVertical: 'center',
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderColor: error ? '#EF4444' : isDark ? '#4B5563' : '#D1D5DB',
+          color: isDark ? '#FFFFFF' : '#111827',
+        }}
         onFocus={handleFocus}
         onBlur={handleBlur}
         autoCapitalize="words"
         autoCorrect={false}
       />
 
-      {error && <Text className="text-red-500 text-sm mt-1 ml-1">{error}</Text>}
+      {error && <Text className="text-red-500 text-sm mt-1">{error}</Text>}
 
-      {/* Separator between input and dropdown */}
-      {showSuggestions && (
+      {/* Suggestions Dropdown */}
+      {showSuggestions && suggestions.length > 0 && (
         <View
-          style={{ height: 1, backgroundColor: isDark ? '#374151' : '#E5E7EB' }}
-        />
-      )}
-
-      {showSuggestions &&
-        (suggestions.length > 0 || value.trim().length > 0) && (
-          <View
-            className={`absolute top-full left-0 right-0 z-50 max-h-48 border-b border-l border-r rounded-b-2xl ${
-              isDark
-                ? 'bg-gray-900 border-gray-700'
-                : 'bg-gray-50 border-gray-300'
-            }`}
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-              elevation: 8,
-              overflow: 'visible',
-              zIndex: 50,
-            }}
-            pointerEvents="box-none"
+          className={`absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border ${
+            isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+          }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 5,
+            zIndex: 1000,
+          }}
+          onTouchStart={() =>
+            console.log('ActivityNameInput: Dropdown container touched')
+          }
+        >
+          <ScrollView
+            style={{ maxHeight: 240 }}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
           >
-            <ScrollView
-              className="max-h-48"
-              showsVerticalScrollIndicator={true}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 0 }}
-            >
-              {suggestions.map((suggestion, index) => {
-                const isRecent = activities.some(
-                  a =>
-                    a.name === suggestion &&
-                    dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
-                );
-                // If this is the last suggestion and there's no Add to Library, add extra margin
-                const isLast =
-                  index === suggestions.length - 1 && !showAddToLibrary;
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => handleSelectSuggestion(suggestion)}
-                    className={`px-4 py-3 border-b ${
-                      isDark
-                        ? 'border-gray-700 active:bg-gray-800'
-                        : 'border-gray-200 active:bg-gray-100'
-                    } ${isLast ? 'mb-4' : ''}`}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <Text
-                        className={`text-base ${
-                          isDark ? 'text-white' : 'text-gray-900'
-                        }`}
-                        style={{ lineHeight: 24, paddingVertical: 2 }}
-                      >
-                        {suggestion}
-                      </Text>
-                      {isRecent && (
-                        <Text
-                          className={`text-xs ${
-                            isDark ? 'text-blue-400' : 'text-blue-600'
-                          }`}
-                        >
-                          Recent
-                        </Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-              {/* Add to library option if no exact match */}
-              {showAddToLibrary && (
+            {suggestions.map((suggestion, index) => {
+              const isRecent = activities.some(
+                a =>
+                  a.name === suggestion &&
+                  dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
+              );
+              return (
                 <TouchableOpacity
-                  onPress={() => onAddToLibrary(localValue.trim())}
-                  className={`px-4 py-3 ${
-                    isDark ? 'bg-blue-900' : 'bg-blue-50'
-                  } mb-4`}
+                  key={index}
+                  onPress={() => {
+                    console.log(
+                      'ActivityNameInput: TouchableOpacity onPress called for:',
+                      suggestion
+                    );
+                    handleSelectSuggestion(suggestion);
+                  }}
+                  activeOpacity={0.7}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? '#374151' : '#F3F4F6',
+                    backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                    minHeight: 44, // Ensure minimum touch target size
+                  }}
                 >
-                  <Text
-                    className={`text-base font-semibold ${
-                      isDark ? 'text-blue-300' : 'text-blue-700'
-                    }`}
-                    style={{ lineHeight: 24, paddingVertical: 2 }}
-                  >
-                    + Add "{value.trim()}" to library
-                  </Text>
+                  <View className="flex-row items-center justify-between">
+                    <Text
+                      className={`text-base ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      {suggestion}
+                    </Text>
+                    {isRecent && (
+                      <Text
+                        className={`text-xs ${
+                          isDark ? 'text-blue-400' : 'text-blue-600'
+                        }`}
+                      >
+                        Recent
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
-              )}
-            </ScrollView>
-          </View>
-        )}
+              );
+            })}
+          </ScrollView>
+
+          {showAddToLibrary && (
+            <TouchableOpacity
+              onPress={handleAddToLibrary}
+              className={`p-4 border-t border-gray-200 dark:border-gray-700 ${
+                isDark ? 'bg-gray-800' : 'bg-white'
+              }`}
+            >
+              <View className="flex-row items-center">
+                <Ionicons
+                  name="add-circle-outline"
+                  size={20}
+                  color={isDark ? '#3B82F6' : '#2563EB'}
+                />
+                <Text className="ml-2 text-blue-500 font-medium">
+                  Add "{localValue.trim()}" to library
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }

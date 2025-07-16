@@ -1,16 +1,17 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider, useDispatch } from 'react-redux';
-import { setActivities } from './redux/activitySlice';
-import { store } from './redux/store';
+import SplashScreen from './components/SplashScreen';
+import TabNavigator from './navigation/TabNavigator';
+import { loadActivitiesFromStorage } from './redux/activitySlice';
+import { AppDispatch, store } from './redux/store';
 import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
-import { loadActivities } from './utils/storage';
 
 // Import screens
-import TabNavigator from './navigation/TabNavigator';
 import ActivityExecutionScreen from './screens/ActivityExecutionScreen';
 import ActivityScreen from './screens/ActivityScreen';
 import DayScreen from './screens/DayScreen';
@@ -21,25 +22,31 @@ const Stack = createNativeStackNavigator();
 
 export type RootStackParamList = {
   Main: undefined;
-  Day: undefined;
-  Activity: undefined;
-  ActivityExecution: undefined;
-  EditActivity: undefined;
+  Day: { date: string };
+  Activity: { date: string };
+  ActivityExecution: { activityId: string };
+  EditActivity: { activityId: string };
   Settings: undefined;
 };
 
 function AppContent() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { colorScheme } = useContext(ThemeContext);
 
   useEffect(() => {
     // Load activities from storage on app start
-    const loadData = async () => {
-      const activities = await loadActivities();
-      dispatch(setActivities(activities));
-    };
-    loadData();
+    dispatch(loadActivitiesFromStorage());
   }, [dispatch]);
+
+  // Lock orientation to portrait
+  useEffect(() => {
+    const lockOrientation = async () => {
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP
+      );
+    };
+    lockOrientation();
+  }, []);
 
   return (
     <>
@@ -67,6 +74,17 @@ function AppContent() {
 }
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <SplashScreen onFinish={() => setIsLoading(false)} />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>

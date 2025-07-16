@@ -13,7 +13,12 @@ import {
 } from 'react-native';
 import { ACTIVITY_EMOJIS, ACTIVITY_TYPES } from '../constants';
 import { ThemeContext } from '../theme/ThemeContext';
-import { Activity, ActivityType, RecurringConfig } from '../types/activity';
+import {
+  Activity,
+  ActivityType,
+  RecurringConfig,
+  SetData,
+} from '../types/activity';
 import ActivityNameInput from './ActivityNameInput';
 import RecurringActivityModal from './RecurringActivityModal';
 
@@ -41,6 +46,7 @@ export default function ActivityForm({
     initialActivity?.emoji || ''
   );
   const [notes, setNotes] = useState(initialActivity?.notes || '');
+  const [sets, setSets] = useState<SetData[]>(initialActivity?.sets || []);
   const [selectedDate, setSelectedDate] = useState(
     initialActivity?.date ? dayjs(initialActivity.date).toDate() : new Date()
   );
@@ -81,6 +87,16 @@ export default function ActivityForm({
     };
   }, []);
 
+  // Auto-set emoji when activity type changes or is initially set
+  useEffect(() => {
+    if (activityType && !selectedEmoji) {
+      const defaultEmoji = ACTIVITY_EMOJIS[activityType];
+      if (defaultEmoji) {
+        setSelectedEmoji(defaultEmoji);
+      }
+    }
+  }, [activityType, selectedEmoji]);
+
   const scrollToInput = (inputRef: React.RefObject<TextInput | null>) => {
     if (inputRef.current && scrollViewRef.current) {
       inputRef.current.measureLayout(
@@ -119,15 +135,15 @@ export default function ActivityForm({
     const newErrors: { [key: string]: string } = {};
 
     if (!activityName.trim()) {
-      newErrors.name = 'Activity name is required';
+      newErrors.name = 'Required field';
     }
 
     if (!activityType) {
-      newErrors.type = 'Activity type is required';
+      newErrors.type = 'Required field';
     }
 
     if (!selectedEmoji) {
-      newErrors.emoji = 'Emoji is required';
+      newErrors.emoji = 'Required field';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -143,7 +159,7 @@ export default function ActivityForm({
       emoji: selectedEmoji,
       completed: initialActivity?.completed || false,
       notes: notes.trim() || undefined,
-      sets: initialActivity?.sets || [],
+      sets: sets,
       recurring: recurringConfig || undefined,
     };
 
@@ -151,12 +167,27 @@ export default function ActivityForm({
   };
 
   const handleNameSelect = (name: string, type?: string) => {
+    console.log(
+      'ActivityForm: handleNameSelect called with:',
+      name,
+      'type:',
+      type
+    );
     setActivityName(name);
+    console.log('ActivityForm: setActivityName called with:', name);
     if (type) {
+      console.log('ActivityForm: setting activity type to:', type);
       setActivityType(type as ActivityType);
       const defaultEmoji =
         ACTIVITY_EMOJIS[type as keyof typeof ACTIVITY_EMOJIS];
+      console.log(
+        'ActivityForm: default emoji for type',
+        type,
+        'is:',
+        defaultEmoji
+      );
       if (defaultEmoji) {
+        console.log('ActivityForm: setting selected emoji to:', defaultEmoji);
         setSelectedEmoji(defaultEmoji);
       }
     }
@@ -167,8 +198,29 @@ export default function ActivityForm({
     console.log('Add to library:', name);
   };
 
-  const isSaveDisabled =
-    !activityName.trim() || !activityType || !selectedEmoji;
+  const handleAddSet = () => {
+    const newSet: SetData = {
+      id: Date.now().toString(),
+      reps: 0,
+      weight: 0,
+      completed: false,
+    };
+    setSets([...sets, newSet]);
+  };
+
+  const handleUpdateSet = (setId: string, updates: Partial<SetData>) => {
+    setSets(sets.map(set => (set.id === setId ? { ...set, ...updates } : set)));
+  };
+
+  const handleDuplicateSet = (setToDuplicate: SetData) => {
+    const newSet: SetData = {
+      id: Date.now().toString(),
+      reps: setToDuplicate.reps,
+      weight: setToDuplicate.weight,
+      completed: false,
+    };
+    setSets([...sets, newSet]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#F9FAFB' }}>
@@ -296,7 +348,11 @@ export default function ActivityForm({
               {ACTIVITY_TYPES.map(type => (
                 <TouchableOpacity
                   key={type.value}
-                  onPress={() => setActivityType(type.value as ActivityType)}
+                  onPress={() => {
+                    setActivityType(type.value as ActivityType);
+                    // Automatically select the emoji for this activity type
+                    setSelectedEmoji(type.emoji);
+                  }}
                   style={{
                     paddingHorizontal: 16,
                     paddingVertical: 8,
@@ -349,20 +405,143 @@ export default function ActivityForm({
                 <TouchableOpacity
                   key={type}
                   onPress={() => setSelectedEmoji(emoji)}
-                  className={`p-3 rounded-lg border-2 ${
-                    selectedEmoji === emoji
-                      ? 'border-blue-500 bg-blue-50'
-                      : isDark
-                        ? 'border-gray-600 bg-gray-800'
-                        : 'border-gray-300 bg-white'
-                  }`}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor:
+                      selectedEmoji === emoji
+                        ? isDark
+                          ? '#6366f1'
+                          : '#a5b4fc'
+                        : isDark
+                          ? '#444'
+                          : '#d1d5db',
+                    backgroundColor:
+                      selectedEmoji === emoji
+                        ? isDark
+                          ? '#23263a'
+                          : '#e0e7ff'
+                        : isDark
+                          ? '#1a1a1a'
+                          : '#fff',
+                  }}
                 >
-                  <Text className="text-2xl">{emoji}</Text>
+                  <Text
+                    className={`text-2xl ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    {emoji}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
             {errors.emoji && (
               <Text className="text-red-500 text-sm mt-1">{errors.emoji}</Text>
+            )}
+          </View>
+
+          {/* Sets */}
+          <View>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text
+                className={`text-lg font-semibold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                Sets ({sets.length})
+              </Text>
+              <TouchableOpacity
+                onPress={handleAddSet}
+                className="bg-blue-500 px-4 py-2 rounded-lg"
+              >
+                <Text className="text-white font-semibold">Add Set</Text>
+              </TouchableOpacity>
+            </View>
+
+            {sets.map((set, index) => (
+              <View
+                key={set.id}
+                className={`p-4 rounded-lg mb-3 ${
+                  isDark ? 'bg-gray-800' : 'bg-white'
+                } shadow-sm`}
+              >
+                <Text
+                  className={`text-lg font-semibold mb-3 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  Set {index + 1}
+                </Text>
+                <View className="flex-row space-x-4">
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm mb-1 ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
+                      Weight (lbs)
+                    </Text>
+                    <TextInput
+                      value={set.weight?.toString() || ''}
+                      onChangeText={text =>
+                        handleUpdateSet(set.id, { weight: parseInt(text) || 0 })
+                      }
+                      keyboardType="numeric"
+                      className={`px-3 py-2 border rounded-lg ${
+                        isDark
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                      placeholder="0"
+                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm mb-1 ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
+                      Reps
+                    </Text>
+                    <TextInput
+                      value={set.reps?.toString() || ''}
+                      onChangeText={text =>
+                        handleUpdateSet(set.id, { reps: parseInt(text) || 0 })
+                      }
+                      keyboardType="numeric"
+                      className={`px-3 py-2 border rounded-lg ${
+                        isDark
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                      placeholder="0"
+                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                    />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleDuplicateSet(set)}
+                  className="mt-3 bg-blue-500 px-4 py-2 rounded-lg"
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Duplicate
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            {sets.length === 0 && (
+              <Text
+                className={`text-center py-8 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                No sets added yet. Tap "Add Set" to get started.
+              </Text>
             )}
           </View>
 
@@ -447,10 +626,7 @@ export default function ActivityForm({
       >
         <TouchableOpacity
           onPress={handleSave}
-          disabled={isSaveDisabled}
-          className={`py-3 px-6 rounded-lg ${
-            isSaveDisabled ? 'bg-gray-400' : 'bg-blue-500 active:bg-blue-600'
-          }`}
+          className={`py-3 px-6 rounded-lg bg-blue-500 active:bg-blue-600`}
         >
           <Text className="text-white text-center font-semibold text-lg">
             {mode === 'create' ? 'Save Activity' : 'Update Activity'}

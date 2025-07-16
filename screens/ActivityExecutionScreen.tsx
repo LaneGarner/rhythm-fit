@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { ACTIVITY_TYPES } from '../constants';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -32,6 +33,12 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to get activity type label
+  const getActivityTypeLabel = (type: string) => {
+    const activityType = ACTIVITY_TYPES.find(at => at.value === type);
+    return activityType?.label || type;
+  };
 
   // Keyboard listeners
   useEffect(() => {
@@ -100,12 +107,55 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       weight: 0,
       completed: false,
     };
-    setSets([...sets, newSet]);
+    const updatedSets = [...sets, newSet];
+    setSets(updatedSets);
     setCurrentSetIndex(sets.length);
+
+    // Auto-save progress when new set is added
+    if (activity) {
+      const updatedActivity: Activity = {
+        ...activity,
+        sets: updatedSets,
+      };
+      dispatch(updateActivity(updatedActivity));
+    }
+  };
+
+  const handleDuplicateSet = (setToDuplicate: SetData) => {
+    const newSet: SetData = {
+      id: Date.now().toString(),
+      reps: setToDuplicate.reps,
+      weight: setToDuplicate.weight,
+      completed: false,
+    };
+    const updatedSets = [...sets, newSet];
+    setSets(updatedSets);
+    setCurrentSetIndex(sets.length);
+
+    // Auto-save progress when set is duplicated
+    if (activity) {
+      const updatedActivity: Activity = {
+        ...activity,
+        sets: updatedSets,
+      };
+      dispatch(updateActivity(updatedActivity));
+    }
   };
 
   const handleUpdateSet = (setId: string, updates: Partial<SetData>) => {
-    setSets(sets.map(set => (set.id === setId ? { ...set, ...updates } : set)));
+    const updatedSets = sets.map(set =>
+      set.id === setId ? { ...set, ...updates } : set
+    );
+    setSets(updatedSets);
+
+    // Auto-save progress when sets are updated
+    if (activity) {
+      const updatedActivity: Activity = {
+        ...activity,
+        sets: updatedSets,
+      };
+      dispatch(updateActivity(updatedActivity));
+    }
   };
 
   const handleCompleteActivity = () => {
@@ -246,7 +296,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 isDark ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
-              {activity.type}
+              {getActivityTypeLabel(activity.type)}
             </Text>
           </View>
 
@@ -396,22 +446,32 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     />
                   </View>
                 </View>
-                <TouchableOpacity
-                  onPress={() =>
-                    handleUpdateSet(set.id, { completed: !set.completed })
-                  }
-                  className={`mt-3 px-4 py-2 rounded-lg ${
-                    set.completed ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <Text
-                    className={`text-center font-semibold ${
-                      set.completed ? 'text-white' : 'text-gray-700'
+                <View className="flex-row space-x-3 mt-3">
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleUpdateSet(set.id, { completed: !set.completed })
+                    }
+                    className={`flex-1 px-4 py-2 rounded-lg ${
+                      set.completed ? 'bg-green-500' : 'bg-gray-300'
                     }`}
                   >
-                    {set.completed ? 'Completed' : 'Mark Complete'}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      className={`text-center font-semibold ${
+                        set.completed ? 'text-white' : 'text-gray-700'
+                      }`}
+                    >
+                      {set.completed ? 'Completed' : 'Mark Complete'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDuplicateSet(set)}
+                    className="bg-blue-500 px-4 py-2 rounded-lg"
+                  >
+                    <Text className="text-white text-center font-semibold">
+                      Duplicate
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
 
