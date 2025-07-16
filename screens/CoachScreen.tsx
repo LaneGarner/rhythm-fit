@@ -106,9 +106,27 @@ export default function CoachScreen({ navigation }: any) {
   // Load chat history on mount
   useEffect(() => {
     loadChatHistory();
-    // Create a new session ID for current chat
-    setCurrentSessionId(Date.now().toString());
+    // Create a new session ID for current chat only if no current session exists
+    if (!currentSessionId) {
+      setCurrentSessionId(Date.now().toString());
+    }
   }, []);
+
+  // Ensure we have a proper session when switching to chat tab
+  useEffect(() => {
+    if (
+      activeTab === 'chat' &&
+      messages.length === 1 &&
+      messages[0].id === '1'
+    ) {
+      // If we're on chat tab with only the initial message, ensure we have a fresh session
+      const existingSession = chatHistory.find(s => s.id === currentSessionId);
+      if (!existingSession) {
+        // No existing session found, create a new one
+        setCurrentSessionId(Date.now().toString());
+      }
+    }
+  }, [activeTab, messages, currentSessionId, chatHistory]);
 
   // Auto-scroll when messages change or processing state changes
   useEffect(() => {
@@ -223,6 +241,32 @@ export default function CoachScreen({ navigation }: any) {
             const updatedHistory = chatHistory.filter(s => s.id !== sessionId);
             setChatHistory(updatedHistory);
             await saveChatHistory(updatedHistory);
+
+            // Check if the deleted session was the current active session
+            if (sessionId === currentSessionId) {
+              // Start a new chat since the current session was deleted
+              startNewChat();
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const deleteAllSessions = async () => {
+    Alert.alert(
+      'Delete All Chats',
+      'Are you sure you want to delete all chat sessions?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: async () => {
+            setChatHistory([]);
+            await saveChatHistory([]);
+            // Always start a new chat when all sessions are deleted
+            startNewChat();
           },
         },
       ]
@@ -241,10 +285,18 @@ export default function CoachScreen({ navigation }: any) {
 
     // Look for activity creation patterns in the response
     const activityPatterns = [
+      // Handle "I've scheduled the following X for Y: 1. Exercise1 2. Exercise2..."
+      // This pattern specifically looks for numbered lists and excludes the category text
+      /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+(?:the following\s+)?(?:leg exercises?|arm exercises?|chest exercises?|back exercises?|core exercises?|cardio exercises?|strength exercises?|workout exercises?|exercises?)\s+(?:for|on)\s+(.+?):\s*((?:\d+\.\s*[^\n]+\n?)+)/gi,
+      // Handle "I've scheduled X for Y" (original pattern)
       /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
+      // Handle "Activity/Exercise: X on Y" (original pattern)
       /(?:Activity|Exercise):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
+      // Handle "Recurring/Weekly/Every week: X on Y" (original pattern)
       /(?:Recurring|Weekly|Every week):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
+      // Handle "I'll add/schedule/create X for Y" (original pattern)
       /(?:I'll add|I'll schedule|I'll create)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
+      // Handle "Adding/Scheduling/Creating X for Y" (original pattern)
       /(?:Adding|Scheduling|Creating)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
     ];
 
@@ -270,165 +322,43 @@ export default function CoachScreen({ navigation }: any) {
       return cleaned.trim();
     };
 
-    for (const pattern of activityPatterns) {
-      let match;
-      while ((match = pattern.exec(response)) !== null) {
-        const exercises = cleanExerciseName(match[1]);
-        const dateText = match[2].trim();
+    // Helper function to extract exercises from numbered lists
+    const extractExercisesFromNumberedList = (
+      numberedList: string
+    ): string[] => {
+      const exercises = [];
+      const lines = numberedList.split('\n');
 
-        // Parse exercises - handle compound names better
-        // Only split on commas and "and" as separators, not on spaces within exercise names
-        let exerciseList = exercises
-          .split(/,\s*|\s+and\s+/)
-          .map(e =>
-            cleanExerciseName(e)
-              .replace(/^and\s+/i, '')
-              .trim()
-          )
-          .filter(e => e.length > 0);
-
-        // Remove leading 'And ' if present in the first exercise (fix for AI output)
-        if (
-          exerciseList.length > 0 &&
-          exerciseList[0].toLowerCase().startsWith('and ')
-        ) {
-          exerciseList[0] = exerciseList[0].slice(4).trim();
+      for (const line of lines) {
+        // Match patterns like "1. Squat", "2. Deadlift", etc.
+        const match = line.match(/^\d+\.\s*(.+?)(?:\s*$|\.$)/);
+        if (match) {
+          exercises.push(cleanExerciseName(match[1]));
         }
+      }
 
-        // Fix common AI parsing issues with compound exercises
-        const fixedExercises = [];
-        for (let i = 0; i < exerciseList.length; i++) {
-          const current = exerciseList[i];
-          const next = exerciseList[i + 1];
+      return exercises.filter(ex => ex.length > 0);
+    };
 
-          // Check for split compound exercises
-          if (current === 'overhe' && next === 'presses') {
-            fixedExercises.push('overhead presses');
-            i++; // Skip next item
-          } else if (current === 'bench' && next === 'press') {
-            fixedExercises.push('bench press');
-            i++; // Skip next item
-          } else if (current === 'dead' && next === 'lift') {
-            fixedExercises.push('deadlift');
-            i++; // Skip next item
-          } else if (current === 'push' && next === 'ups') {
-            fixedExercises.push('push-ups');
-            i++; // Skip next item
-          } else if (current === 'pull' && next === 'ups') {
-            fixedExercises.push('pull-ups');
-            i++; // Skip next item
-          } else if (current === 'sit' && next === 'ups') {
-            fixedExercises.push('sit-ups');
-            i++; // Skip next item
-          } else {
-            fixedExercises.push(current);
-          }
-        }
+    // Helper function to parse date text into YYYY-MM-DD format
+    const parseDateFromText = (dateText: string): string => {
+      let targetDate = dayjs();
+      const lowerDateText = dateText.toLowerCase();
 
-        exerciseList = fixedExercises;
-
-        // Try to match exercises against the comprehensive exercise database
-        const matchedExercises = [];
-        for (const exercise of exerciseList) {
-          // First try exact match using the database function
-          const exactMatch = findExerciseByName(exercise);
-
-          if (exactMatch) {
-            matchedExercises.push(exactMatch.name); // Use the Title Case version from database
-          } else {
-            // Try search function for partial matches
-            const searchResults = searchExercises(exercise);
-
-            if (searchResults.length > 0) {
-              // Use the first (best) match
-              matchedExercises.push(searchResults[0].name);
-            } else {
-              // If no match found, add it as a custom exercise
-              const exerciseName = toTitleCase(exercise);
-              const newExercise: ExerciseDefinition = {
-                name: exerciseName,
-                type: determineActivityType([exerciseName]),
-                category: 'Compound' as ExerciseCategory,
-                muscleGroups: ['Full Body' as MuscleGroup],
-                equipment: [],
-                difficulty: 'Beginner' as
-                  | 'Beginner'
-                  | 'Intermediate'
-                  | 'Advanced',
-                description: '',
-                variations: [],
-              };
-              try {
-                await addCustomExercise(newExercise);
-                console.log(`Added new exercise: ${exerciseName}`);
-              } catch (error) {
-                console.error('Error adding custom exercise:', error);
-              }
-              matchedExercises.push(exerciseName);
-            }
-          }
-        }
-
-        exerciseList = matchedExercises;
-
-        // Remove duplicates while preserving order
-        const uniqueExercises = [];
-        const seen = new Set();
-        for (const exercise of exerciseList) {
-          if (!seen.has(exercise.toLowerCase())) {
-            seen.add(exercise.toLowerCase());
-            uniqueExercises.push(exercise);
-          }
-        }
-        exerciseList = uniqueExercises;
-
-        console.log('Parsed exercises:', exerciseList);
-
-        // Parse date and recurrence
-        let targetDate = dayjs();
-        let isRecurring = false;
-        let weeksToRepeat = 4; // Default to 4 weeks
-        const lowerDateText = dateText.toLowerCase();
-
-        if (
-          lowerDateText.includes('recurring') ||
-          lowerDateText.includes('weekly') ||
-          lowerDateText.includes('every week')
-        ) {
-          isRecurring = true;
-        }
-
-        if (lowerDateText.includes('tomorrow')) {
-          targetDate = targetDate.add(1, 'day');
-        } else if (lowerDateText.includes('today')) {
-          // Keep today - allow activities for today
-        } else if (
-          lowerDateText.includes('next week') ||
-          lowerDateText.includes('next')
-        ) {
-          // Handle "next Monday", "next Tuesday", etc.
-          const dayMatch = lowerDateText.match(
-            /next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i
-          );
-          if (dayMatch) {
-            const dayName = dayMatch[1];
-            const dayIndex = [
-              'sunday',
-              'monday',
-              'tuesday',
-              'wednesday',
-              'thursday',
-              'friday',
-              'saturday',
-            ].indexOf(dayName);
-            if (dayIndex !== -1) {
-              const currentDay = targetDate.day();
-              const daysToAdd = (dayIndex - currentDay + 7) % 7;
-              targetDate = targetDate.add(daysToAdd + 7, 'day'); // Add 7 more days for "next week"
-            }
-          }
-        } else {
-          // Try to parse day names
+      if (lowerDateText.includes('tomorrow')) {
+        targetDate = targetDate.add(1, 'day');
+      } else if (lowerDateText.includes('today')) {
+        // Keep today - allow activities for today
+      } else if (
+        lowerDateText.includes('next week') ||
+        lowerDateText.includes('next')
+      ) {
+        // Handle "next Monday", "next Tuesday", etc.
+        const dayMatch = lowerDateText.match(
+          /next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i
+        );
+        if (dayMatch) {
+          const dayName = dayMatch[1];
           const dayIndex = [
             'sunday',
             'monday',
@@ -437,32 +367,305 @@ export default function CoachScreen({ navigation }: any) {
             'thursday',
             'friday',
             'saturday',
-          ].indexOf(lowerDateText);
+          ].indexOf(dayName);
           if (dayIndex !== -1) {
             const currentDay = targetDate.day();
             const daysToAdd = (dayIndex - currentDay + 7) % 7;
-            targetDate = targetDate.add(daysToAdd, 'day');
+            targetDate = targetDate.add(daysToAdd + 7, 'day'); // Add 7 more days for "next week"
           }
         }
-
-        // Check for duration in the response
-        const durationMatch = response.match(
-          /(?:for|repeat|duration)\s+(\d+)\s+(?:weeks?|months?)/i
-        );
-        if (durationMatch) {
-          weeksToRepeat = parseInt(durationMatch[1]);
-          if (response.toLowerCase().includes('month')) {
-            weeksToRepeat *= 4;
-          }
+      } else {
+        // Try to parse day names
+        const dayIndex = [
+          'sunday',
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+        ].indexOf(lowerDateText);
+        if (dayIndex !== -1) {
+          const currentDay = targetDate.day();
+          const daysToAdd = (dayIndex - currentDay + 7) % 7;
+          targetDate = targetDate.add(daysToAdd, 'day');
         }
+      }
 
-        activityRequests.push({
-          date: targetDate.format('YYYY-MM-DD'),
-          exercises: exerciseList,
-          type: determineActivityType(exerciseList),
-          isRecurring,
-          weeksToRepeat,
-        });
+      return targetDate.format('YYYY-MM-DD');
+    };
+
+    for (const pattern of activityPatterns) {
+      let match;
+      while ((match = pattern.exec(response)) !== null) {
+        let exercises: string;
+        let dateText: string;
+        let numberedList: string | undefined;
+
+        if (match[2]) {
+          // This is the new pattern with numbered list
+          dateText = match[1];
+          numberedList = match[2];
+
+          // Extract exercises from the numbered list
+          const exerciseList = extractExercisesFromNumberedList(numberedList);
+
+          if (exerciseList.length > 0) {
+            console.log('Found numbered list exercises:', exerciseList);
+
+            // Process each exercise individually
+            for (const exercise of exerciseList) {
+              // Try to match exercise against the comprehensive exercise database
+              const exactMatch = findExerciseByName(exercise);
+
+              if (exactMatch) {
+                // Create individual activity for each exercise
+                activityRequests.push({
+                  date: parseDateFromText(dateText),
+                  exercises: [exactMatch.name],
+                  type: determineActivityType([exactMatch.name]),
+                  isRecurring: false,
+                  weeksToRepeat: 1,
+                });
+              } else {
+                // Try search function for partial matches
+                const searchResults = searchExercises(exercise);
+
+                if (searchResults.length > 0) {
+                  activityRequests.push({
+                    date: parseDateFromText(dateText),
+                    exercises: [searchResults[0].name],
+                    type: determineActivityType([searchResults[0].name]),
+                    isRecurring: false,
+                    weeksToRepeat: 1,
+                  });
+                } else {
+                  // Add as custom exercise
+                  const exerciseName = toTitleCase(exercise);
+                  const newExercise: ExerciseDefinition = {
+                    name: exerciseName,
+                    type: determineActivityType([exerciseName]),
+                    category: 'Compound' as ExerciseCategory,
+                    muscleGroups: ['Full Body' as MuscleGroup],
+                    equipment: [],
+                    difficulty: 'Beginner' as
+                      | 'Beginner'
+                      | 'Intermediate'
+                      | 'Advanced',
+                    description: '',
+                    variations: [],
+                  };
+                  try {
+                    await addCustomExercise(newExercise);
+                    console.log(`Added new exercise: ${exerciseName}`);
+                  } catch (error) {
+                    console.error('Error adding custom exercise:', error);
+                  }
+
+                  activityRequests.push({
+                    date: parseDateFromText(dateText),
+                    exercises: [exerciseName],
+                    type: determineActivityType([exerciseName]),
+                    isRecurring: false,
+                    weeksToRepeat: 1,
+                  });
+                }
+              }
+            }
+          }
+        } else {
+          // Original pattern handling
+          exercises = cleanExerciseName(match[1]);
+          dateText = match[2].trim();
+
+          // Parse exercises - handle compound names better
+          // Only split on commas and "and" as separators, not on spaces within exercise names
+          let exerciseList = exercises
+            .split(/,\s*|\s+and\s+/)
+            .map(e =>
+              cleanExerciseName(e)
+                .replace(/^and\s+/i, '')
+                .trim()
+            )
+            .filter(e => e.length > 0);
+
+          // Remove leading 'And ' if present in the first exercise (fix for AI output)
+          if (
+            exerciseList.length > 0 &&
+            exerciseList[0].toLowerCase().startsWith('and ')
+          ) {
+            exerciseList[0] = exerciseList[0].slice(4).trim();
+          }
+
+          // Fix common AI parsing issues with compound exercises
+          const fixedExercises = [];
+          for (let i = 0; i < exerciseList.length; i++) {
+            const current = exerciseList[i];
+            const next = exerciseList[i + 1];
+
+            // Check for split compound exercises
+            if (current === 'overhe' && next === 'presses') {
+              fixedExercises.push('overhead presses');
+              i++; // Skip next item
+            } else if (current === 'bench' && next === 'press') {
+              fixedExercises.push('bench press');
+              i++; // Skip next item
+            } else if (current === 'dead' && next === 'lift') {
+              fixedExercises.push('deadlift');
+              i++; // Skip next item
+            } else if (current === 'push' && next === 'ups') {
+              fixedExercises.push('push-ups');
+              i++; // Skip next item
+            } else if (current === 'pull' && next === 'ups') {
+              fixedExercises.push('pull-ups');
+              i++; // Skip next item
+            } else if (current === 'sit' && next === 'ups') {
+              fixedExercises.push('sit-ups');
+              i++; // Skip next item
+            } else {
+              fixedExercises.push(current);
+            }
+          }
+
+          exerciseList = fixedExercises;
+
+          // Try to match exercises against the comprehensive exercise database
+          const matchedExercises = [];
+          for (const exercise of exerciseList) {
+            // First try exact match using the database function
+            const exactMatch = findExerciseByName(exercise);
+
+            if (exactMatch) {
+              matchedExercises.push(exactMatch.name); // Use the Title Case version from database
+            } else {
+              // Try search function for partial matches
+              const searchResults = searchExercises(exercise);
+
+              if (searchResults.length > 0) {
+                // Use the first (best) match
+                matchedExercises.push(searchResults[0].name);
+              } else {
+                // If no match found, add it as a custom exercise
+                const exerciseName = toTitleCase(exercise);
+                const newExercise: ExerciseDefinition = {
+                  name: exerciseName,
+                  type: determineActivityType([exerciseName]),
+                  category: 'Compound' as ExerciseCategory,
+                  muscleGroups: ['Full Body' as MuscleGroup],
+                  equipment: [],
+                  difficulty: 'Beginner' as
+                    | 'Beginner'
+                    | 'Intermediate'
+                    | 'Advanced',
+                  description: '',
+                  variations: [],
+                };
+                try {
+                  await addCustomExercise(newExercise);
+                  console.log(`Added new exercise: ${exerciseName}`);
+                } catch (error) {
+                  console.error('Error adding custom exercise:', error);
+                }
+                matchedExercises.push(exerciseName);
+              }
+            }
+          }
+
+          exerciseList = matchedExercises;
+
+          // Remove duplicates while preserving order
+          const uniqueExercises = [];
+          const seen = new Set();
+          for (const exercise of exerciseList) {
+            if (!seen.has(exercise.toLowerCase())) {
+              seen.add(exercise.toLowerCase());
+              uniqueExercises.push(exercise);
+            }
+          }
+          exerciseList = uniqueExercises;
+
+          console.log('Parsed exercises:', exerciseList);
+
+          // Parse date and recurrence
+          let targetDate = dayjs();
+          let isRecurring = false;
+          let weeksToRepeat = 4; // Default to 4 weeks
+          const lowerDateText = dateText.toLowerCase();
+
+          if (
+            lowerDateText.includes('recurring') ||
+            lowerDateText.includes('weekly') ||
+            lowerDateText.includes('every week')
+          ) {
+            isRecurring = true;
+          }
+
+          if (lowerDateText.includes('tomorrow')) {
+            targetDate = targetDate.add(1, 'day');
+          } else if (lowerDateText.includes('today')) {
+            // Keep today - allow activities for today
+          } else if (
+            lowerDateText.includes('next week') ||
+            lowerDateText.includes('next')
+          ) {
+            // Handle "next Monday", "next Tuesday", etc.
+            const dayMatch = lowerDateText.match(
+              /next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i
+            );
+            if (dayMatch) {
+              const dayName = dayMatch[1];
+              const dayIndex = [
+                'sunday',
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+                'saturday',
+              ].indexOf(dayName);
+              if (dayIndex !== -1) {
+                const currentDay = targetDate.day();
+                const daysToAdd = (dayIndex - currentDay + 7) % 7;
+                targetDate = targetDate.add(daysToAdd + 7, 'day'); // Add 7 more days for "next week"
+              }
+            }
+          } else {
+            // Try to parse day names
+            const dayIndex = [
+              'sunday',
+              'monday',
+              'tuesday',
+              'wednesday',
+              'thursday',
+              'friday',
+              'saturday',
+            ].indexOf(lowerDateText);
+            if (dayIndex !== -1) {
+              const currentDay = targetDate.day();
+              const daysToAdd = (dayIndex - currentDay + 7) % 7;
+              targetDate = targetDate.add(daysToAdd, 'day');
+            }
+          }
+
+          // Check for duration in the response
+          const durationMatch = response.match(
+            /(?:for|repeat|duration)\s+(\d+)\s+(?:weeks?|months?)/i
+          );
+          if (durationMatch) {
+            weeksToRepeat = parseInt(durationMatch[1]);
+            if (response.toLowerCase().includes('month')) {
+              weeksToRepeat *= 4;
+            }
+          }
+
+          activityRequests.push({
+            date: targetDate.format('YYYY-MM-DD'),
+            exercises: exerciseList,
+            type: determineActivityType(exerciseList),
+            isRecurring,
+            weeksToRepeat,
+          });
+        }
       }
     }
 
@@ -1067,13 +1270,71 @@ export default function CoachScreen({ navigation }: any) {
     const createdActivities = [];
 
     for (const request of activityRequests) {
-      // If there are multiple exercises, split into separate requests
-      const exercises =
-        request.exercises && request.exercises.length > 1
-          ? request.exercises
-          : null;
-      if (exercises) {
-        for (const exercise of exercises) {
+      try {
+        // Validate the request has required fields
+        if (!request.date || !request.exercises || !request.exercises.length) {
+          console.log('Invalid activity request:', request);
+          continue;
+        }
+
+        // If there are multiple exercises, split into separate requests
+        const exercises =
+          request.exercises && request.exercises.length > 1
+            ? request.exercises
+            : null;
+        if (exercises) {
+          for (const exercise of exercises) {
+            if (!exercise || typeof exercise !== 'string') {
+              console.log('Invalid exercise:', exercise);
+              continue;
+            }
+
+            if (request.isRecurring) {
+              for (let week = 0; week < request.weeksToRepeat; week++) {
+                const activityDate = dayjs(request.date).add(week * 7, 'day');
+                const activity: Activity = {
+                  id:
+                    Date.now().toString() +
+                    Math.random().toString(36).substr(2, 9) +
+                    week,
+                  date: activityDate.format('YYYY-MM-DD'),
+                  type: determineActivityType([exercise]),
+                  name: toTitleCase(exercise),
+                  emoji:
+                    ACTIVITY_EMOJIS[
+                      determineActivityType([
+                        exercise,
+                      ]) as keyof typeof ACTIVITY_EMOJIS
+                    ] || '💪',
+                  completed: false,
+                  notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
+                };
+                dispatch(addActivity(activity));
+                createdActivities.push(activity);
+              }
+            } else {
+              const activity: Activity = {
+                id:
+                  Date.now().toString() +
+                  Math.random().toString(36).substr(2, 9),
+                date: request.date,
+                type: determineActivityType([exercise]),
+                name: toTitleCase(exercise),
+                emoji:
+                  ACTIVITY_EMOJIS[
+                    determineActivityType([
+                      exercise,
+                    ]) as keyof typeof ACTIVITY_EMOJIS
+                  ] || '💪',
+                completed: false,
+                notes: `Created by AI coach based on your request`,
+              };
+              dispatch(addActivity(activity));
+              createdActivities.push(activity);
+            }
+          }
+        } else {
+          // Single exercise or already split
           if (request.isRecurring) {
             for (let week = 0; week < request.weeksToRepeat; week++) {
               const activityDate = dayjs(request.date).add(week * 7, 'day');
@@ -1083,13 +1344,11 @@ export default function CoachScreen({ navigation }: any) {
                   Math.random().toString(36).substr(2, 9) +
                   week,
                 date: activityDate.format('YYYY-MM-DD'),
-                type: determineActivityType([exercise]),
-                name: toTitleCase(exercise),
+                type: request.type, // keep as enum value
+                name: request.exercises.map(toTitleCase).join(', '),
                 emoji:
                   ACTIVITY_EMOJIS[
-                    determineActivityType([
-                      exercise,
-                    ]) as keyof typeof ACTIVITY_EMOJIS
+                    request.type as keyof typeof ACTIVITY_EMOJIS
                   ] || '💪',
                 completed: false,
                 notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
@@ -1102,14 +1361,11 @@ export default function CoachScreen({ navigation }: any) {
               id:
                 Date.now().toString() + Math.random().toString(36).substr(2, 9),
               date: request.date,
-              type: determineActivityType([exercise]),
-              name: toTitleCase(exercise),
+              type: request.type, // keep as enum value
+              name: request.exercises.map(toTitleCase).join(', '),
               emoji:
-                ACTIVITY_EMOJIS[
-                  determineActivityType([
-                    exercise,
-                  ]) as keyof typeof ACTIVITY_EMOJIS
-                ] || '💪',
+                ACTIVITY_EMOJIS[request.type as keyof typeof ACTIVITY_EMOJIS] ||
+                '💪',
               completed: false,
               notes: `Created by AI coach based on your request`,
             };
@@ -1117,46 +1373,14 @@ export default function CoachScreen({ navigation }: any) {
             createdActivities.push(activity);
           }
         }
-      } else {
-        // Single exercise or already split
-        if (request.isRecurring) {
-          for (let week = 0; week < request.weeksToRepeat; week++) {
-            const activityDate = dayjs(request.date).add(week * 7, 'day');
-            const activity: Activity = {
-              id:
-                Date.now().toString() +
-                Math.random().toString(36).substr(2, 9) +
-                week,
-              date: activityDate.format('YYYY-MM-DD'),
-              type: request.type, // keep as enum value
-              name: request.exercises.map(toTitleCase).join(', '),
-              emoji:
-                ACTIVITY_EMOJIS[request.type as keyof typeof ACTIVITY_EMOJIS] ||
-                '💪',
-              completed: false,
-              notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
-            };
-            dispatch(addActivity(activity));
-            createdActivities.push(activity);
-          }
-        } else {
-          const activity: Activity = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            date: request.date,
-            type: request.type, // keep as enum value
-            name: request.exercises.map(toTitleCase).join(', '),
-            emoji:
-              ACTIVITY_EMOJIS[request.type as keyof typeof ACTIVITY_EMOJIS] ||
-              '💪',
-            completed: false,
-            notes: `Created by AI coach based on your request`,
-          };
-          dispatch(addActivity(activity));
-          createdActivities.push(activity);
-        }
+      } catch (error) {
+        console.error('Error creating activity from request:', request, error);
       }
     }
 
+    console.log(
+      `Successfully created ${createdActivities.length} activities out of ${activityRequests.length} requests`
+    );
     return createdActivities;
   };
 
@@ -1222,7 +1446,14 @@ export default function CoachScreen({ navigation }: any) {
 
     // Store the input text and clear immediately
     const currentInput = inputText.trim();
+
+    // Clear input immediately and force a re-render
     setInputText('');
+
+    // Force focus to ensure the input field updates
+    setTimeout(() => {
+      setInputText('');
+    }, 0);
 
     // Add user message
     const userMessage = {
@@ -1445,6 +1676,23 @@ Keep responses conversational and helpful. If creating activities, be specific a
         currentInput
       );
       let finalResponse = botResponse;
+
+      // Create activities if any were requested
+      let createdActivities: Activity[] = [];
+      if (activityRequests.length > 0) {
+        console.log('Creating activities from AI response:', activityRequests);
+        createdActivities = createActivitiesFromRequest(activityRequests);
+        console.log('Created activities:', createdActivities.length);
+
+        // Check if activities were actually created and provide honest feedback
+        if (createdActivities.length === 0) {
+          finalResponse =
+            "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
+        } else if (createdActivities.length !== activityRequests.length) {
+          finalResponse = `I was able to create ${createdActivities.length} out of ${activityRequests.length} requested activities. Some activities may not have been created due to formatting issues.`;
+        }
+      }
+
       // Remove the checkmark summary block
       // if (activityRequests.length > 0) { ... finalResponse += `\n\n${summary}`; }
 
@@ -1472,6 +1720,8 @@ Keep responses conversational and helpful. If creating activities, be specific a
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsProcessing(false);
+      // Ensure input is cleared even if there was an error
+      setInputText('');
     }
   };
 
@@ -1484,8 +1734,17 @@ Keep responses conversational and helpful. If creating activities, be specific a
         timestamp: new Date(),
       },
     ]);
-    setCurrentSessionId(Date.now().toString());
+    // Always create a new session ID when starting a new chat
+    const newSessionId = Date.now().toString();
+    setCurrentSessionId(newSessionId);
     setActiveTab('chat');
+
+    // Remove any existing session with the old ID from storage
+    if (currentSessionId) {
+      const updatedHistory = chatHistory.filter(s => s.id !== currentSessionId);
+      setChatHistory(updatedHistory);
+      saveChatHistory(updatedHistory);
+    }
   };
 
   const renderChatHistory = () => {
@@ -1501,6 +1760,20 @@ Keep responses conversational and helpful. If creating activities, be specific a
             <Ionicons name="add" size={20} color="#fff" />
             <Text className="text-white font-medium ml-2">Start New Chat</Text>
           </TouchableOpacity>
+
+          {chatHistory.length > 0 && (
+            <TouchableOpacity
+              hitSlop={14}
+              style={{ backgroundColor: isDark ? '#dc2626' : '#ef4444' }}
+              className="px-4 py-3 rounded-lg mb-4 flex-row items-center justify-center"
+              onPress={deleteAllSessions}
+            >
+              <Ionicons name="trash" size={20} color="#fff" />
+              <Text className="text-white font-medium ml-2">
+                Delete All Chats
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {chatHistory.length === 0 ? (
             <View className="items-center py-8">

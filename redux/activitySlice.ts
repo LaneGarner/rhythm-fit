@@ -18,7 +18,9 @@ const initialState: ActivityState = {
 export const loadActivitiesFromStorage = createAsyncThunk(
   'activities/loadFromStorage',
   async () => {
+    console.log('Loading activities from storage...');
     const activities = await loadActivities();
+    console.log('Loaded activities from storage:', activities.length);
     return activities;
   }
 );
@@ -29,29 +31,64 @@ const activitySlice = createSlice({
   reducers: {
     addActivity(state, action: PayloadAction<Activity>) {
       state.data.push(action.payload);
+      console.log('Adding activity to Redux:', action.payload.name);
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     updateActivity(state, action: PayloadAction<Activity>) {
       const index = state.data.findIndex(a => a.id === action.payload.id);
       if (index !== -1) state.data[index] = action.payload;
+      console.log('Updating activity in Redux:', action.payload.name);
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     deleteActivity(state, action: PayloadAction<string>) {
       state.data = state.data.filter(a => a.id !== action.payload);
+      console.log('Deleting activity from Redux:', action.payload);
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     deleteActivitiesForDate(state, action: PayloadAction<string>) {
       state.data = state.data.filter(a => a.date !== action.payload);
+      console.log('Deleting activities for date from Redux:', action.payload);
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     setActivities(state, action: PayloadAction<Activity[]>) {
       state.data = action.payload;
+      console.log('Setting activities in Redux:', action.payload.length);
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     markAllActivitiesCompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
@@ -60,8 +97,15 @@ const activitySlice = createSlice({
           ? { ...activity, completed: true }
           : activity
       );
+      console.log('Marking activities complete for week in Redux');
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
     markAllActivitiesIncompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
@@ -70,8 +114,15 @@ const activitySlice = createSlice({
           ? { ...activity, completed: false }
           : activity
       );
+      console.log('Marking activities incomplete for week in Redux');
       // Auto-save to storage
-      saveActivities(state.data);
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
     },
   },
   extraReducers: builder => {
