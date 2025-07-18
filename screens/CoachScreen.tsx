@@ -4,7 +4,14 @@ import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import OpenAI from 'openai';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Animated,
@@ -18,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { OPENAI_CONFIG } from '../config/api';
@@ -57,7 +65,7 @@ export default function CoachScreen({ navigation }: any) {
     {
       id: '1',
       type: 'bot',
-      text: "Hi! I'm your AI fitness coach powered by ChatGPT. I can help you create activity plans, suggest exercises, and provide motivation. What are your fitness goals?",
+      text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
       timestamp: new Date(),
     },
   ]);
@@ -70,7 +78,6 @@ export default function CoachScreen({ navigation }: any) {
   const scrollViewRef = useRef<ScrollView>(null);
   const lastBotMessageRef = useRef<View>(null);
   const lastUserMessageRef = useRef<View>(null);
-  const [lastUserMessageY, setLastUserMessageY] = useState<number | null>(null);
 
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -112,48 +119,17 @@ export default function CoachScreen({ navigation }: any) {
     }
   }, []);
 
-  // Ensure we have a proper session when switching to chat tab
-  useEffect(() => {
-    if (
-      activeTab === 'chat' &&
-      messages.length === 1 &&
-      messages[0].id === '1'
-    ) {
-      // If we're on chat tab with only the initial message, ensure we have a fresh session
-      const existingSession = chatHistory.find(s => s.id === currentSessionId);
-      if (!existingSession) {
-        // No existing session found, create a new one
-        setCurrentSessionId(Date.now().toString());
-      }
-    }
-  }, [activeTab, messages, currentSessionId, chatHistory]);
-
   // Auto-scroll when messages change or processing state changes
   useEffect(() => {
     if (scrollViewRef.current && (messages.length > 0 || isProcessing)) {
       setTimeout(
         () => {
-          const lastMessage = messages[messages.length - 1];
-          const secondLastMessage = messages[messages.length - 2];
-          if (
-            lastMessage &&
-            lastMessage.type === 'bot' &&
-            lastUserMessageY !== null &&
-            secondLastMessage &&
-            secondLastMessage.type === 'user'
-          ) {
-            scrollViewRef.current?.scrollTo({
-              y: lastUserMessageY - 8,
-              animated: true,
-            }); // 8px padding
-          } else {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }
+          scrollViewRef.current?.scrollToEnd({ animated: true });
         },
         isProcessing ? 100 : 350
       );
     }
-  }, [messages, isProcessing, lastUserMessageY]);
+  }, [messages, isProcessing]);
 
   // Immediate scroll when processing starts
   useEffect(() => {
@@ -201,7 +177,7 @@ export default function CoachScreen({ navigation }: any) {
     }
   };
 
-  const saveCurrentSession = async () => {
+  const saveCurrentSession = useCallback(async () => {
     if (messages.length <= 1) return; // Don't save if only initial message
 
     const sessionTitle =
@@ -214,13 +190,72 @@ export default function CoachScreen({ navigation }: any) {
       timestamp: new Date(),
     };
 
-    const updatedHistory = [
-      newSession,
-      ...chatHistory.filter(s => s.id !== currentSessionId),
-    ];
-    setChatHistory(updatedHistory);
-    await saveChatHistory(updatedHistory);
-  };
+    setChatHistory(prevHistory => {
+      const updatedHistory = [
+        newSession,
+        ...prevHistory.filter(s => s.id !== currentSessionId),
+      ];
+      // Save to storage asynchronously
+      saveChatHistory(updatedHistory);
+      return updatedHistory;
+    });
+  }, [messages, currentSessionId]);
+
+  // Memoize the activity context to prevent unnecessary recalculations
+  const activityContext = useMemo(() => {
+    const recentActivities = activities.filter(a =>
+      dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
+    );
+    const upcomingActivities = activities
+      .filter(a => dayjs(a.date).isSameOrAfter(dayjs(), 'day'))
+      .slice(0, 5);
+
+    // Get this week's activities (Monday to Sunday)
+    const startOfWeek = dayjs().startOf('week').add(1, 'day'); // Monday
+    const endOfWeek = startOfWeek.add(6, 'day'); // Sunday
+    const thisWeekActivities = activities.filter(a => {
+      const activityDate = dayjs(a.date);
+      return (
+        activityDate.isSameOrAfter(startOfWeek, 'day') &&
+        activityDate.isSameOrBefore(endOfWeek, 'day')
+      );
+    });
+
+    let context = `Current activity context:\n`;
+    context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
+    context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
+    context += `- This week's activities: ${thisWeekActivities.length}\n`;
+    context += `- Upcoming activities: ${upcomingActivities.length}\n`;
+
+    if (thisWeekActivities.length > 0) {
+      context += `\nThis week's activities:\n`;
+      const groupedByDay = thisWeekActivities.reduce(
+        (acc, activity) => {
+          const day = dayjs(activity.date).format('dddd');
+          if (!acc[day]) acc[day] = [];
+          acc[day].push(activity);
+          return acc;
+        },
+        {} as { [key: string]: Activity[] }
+      );
+
+      Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
+        context += `- ${day}: ${dayActivities
+          .map(a => `${a.emoji} ${a.name}`)
+          .join(', ')}\n`;
+      });
+    }
+
+    if (upcomingActivities.length > 0) {
+      context += `\nUpcoming activities:\n`;
+      upcomingActivities.forEach(activity => {
+        const date = dayjs(activity.date).format('MMM D');
+        context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
+      });
+    }
+
+    return context;
+  }, [activities]);
 
   const loadSession = async (session: ChatSession) => {
     setMessages(session.messages);
@@ -238,9 +273,13 @@ export default function CoachScreen({ navigation }: any) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const updatedHistory = chatHistory.filter(s => s.id !== sessionId);
-            setChatHistory(updatedHistory);
-            await saveChatHistory(updatedHistory);
+            setChatHistory(prevHistory => {
+              const updatedHistory = prevHistory.filter(
+                s => s.id !== sessionId
+              );
+              saveChatHistory(updatedHistory);
+              return updatedHistory;
+            });
 
             // Check if the deleted session was the current active session
             if (sessionId === currentSessionId) {
@@ -264,7 +303,7 @@ export default function CoachScreen({ navigation }: any) {
           style: 'destructive',
           onPress: async () => {
             setChatHistory([]);
-            await saveChatHistory([]);
+            saveChatHistory([]);
             // Always start a new chat when all sessions are deleted
             startNewChat();
           },
@@ -282,14 +321,17 @@ export default function CoachScreen({ navigation }: any) {
     console.log('User input:', userInput);
 
     const activityRequests = [];
+    let bulkWorkoutProcessed = false; // Flag to prevent duplicate processing
 
     // Look for activity creation patterns in the response
     const activityPatterns = [
+      // BULK WORKOUT PATTERN - Handle multiple "I've scheduled X for Y" lines
+      /I've scheduled\s+([^.]+?)\s+for\s+(\w+)\.?\s*/gi,
       // Handle "I've scheduled the following X for Y: 1. Exercise1 2. Exercise2..."
       // This pattern specifically looks for numbered lists and excludes the category text
       /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+(?:the following\s+)?(?:leg exercises?|arm exercises?|chest exercises?|back exercises?|core exercises?|cardio exercises?|strength exercises?|workout exercises?|exercises?)\s+(?:for|on)\s+(.+?):\s*((?:\d+\.\s*[^\n]+\n?)+)/gi,
-      // Handle "I've scheduled X for Y" (original pattern)
-      /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+(.+?)\s+(?:for|on)\s+(.+?)(?:\n|\.|$)/gi,
+      // Handle "I've scheduled X for Y" - FIXED PATTERN to handle trailing spaces and better capture
+      /(?:I've scheduled|I've created|I've added|Scheduled|Created|Added)\s+([^]+?)\s+(?:for|on)\s+([^\n.]+?)(?:\s*$|\s*\n|\s*\.)/gm,
       // Handle "Activity/Exercise: X on Y" (original pattern)
       /(?:Activity|Exercise):\s*(.+?)\s+(?:on|for)\s+(.+?)(?:\n|\.|$)/gi,
       // Handle "Recurring/Weekly/Every week: X on Y" (original pattern)
@@ -303,6 +345,7 @@ export default function CoachScreen({ navigation }: any) {
     // Helper function to clean exercise names
     const cleanExerciseName = (name: string): string => {
       let cleaned = name.trim();
+
       // Remove all known verbose AI phrases
       cleaned = cleaned.replace(/A New Exercise To Your Library:?/gi, '');
       cleaned = cleaned.replace(/This Will Be Categorized As [^\.]+\./gi, '');
@@ -319,6 +362,25 @@ export default function CoachScreen({ navigation }: any) {
         ''
       );
       cleaned = cleaned.replace(/\.+$/, ''); // Remove trailing periods and text
+
+      // Remove generic workout terms that shouldn't be exercise names
+      cleaned = cleaned.replace(
+        /^(a\s+)?(pull|push|legs?|chest|back|shoulder|arm|full\s+body)\s+(workout|day|routine|session|training)/gi,
+        ''
+      );
+      cleaned = cleaned.replace(
+        /^(a\s+)?(workout|day|routine|session|training)\s+(with\s+\d+\s+exercises?)?/gi,
+        ''
+      );
+      cleaned = cleaned.replace(
+        /^(a\s+)?(\d+\s+)?(exercises?|moves?|activities?)/gi,
+        ''
+      );
+
+      // Remove common AI filler words
+      cleaned = cleaned.replace(/^(the\s+)?(following\s+)?/gi, '');
+      cleaned = cleaned.replace(/(\s+for\s+|\s+on\s+).*$/i, '');
+
       return cleaned.trim();
     };
 
@@ -344,6 +406,10 @@ export default function CoachScreen({ navigation }: any) {
     const parseDateFromText = (dateText: string): string => {
       let targetDate = dayjs();
       const lowerDateText = dateText.toLowerCase();
+      const lowerUserInput = userInput.toLowerCase();
+
+      // Check if user input mentions "next week" to provide context
+      const isNextWeekContext = lowerUserInput.includes('next week');
 
       if (lowerDateText.includes('tomorrow')) {
         targetDate = targetDate.add(1, 'day');
@@ -388,7 +454,13 @@ export default function CoachScreen({ navigation }: any) {
         if (dayIndex !== -1) {
           const currentDay = targetDate.day();
           const daysToAdd = (dayIndex - currentDay + 7) % 7;
-          targetDate = targetDate.add(daysToAdd, 'day');
+
+          // If user mentioned "next week" in their input, add 7 more days
+          if (isNextWeekContext) {
+            targetDate = targetDate.add(daysToAdd + 7, 'day');
+          } else {
+            targetDate = targetDate.add(daysToAdd, 'day');
+          }
         }
       }
 
@@ -396,14 +468,104 @@ export default function CoachScreen({ navigation }: any) {
     };
 
     for (const pattern of activityPatterns) {
+      console.log('Testing pattern:', pattern.source);
+
+      // Skip other patterns if bulk workout was already processed
+      if (
+        bulkWorkoutProcessed &&
+        pattern.source !== "I've scheduled\\s+([^.]+?)\\s+for\\s+(\\w+)\\.?\\s*"
+      ) {
+        console.log('Skipping pattern - bulk workout already processed');
+        continue;
+      }
+
       let match;
       while ((match = pattern.exec(response)) !== null) {
+        console.log('Pattern matched:', match);
         let exercises: string;
         let dateText: string;
         let numberedList: string | undefined;
 
-        if (match[2]) {
-          // This is the new pattern with numbered list
+        // Check if this is our new bulk workout pattern (first pattern in array)
+        if (
+          pattern.source ===
+          "I've scheduled\\s+([^.]+?)\\s+for\\s+(\\w+)\\.?\\s*"
+        ) {
+          // New bulk workout pattern: match[1] = exercises, match[2] = day
+          exercises = cleanExerciseName(match[1]);
+          dateText = match[2].trim();
+
+          console.log('Processing bulk workout pattern');
+          console.log('Raw exercises:', match[1]);
+          console.log('Raw dateText:', match[2]);
+
+          // Parse exercises - handle compound names better
+          // Only split on commas and "and" as separators, not on spaces within exercise names
+          let exerciseList = exercises
+            .split(/,\s*|\s+and\s+/)
+            .map(e =>
+              cleanExerciseName(e)
+                .replace(/^and\s+/i, '')
+                .trim()
+            )
+            .filter(e => e.length > 0);
+
+          console.log('Parsed exercises:', exerciseList);
+          console.log('Date text:', dateText);
+          console.log('User input for context:', userInput);
+
+          // Skip if no valid exercises were found
+          if (exerciseList.length === 0) {
+            console.log('No valid exercises found, skipping activity creation');
+            continue;
+          }
+
+          // Parse date and determine if it's next week
+          let targetDate = dayjs();
+          const lowerDateText = dateText.toLowerCase();
+          const lowerUserInput = userInput.toLowerCase();
+          const isNextWeekContext = lowerUserInput.includes('next week');
+
+          const dayIndex = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+          ].indexOf(lowerDateText);
+
+          if (dayIndex !== -1) {
+            if (isNextWeekContext) {
+              // For "next week", go to next week's version of that day
+              const nextWeekStart = targetDate.add(7, 'day').startOf('week'); // Next Sunday
+              targetDate = nextWeekStart.add(dayIndex, 'day'); // Add days to get to the target day
+            } else {
+              // For current week, use existing logic
+              const currentDay = targetDate.day();
+              const daysToAdd = (dayIndex - currentDay + 7) % 7;
+              targetDate = targetDate.add(daysToAdd, 'day');
+            }
+          }
+
+          console.log(
+            'Calculated target date:',
+            targetDate.format('YYYY-MM-DD')
+          );
+
+          activityRequests.push({
+            date: targetDate.format('YYYY-MM-DD'),
+            exercises: exerciseList,
+            type: determineActivityType(exerciseList),
+            isRecurring: false,
+            weeksToRepeat: 1,
+          });
+
+          // Mark that bulk workout has been processed
+          bulkWorkoutProcessed = true;
+        } else if (match[2]) {
+          // This is the numbered list pattern
           dateText = match[1];
           numberedList = match[2];
 
@@ -532,6 +694,22 @@ export default function CoachScreen({ navigation }: any) {
           // Try to match exercises against the comprehensive exercise database
           const matchedExercises = [];
           for (const exercise of exerciseList) {
+            // Skip generic workout terms
+            const genericPatterns = [
+              /^(a\s+)?(pull|push|legs?|chest|back|shoulder|arm|full\s+body)\s+(workout|day|routine|session|training)/i,
+              /^(a\s+)?(workout|day|routine|session|training)\s+(with\s+\d+\s+exercises?)?/i,
+              /^(a\s+)?(\d+\s+)?(exercises?|moves?|activities?)/i,
+              /^(the\s+)?(following\s+)?/i,
+            ];
+
+            const isGeneric = genericPatterns.some(pattern =>
+              pattern.test(exercise)
+            );
+            if (isGeneric || exercise.length < 3) {
+              console.log(`Skipping generic exercise name: ${exercise}`);
+              continue;
+            }
+
             // First try exact match using the database function
             const exactMatch = findExerciseByName(exercise);
 
@@ -585,6 +763,14 @@ export default function CoachScreen({ navigation }: any) {
           exerciseList = uniqueExercises;
 
           console.log('Parsed exercises:', exerciseList);
+          console.log('Date text:', dateText);
+          console.log('User input for context:', userInput);
+
+          // Skip if no valid exercises were found
+          if (exerciseList.length === 0) {
+            console.log('No valid exercises found, skipping activity creation');
+            continue;
+          }
 
           // Parse date and recurrence
           let targetDate = dayjs();
@@ -902,20 +1088,52 @@ export default function CoachScreen({ navigation }: any) {
       // If no exercise found in AI response, try user input
       if (!extractedExercise) {
         const userInputLower = userInput.toLowerCase();
+        // More specific patterns that avoid matching general phrases like "it to my schedule"
         const addPatterns = [
-          /add\s+(.+?)\s+to\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
-          /add\s+(.+?)\s+for\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
-          /add\s+(.+?)\s+on\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
-          /add\s+(.+?)\s+to\s+this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
-          /add\s+(.+?)\s+for\s+this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
-          /add\s+(.+?)\s+on\s+this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
+          // Only match when there's a clear exercise name, not pronouns or generic phrases
+          /add\s+((?:deadlift|squat|bench press|overhead press|curl|row|pull-?up|push-?up|plank|burpee|lunge|dip)[s]?(?:\s+\w+)*)\s+(?:to|for|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
+          /add\s+(\w+(?:\s+\w+)*(?:lift|press|curl|row|pull|push|squat|lunge|dip|plank|burpee)s?)\s+(?:to|for|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
+          // Match "schedule X for Y" format - but not "schedule it"
+          /schedule\s+([A-Za-z]\w+(?:\s+\w+)*)\s+(?:for|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)/i,
         ];
+
+        // Helper function to validate exercise names
+        const isValidExerciseName = (exerciseName: string): boolean => {
+          if (!exerciseName || exerciseName.length < 3) return false;
+
+          // Skip obvious non-exercise phrases
+          const invalidPhrases = [
+            'it to my schedule',
+            'my schedule',
+            'to my schedule',
+            'the schedule',
+            'workout plan',
+            'fitness plan',
+            'routine plan',
+            'exercise plan',
+            'training plan',
+            'it to',
+            'it',
+            'this',
+            'that',
+            'them',
+          ];
+
+          const lowerName = exerciseName.toLowerCase();
+          return !invalidPhrases.some(phrase => lowerName.includes(phrase));
+        };
 
         for (const pattern of addPatterns) {
           const match = userInput.match(pattern);
           if (match) {
             // Clean the exercise name more aggressively to handle extra context
             let exerciseName = match[1].trim();
+
+            // Validate the exercise name before proceeding
+            if (!isValidExerciseName(exerciseName)) {
+              console.log(`Skipping invalid exercise name: "${exerciseName}"`);
+              continue;
+            }
 
             // Remove common extra context like sets, reps, weights, etc.
             exerciseName = exerciseName.replace(
@@ -1269,11 +1487,60 @@ export default function CoachScreen({ navigation }: any) {
   const createActivitiesFromRequest = (activityRequests: any[]) => {
     const createdActivities = [];
 
+    console.log('createActivitiesFromRequest called with:', activityRequests);
+
     for (const request of activityRequests) {
       try {
         // Validate the request has required fields
         if (!request.date || !request.exercises || !request.exercises.length) {
           console.log('Invalid activity request:', request);
+          continue;
+        }
+
+        // Validate that exercises are not generic workout names
+        const isGenericExercise = (exercise: string): boolean => {
+          const lowerExercise = exercise.toLowerCase().trim();
+
+          // List of obvious generic terms that shouldn't be exercise names
+          const genericTerms = [
+            'workout',
+            'workouts',
+            'exercise',
+            'exercises',
+            'activity',
+            'activities',
+            'routine',
+            'routines',
+            'training',
+            'session',
+            'sessions',
+            'the following',
+            'following',
+            'pull workout',
+            'push workout',
+            'leg workout',
+            'chest workout',
+            'back workout',
+            'full body workout',
+            'arm workout',
+            'shoulder workout',
+            'it to my schedule',
+            'my schedule',
+            'to my schedule',
+          ];
+
+          return genericTerms.some(term => lowerExercise.includes(term));
+        };
+
+        const hasGenericExercises = request.exercises.some((exercise: string) =>
+          isGenericExercise(exercise)
+        );
+
+        if (hasGenericExercises) {
+          console.log(
+            'Activity request contains generic exercise names, skipping:',
+            request
+          );
           continue;
         }
 
@@ -1331,6 +1598,7 @@ export default function CoachScreen({ navigation }: any) {
               };
               dispatch(addActivity(activity));
               createdActivities.push(activity);
+              console.log('Created individual activity:', activity);
             }
           }
         } else {
@@ -1371,6 +1639,7 @@ export default function CoachScreen({ navigation }: any) {
             };
             dispatch(addActivity(activity));
             createdActivities.push(activity);
+            console.log('Created combined activity:', activity);
           }
         }
       } catch (error) {
@@ -1382,61 +1651,6 @@ export default function CoachScreen({ navigation }: any) {
       `Successfully created ${createdActivities.length} activities out of ${activityRequests.length} requests`
     );
     return createdActivities;
-  };
-
-  const getActivityContext = (): string => {
-    const recentActivities = activities.filter(a =>
-      dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
-    );
-    const upcomingActivities = activities
-      .filter(a => dayjs(a.date).isSameOrAfter(dayjs(), 'day'))
-      .slice(0, 5);
-
-    // Get this week's activities (Monday to Sunday)
-    const startOfWeek = dayjs().startOf('week').add(1, 'day'); // Monday
-    const endOfWeek = startOfWeek.add(6, 'day'); // Sunday
-    const thisWeekActivities = activities.filter(a => {
-      const activityDate = dayjs(a.date);
-      return (
-        activityDate.isSameOrAfter(startOfWeek, 'day') &&
-        activityDate.isSameOrBefore(endOfWeek, 'day')
-      );
-    });
-
-    let context = `Current activity context:\n`;
-    context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
-    context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
-    context += `- This week's activities: ${thisWeekActivities.length}\n`;
-    context += `- Upcoming activities: ${upcomingActivities.length}\n`;
-
-    if (thisWeekActivities.length > 0) {
-      context += `\nThis week's activities:\n`;
-      const groupedByDay = thisWeekActivities.reduce(
-        (acc, activity) => {
-          const day = dayjs(activity.date).format('dddd');
-          if (!acc[day]) acc[day] = [];
-          acc[day].push(activity);
-          return acc;
-        },
-        {} as { [key: string]: Activity[] }
-      );
-
-      Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
-        context += `- ${day}: ${dayActivities
-          .map(a => `${a.emoji} ${a.name}`)
-          .join(', ')}\n`;
-      });
-    }
-
-    if (upcomingActivities.length > 0) {
-      context += `\nUpcoming activities:\n`;
-      upcomingActivities.forEach(activity => {
-        const date = dayjs(activity.date).format('MMM D');
-        context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
-      });
-    }
-
-    return context;
   };
 
   const handleSend = async () => {
@@ -1467,9 +1681,29 @@ export default function CoachScreen({ navigation }: any) {
 
     try {
       // Create system prompt with activity context
-      const activityContext = getActivityContext();
-
       const systemPrompt = `You are an AI fitness coach. You can help users create activity plans, provide advice, and manage their fitness routine.
+
+**IMPORTANT: Use Markdown formatting in your responses to make them more readable and visually appealing.**
+
+**Markdown Formatting Guidelines:**
+- Use **bold** for emphasis and important points
+- Use *italic* for secondary emphasis
+- Use \`code\` for exercise names and technical terms
+- Use \`\`\`code blocks\`\`\` for workout examples
+- Use > blockquotes for tips and advice
+- Use bullet points (- or *) for lists
+- Use numbered lists (1. 2. 3.) for step-by-step instructions
+- Use ## Headers for section breaks
+- Use --- for horizontal rules to separate sections
+
+**Examples of good markdown usage:**
+- **Great job on your workout today!** 💪
+- Here's a \`Bench Press\` form tip: *Keep your feet flat on the ground*
+- > **Pro tip:** Always warm up before heavy lifts
+- Your **Monday workout** includes:
+  - \`Squat\` - 3 sets of 8 reps
+  - \`Deadlift\` - 3 sets of 6 reps
+  - \`Bench Press\` - 3 sets of 8 reps
 
 ${activityContext}
 
@@ -1517,6 +1751,55 @@ You can:
 6. Help with exercise form and technique
 7. Suggest exercises based on muscle groups, activity types, or categories
 8. Recommend exercise variations and progressions
+
+CRITICAL ACTIVITY CREATION RULES - READ CAREFULLY:
+
+1. ALWAYS CREATE SPECIFIC EXERCISES, NEVER GENERIC WORKOUTS:
+   - WRONG: "I've scheduled a pull workout with 3 exercises for Monday"
+   - CORRECT: "I've scheduled Deadlift, Barbell Row, and Lat Pulldown for Monday"
+   - WRONG: "I've scheduled a chest workout for Tuesday"
+   - CORRECT: "I've scheduled Bench Press, Incline Dumbbell Press, and Cable Flyes for Tuesday"
+
+2. ALWAYS USE EXACT EXERCISE NAMES:
+   - Use the exact names from the exercise database when available
+   - For new exercises, use proper Title Case (e.g., "Cable Face Pulls", "Dumbbell Lateral Raises")
+   - Never use generic terms like "workout", "exercises", "routine", etc.
+
+3. ALWAYS SEPARATE MULTIPLE EXERCISES WITH COMMAS:
+   - CORRECT: "I've scheduled Bench Press, Deadlift, and Squat for Monday"
+   - WRONG: "I've scheduled Bench Press Deadlift Squat for Monday"
+
+4. ALWAYS SPECIFY THE DAY/DATE:
+   - CORRECT: "I've scheduled Deadlift for Monday"
+   - WRONG: "I've scheduled Deadlift"
+
+5. ALWAYS USE THE EXACT FORMAT: "I've scheduled [exercise names] for [day]"
+   - This is the ONLY format that will work
+   - Never add extra words, explanations, or verbose language
+   - Never use phrases like "added to your library", "scheduled it", etc.
+
+6. FOR LARGE WORKOUTS, BREAK THEM INTO INDIVIDUAL EXERCISES:
+   - If a user asks for a "full body workout", create specific exercises like:
+     "I've scheduled Squat, Bench Press, Deadlift, Overhead Press, and Barbell Row for Monday"
+   - If a user asks for a "push day", create specific exercises like:
+     "I've scheduled Bench Press, Incline Press, Overhead Press, Tricep Dips, and Lateral Raises for Tuesday"
+
+7. FOR COMPOUND EXERCISES, KEEP THEM TOGETHER:
+   - CORRECT: "I've scheduled Bench Press for Monday"
+   - WRONG: "I've scheduled Bench, Press for Monday"
+
+8. FOR NEW EXERCISES NOT IN DATABASE:
+   - Just use the exercise name directly: "I've scheduled Cable Face Pulls for Monday"
+   - Don't add any extra text about adding to library
+
+9. ALWAYS HANDLE LARGE LISTS:
+   - If a user provides a long list of exercises, create them all
+   - Example: "I've scheduled Squat, Deadlift, Bench Press, Overhead Press, Barbell Row, Lat Pulldown, Face Pulls, Lateral Raises, Bicep Curls, and Tricep Extensions for Monday"
+
+10. NEVER CREATE GENERIC ACTIVITIES:
+    - Never create activities with names like "A Pull Workout With 3 Exercises"
+    - Always specify the actual exercise names
+    - If you can't determine specific exercises, ask the user to clarify
 
 IMPORTANT ACTIVITY SCHEDULING RULES:
 - When creating activities, you can schedule them for today, tomorrow, or any day of the week
@@ -1567,6 +1850,7 @@ Examples:
 - "I've scheduled Bench Press and Deadlifts for Wednesday"
 - "I've scheduled Push-Ups and Pull-Ups for Friday"
 - "I've scheduled Deadlift for today"
+- "I've scheduled Squat, Bench Press, Deadlift, Overhead Press, Barbell Row, Lat Pulldown, Face Pulls, Lateral Raises, Bicep Curls, and Tricep Extensions for Monday"
 
 IMPORTANT: When adding new exercises that aren't in the database, just use the exercise name directly:
 - "I've scheduled Cable Face Pulls for Monday" (not "I've scheduled the new exercise Cable Face Pulls for Monday")
@@ -1607,6 +1891,9 @@ Users will say things like:
 - "Copy all activities from this week to next week"
 - "Duplicate Tuesday's activities to next Tuesday"
 - "Copy this week's activities to the week of July 15"
+- "Create a full body workout for Monday"
+- "Add a push day for Tuesday"
+- "Create a pull workout for Wednesday"
 
 Always respond with the simple format regardless of how the user phrases their request.
 
@@ -1615,6 +1902,12 @@ When copying activities, respond like this:
 - "I've scheduled Bench Press and Deadlift for next Monday"
 - "I've scheduled Squat and Leg Press for next Tuesday"
 - "I've scheduled Dumbbell Row and Lat Pulldown for next Wednesday"
+
+WORKOUT CREATION EXAMPLES:
+When creating workouts, respond like this:
+- "I've scheduled Squat, Bench Press, Deadlift, Overhead Press, and Barbell Row for Monday"
+- "I've scheduled Bench Press, Incline Press, Overhead Press, Tricep Dips, and Lateral Raises for Tuesday"
+- "I've scheduled Deadlift, Barbell Row, Lat Pulldown, Face Pulls, and Bicep Curls for Wednesday"
 
 Keep responses conversational and helpful. If creating activities, be specific about the exercises, date, and recurrence. Don't get stuck in loops asking for more information.`;
 
@@ -1648,7 +1941,7 @@ Keep responses conversational and helpful. If creating activities, be specific a
 
       const response = await openai.chat.completions
         .create({
-          model: 'gpt-4',
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
             ...conversationHistory,
@@ -1688,8 +1981,12 @@ Keep responses conversational and helpful. If creating activities, be specific a
         if (createdActivities.length === 0) {
           finalResponse =
             "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
-        } else if (createdActivities.length !== activityRequests.length) {
-          finalResponse = `I was able to create ${createdActivities.length} out of ${activityRequests.length} requested activities. Some activities may not have been created due to formatting issues.`;
+        } else {
+          // Success! Don't show confusing messages about "formatting issues"
+          // The system correctly splits workout requests into individual exercises
+          console.log(
+            `Successfully created ${createdActivities.length} activities from ${activityRequests.length} workout requests`
+          );
         }
       }
 
@@ -1730,7 +2027,7 @@ Keep responses conversational and helpful. If creating activities, be specific a
       {
         id: '1',
         type: 'bot',
-        text: "Hi! I'm your AI fitness coach powered by ChatGPT. I can help you create activity plans, suggest exercises, and provide motivation. What are your fitness goals?",
+        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
         timestamp: new Date(),
       },
     ]);
@@ -1741,9 +2038,13 @@ Keep responses conversational and helpful. If creating activities, be specific a
 
     // Remove any existing session with the old ID from storage
     if (currentSessionId) {
-      const updatedHistory = chatHistory.filter(s => s.id !== currentSessionId);
-      setChatHistory(updatedHistory);
-      saveChatHistory(updatedHistory);
+      setChatHistory(prevHistory => {
+        const updatedHistory = prevHistory.filter(
+          s => s.id !== currentSessionId
+        );
+        saveChatHistory(updatedHistory);
+        return updatedHistory;
+      });
     }
   };
 
@@ -1760,20 +2061,6 @@ Keep responses conversational and helpful. If creating activities, be specific a
             <Ionicons name="add" size={20} color="#fff" />
             <Text className="text-white font-medium ml-2">Start New Chat</Text>
           </TouchableOpacity>
-
-          {chatHistory.length > 0 && (
-            <TouchableOpacity
-              hitSlop={14}
-              style={{ backgroundColor: isDark ? '#dc2626' : '#ef4444' }}
-              className="px-4 py-3 rounded-lg mb-4 flex-row items-center justify-center"
-              onPress={deleteAllSessions}
-            >
-              <Ionicons name="trash" size={20} color="#fff" />
-              <Text className="text-white font-medium ml-2">
-                Delete All Chats
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {chatHistory.length === 0 ? (
             <View className="items-center py-8">
@@ -1940,13 +2227,6 @@ Keep responses conversational and helpful. If creating activities, be specific a
                       ? lastUserMessageRef
                       : null
                 }
-                onLayout={
-                  message.type === 'user' &&
-                  index === messages.length - 2 &&
-                  messages[messages.length - 1]?.type === 'bot'
-                    ? e => setLastUserMessageY(e.nativeEvent.layout.y)
-                    : undefined
-                }
                 className={`mb-4 ${message.type === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <View
@@ -1960,18 +2240,103 @@ Keep responses conversational and helpful. If creating activities, be specific a
                         : 'bg-white border border-gray-200'
                   }`}
                 >
-                  <Text
-                    style={{
-                      color:
-                        message.type === 'user'
-                          ? '#fff'
-                          : isDark
-                            ? '#fff'
-                            : '#111',
-                    }}
-                  >
-                    {message.text}
-                  </Text>
+                  {message.type === 'user' ? (
+                    <Text
+                      style={{
+                        color: '#fff',
+                      }}
+                    >
+                      {message.text}
+                    </Text>
+                  ) : (
+                    <Markdown
+                      style={{
+                        body: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 16,
+                          lineHeight: 22,
+                        },
+                        heading1: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 20,
+                          fontWeight: 'bold',
+                          marginTop: 8,
+                          marginBottom: 4,
+                        },
+                        heading2: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 18,
+                          fontWeight: 'bold',
+                          marginTop: 6,
+                          marginBottom: 3,
+                        },
+                        heading3: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 16,
+                          fontWeight: 'bold',
+                          marginTop: 4,
+                          marginBottom: 2,
+                        },
+                        paragraph: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 16,
+                          lineHeight: 22,
+                          marginBottom: 8,
+                        },
+                        list_item: {
+                          color: isDark ? '#fff' : '#111',
+                          fontSize: 16,
+                          lineHeight: 22,
+                          marginBottom: 4,
+                        },
+                        bullet_list: {
+                          marginBottom: 8,
+                        },
+                        ordered_list: {
+                          marginBottom: 8,
+                        },
+                        code_inline: {
+                          backgroundColor: isDark ? '#333' : '#f0f0f0',
+                          color: isDark ? '#00ff00' : '#d63384',
+                          paddingHorizontal: 4,
+                          paddingVertical: 2,
+                          borderRadius: 3,
+                          fontFamily: 'monospace',
+                        },
+                        code_block: {
+                          backgroundColor: isDark ? '#333' : '#f0f0f0',
+                          color: isDark ? '#00ff00' : '#d63384',
+                          padding: 12,
+                          borderRadius: 6,
+                          fontFamily: 'monospace',
+                          marginVertical: 8,
+                        },
+                        blockquote: {
+                          borderLeftWidth: 4,
+                          borderLeftColor: isDark ? '#3b82f6' : '#3b82f6',
+                          paddingLeft: 12,
+                          marginVertical: 8,
+                          backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa',
+                          paddingVertical: 8,
+                          paddingRight: 8,
+                        },
+                        strong: {
+                          fontWeight: 'bold',
+                          color: isDark ? '#fff' : '#111',
+                        },
+                        em: {
+                          fontStyle: 'italic',
+                          color: isDark ? '#fff' : '#111',
+                        },
+                        link: {
+                          color: isDark ? '#3b82f6' : '#2563eb',
+                          textDecorationLine: 'underline',
+                        },
+                      }}
+                    >
+                      {message.text}
+                    </Markdown>
+                  )}
                 </View>
               </View>
             ))}

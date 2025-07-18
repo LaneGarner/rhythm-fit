@@ -124,6 +124,18 @@ const activitySlice = createSlice({
           console.error('Error saving activities to storage:', error);
         });
     },
+    clearAllActivities(state) {
+      state.data = [];
+      console.log('All activities cleared from Redux store');
+      // Auto-save to storage
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
+    },
   },
   extraReducers: builder => {
     builder
@@ -150,5 +162,6 @@ export const {
   deleteActivitiesForDate,
   markAllActivitiesCompleteForWeek,
   markAllActivitiesIncompleteForWeek,
+  clearAllActivities,
 } = activitySlice.actions;
 export default activitySlice.reducer;

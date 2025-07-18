@@ -1,147 +1,39 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import dayjs from 'dayjs';
-import { ExerciseDefinition } from '../constants/exercises';
-import { Activity } from '../types/activity';
+# Fix Week Generation Bug - Dev Mode Button
 
-// Activity storage functions
-export const saveActivities = async (activities: Activity[]) => {
-  try {
-    await AsyncStorage.setItem('activities', JSON.stringify(activities));
-  } catch (error) {
-    console.error('Error saving activities:', error);
-  }
-};
+## 🐛 **Issue**
 
-export const loadActivities = async (): Promise<Activity[]> => {
-  try {
-    const data = await AsyncStorage.getItem('activities');
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error loading activities:', error);
-    return [];
-  }
-};
+The "Fill Week with Data" feature has a bug where:
 
-// Theme storage functions
-export const saveThemeMode = async (themeMode: string) => {
-  try {
-    await AsyncStorage.setItem('themeMode', themeMode);
-  } catch (error) {
-    console.error('Error saving theme mode:', error);
-  }
-};
+- **Monday** gets activities for the correct week
+- **Tuesday-Sunday** get activities for the PREVIOUS week
+- **Random activities are not unique** (duplicates possible)
 
-export const loadThemeMode = async (): Promise<string> => {
-  try {
-    const data = await AsyncStorage.getItem('themeMode');
-    return data || 'light';
-  } catch (error) {
-    console.error('Error loading theme mode:', error);
-    return 'light';
-  }
-};
+## 🔍 **Root Cause**
 
-export function toTitleCase(str: string): string {
-  return str.replace(
-    /\w\S*/g,
-    txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
-}
+The date calculation logic in `generateRandomWeekActivities()` is incorrect. The current logic:
 
-// Custom exercise storage functions
-export const saveCustomExercises = async (exercises: ExerciseDefinition[]) => {
-  try {
-    await AsyncStorage.setItem('customExercises', JSON.stringify(exercises));
-  } catch (error) {
-    console.error('Error saving custom exercises:', error);
-  }
-};
+```typescript
+// BUGGY CODE:
+const startOfWeek = new Date(targetDate);
+const dayOfWeek = targetDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+startOfWeek.setDate(targetDate.getDate() - daysToMonday);
 
-export const loadCustomExercises = async (): Promise<ExerciseDefinition[]> => {
-  try {
-    const data = await AsyncStorage.getItem('customExercises');
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error loading custom exercises:', error);
-    return [];
-  }
-};
+// Then in the loop:
+currentDate.setDate(startOfWeek.getDate() + dayOffset);
+```
 
-export const addCustomExercise = async (
-  exercise: ExerciseDefinition
-): Promise<void> => {
-  try {
-    const existingExercises = await loadCustomExercises();
-    const updatedExercises = [...existingExercises, exercise];
-    await saveCustomExercises(updatedExercises);
-  } catch (error) {
-    console.error('Error adding custom exercise:', error);
-  }
-};
+This creates date inconsistencies when crossing month boundaries.
 
-export const getAllExercises = async (): Promise<ExerciseDefinition[]> => {
-  try {
-    const customExercises = await loadCustomExercises();
-    // Import the base exercise database dynamically to avoid circular imports
-    const { EXERCISE_DATABASE } = await import('../constants/exercises');
-    return [...EXERCISE_DATABASE, ...customExercises];
-  } catch (error) {
-    console.error('Error loading all exercises:', error);
-    return [];
-  }
-};
+## ✅ **Solution**
 
-// Clear all data functions
-export const clearAllActivities = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem('activities');
-    console.log('All activities cleared from storage');
-  } catch (error) {
-    console.error('Error clearing activities:', error);
-  }
-};
+### Step 1: Fix Date Calculation Logic
 
-export const clearChatHistory = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem('chat_history');
-    console.log('Chat history cleared from storage');
-  } catch (error) {
-    console.error('Error clearing chat history:', error);
-  }
-};
+**File: `utils/storage.ts`**
 
-export const clearCustomExercises = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem('customExercises');
-    console.log('Custom exercises cleared from storage');
-  } catch (error) {
-    console.error('Error clearing custom exercises:', error);
-  }
-};
+Replace the week calculation logic in `generateRandomWeekActivities()`:
 
-export const clearThemeMode = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem('themeMode');
-    console.log('Theme mode cleared from storage');
-  } catch (error) {
-    console.error('Error clearing theme mode:', error);
-  }
-};
-
-export const clearAllAppData = async (): Promise<void> => {
-  try {
-    await Promise.all([
-      clearAllActivities(),
-      clearChatHistory(),
-      clearCustomExercises(),
-      clearThemeMode(),
-    ]);
-    console.log('All app data cleared from storage');
-  } catch (error) {
-    console.error('Error clearing all app data:', error);
-  }
-};
-
+```typescript
 // Generate random activities for a specific week (dev mode)
 export const generateRandomWeekActivities = (
   weekOffset: number = 0
@@ -155,7 +47,7 @@ export const generateRandomWeekActivities = (
   // Get Monday of the target week
   const startOfWeek = targetWeek.startOf('week').add(1, 'day'); // dayjs week starts on Sunday, so add 1 day for Monday
 
-  // Sample exercises by category
+  // Sample exercises by category (same as before)
   const weightTrainingExercises = [
     'Bench Press',
     'Squat',
@@ -312,3 +204,60 @@ export const generateRandomWeekActivities = (
   );
   return activities;
 };
+```
+
+### Step 2: Add Required Import
+
+**File: `utils/storage.ts`**
+
+Make sure dayjs is imported at the top:
+
+```typescript
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import dayjs from 'dayjs'; // Add this import
+import { ExerciseDefinition } from '../constants/exercises';
+import { Activity } from '../types/activity';
+```
+
+## 🔧 **Key Fixes**
+
+### 1. **Reliable Date Calculation**
+
+- **Use dayjs** instead of native Date object for reliable week calculations
+- **startOfWeek().add(1, 'day')** to get Monday properly
+- **currentDate = startOfWeek.add(dayOffset, 'day')** for each day
+
+### 2. **Unique Activities**
+
+- **Track used exercises** with `Set<string>`
+- **Attempt up to 20 times** to find unique exercise per category
+- **Fallback to duplicates** if no unique exercise found (prevents infinite loops)
+
+### 3. **Better Debugging**
+
+- **Log week range** to verify correct Monday-Sunday span
+- **Clear date format** in console logs
+
+## 🧪 **Testing**
+
+After implementing the fix:
+
+1. **Clear all data** using dev button
+2. **Generate week data**
+3. **Check console logs** for week range verification
+4. **Verify in Weekly view** that all activities are in the same week
+5. **Check for duplicates** - should be minimal within the same week
+
+## 📅 **Expected Behavior**
+
+- **Monday**: Should be the correct week's Monday
+- **Tuesday-Sunday**: Should be consecutive days in the SAME week
+- **Activities**: Should be mostly unique within the week
+- **Console**: Should log something like "Week range: Dec 23 - Dec 29, 2024"
+
+## ⚠️ **Important Notes**
+
+- This uses dayjs which is already imported in the project
+- The uniqueness is per-week, not global (you can have the same exercise in different weeks)
+- After 20 attempts to find unique exercise, it allows duplicates to prevent infinite loops
+- Week calculation now matches the WeeklyScreen's Monday-Sunday layout

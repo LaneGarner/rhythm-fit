@@ -17,12 +17,14 @@ import {
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
+import { useWeekContext } from '../WeekContext';
 
 export default function WeeklyScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const dispatch = useDispatch();
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
+  const { setWeekOffset: setContextWeekOffset } = useWeekContext();
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -118,6 +120,11 @@ export default function WeeklyScreen({ navigation }: any) {
   React.useEffect(() => {
     currentWeekOffsetRef.current = weekOffset;
   }, [weekOffset]);
+
+  // Update context when weekOffset changes so DevModeButton knows which week is in view
+  useEffect(() => {
+    setContextWeekOffset(weekOffset);
+  }, [weekOffset, setContextWeekOffset]);
 
   // Scroll to current day when component mounts or week changes
   useEffect(() => {

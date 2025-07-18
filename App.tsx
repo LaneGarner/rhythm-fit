@@ -5,11 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useContext, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider, useDispatch } from 'react-redux';
+import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
 import TabNavigator from './navigation/TabNavigator';
 import { loadActivitiesFromStorage } from './redux/activitySlice';
 import { AppDispatch, store } from './redux/store';
 import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
+import { WeekProvider } from './WeekContext';
 
 // Import screens
 import ActivityExecutionScreen from './screens/ActivityExecutionScreen';
@@ -19,6 +21,9 @@ import EditActivityScreen from './screens/EditActivityScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
+
+// Dev mode configuration
+const DEV_MODE_ENABLED = true; // Set to false to hide the button
 
 export type RootStackParamList = {
   Main: undefined;
@@ -69,6 +74,9 @@ function AppContent() {
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+
+      {/* Dev mode button */}
+      <DevModeButton visible={DEV_MODE_ENABLED} />
     </>
   );
 }
@@ -89,7 +97,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <ThemeProvider>
-          <AppContent />
+          <WeekProvider>
+            <AppContent />
+          </WeekProvider>
         </ThemeProvider>
       </Provider>
     </GestureHandlerRootView>

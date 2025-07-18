@@ -3,8 +3,20 @@
 - [ ] Enhance the coach AI to analyze workout history and make recommendations
 - [ ] Improve natural language understanding for recurring activities
 - [ ] Make the app name configurable from a central config file
-- [ ] Add accessibility features to all components (labels, hints, screen reader support)
+- [ ] Add accessibility features to all components (labels, hints, screen reader support)g
 - [ ] Add unit and integration tests
+- [ ] ensure text input in chat is always cleared after submitting... sometimes i see the previous message populated here
+- [ ] when i delete all chat history and then go back to the chat tab it keeps the most recent chat.. this shoudl go to a new chat since the old one shouldn't be saved anymore
+
+- add longer chat memory. maybe make a profile of the user over time.
+- use the data on the schedule and stats to inform profile
+- clickable suggestions in chat. either a response to the last message or ideas for prompts. Pull workout examples. Make me a leg day workout. Make me a full body workout over 3 days. What can I do for recovery? How can I improve my nutrition? Make a bunch of these and always show random ones. I don't want too many to show in the ui... maybe like 3-5.
+- add link to youtube search for workout term (open in app? open youtube app? probably youtube)
+- long press copy messages in chat.
+- weird thing in chat where it goes to next page
+- add more things to settings
+- instructions?
+- dev mode button that we can hide later in top right of entire app. clear all data. clear all workout data. clear all chat data. anythign else that might be useful. make the button red and small and obvious that it is for dev only.
 
 ---
 
