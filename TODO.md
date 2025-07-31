@@ -5,52 +5,55 @@
 - [ ] Make the app name configurable from a central config file
 - [ ] Add accessibility features to all components (labels, hints, screen reader support)g
 - [ ] Add unit and integration tests
-- [ ] ensure text input in chat is always cleared after submitting... sometimes i see the previous message populated here
-- [ ] when i delete all chat history and then go back to the chat tab it keeps the most recent chat.. this shoudl go to a new chat since the old one shouldn't be saved anymore
 
-- add longer chat memory. maybe make a profile of the user over time.
-- use the data on the schedule and stats to inform profile
-- clickable suggestions in chat. either a response to the last message or ideas for prompts. Pull workout examples. Make me a leg day workout. Make me a full body workout over 3 days. What can I do for recovery? How can I improve my nutrition? Make a bunch of these and always show random ones. I don't want too many to show in the ui... maybe like 3-5.
+- [ ] add to feat.md: follow tdd writing unit tests for each feature with the requirements and testing against them as its implemented to make sure it works properly. all features should be well tested. i prefer react testing library/jest.
+
+- [ ] write some descriptions for the tone of voice to use in chat responses. could be a setting! choose your coach.
+
+- [ ] Update readme to give comprehensive overview of app
+
+- [ ] better splash screen
+
+- [ ] simplify ai prompt logic
+
+- [ ] clear chat history dev mode doesn't seem to work. remove only from all dev mode options.
+
+- [ ] better name
+
+- [ ] make sure we're always referencing exercieses list dynamically.
+
+- [ ] edit screen shoudlnt have recurring schedule creation like the create screen does
+
+- [ ] remove unused code, imports, components, files, etc.
+
+- [ ] determine what should be moved to a backend/api and what should stay in the react native app.
+
+- [ ] make the suggestions in the intial chat message use similar chips to the suggestions chips and clickable to fill the text field just like the suggestions chips.
+
+- add longer chat memory. make a profile of the user over time. use the data on the schedule and stats to inform profile. use this profile as info when coach gives suggestions. use this to inform the chat suggestion buttons.
+
+- [ x ] clickable suggestions in chat. either a response to the last message or ideas for prompts. Pull workout examples. Make me a leg day workout. Make me a full body workout over 3 days. What can I do for recovery? How can I improve my nutrition? Make a bunch of these and always show random ones. I don't want too many to show in the ui... maybe like 3-5.
 - add link to youtube search for workout term (open in app? open youtube app? probably youtube)
 - long press copy messages in chat.
 - weird thing in chat where it goes to next page
 - add more things to settings
 - instructions?
-- dev mode button that we can hide later in top right of entire app. clear all data. clear all workout data. clear all chat data. anythign else that might be useful. make the button red and small and obvious that it is for dev only.
 
----
+- dev mode delete this week view.. just like we did the create random this week. if its in view of the weekly view current screen/week.
 
-## Implementation Instructions
+- make sure the ai references to exercises come from exercise database
 
-### Splash Screen
+- get rid of 3 most common exercises.
+- show 3 most common activity types. keep same title.
 
-- Pure black background in dark mode
-- Configurable app name (pull from constants)
-- Particle burst animation (particles explode outward then converge)
-- Smooth transitions
-- Accessibility features
-- Native iOS-style design
+- move arrows for down to center with whole title
 
-### Dropdown Fixes
+- look into best ux patterns for the settings cog
 
-- Use a modal for suggestions
-- Show suggestions immediately on focus
-- Do not close suggestions when scrolling
+- component cleanup. make things more "reusable" smaller components. split things up.
 
-### General
+- convert everythign to use arrow functions
 
-- Follow all step-by-step guidance in RHYTHM_FEATURE_IMPLEMENTATION.md for new features
-- Only change what is explicitly specified in the instructions
-- Do not regenerate files or majorly change UI beyond the exact changes described
+- convert everything to use named exports over default. imports will also need to be fixed.
 
----
-
-## Rules for Parsing and Following Instructions
-
-- **Do not change anything else in the app except what is explicitly specified in the instructions.**
-- **Take no liberties.**
-- **Do not regenerate any files or majorly change any UI beyond the exact changes described.**
-- **Follow the instructions to the letter without adding any additional features, UI changes, or modifications not explicitly mentioned.**
-- **If a step is unclear, clarify before proceeding.**
-- **If a file or feature is not mentioned, do not modify it.**
-- **Always check for and follow any critical instructions or warnings at the top of the instruction files.**
+- update import pattern.

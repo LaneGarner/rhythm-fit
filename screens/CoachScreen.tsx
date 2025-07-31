@@ -25,9 +25,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
+import { ChatSuggestions } from '../components/ChatSuggestions';
+import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
 import { OPENAI_CONFIG } from '../config/api';
 import { ACTIVITY_EMOJIS, ACTIVITY_TYPES } from '../constants';
 import {
@@ -124,7 +125,31 @@ export default function CoachScreen({ navigation }: any) {
     if (scrollViewRef.current && (messages.length > 0 || isProcessing)) {
       setTimeout(
         () => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
+          if (isProcessing) {
+            // When processing (showing "Thinking..."), scroll to end
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          } else {
+            // When new bot message is received, scroll to show top of the message
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage?.type === 'bot' && lastBotMessageRef.current) {
+              lastBotMessageRef.current.measureLayout(
+                scrollViewRef.current as any,
+                (x, y) => {
+                  scrollViewRef.current?.scrollTo({
+                    y: Math.max(0, y - 20), // Add small padding from top
+                    animated: true,
+                  });
+                },
+                () => {
+                  // Fallback to scroll to end if measurement fails
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }
+              );
+            } else {
+              // For user messages or when ref not available, scroll to end
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+            }
+          }
         },
         isProcessing ? 100 : 350
       );
@@ -1653,6 +1678,10 @@ export default function CoachScreen({ navigation }: any) {
     return createdActivities;
   };
 
+  const handleSuggestionPress = (suggestion: string) => {
+    setInputText(suggestion);
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || isProcessing) return;
 
@@ -1743,16 +1772,55 @@ DYNAMIC EXERCISE SYSTEM:
 - The system will remember custom exercises for future use
 
 You can:
-1. Create activities by mentioning "I've scheduled [exercises] for [date]"
-2. Create recurring activities by mentioning "I've scheduled [exercises] for [day] (recurring weekly for X weeks)"
-3. Add new exercises to the user's library by simply using them in activity creation
-4. Provide fitness advice and motivation
-5. Analyze activity patterns and suggest improvements
-6. Help with exercise form and technique
-7. Suggest exercises based on muscle groups, activity types, or categories
-8. Recommend exercise variations and progressions
+1. **Suggest workout routines** when users ask to "create", "design", "make", or "suggest" routines
+2. **Schedule activities** when users explicitly ask to "add", "schedule", "put on calendar", or similar action words
+3. Create recurring activities by mentioning "I've scheduled [exercises] for [day] (recurring weekly for X weeks)"
+4. Add new exercises to the user's library by simply using them in activity creation
+5. Provide fitness advice and motivation
+6. Analyze activity patterns and suggest improvements
+7. Help with exercise form and technique
+8. Suggest exercises based on muscle groups, activity types, or categories
+9. Recommend exercise variations and progressions
+
+CRITICAL DISTINCTION - ROUTINE SUGGESTIONS vs ACTIVITY SCHEDULING:
+
+**ROUTINE SUGGESTIONS** (when users ask to "create", "design", "make", "suggest" routines):
+- Do NOT automatically schedule activities
+- Present the routine as a suggestion with exercise details
+- End with an offer to schedule: "Would you like me to add this routine to your schedule? Just let me know which day!"
+- Use friendly, engaging copy that invites them to schedule
+
+**ACTIVITY SCHEDULING** (when users explicitly ask to "add", "schedule", "put on calendar"):
+- DO schedule activities using the "I've scheduled" format
+- Use the exact format: "I've scheduled [exercise names] for [day]"
+
+EXAMPLES:
+
+**User asks: "Create a mobility routine"**
+**Response:** Present routine with exercises and details, then say:
+"Ready to get started? I can add this mobility routine to your schedule - just let me know which day works best for you! 📅✨"
+
+**User asks: "Design a beginner workout"**
+**Response:** Present workout with exercises and details, then say:
+"Want me to schedule this workout for you? Just say the word and I'll add it to your calendar! 💪"
+
+**User asks: "Schedule deadlifts for Monday"**
+**Response:** "I've scheduled Deadlift for Monday"
+
+**User asks: "Add bench press to Wednesday"**
+**Response:** "I've scheduled Bench Press for Wednesday"
 
 CRITICAL ACTIVITY CREATION RULES - READ CAREFULLY:
+
+**ONLY CREATE SCHEDULED ACTIVITIES WHEN:**
+- User explicitly uses scheduling words: "add", "schedule", "put on calendar", "book", "plan for [specific day]"
+- User asks to copy/duplicate existing activities
+- User responds positively to your scheduling offer
+
+**DO NOT CREATE SCHEDULED ACTIVITIES WHEN:**
+- User asks to "create", "design", "make", "suggest", "show me", "what's a good" routine/workout
+- User is asking for routine suggestions or advice
+- User is asking general fitness questions
 
 1. ALWAYS CREATE SPECIFIC EXERCISES, NEVER GENERIC WORKOUTS:
    - WRONG: "I've scheduled a pull workout with 3 exercises for Monday"
@@ -1774,14 +1842,14 @@ CRITICAL ACTIVITY CREATION RULES - READ CAREFULLY:
    - WRONG: "I've scheduled Deadlift"
 
 5. ALWAYS USE THE EXACT FORMAT: "I've scheduled [exercise names] for [day]"
-   - This is the ONLY format that will work
+   - This is the ONLY format that will work for scheduling
    - Never add extra words, explanations, or verbose language
    - Never use phrases like "added to your library", "scheduled it", etc.
 
 6. FOR LARGE WORKOUTS, BREAK THEM INTO INDIVIDUAL EXERCISES:
-   - If a user asks for a "full body workout", create specific exercises like:
+   - If a user asks to "schedule a full body workout", create specific exercises like:
      "I've scheduled Squat, Bench Press, Deadlift, Overhead Press, and Barbell Row for Monday"
-   - If a user asks for a "push day", create specific exercises like:
+   - If a user asks to "add a push day", create specific exercises like:
      "I've scheduled Bench Press, Incline Press, Overhead Press, Tricep Dips, and Lateral Raises for Tuesday"
 
 7. FOR COMPOUND EXERCISES, KEEP THEM TOGETHER:
@@ -1881,19 +1949,29 @@ When users add new exercises, the system will automatically categorize them base
 - Other: any other activities not fitting the above categories
 
 USER INPUT EXAMPLES:
-Users will say things like:
+
+**SCHEDULING REQUESTS** (create activities):
 - "Add paddle boarding to Wednesday"
 - "Add bench press to Monday, 3 sets of 10 reps at 32.5 lbs"
 - "Add overhead presses to this Monday"
 - "Add face pulls to Monday"
 - "Add deadlift to today"
+- "Schedule a full body workout for Monday"
+- "Put bench press on my calendar for Tuesday"
 - "Copy Monday's activities to next Monday"
 - "Copy all activities from this week to next week"
 - "Duplicate Tuesday's activities to next Tuesday"
 - "Copy this week's activities to the week of July 15"
-- "Create a full body workout for Monday"
-- "Add a push day for Tuesday"
-- "Create a pull workout for Wednesday"
+
+**ROUTINE SUGGESTIONS** (provide suggestions only):
+- "Create a mobility routine"
+- "Design a beginner-friendly workout"
+- "Make me a leg day workout"
+- "Suggest some stretching exercises"
+- "What's a good pull workout?"
+- "Show me a core routine"
+- "Give me a full body workout plan"
+- "Help me with a push day routine"
 
 Always respond with the simple format regardless of how the user phrases their request.
 
@@ -1926,17 +2004,24 @@ Keep responses conversational and helpful. If creating activities, be specific a
       // Lower temperature for activity creation (more consistent)
       // Higher temperature for motivational responses (more creative)
       const getTemperature = (userInput: string): number => {
-        const activityKeywords = [
+        const lowerInput = userInput.toLowerCase();
+
+        // Explicit scheduling words get lower temperature for consistency
+        const schedulingWords = [
           'add',
           'schedule',
-          'create',
+          'put on calendar',
+          'book',
+          'plan for',
           'copy',
           'duplicate',
         ];
-        const isActivityRequest = activityKeywords.some(keyword =>
-          userInput.toLowerCase().includes(keyword)
+
+        const isSchedulingRequest = schedulingWords.some(keyword =>
+          lowerInput.includes(keyword)
         );
-        return isActivityRequest ? 0.3 : 0.7;
+
+        return isSchedulingRequest ? 0.3 : 0.7;
       };
 
       const response = await openai.chat.completions
@@ -1963,11 +2048,65 @@ Keep responses conversational and helpful. If creating activities, be specific a
       console.log('AI Response:', botResponse);
       console.log('User Input:', currentInput);
 
-      // Check if the response contains activity creation
-      const activityRequests = await parseActivityFromResponse(
-        botResponse,
-        currentInput
-      );
+      // Check if user is asking for routine suggestions vs explicit scheduling
+      const isRoutineSuggestion = (() => {
+        const lowerInput = currentInput.toLowerCase();
+
+        // Words that indicate routine suggestions (don't schedule)
+        const suggestionWords = [
+          'create',
+          'design',
+          'make',
+          'suggest',
+          'show me',
+          "what's a good",
+          'give me',
+          'recommend',
+          'help me with',
+          'routine',
+          'workout plan',
+        ];
+
+        // Words that indicate explicit scheduling (do schedule)
+        const schedulingWords = [
+          'add',
+          'schedule',
+          'put on calendar',
+          'book',
+          'plan for',
+          'set up for',
+          'assign to',
+          'copy',
+          'duplicate',
+        ];
+
+        // Check for scheduling words first (higher priority)
+        const hasSchedulingWords = schedulingWords.some(word =>
+          lowerInput.includes(word)
+        );
+
+        if (hasSchedulingWords) {
+          return false; // User wants to schedule
+        }
+
+        // Check for suggestion words
+        const hasSuggestionWords = suggestionWords.some(word =>
+          lowerInput.includes(word)
+        );
+
+        return hasSuggestionWords; // User wants suggestions only
+      })();
+
+      // Only parse activities if not a routine suggestion
+      let activityRequests: any[] = [];
+      if (!isRoutineSuggestion) {
+        // Check if the response contains activity creation
+        activityRequests = await parseActivityFromResponse(
+          botResponse,
+          currentInput
+        );
+      }
+
       let finalResponse = botResponse;
 
       // Create activities if any were requested
@@ -2249,93 +2388,10 @@ Keep responses conversational and helpful. If creating activities, be specific a
                       {message.text}
                     </Text>
                   ) : (
-                    <Markdown
-                      style={{
-                        body: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 16,
-                          lineHeight: 22,
-                        },
-                        heading1: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 20,
-                          fontWeight: 'bold',
-                          marginTop: 8,
-                          marginBottom: 4,
-                        },
-                        heading2: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 18,
-                          fontWeight: 'bold',
-                          marginTop: 6,
-                          marginBottom: 3,
-                        },
-                        heading3: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 16,
-                          fontWeight: 'bold',
-                          marginTop: 4,
-                          marginBottom: 2,
-                        },
-                        paragraph: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 16,
-                          lineHeight: 22,
-                          marginBottom: 8,
-                        },
-                        list_item: {
-                          color: isDark ? '#fff' : '#111',
-                          fontSize: 16,
-                          lineHeight: 22,
-                          marginBottom: 4,
-                        },
-                        bullet_list: {
-                          marginBottom: 8,
-                        },
-                        ordered_list: {
-                          marginBottom: 8,
-                        },
-                        code_inline: {
-                          backgroundColor: isDark ? '#333' : '#f0f0f0',
-                          color: isDark ? '#00ff00' : '#d63384',
-                          paddingHorizontal: 4,
-                          paddingVertical: 2,
-                          borderRadius: 3,
-                          fontFamily: 'monospace',
-                        },
-                        code_block: {
-                          backgroundColor: isDark ? '#333' : '#f0f0f0',
-                          color: isDark ? '#00ff00' : '#d63384',
-                          padding: 12,
-                          borderRadius: 6,
-                          fontFamily: 'monospace',
-                          marginVertical: 8,
-                        },
-                        blockquote: {
-                          borderLeftWidth: 4,
-                          borderLeftColor: isDark ? '#3b82f6' : '#3b82f6',
-                          paddingLeft: 12,
-                          marginVertical: 8,
-                          backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa',
-                          paddingVertical: 8,
-                          paddingRight: 8,
-                        },
-                        strong: {
-                          fontWeight: 'bold',
-                          color: isDark ? '#fff' : '#111',
-                        },
-                        em: {
-                          fontStyle: 'italic',
-                          color: isDark ? '#fff' : '#111',
-                        },
-                        link: {
-                          color: isDark ? '#3b82f6' : '#2563eb',
-                          textDecorationLine: 'underline',
-                        },
-                      }}
-                    >
-                      {message.text}
-                    </Markdown>
+                    <WorkoutContentWithLinks
+                      text={message.text}
+                      isDark={isDark}
+                    />
                   )}
                 </View>
               </View>
@@ -2370,6 +2426,11 @@ Keep responses conversational and helpful. If creating activities, be specific a
               </Animated.View>
             )}
           </ScrollView>
+
+          <ChatSuggestions
+            onSuggestionPress={handleSuggestionPress}
+            visible={!isProcessing}
+          />
 
           <View
             style={{
