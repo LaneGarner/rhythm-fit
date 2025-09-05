@@ -2,11 +2,19 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: 'Rhythm - Workout Tracker and AI Fitness Coach',
+    name: 'Rhythm - AI Fitness Coach',
     slug: 'rhythm',
-    // ...other Expo config as needed
+    ios: {
+      bundleIdentifier: 'com.yourname.rhythm', // replace with your actual identifier
+    },
+    android: {
+      package: 'com.yourname.rhythm', // replace with your actual package name
+    },
     extra: {
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      OPENAI_API_KEY: process.env.EXPO_PUBLIC_OPENAI_API_KEY,
+      eas: {
+        projectId: 'ec09ca85-b109-41d4-bb48-b4caadaea1a6',
+      },
     },
   },
 };
