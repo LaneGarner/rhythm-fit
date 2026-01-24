@@ -28,7 +28,8 @@ export interface Activity {
   completed: boolean;
   notes?: string;
   sets?: SetData[];
-  recurring?: RecurringConfig; // Add this field
+  recurring?: RecurringConfig;
+  updated_at?: string; // ISO timestamp for sync
 }
 
 export interface SetData {

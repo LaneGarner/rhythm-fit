@@ -30,7 +30,11 @@ const activitySlice = createSlice({
   initialState,
   reducers: {
     addActivity(state, action: PayloadAction<Activity>) {
-      state.data.push(action.payload);
+      const activityWithTimestamp = {
+        ...action.payload,
+        updated_at: new Date().toISOString(),
+      };
+      state.data.push(activityWithTimestamp);
       console.log('Adding activity to Redux:', action.payload.name);
       // Auto-save to storage
       saveActivities(state.data)
@@ -43,7 +47,12 @@ const activitySlice = createSlice({
     },
     updateActivity(state, action: PayloadAction<Activity>) {
       const index = state.data.findIndex(a => a.id === action.payload.id);
-      if (index !== -1) state.data[index] = action.payload;
+      if (index !== -1) {
+        state.data[index] = {
+          ...action.payload,
+          updated_at: new Date().toISOString(),
+        };
+      }
       console.log('Updating activity in Redux:', action.payload.name);
       // Auto-save to storage
       saveActivities(state.data)
@@ -92,9 +101,10 @@ const activitySlice = createSlice({
     },
     markAllActivitiesCompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
+      const now = new Date().toISOString();
       state.data = state.data.map(activity =>
         weekDates.includes(activity.date)
-          ? { ...activity, completed: true }
+          ? { ...activity, completed: true, updated_at: now }
           : activity
       );
       console.log('Marking activities complete for week in Redux');
@@ -109,9 +119,10 @@ const activitySlice = createSlice({
     },
     markAllActivitiesIncompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
+      const now = new Date().toISOString();
       state.data = state.data.map(activity =>
         weekDates.includes(activity.date)
-          ? { ...activity, completed: false }
+          ? { ...activity, completed: false, updated_at: now }
           : activity
       );
       console.log('Marking activities incomplete for week in Redux');

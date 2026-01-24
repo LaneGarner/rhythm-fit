@@ -29,7 +29,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { ChatSuggestions } from '../components/ChatSuggestions';
 import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
-import { OPENAI_CONFIG } from '../config/api';
+import { OPENAI_CONFIG, isBackendConfigured } from '../config/api';
+import { useAuth } from '../context/AuthContext';
+import {
+  sendChatMessage,
+  getChatSessions,
+  getChatSession,
+  deleteChatSession,
+} from '../services/chatApi';
 import { ACTIVITY_EMOJIS, ACTIVITY_TYPES } from '../constants';
 import {
   EXERCISE_DATABASE,
@@ -84,6 +91,8 @@ export default function CoachScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
+  const { user, getAccessToken } = useAuth();
+  const isAuthenticated = Boolean(user) && isBackendConfigured();
 
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -185,6 +194,26 @@ export default function CoachScreen({ navigation }: any) {
 
   const loadChatHistory = async () => {
     try {
+      // Try to load from server if authenticated
+      if (isAuthenticated) {
+        const token = getAccessToken();
+        if (token) {
+          try {
+            const sessions = await getChatSessions(token);
+            const formattedSessions: ChatSession[] = sessions.map(s => ({
+              id: s.id,
+              title: s.title,
+              messages: [], // Messages loaded on demand
+              timestamp: new Date(s.updated_at),
+            }));
+            setChatHistory(formattedSessions);
+            return;
+          } catch (err) {
+            console.error('Failed to load from server, falling back to local:', err);
+          }
+        }
+      }
+      // Fall back to local storage
       const history = await AsyncStorage.getItem('chat_history');
       if (history) {
         setChatHistory(JSON.parse(history));
@@ -283,6 +312,34 @@ export default function CoachScreen({ navigation }: any) {
   }, [activities]);
 
   const loadSession = async (session: ChatSession) => {
+    // If authenticated and session has no messages (loaded from server), fetch them
+    if (isAuthenticated && session.messages.length === 0) {
+      const token = getAccessToken();
+      if (token) {
+        try {
+          const { messages: serverMessages } = await getChatSession(token, session.id);
+          const formattedMessages = serverMessages.map((m, idx) => ({
+            id: `${session.id}-${idx}`,
+            type: m.role === 'user' ? 'user' as const : 'bot' as const,
+            text: m.content,
+            timestamp: new Date(),
+          }));
+          setMessages(formattedMessages.length > 0 ? formattedMessages : [
+            {
+              id: '1',
+              type: 'bot' as const,
+              text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪',
+              timestamp: new Date(),
+            },
+          ]);
+          setCurrentSessionId(session.id);
+          setActiveTab('chat');
+          return;
+        } catch (err) {
+          console.error('Failed to load session from server:', err);
+        }
+      }
+    }
     setMessages(session.messages);
     setCurrentSessionId(session.id);
     setActiveTab('chat');
@@ -298,6 +355,18 @@ export default function CoachScreen({ navigation }: any) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            // Delete from server if authenticated
+            if (isAuthenticated) {
+              const token = getAccessToken();
+              if (token) {
+                try {
+                  await deleteChatSession(token, sessionId);
+                } catch (err) {
+                  console.error('Failed to delete from server:', err);
+                }
+              }
+            }
+
             setChatHistory(prevHistory => {
               const updatedHistory = prevHistory.filter(
                 s => s.id !== sessionId
@@ -2024,25 +2093,45 @@ Keep responses conversational and helpful. If creating activities, be specific a
         return isSchedulingRequest ? 0.3 : 0.7;
       };
 
-      const response = await openai.chat.completions
-        .create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: currentInput },
-          ],
-          max_tokens: 500,
-          temperature: getTemperature(currentInput),
-        })
-        .catch(error => {
-          console.error('OpenAI API Error:', error);
-          throw new Error('Failed to get AI response');
-        });
+      let botResponse: string;
 
-      const botResponse =
-        response.choices[0]?.message?.content ||
-        "Sorry, I couldn't process that request.";
+      // Use backend API if authenticated, otherwise use direct OpenAI
+      if (isAuthenticated) {
+        const token = getAccessToken();
+        if (!token) {
+          throw new Error('No access token available');
+        }
+        const allMessages = [
+          { role: 'system' as const, content: systemPrompt },
+          ...conversationHistory,
+          { role: 'user' as const, content: currentInput },
+        ];
+        const response = await sendChatMessage(token, allMessages, {
+          sessionId: currentSessionId,
+          sessionTitle: messages[1]?.text?.substring(0, 50) || 'Chat Session',
+          model: 'gpt-4o-mini',
+          maxTokens: 500,
+          temperature: getTemperature(currentInput),
+        });
+        botResponse = response.message.content || "Sorry, I couldn't process that request.";
+      } else {
+        const response = await openai.chat.completions
+          .create({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...conversationHistory,
+              { role: 'user', content: currentInput },
+            ],
+            max_tokens: 500,
+            temperature: getTemperature(currentInput),
+          })
+          .catch(error => {
+            console.error('OpenAI API Error:', error);
+            throw new Error('Failed to get AI response');
+          });
+        botResponse = response.choices[0]?.message?.content || "Sorry, I couldn't process that request.";
+      }
 
       // Debug logging
       console.log('AI Response:', botResponse);
@@ -2273,6 +2362,50 @@ Keep responses conversational and helpful. If creating activities, be specific a
       </View>
     );
   };
+
+  // Show sign-in prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <View
+        className="flex-1"
+        style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
+      >
+        <AppHeader>
+          <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
+        </AppHeader>
+        <View className="flex-1 justify-center items-center px-8">
+          <Text className="text-5xl mb-4">🤖</Text>
+          <Text
+            className="text-2xl font-bold text-center mb-3"
+            style={{ color: isDark ? '#fff' : '#111' }}
+          >
+            AI Fitness Coach
+          </Text>
+          <Text
+            className="text-base text-center mb-8 leading-6"
+            style={{ color: isDark ? '#999' : '#666' }}
+          >
+            Get personalized workout plans, schedule activities, and receive expert fitness advice from your AI coach.
+          </Text>
+          <TouchableOpacity
+            className="w-full py-4 rounded-xl mb-4"
+            style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+            onPress={() => navigation.navigate('Auth')}
+          >
+            <Text className="text-white text-center font-semibold text-base">
+              Sign In to Get Started
+            </Text>
+          </TouchableOpacity>
+          <Text
+            className="text-sm text-center"
+            style={{ color: isDark ? '#666' : '#999' }}
+          >
+            Create a free account to use the AI Coach and sync your workouts across devices.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

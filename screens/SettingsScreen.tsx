@@ -1,7 +1,10 @@
 import React, { useContext } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { HEADER_STYLES } from '../constants';
 import { ThemeContext } from '../theme/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { clearSyncData } from '../services/syncService';
+import { isBackendConfigured } from '../config/api';
 
 const modes = [
   { label: 'Light', value: 'light' },
@@ -10,7 +13,27 @@ const modes = [
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme } = useContext(ThemeContext);
+  const { user, signOut, isConfigured } = useAuth();
   const isDark = colorScheme === 'dark';
+  const showAccountSection = isConfigured && isBackendConfigured();
+
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await clearSyncData();
+          await signOut();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Auth' }],
+          });
+        },
+      },
+    ]);
+  };
 
   return (
     <View
@@ -39,6 +62,74 @@ export default function SettingsScreen({ navigation }: any) {
       </View>
 
       <View className="flex-1 px-6 pt-8">
+        {/* Account Section */}
+        {showAccountSection && (
+          <>
+            <Text
+              className="text-lg font-semibold mb-4"
+              style={{ color: isDark ? '#e5e5e5' : '#222' }}
+            >
+              Account
+            </Text>
+            {user ? (
+              <View className="mb-8">
+                <View
+                  className="p-4 rounded-lg mb-3"
+                  style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
+                >
+                  <Text
+                    className="text-sm"
+                    style={{ color: isDark ? '#999' : '#666' }}
+                  >
+                    Signed in as
+                  </Text>
+                  <Text
+                    className="text-base font-medium mt-1"
+                    style={{ color: isDark ? '#fff' : '#111' }}
+                  >
+                    {user.email}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  hitSlop={14}
+                  className="p-4 rounded-lg border border-red-500"
+                  style={{ backgroundColor: isDark ? '#1a0000' : '#fff5f5' }}
+                  onPress={handleLogout}
+                >
+                  <Text className="text-red-500 text-center font-medium">
+                    Sign Out
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="mb-8">
+                <Text
+                  className="text-sm mb-3"
+                  style={{ color: isDark ? '#999' : '#666' }}
+                >
+                  Sign in to sync your workouts across devices
+                </Text>
+                <TouchableOpacity
+                  hitSlop={14}
+                  className="p-4 rounded-lg"
+                  style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+                  onPress={() =>
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'Auth' }],
+                    })
+                  }
+                >
+                  <Text className="text-white text-center font-medium">
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* Appearance Section */}
         <Text
           className="text-lg font-semibold mb-4"
           style={{ color: isDark ? '#e5e5e5' : '#222' }}
