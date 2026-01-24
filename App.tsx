@@ -22,8 +22,8 @@ import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
-// Dev mode configuration
-const DEV_MODE_ENABLED = true; // Set to false to hide the button
+// Dev mode configuration - __DEV__ is true in Expo dev, false in production builds
+const DEV_MODE_ENABLED = __DEV__;
 
 export type RootStackParamList = {
   Main: undefined;
