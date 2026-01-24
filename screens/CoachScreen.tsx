@@ -209,7 +209,10 @@ export default function CoachScreen({ navigation }: any) {
             setChatHistory(formattedSessions);
             return;
           } catch (err) {
-            console.error('Failed to load from server, falling back to local:', err);
+            console.error(
+              'Failed to load from server, falling back to local:',
+              err
+            );
           }
         }
       }
@@ -317,21 +320,28 @@ export default function CoachScreen({ navigation }: any) {
       const token = getAccessToken();
       if (token) {
         try {
-          const { messages: serverMessages } = await getChatSession(token, session.id);
+          const { messages: serverMessages } = await getChatSession(
+            token,
+            session.id
+          );
           const formattedMessages = serverMessages.map((m, idx) => ({
             id: `${session.id}-${idx}`,
-            type: m.role === 'user' ? 'user' as const : 'bot' as const,
+            type: m.role === 'user' ? ('user' as const) : ('bot' as const),
             text: m.content,
             timestamp: new Date(),
           }));
-          setMessages(formattedMessages.length > 0 ? formattedMessages : [
-            {
-              id: '1',
-              type: 'bot' as const,
-              text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪',
-              timestamp: new Date(),
-            },
-          ]);
+          setMessages(
+            formattedMessages.length > 0
+              ? formattedMessages
+              : [
+                  {
+                    id: '1',
+                    type: 'bot' as const,
+                    text: "## 👋 Welcome to Your AI Fitness Coach!\n\nI'm here to help you **crush your fitness goals** and build the best version of yourself! 💪",
+                    timestamp: new Date(),
+                  },
+                ]
+          );
           setCurrentSessionId(session.id);
           setActiveTab('chat');
           return;
@@ -2113,7 +2123,8 @@ Keep responses conversational and helpful. If creating activities, be specific a
           maxTokens: 500,
           temperature: getTemperature(currentInput),
         });
-        botResponse = response.message.content || "Sorry, I couldn't process that request.";
+        botResponse =
+          response.message.content || "Sorry, I couldn't process that request.";
       } else {
         const response = await openai.chat.completions
           .create({
@@ -2130,7 +2141,9 @@ Keep responses conversational and helpful. If creating activities, be specific a
             console.error('OpenAI API Error:', error);
             throw new Error('Failed to get AI response');
           });
-        botResponse = response.choices[0]?.message?.content || "Sorry, I couldn't process that request.";
+        botResponse =
+          response.choices[0]?.message?.content ||
+          "Sorry, I couldn't process that request.";
       }
 
       // Debug logging
@@ -2385,7 +2398,8 @@ Keep responses conversational and helpful. If creating activities, be specific a
             className="text-base text-center mb-8 leading-6"
             style={{ color: isDark ? '#999' : '#666' }}
           >
-            Get personalized workout plans, schedule activities, and receive expert fitness advice from your AI coach.
+            Get personalized workout plans, schedule activities, and receive
+            expert fitness advice from your AI coach.
           </Text>
           <TouchableOpacity
             className="w-full py-4 rounded-xl mb-4"
@@ -2400,7 +2414,8 @@ Keep responses conversational and helpful. If creating activities, be specific a
             className="text-sm text-center"
             style={{ color: isDark ? '#666' : '#999' }}
           >
-            Create a free account to use the AI Coach and sync your workouts across devices.
+            Create a free account to use the AI Coach and sync your workouts
+            across devices.
           </Text>
         </View>
       </View>

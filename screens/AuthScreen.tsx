@@ -118,10 +118,7 @@ export default function AuthScreen() {
           {/* Logo/Title */}
           <View className="items-center mb-12">
             <Text className="text-5xl mb-2">💪</Text>
-            <Text
-              className="text-3xl font-bold"
-              style={{ color: colors.text }}
-            >
+            <Text className="text-3xl font-bold" style={{ color: colors.text }}>
               Rhythm
             </Text>
             <Text

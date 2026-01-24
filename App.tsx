@@ -8,7 +8,10 @@ import { Provider, useDispatch, useSelector } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
 import TabNavigator from './navigation/TabNavigator';
-import { loadActivitiesFromStorage, setActivities } from './redux/activitySlice';
+import {
+  loadActivitiesFromStorage,
+  setActivities,
+} from './redux/activitySlice';
 import { AppDispatch, RootState, store } from './redux/store';
 import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
@@ -43,7 +46,12 @@ export type RootStackParamList = {
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { colorScheme } = useContext(ThemeContext);
-  const { user, isLoading: authLoading, getAccessToken, isConfigured } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    getAccessToken,
+    isConfigured,
+  } = useAuth();
   const [hasSynced, setHasSynced] = useState(false);
   const activities = useSelector((state: RootState) => state.activities.data);
 
@@ -75,7 +83,14 @@ function AppContent() {
       }
     };
     performSync();
-  }, [user, isConfigured, hasSynced, getAccessToken, activities, handleActivitiesUpdated]);
+  }, [
+    user,
+    isConfigured,
+    hasSynced,
+    getAccessToken,
+    activities,
+    handleActivitiesUpdated,
+  ]);
 
   // Reset sync flag when user logs out
   useEffect(() => {

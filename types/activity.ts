@@ -30,6 +30,7 @@ export interface Activity {
   sets?: SetData[];
   recurring?: RecurringConfig;
   updated_at?: string; // ISO timestamp for sync
+  order?: number; // Custom sort order for manual reordering
 }
 
 export interface SetData {

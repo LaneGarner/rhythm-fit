@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -13,9 +14,31 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteActivity, updateActivity } from '../redux/activitySlice';
+import {
+  deleteActivity,
+  updateActivity,
+  reorderActivities,
+} from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
+import { Activity } from '../types/activity';
+
+// Check if running in Expo Go (StoreClient) vs a build
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// Only import DraggableFlatList in builds (not Expo Go)
+let DraggableFlatList: any = null;
+let ScaleDecorator: any = null;
+if (!isExpoGo) {
+  try {
+    const draggableModule = require('react-native-draggable-flatlist');
+    DraggableFlatList = draggableModule.default;
+    ScaleDecorator = draggableModule.ScaleDecorator;
+  } catch (e) {
+    console.log('DraggableFlatList not available, using fallback');
+  }
+}
 
 export default function DayScreen({ navigation, route }: any) {
   const { date } = route.params;
@@ -30,25 +53,60 @@ export default function DayScreen({ navigation, route }: any) {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetDate, setTargetDate] = useState('');
 
-  // Sort activities: incomplete first, then completed
-  const dayActivities = activities
+  // Pending order state - only saved when user clicks Save
+  const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
+
+  // Sort activities: by custom order if available, then incomplete first, then by id
+  const savedActivities = activities
     .filter(activity => activity.date === date)
     .sort((a, b) => {
-      if (a.completed === b.completed) {
-        // If both have same completion status, maintain original order
-        return 0;
+      // Primary: Use custom order if available
+      const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return orderA - orderB;
       }
-      // Incomplete activities first
-      return a.completed ? 1 : -1;
+      // Secondary: Incomplete first
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      // Tertiary: By ID (timestamp-based, older first)
+      return a.id.localeCompare(b.id);
     });
+
+  // Use pending order if available, otherwise use saved order
+  const dayActivities = pendingOrderIds
+    ? pendingOrderIds
+        .map(id => savedActivities.find(a => a.id === id))
+        .filter((a): a is Activity => a !== undefined)
+    : savedActivities;
+
+  const hasUnsavedChanges = pendingOrderIds !== null;
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
 
+  // Save pending order changes
+  const saveChanges = useCallback(() => {
+    if (pendingOrderIds) {
+      dispatch(reorderActivities({ date, orderedIds: pendingOrderIds }));
+      setPendingOrderIds(null);
+    }
+  }, [pendingOrderIds, dispatch, date]);
+
+  // Discard pending order changes
+  const discardChanges = useCallback(() => {
+    setPendingOrderIds(null);
+  }, []);
+
   // Bulk selection helpers
   const toggleBulkMode = () => {
+    if (isBulkMode) {
+      // Exiting bulk mode - discard unsaved changes
+      discardChanges();
+    }
     setIsBulkMode(!isBulkMode);
     setSelectedActivities(new Set());
   };
@@ -71,12 +129,38 @@ export default function DayScreen({ navigation, route }: any) {
     setSelectedActivities(new Set());
   };
 
-  const isAllSelected =
-    selectedActivities.size === dayActivities.length &&
-    dayActivities.length > 0;
-  const isPartiallySelected =
-    selectedActivities.size > 0 &&
-    selectedActivities.size < dayActivities.length;
+  // Move activity up or down in the list (for Expo Go arrow mode)
+  const moveActivity = useCallback(
+    (activityId: string, direction: 'up' | 'down') => {
+      const currentIndex = dayActivities.findIndex(a => a.id === activityId);
+      if (currentIndex === -1) return;
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (newIndex < 0 || newIndex >= dayActivities.length) return;
+
+      // Create new order by swapping positions
+      const reordered = [...dayActivities];
+      [reordered[currentIndex], reordered[newIndex]] = [
+        reordered[newIndex],
+        reordered[currentIndex],
+      ];
+
+      // Update pending order (don't dispatch yet - wait for Save)
+      const orderedIds = reordered.map(a => a.id);
+      setPendingOrderIds(orderedIds);
+    },
+    [dayActivities]
+  );
+
+  // Handle drag end for DraggableFlatList (for builds)
+  const handleDragEnd = useCallback(
+    ({ data: reorderedData }: { data: Activity[] }) => {
+      // Update pending order (don't dispatch yet - wait for Save)
+      const orderedIds = reorderedData.map(activity => activity.id);
+      setPendingOrderIds(orderedIds);
+    },
+    []
+  );
 
   // Bulk actions
   const handleBulkDelete = () => {
@@ -144,12 +228,10 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   const handleEditActivity = (activity: any) => {
-    // Navigate to edit screen
     navigation.navigate('EditActivity', { activityId: activity.id });
   };
 
   const handleToggleCompletion = (activity: any) => {
-    // Toggle completion status
     dispatch(
       updateActivity({
         ...activity,
@@ -186,19 +268,15 @@ export default function DayScreen({ navigation, route }: any) {
         },
         buttonIndex => {
           if (buttonIndex === editButtonIndex) {
-            // Mark Complete/Incomplete
             handleToggleCompletion(activity);
           } else if (buttonIndex === options.length - 2) {
-            // Edit Activity
             handleEditActivity(activity);
           } else if (buttonIndex === destructiveButtonIndex) {
-            // Delete Activity
             handleDeleteActivity(activity.id);
           }
         }
       );
     } else {
-      // Fallback for Android - use Alert
       Alert.alert(
         activity.name || activity.type,
         'What would you like to do?',
@@ -222,8 +300,17 @@ export default function DayScreen({ navigation, route }: any) {
     }
   };
 
-  const ActivityItem = ({ activity }: { activity: any }) => {
+  // Expo Go version: Arrow-based reordering
+  const ActivityItemWithArrows = ({
+    activity,
+    index,
+  }: {
+    activity: Activity;
+    index: number;
+  }) => {
     const isSelected = selectedActivities.has(activity.id);
+    const isFirst = index === 0;
+    const isLast = index === dayActivities.length - 1;
 
     const handlePress = () => {
       if (isBulkMode) {
@@ -257,13 +344,48 @@ export default function DayScreen({ navigation, route }: any) {
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             {isBulkMode && (
-              <View className="mr-3">
-                <Ionicons
-                  name={isSelected ? 'checkbox' : 'square-outline'}
-                  size={24}
-                  color={isSelected ? '#3B82F6' : '#6B7280'}
-                />
-              </View>
+              <>
+                <View className="mr-2">
+                  <TouchableOpacity
+                    onPress={() => moveActivity(activity.id, 'up')}
+                    disabled={isFirst}
+                    className="p-1"
+                    hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name="chevron-up"
+                      size={18}
+                      color={
+                        isFirst ? '#D1D5DB' : isDark ? '#9CA3AF' : '#6B7280'
+                      }
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => moveActivity(activity.id, 'down')}
+                    disabled={isLast}
+                    className="p-1"
+                    hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name="chevron-down"
+                      size={18}
+                      color={
+                        isLast ? '#D1D5DB' : isDark ? '#9CA3AF' : '#6B7280'
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  onPress={() => toggleActivitySelection(activity.id)}
+                  className="mr-2"
+                >
+                  <Ionicons
+                    name={isSelected ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={isSelected ? '#3B82F6' : '#6B7280'}
+                  />
+                </TouchableOpacity>
+              </>
             )}
             <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
             <View className="flex-1">
@@ -292,6 +414,127 @@ export default function DayScreen({ navigation, route }: any) {
       </TouchableOpacity>
     );
   };
+
+  // Build version: Drag handle reordering with DraggableFlatList
+  const renderDraggableItem = useCallback(
+    ({ item: activity, drag, isActive }: any) => {
+      const isSelected = selectedActivities.has(activity.id);
+
+      const handlePress = () => {
+        if (isBulkMode) {
+          toggleActivitySelection(activity.id);
+        } else if (!activity.completed) {
+          navigation.navigate('ActivityExecution', { activityId: activity.id });
+        } else {
+          showActivityOptions(activity);
+        }
+      };
+
+      const handleLongPress = () => {
+        if (!isBulkMode) {
+          showActivityOptions(activity);
+        }
+      };
+
+      const content = (
+        <TouchableOpacity
+          onPress={handlePress}
+          onLongPress={isBulkMode ? undefined : handleLongPress}
+          disabled={isActive}
+          activeOpacity={0.7}
+          className={`p-4 rounded-lg mb-3 ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          } shadow-sm`}
+          style={{
+            opacity: activity.completed && !isActive ? 0.6 : 1,
+            borderWidth: isSelected ? 2 : isActive ? 2 : 0,
+            borderColor: isActive ? '#10B981' : '#3B82F6',
+            backgroundColor: isActive
+              ? isDark
+                ? '#374151'
+                : '#F3F4F6'
+              : isDark
+                ? '#1f2937'
+                : '#ffffff',
+          }}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              {isBulkMode && (
+                <>
+                  <TouchableOpacity
+                    onLongPress={drag}
+                    delayLongPress={100}
+                    disabled={isActive}
+                    className="mr-2 p-2"
+                    style={{
+                      backgroundColor: isActive
+                        ? isDark
+                          ? '#4B5563'
+                          : '#E5E7EB'
+                        : 'transparent',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <Ionicons
+                      name="reorder-three"
+                      size={24}
+                      color={isDark ? '#9CA3AF' : '#6B7280'}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => toggleActivitySelection(activity.id)}
+                    className="mr-2"
+                  >
+                    <Ionicons
+                      name={isSelected ? 'checkbox' : 'square-outline'}
+                      size={24}
+                      color={isSelected ? '#3B82F6' : '#6B7280'}
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+              <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
+              <View className="flex-1">
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  {activity.name || activity.type}
+                </Text>
+                <Text
+                  className={`text-sm ${
+                    isDark ? 'text-gray-300' : 'text-gray-600'
+                  }`}
+                >
+                  {dayjs(activity.date).format('MMM D')}
+                </Text>
+              </View>
+            </View>
+            <View
+              className={`w-3 h-3 rounded-full ${
+                activity.completed ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            />
+          </View>
+        </TouchableOpacity>
+      );
+
+      return ScaleDecorator ? (
+        <ScaleDecorator>{content}</ScaleDecorator>
+      ) : (
+        content
+      );
+    },
+    [
+      selectedActivities,
+      isBulkMode,
+      isDark,
+      navigation,
+      toggleActivitySelection,
+    ]
+  );
 
   const MoveToDateModal = () => (
     <Modal
@@ -349,145 +592,11 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
-  return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-    >
-      {/* Header */}
-      <View
-        style={{
-          position: 'relative',
-          // height: 100,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: 120,
-          paddingBottom: 0,
-          paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
-          borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
-        }}
-      >
-        {/* Left: Back button */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{
-            paddingVertical: 4,
-            paddingHorizontal: 8,
-            marginRight: 8,
-            position: 'absolute',
-            left: 16,
-            top: 44,
-            height: 88,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
-          </Text>
-        </TouchableOpacity>
-        {/* Center: Title (absolutely centered) */}
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 44,
-            height: 88,
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: 'bold',
-              color: isDark ? '#fff' : '#111',
-              textAlign: 'center',
-            }}
-          >
-            {formattedDate}
-          </Text>
-        </View>
-        {/* Right: Bulk button */}
-        <TouchableOpacity
-          onPress={toggleBulkMode}
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: 44,
-            height: 88,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        >
-          <Ionicons
-            name={isBulkMode ? 'close' : 'list'}
-            size={24}
-            color={isDark ? '#fff' : '#111'}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Bulk Actions */}
-      {isBulkMode && (
-        <View
-          className={`p-4 border-b ${
-            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          }`}
-        >
-          <View className="flex-row justify-between items-center mb-3">
-            <Text
-              className={`font-semibold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              {selectedActivities.size} selected
-            </Text>
-            <View className="flex-row space-x-2">
-              <TouchableOpacity
-                onPress={selectAll}
-                className="px-3 py-1 rounded bg-blue-500"
-              >
-                <Text className="text-white text-sm">Select All</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={deselectAll}
-                className="px-3 py-1 rounded bg-gray-500"
-              >
-                <Text className="text-white text-sm">Deselect All</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View className="flex-row space-x-2">
-            <TouchableOpacity
-              onPress={handleBulkDelete}
-              className="flex-1 bg-red-500 py-2 rounded-lg"
-            >
-              <Text className="text-white text-center font-semibold">
-                Delete
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBulkMove}
-              className="flex-1 bg-blue-500 py-2 rounded-lg"
-            >
-              <Text className="text-white text-center font-semibold">Move</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Activities List */}
-      <ScrollView className="flex-1 p-4">
-        {dayActivities.length > 0 ? (
-          dayActivities.map(activity => (
-            <ActivityItem key={activity.id} activity={activity} />
-          ))
-        ) : (
+  // Render the appropriate list based on environment
+  const renderActivitiesList = () => {
+    if (dayActivities.length === 0) {
+      return (
+        <ScrollView className="flex-1 p-4">
           <View className="items-center py-12">
             <Text
               className={`text-lg font-semibold ${
@@ -522,8 +631,197 @@ export default function DayScreen({ navigation, route }: any) {
               button below to add your first activity.
             </Text>
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      );
+    }
+
+    // Use arrows in Expo Go or if DraggableFlatList isn't available
+    if (isExpoGo || !DraggableFlatList) {
+      return (
+        <ScrollView className="flex-1 p-4">
+          {dayActivities.map((activity, index) => (
+            <ActivityItemWithArrows
+              key={activity.id}
+              activity={activity}
+              index={index}
+            />
+          ))}
+        </ScrollView>
+      );
+    }
+
+    // Production build: Use DraggableFlatList
+    return (
+      <DraggableFlatList
+        data={dayActivities}
+        keyExtractor={(item: Activity) => item.id}
+        renderItem={renderDraggableItem}
+        onDragEnd={handleDragEnd}
+        contentContainerStyle={{ padding: 16 }}
+        activationDistance={isBulkMode ? 0 : 10000}
+      />
+    );
+  };
+
+  return (
+    <View
+      className="flex-1"
+      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
+    >
+      {/* Header */}
+      <View
+        style={{
+          position: 'relative',
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingTop: 120,
+          paddingBottom: 0,
+          paddingHorizontal: 16,
+          backgroundColor: isDark ? '#111' : '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+        }}
+      >
+        {/* Left: Back button */}
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            marginRight: 8,
+            position: 'absolute',
+            left: 16,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+        >
+          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
+            Back
+          </Text>
+        </TouchableOpacity>
+        {/* Center: Title */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 44,
+            height: 88,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              color: isDark ? '#fff' : '#111',
+              textAlign: 'center',
+            }}
+          >
+            {formattedDate}
+          </Text>
+        </View>
+        {/* Right: Bulk button */}
+        <TouchableOpacity
+          onPress={toggleBulkMode}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{
+            position: 'absolute',
+            right: 20,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+            padding: 8,
+          }}
+        >
+          <Ionicons
+            name={isBulkMode ? 'close' : 'pencil'}
+            size={20}
+            color={isDark ? '#fff' : '#111'}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Bulk Actions */}
+      {isBulkMode && (
+        <View
+          className={`p-4 border-b ${
+            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}
+        >
+          {/* Selected count and reorder hint */}
+          <Text
+            className={`font-semibold mb-2 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            {selectedActivities.size} selected
+            {isExpoGo || !DraggableFlatList
+              ? ' (use arrows to reorder)'
+              : ' (hold ≡ to drag)'}
+          </Text>
+
+          {/* Select/Deselect buttons */}
+          <View className="flex-row space-x-2 mb-3">
+            <TouchableOpacity
+              onPress={selectAll}
+              className="px-3 py-1 rounded bg-blue-500"
+            >
+              <Text className="text-white text-sm">Select All</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={deselectAll}
+              className="px-3 py-1 rounded bg-gray-500"
+            >
+              <Text className="text-white text-sm">Deselect All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Action buttons */}
+          <View className="flex-row space-x-2 mb-2">
+            <TouchableOpacity
+              onPress={handleBulkDelete}
+              className="flex-1 bg-red-500 py-2 rounded-lg"
+              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+              disabled={selectedActivities.size === 0}
+            >
+              <Text className="text-white text-center font-semibold">
+                Delete
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBulkMove}
+              className="flex-1 bg-blue-500 py-2 rounded-lg"
+              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+              disabled={selectedActivities.size === 0}
+            >
+              <Text className="text-white text-center font-semibold">
+                Change Date
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Save button - only shows when there are unsaved changes */}
+          {hasUnsavedChanges && (
+            <TouchableOpacity
+              onPress={saveChanges}
+              className="bg-green-500 py-3 rounded-lg"
+            >
+              <Text className="text-white text-center font-semibold text-base">
+                Save Order
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Activities List */}
+      {renderActivitiesList()}
 
       {/* Floating Add Button */}
       <TouchableOpacity

@@ -89,7 +89,15 @@ export default function ActivityScreen({ navigation, route }: any) {
     navigation.goBack();
   };
 
+  // Pass the date from route params so the activity defaults to that day
+  const initialActivity = date ? ({ date } as any) : undefined;
+
   return (
-    <ActivityForm mode="create" onSave={handleSave} onCancel={handleCancel} />
+    <ActivityForm
+      mode="create"
+      initialActivity={initialActivity}
+      onSave={handleSave}
+      onCancel={handleCancel}
+    />
   );
 }

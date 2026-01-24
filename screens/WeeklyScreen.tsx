@@ -187,7 +187,22 @@ export default function WeeklyScreen({ navigation }: any) {
   };
 
   const getActivitiesForDate = (date: string) => {
-    return activities.filter(activity => activity.date === date);
+    return activities
+      .filter(activity => activity.date === date)
+      .sort((a, b) => {
+        // Primary: Use custom order if available
+        const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        // Secondary: Incomplete first
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        // Tertiary: By ID (timestamp-based, older first)
+        return a.id.localeCompare(b.id);
+      });
   };
 
   const getWeekDates = (offset: number = 0) => {

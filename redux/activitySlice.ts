@@ -147,6 +147,35 @@ const activitySlice = createSlice({
           console.error('Error saving activities to storage:', error);
         });
     },
+    reorderActivities(
+      state,
+      action: PayloadAction<{ date: string; orderedIds: string[] }>
+    ) {
+      const { date, orderedIds } = action.payload;
+      const now = new Date().toISOString();
+
+      // Update order for each activity based on position in orderedIds array
+      orderedIds.forEach((id, index) => {
+        const activityIndex = state.data.findIndex(a => a.id === id);
+        if (activityIndex !== -1) {
+          state.data[activityIndex] = {
+            ...state.data[activityIndex],
+            order: index,
+            updated_at: now,
+          };
+        }
+      });
+
+      console.log('Reordering activities for date:', date);
+      // Auto-save to storage
+      saveActivities(state.data)
+        .then(() => {
+          console.log('Activities saved to storage successfully');
+        })
+        .catch(error => {
+          console.error('Error saving activities to storage:', error);
+        });
+    },
   },
   extraReducers: builder => {
     builder
@@ -174,5 +203,6 @@ export const {
   markAllActivitiesCompleteForWeek,
   markAllActivitiesIncompleteForWeek,
   clearAllActivities,
+  reorderActivities,
 } = activitySlice.actions;
 export default activitySlice.reducer;
