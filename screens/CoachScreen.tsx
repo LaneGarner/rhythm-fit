@@ -120,14 +120,24 @@ export default function CoachScreen({ navigation }: any) {
     }
   }, [isProcessing]);
 
-  // Load chat history on mount
+  // Get user-specific storage key
+  const chatHistoryKey = `chat_history_${user?.id || 'anonymous'}`;
+
+  // Load chat history on mount and when user changes
   useEffect(() => {
+    // Reset to initial state when user changes
+    setMessages([
+      {
+        id: '1',
+        type: 'bot',
+        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+        timestamp: new Date(),
+      },
+    ]);
+    setChatHistory([]);
+    setCurrentSessionId(Date.now().toString());
     loadChatHistory();
-    // Create a new session ID for current chat only if no current session exists
-    if (!currentSessionId) {
-      setCurrentSessionId(Date.now().toString());
-    }
-  }, []);
+  }, [user?.id]);
 
   // Auto-scroll when messages change or processing state changes
   useEffect(() => {
@@ -216,8 +226,8 @@ export default function CoachScreen({ navigation }: any) {
           }
         }
       }
-      // Fall back to local storage
-      const history = await AsyncStorage.getItem('chat_history');
+      // Fall back to local storage (user-specific key)
+      const history = await AsyncStorage.getItem(chatHistoryKey);
       if (history) {
         setChatHistory(JSON.parse(history));
       }
@@ -228,7 +238,7 @@ export default function CoachScreen({ navigation }: any) {
 
   const saveChatHistory = async (newHistory: ChatSession[]) => {
     try {
-      await AsyncStorage.setItem('chat_history', JSON.stringify(newHistory));
+      await AsyncStorage.setItem(chatHistoryKey, JSON.stringify(newHistory));
     } catch (error) {
       console.error('Error saving chat history:', error);
     }
@@ -2376,7 +2386,7 @@ Keep responses conversational and helpful. If creating activities, be specific a
     );
   };
 
-  // Show sign-in prompt if not authenticated
+  // Show login wall for unauthenticated users
   if (!isAuthenticated) {
     return (
       <View
@@ -2386,37 +2396,45 @@ Keep responses conversational and helpful. If creating activities, be specific a
         <AppHeader>
           <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
         </AppHeader>
-        <View className="flex-1 justify-center items-center px-8">
-          <Text className="text-5xl mb-4">🤖</Text>
-          <Text
-            className="text-2xl font-bold text-center mb-3"
-            style={{ color: isDark ? '#fff' : '#111' }}
+        <View className="flex-1 items-center justify-center px-6">
+          <View
+            className="items-center p-8 rounded-2xl"
+            style={{
+              backgroundColor: isDark ? '#1a1a1a' : '#fff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
           >
-            AI Fitness Coach
-          </Text>
-          <Text
-            className="text-base text-center mb-8 leading-6"
-            style={{ color: isDark ? '#999' : '#666' }}
-          >
-            Get personalized workout plans, schedule activities, and receive
-            expert fitness advice from your AI coach.
-          </Text>
-          <TouchableOpacity
-            className="w-full py-4 rounded-xl mb-4"
-            style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
-            onPress={() => navigation.navigate('Auth')}
-          >
-            <Text className="text-white text-center font-semibold text-base">
+            <Ionicons
+              name="chatbubbles-outline"
+              size={64}
+              color={isDark ? '#60a5fa' : '#3b82f6'}
+            />
+            <Text
+              className="text-xl font-bold mt-4 text-center"
+              style={{ color: isDark ? '#fff' : '#111827' }}
+            >
               Sign In to Get Started
             </Text>
-          </TouchableOpacity>
-          <Text
-            className="text-sm text-center"
-            style={{ color: isDark ? '#666' : '#999' }}
-          >
-            Create a free account to use the AI Coach and sync your workouts
-            across devices.
-          </Text>
+            <Text
+              className="text-center mt-2 mb-6"
+              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+            >
+              Create an account or sign in to chat with your AI fitness coach
+            </Text>
+            <TouchableOpacity
+              className="px-8 py-3 rounded-full"
+              style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Text className="text-white font-semibold text-base">
+                Go to Settings
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );

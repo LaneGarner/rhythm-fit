@@ -96,7 +96,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           fontSize: 18,
         }}
       >
-        Your AI Workout Tracker & Coach
+        AI Workout Tracker & Coach
       </Text>
 
       {/* Animated loading dots */}

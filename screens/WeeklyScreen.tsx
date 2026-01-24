@@ -645,7 +645,7 @@ export default function WeeklyScreen({ navigation }: any) {
         }
         style={{
           position: 'absolute',
-          bottom: 102,
+          bottom: 35,
           right: 34,
           backgroundColor: '#2563eb',
           borderRadius: 32,

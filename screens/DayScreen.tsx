@@ -806,16 +806,26 @@ export default function DayScreen({ navigation, route }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* Save button - only shows when there are unsaved changes */}
+          {/* Save/Undo buttons - only show when there are unsaved changes */}
           {hasUnsavedChanges && (
-            <TouchableOpacity
-              onPress={saveChanges}
-              className="bg-green-500 py-3 rounded-lg"
-            >
-              <Text className="text-white text-center font-semibold text-base">
-                Save Order
-              </Text>
-            </TouchableOpacity>
+            <View className="flex-row space-x-2">
+              <TouchableOpacity
+                onPress={discardChanges}
+                className="flex-1 bg-gray-500 py-3 rounded-lg"
+              >
+                <Text className="text-white text-center font-semibold text-base">
+                  Undo
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={saveChanges}
+                className="flex-1 bg-green-500 py-3 rounded-lg"
+              >
+                <Text className="text-white text-center font-semibold text-base">
+                  Save Order
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
@@ -828,7 +838,7 @@ export default function DayScreen({ navigation, route }: any) {
         onPress={() => navigation.navigate('Activity', { date })}
         style={{
           position: 'absolute',
-          bottom: 102,
+          bottom: 50,
           right: 34,
           backgroundColor: '#2563eb',
           borderRadius: 32,
