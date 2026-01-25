@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
@@ -62,6 +63,7 @@ function AppContent() {
     isConfigured,
   } = useAuth();
   const [hasSynced, setHasSynced] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const activities = useSelector((state: RootState) => state.activities.data);
 
   const handleActivitiesUpdated = useCallback(
@@ -85,11 +87,14 @@ function AppContent() {
       if (user && isConfigured && isBackendConfigured() && !hasSynced) {
         const token = getAccessToken();
         if (token) {
+          setIsSyncing(true);
           try {
             await syncActivities(token, activities, handleActivitiesUpdated);
             setHasSynced(true);
           } catch (err) {
             console.error('Failed to sync activities:', err);
+          } finally {
+            setIsSyncing(false);
           }
         }
       }
@@ -124,6 +129,34 @@ function AppContent() {
   // Show loading while checking auth (only if backend is configured)
   if (authLoading && isConfigured) {
     return null;
+  }
+
+  // Show loading screen while syncing after login
+  if (isSyncing) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colorScheme === 'dark' ? '#000' : '#F9FAFB',
+        }}
+      >
+        <ActivityIndicator
+          size="large"
+          color={colorScheme === 'dark' ? '#60A5FA' : '#2563EB'}
+        />
+        <Text
+          style={{
+            marginTop: 16,
+            fontSize: 16,
+            color: colorScheme === 'dark' ? '#9CA3AF' : '#6B7280',
+          }}
+        >
+          Loading your data...
+        </Text>
+      </View>
+    );
   }
 
   return (

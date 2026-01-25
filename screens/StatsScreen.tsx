@@ -70,6 +70,23 @@ export default function StatsScreen({ navigation }: any) {
       </AppHeader>
 
       <ScrollView className="flex-1 px-4 pt-4">
+        {/* Development Notice */}
+        <View
+          style={{
+            backgroundColor: isDark ? '#1e3a5f' : '#dbeafe',
+            borderColor: isDark ? '#3b82f6' : '#93c5fd',
+            borderWidth: 1,
+          }}
+          className="p-3 rounded-lg mb-4"
+        >
+          <Text
+            style={{ color: isDark ? '#93c5fd' : '#1e40af' }}
+            className="text-sm text-center"
+          >
+            Stats page is still under development
+          </Text>
+        </View>
+
         {/* Summary Cards */}
         <View className="flex-row justify-between mb-6">
           <View
