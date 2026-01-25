@@ -145,6 +145,55 @@ export async function removeFromLibrary(
   return true;
 }
 
+// Update item in library
+export async function updateLibraryItem(
+  accessToken: string | null,
+  itemId: string,
+  updates: Partial<LibraryItem>
+): Promise<{ success: boolean; error?: string }> {
+  // Update in cache
+  const cached = await getCachedLibrary();
+  const itemIndex = cached.findIndex(i => i.id === itemId);
+
+  if (itemIndex === -1) {
+    return { success: false, error: 'Item not found in library' };
+  }
+
+  // Check for duplicate name if name is being changed
+  if (updates.name) {
+    const duplicate = cached.some(
+      i =>
+        i.id !== itemId &&
+        i.name.toLowerCase() === updates.name!.toLowerCase()
+    );
+    if (duplicate) {
+      return { success: false, error: 'An item with this name already exists' };
+    }
+  }
+
+  const updatedItem = { ...cached[itemIndex], ...updates };
+  cached[itemIndex] = updatedItem;
+  await cacheLibrary(cached);
+
+  // Sync to server if possible
+  if (accessToken && API_URL && !itemId.startsWith('temp_')) {
+    try {
+      await fetch(`${API_URL}/api/library?id=${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(updates),
+      });
+    } catch (err) {
+      console.error('Failed to update library item:', err);
+    }
+  }
+
+  return { success: true };
+}
+
 // Clear local library cache
 export async function clearLibraryCache(): Promise<void> {
   try {

@@ -25,6 +25,7 @@ import { Activity } from './types/activity';
 
 // Import screens
 import ActivityExecutionScreen from './screens/ActivityExecutionScreen';
+import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
 import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
 import DayScreen from './screens/DayScreen';
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   ActivityExecution: { activityId: string };
   EditActivity: { activityId: string };
   Settings: undefined;
+  ActivityLibrary: undefined;
 };
 
 function AppContent() {
@@ -140,6 +142,10 @@ function AppContent() {
           />
           <Stack.Screen name="EditActivity" component={EditActivityScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen
+            name="ActivityLibrary"
+            component={ActivityLibraryScreen}
+          />
         </Stack.Navigator>
       </NavigationContainer>
 

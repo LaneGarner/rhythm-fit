@@ -135,6 +135,38 @@ export default function SettingsScreen({ navigation }: any) {
           </>
         )}
 
+        {/* Activity Library Section */}
+        <Text
+          className="text-lg font-semibold mb-4"
+          style={{ color: isDark ? '#e5e5e5' : '#222' }}
+        >
+          Activity Library
+        </Text>
+        <TouchableOpacity
+          hitSlop={14}
+          className="p-4 rounded-lg mb-8 flex-row items-center justify-between"
+          style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
+          onPress={() => navigation.navigate('ActivityLibrary')}
+        >
+          <View>
+            <Text
+              className="text-base font-medium"
+              style={{ color: isDark ? '#fff' : '#111' }}
+            >
+              Manage Custom Activities
+            </Text>
+            <Text
+              className="text-sm mt-1"
+              style={{ color: isDark ? '#999' : '#666' }}
+            >
+              Edit or delete activities you've added
+            </Text>
+          </View>
+          <Text style={{ color: isDark ? '#666' : '#999', fontSize: 18 }}>
+            {'>'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Appearance Section */}
         <Text
           className="text-lg font-semibold mb-4"
