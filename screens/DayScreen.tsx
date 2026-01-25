@@ -5,6 +5,7 @@ import React, { useContext, useState, useCallback, useEffect } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Keyboard,
   Modal,
   Platform,
   ScrollView,
@@ -635,6 +636,8 @@ export default function DayScreen({ navigation, route }: any) {
                 ? 'bg-gray-700 border-gray-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
             }`}
+            returnKeyType="done"
+            onSubmitEditing={() => Keyboard.dismiss()}
           />
           <View className="flex-row justify-end space-x-3">
             <TouchableOpacity

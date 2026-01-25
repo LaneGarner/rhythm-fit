@@ -527,6 +527,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       style={{ textAlign: 'center' }}
                       placeholder="0"
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
                     />
                     <Text
                       className={`mx-2 text-base ${
@@ -556,6 +558,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       style={{ textAlign: 'center' }}
                       placeholder="0"
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
                     />
                     <Text
                       className={`ml-2 text-base ${
@@ -743,7 +747,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                       returnKeyType="done"
-                      blurOnSubmit={false}
+                      onSubmitEditing={() => Keyboard.dismiss()}
                       onFocus={() => {
                         setTimeout(() => {
                           scrollToSetInput(set.id);
@@ -775,7 +779,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                       returnKeyType="done"
-                      blurOnSubmit={true}
+                      onSubmitEditing={() => Keyboard.dismiss()}
                       onFocus={() => {
                         setTimeout(() => {
                           scrollToSetInput(set.id);

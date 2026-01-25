@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   Modal,
   ScrollView,
   Text,
@@ -341,6 +342,8 @@ export default function RecurringActivityModal({
                 placeholder="4"
                 placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                 onFocus={scrollToOccurrencesInput}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
           )}

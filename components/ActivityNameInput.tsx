@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   ScrollView,
   Text,
   TextInput,
@@ -226,6 +227,8 @@ export default function ActivityNameInput({
         onBlur={handleBlur}
         autoCapitalize="words"
         autoCorrect={false}
+        returnKeyType="done"
+        onSubmitEditing={() => Keyboard.dismiss()}
       />
 
       {error && <Text className="text-red-500 text-sm mt-1">{error}</Text>}

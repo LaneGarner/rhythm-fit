@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
 } from 'react-native';
@@ -151,6 +152,8 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
 
@@ -173,6 +176,8 @@ export default function AuthScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
 
@@ -196,6 +201,8 @@ export default function AuthScreen() {
                   onChangeText={setConfirmPassword}
                   secureTextEntry
                   autoComplete="new-password"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
                 />
               </View>
             )}

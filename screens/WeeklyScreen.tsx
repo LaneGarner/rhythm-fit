@@ -101,7 +101,9 @@ export default function WeeklyScreen({ navigation }: any) {
         currentWeekOffsetRef.current = newOffset;
         setWeekOffset(newOffset);
         // Position for slide in from opposite side
-        slideAnim.setValue(direction === 'next' ? slideDistance : -slideDistance);
+        slideAnim.setValue(
+          direction === 'next' ? slideDistance : -slideDistance
+        );
         // Slide in
         Animated.timing(slideAnim, {
           toValue: 0,

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useContext, useEffect, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   Modal,
   Pressable,
   ScrollView,
@@ -443,6 +444,8 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                   paddingBottom: 0,
                 }}
                 autoCapitalize={isCreating ? 'words' : 'sentences'}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
 

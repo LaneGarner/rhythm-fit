@@ -369,7 +369,7 @@ export default function ActivityForm({
               }`}
               textAlignVertical="top"
               returnKeyType="done"
-              blurOnSubmit={true}
+              onSubmitEditing={() => Keyboard.dismiss()}
               onFocus={() => {
                 setTimeout(() => {
                   scrollToInput(notesInputRef);
@@ -580,6 +580,8 @@ export default function ActivityForm({
                       }`}
                       placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
                       onFocus={() => {
                         setTimeout(() => {
                           scrollToSetInput(`${set.id}-weight`);
@@ -613,6 +615,8 @@ export default function ActivityForm({
                       }`}
                       placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
                       onFocus={() => {
                         setTimeout(() => {
                           scrollToSetInput(`${set.id}-reps`);
