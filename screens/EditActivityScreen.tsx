@@ -139,7 +139,8 @@ export default function EditActivityScreen({ navigation, route }: any) {
       const baseId = getBaseId(activity.id);
       const relatedActivities = getRelatedActivities(baseId);
       const originalStartDate = activity.recurring?.startDate;
-      const targetDate = originalStartDate || recurringConfig.startDate || activity.date;
+      const targetDate =
+        originalStartDate || recurringConfig.startDate || activity.date;
 
       // Delete all related activities from the old recurring series
       relatedActivities.forEach(a => {

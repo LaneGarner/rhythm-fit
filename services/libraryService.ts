@@ -163,8 +163,7 @@ export async function updateLibraryItem(
   if (updates.name) {
     const duplicate = cached.some(
       i =>
-        i.id !== itemId &&
-        i.name.toLowerCase() === updates.name!.toLowerCase()
+        i.id !== itemId && i.name.toLowerCase() === updates.name!.toLowerCase()
     );
     if (duplicate) {
       return { success: false, error: 'An item with this name already exists' };

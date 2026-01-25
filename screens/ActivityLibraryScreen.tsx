@@ -203,154 +203,156 @@ export default function ActivityLibraryScreen({ navigation }: any) {
       >
         <ScrollView className="flex-1 p-4">
           {loading ? (
-          <Text
-            className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-          >
-            Loading...
-          </Text>
-        ) : libraryItems.length === 0 ? (
-          <View className="items-center py-12">
-            <Ionicons
-              name="library-outline"
-              size={48}
-              color={isDark ? '#6B7280' : '#9CA3AF'}
-            />
             <Text
-              className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+              className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
             >
-              No custom activities yet
+              Loading...
             </Text>
-            <Text
-              className={`text-center mt-2 px-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-            >
-              Tap the + button to create a custom activity, or add activities
-              from the activity form.
-            </Text>
-          </View>
-        ) : (
-          <>
-            <Text
-              className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-            >
-              {libraryItems.length} custom{' '}
-              {libraryItems.length === 1 ? 'activity' : 'activities'}
-            </Text>
-            {libraryItems.map(item => (
-              <View
-                key={item.id}
-                className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 2,
-                  elevation: 2,
-                }}
+          ) : libraryItems.length === 0 ? (
+            <View className="items-center py-12">
+              <Ionicons
+                name="library-outline"
+                size={48}
+                color={isDark ? '#6B7280' : '#9CA3AF'}
+              />
+              <Text
+                className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
               >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <Text className="text-2xl mr-3">
-                      {getTypeEmoji(item.type)}
-                    </Text>
-                    <View className="flex-1">
-                      <Text
-                        className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                      >
-                        {item.name}
+                No custom activities yet
+              </Text>
+              <Text
+                className={`text-center mt-2 px-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              >
+                Tap the + button to create a custom activity, or add activities
+                from the activity form.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text
+                className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              >
+                {libraryItems.length} custom{' '}
+                {libraryItems.length === 1 ? 'activity' : 'activities'}
+              </Text>
+              {libraryItems.map(item => (
+                <View
+                  key={item.id}
+                  className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
+                  }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <Text className="text-2xl mr-3">
+                        {getTypeEmoji(item.type)}
                       </Text>
-                      <Text
-                        className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {getTypeLabel(item.type)}
-                      </Text>
+                      <View className="flex-1">
+                        <Text
+                          className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                        >
+                          {item.name}
+                        </Text>
+                        <Text
+                          className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                        >
+                          {getTypeLabel(item.type)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={{ position: 'relative' }}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setOpenMenuId(openMenuId === item.id ? null : item.id!)
-                      }
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={{ padding: 4 }}
-                    >
-                      <Ionicons
-                        name="ellipsis-vertical"
-                        size={20}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
-                      />
-                    </TouchableOpacity>
-                    {openMenuId === item.id && (
-                      <View
-                        style={{
-                          position: 'absolute',
-                          top: 30,
-                          right: 0,
-                          backgroundColor: isDark ? '#374151' : '#fff',
-                          borderRadius: 8,
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 4,
-                          elevation: 5,
-                          zIndex: 1000,
-                          minWidth: 120,
-                          borderWidth: isDark ? 0 : 1,
-                          borderColor: '#e5e7eb',
-                        }}
+                    <View style={{ position: 'relative' }}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setOpenMenuId(
+                            openMenuId === item.id ? null : item.id!
+                          )
+                        }
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={{ padding: 4 }}
                       >
-                        <TouchableOpacity
-                          onPress={() => handleEdit(item)}
+                        <Ionicons
+                          name="ellipsis-vertical"
+                          size={20}
+                          color={isDark ? '#9CA3AF' : '#6B7280'}
+                        />
+                      </TouchableOpacity>
+                      {openMenuId === item.id && (
+                        <View
                           style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingVertical: 12,
-                            paddingHorizontal: 16,
-                            borderBottomWidth: 1,
-                            borderBottomColor: isDark ? '#4B5563' : '#e5e7eb',
+                            position: 'absolute',
+                            top: 30,
+                            right: 0,
+                            backgroundColor: isDark ? '#374151' : '#fff',
+                            borderRadius: 8,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 4,
+                            elevation: 5,
+                            zIndex: 1000,
+                            minWidth: 120,
+                            borderWidth: isDark ? 0 : 1,
+                            borderColor: '#e5e7eb',
                           }}
                         >
-                          <Ionicons
-                            name="pencil-outline"
-                            size={18}
-                            color={isDark ? '#fff' : '#374151'}
-                            style={{ marginRight: 10 }}
-                          />
-                          <Text
+                          <TouchableOpacity
+                            onPress={() => handleEdit(item)}
                             style={{
-                              color: isDark ? '#fff' : '#374151',
-                              fontSize: 16,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingVertical: 12,
+                              paddingHorizontal: 16,
+                              borderBottomWidth: 1,
+                              borderBottomColor: isDark ? '#4B5563' : '#e5e7eb',
                             }}
                           >
-                            Edit
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteWithMenu(item)}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingVertical: 12,
-                            paddingHorizontal: 16,
-                          }}
-                        >
-                          <Ionicons
-                            name="trash-outline"
-                            size={18}
-                            color="#EF4444"
-                            style={{ marginRight: 10 }}
-                          />
-                          <Text style={{ color: '#EF4444', fontSize: 16 }}>
-                            Delete
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                            <Ionicons
+                              name="pencil-outline"
+                              size={18}
+                              color={isDark ? '#fff' : '#374151'}
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text
+                              style={{
+                                color: isDark ? '#fff' : '#374151',
+                                fontSize: 16,
+                              }}
+                            >
+                              Edit
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteWithMenu(item)}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingVertical: 12,
+                              paddingHorizontal: 16,
+                            }}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={18}
+                              color="#EF4444"
+                              style={{ marginRight: 10 }}
+                            />
+                            <Text style={{ color: '#EF4444', fontSize: 16 }}>
+                              Delete
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
-          </>
-        )}
+              ))}
+            </>
+          )}
         </ScrollView>
       </Pressable>
 

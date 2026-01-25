@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { getMondayOfWeekByOffset } from '../utils/dateUtils';
 import {
   ActionSheetIOS,
   Alert,
+  Animated,
+  Dimensions,
   Platform,
   ScrollView,
   Text,
@@ -38,6 +41,8 @@ export default function WeeklyScreen({ navigation }: any) {
   const currentWeekOffsetRef = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const currentDayRef = useRef<View>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const screenWidth = Dimensions.get('window').width;
 
   const getWeekDays = (offset: number = 0) => {
     const days = [];
@@ -77,13 +82,37 @@ export default function WeeklyScreen({ navigation }: any) {
     return `In ${offset} Week${offset > 1 ? 's' : ''}`;
   };
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigateWeek = (direction: 'prev' | 'next', animated = false) => {
     const newOffset =
       direction === 'prev'
         ? currentWeekOffsetRef.current - 1
         : currentWeekOffsetRef.current + 1;
-    currentWeekOffsetRef.current = newOffset;
-    setWeekOffset(newOffset);
+
+    if (animated) {
+      // Slide out in the direction of navigation (use full screen width to ensure content exits view)
+      const slideDistance = screenWidth * 1.2;
+      const slideOutTo = direction === 'next' ? -slideDistance : slideDistance;
+      Animated.timing(slideAnim, {
+        toValue: slideOutTo,
+        duration: 65,
+        useNativeDriver: true,
+      }).start(() => {
+        // Update the week
+        currentWeekOffsetRef.current = newOffset;
+        setWeekOffset(newOffset);
+        // Position for slide in from opposite side
+        slideAnim.setValue(direction === 'next' ? slideDistance : -slideDistance);
+        // Slide in
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 65,
+          useNativeDriver: true,
+        }).start();
+      });
+    } else {
+      currentWeekOffsetRef.current = newOffset;
+      setWeekOffset(newOffset);
+    }
   };
 
   const goToCurrentWeek = () => {
@@ -422,6 +451,38 @@ export default function WeeklyScreen({ navigation }: any) {
 
   const weekDays = getWeekDays(weekOffset);
 
+  // Swipe gesture for week navigation
+  const swipeGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-20, 20]) // Only activate for horizontal movement
+    .onUpdate(event => {
+      // Track finger movement for visual feedback (capped at 100px)
+      const clampedX = Math.max(-100, Math.min(100, event.translationX));
+      slideAnim.setValue(clampedX);
+    })
+    .onEnd(event => {
+      const threshold = 50;
+      if (
+        event.translationX < -threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        // Swipe left → next week
+        navigateWeek('next', true);
+      } else if (
+        event.translationX > threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        // Swipe right → previous week
+        navigateWeek('prev', true);
+      } else {
+        // Snap back if threshold not met
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+
   return (
     <View
       className="flex-1"
@@ -525,184 +586,193 @@ export default function WeeklyScreen({ navigation }: any) {
           </View>
         </View>
       </View>
-      <ScrollView
-        ref={scrollViewRef}
-        className="flex-1 px-4 pt-4"
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {weekDays.map(day => {
-          const dayActivities = getActivitiesForDate(day.date);
-          const allCompleted =
-            dayActivities.length > 0 && dayActivities.every(a => a.completed);
-          return (
-            <TouchableOpacity
-              key={day.date}
-              ref={day.isToday ? currentDayRef : undefined}
-              className={`mb-4 p-4 rounded-xl shadow-sm`}
-              style={{
-                backgroundColor: day.isToday
-                  ? isDark
-                    ? '#23263a'
-                    : '#e0e7ff'
-                  : isDark
-                    ? '#18181b'
-                    : '#f3f4f6',
-                borderColor: day.isToday
-                  ? isDark
-                    ? '#6366f1'
-                    : '#a5b4fc'
-                  : 'transparent',
-                borderWidth: day.isToday ? 2 : 0,
-              }}
-              onPress={() => navigation.navigate('Day', { date: day.date })}
-              onLongPress={() =>
-                handleDayLongPress(day.date, day.dayName, day.dayNumber)
-              }
-              delayLongPress={500}
-              activeOpacity={0.7}
-            >
-              <View className="flex-row justify-between items-center mb-2">
-                <View>
-                  <Text
-                    className="text-sm font-medium"
-                    style={{
-                      color: day.isToday
-                        ? isDark
-                          ? '#818cf8'
-                          : '#2563eb'
-                        : isDark
-                          ? '#a3a3a3'
-                          : '#6b7280',
-                    }}
-                  >
-                    {day.dayName}
-                  </Text>
-                  <Text
-                    className="text-xl font-bold"
-                    style={{
-                      color: day.isToday
-                        ? isDark
-                          ? '#fff'
-                          : '#1e3a8a'
-                        : isDark
-                          ? '#fff'
-                          : '#111',
-                    }}
-                  >
-                    {day.dayNumber}
-                  </Text>
-                </View>
-
-                <View className="flex-row flex-wrap justify-end">
-                  {dayActivities.slice(0, 10).map((activity, index) => (
-                    <Text key={activity.id} className="text-lg ml-1 mb-1">
-                      {activity.emoji || '💪'}
-                    </Text>
-                  ))}
-                  {dayActivities.length > 10 && (
-                    <Text
-                      style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-                      className="ml-1 text-sm"
-                    >
-                      +{dayActivities.length - 10}
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {dayActivities.length === 0 && (
-                <Text
-                  style={{ color: isDark ? '#a3a3a3' : '#9ca3af' }}
-                  className="text-sm"
+      <GestureDetector gesture={swipeGesture}>
+        <Animated.View
+          style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
+        >
+          <ScrollView
+            ref={scrollViewRef}
+            className="flex-1 px-4 pt-4"
+            contentContainerStyle={{ paddingBottom: 100 }}
+          >
+            {weekDays.map(day => {
+              const dayActivities = getActivitiesForDate(day.date);
+              const allCompleted =
+                dayActivities.length > 0 &&
+                dayActivities.every(a => a.completed);
+              return (
+                <TouchableOpacity
+                  key={day.date}
+                  ref={day.isToday ? currentDayRef : undefined}
+                  className={`mb-4 p-4 rounded-xl shadow-sm`}
+                  style={{
+                    backgroundColor: day.isToday
+                      ? isDark
+                        ? '#23263a'
+                        : '#e0e7ff'
+                      : isDark
+                        ? '#18181b'
+                        : '#f3f4f6',
+                    borderColor: day.isToday
+                      ? isDark
+                        ? '#6366f1'
+                        : '#a5b4fc'
+                      : 'transparent',
+                    borderWidth: day.isToday ? 2 : 0,
+                  }}
+                  onPress={() => navigation.navigate('Day', { date: day.date })}
+                  onLongPress={() =>
+                    handleDayLongPress(day.date, day.dayName, day.dayNumber)
+                  }
+                  delayLongPress={500}
+                  activeOpacity={0.7}
                 >
-                  No activities planned
-                </Text>
-              )}
-
-              {dayActivities.length > 0 && (
-                <View>
-                  {dayActivities.map(activity => (
-                    <View
-                      key={activity.id}
-                      className="flex-row items-center mt-1"
-                    >
-                      <Text className="text-lg mr-2">
-                        {activity.emoji || '💪'}
+                  <View className="flex-row justify-between items-center mb-2">
+                    <View>
+                      <Text
+                        className="text-sm font-medium"
+                        style={{
+                          color: day.isToday
+                            ? isDark
+                              ? '#818cf8'
+                              : '#2563eb'
+                            : isDark
+                              ? '#a3a3a3'
+                              : '#6b7280',
+                        }}
+                      >
+                        {day.dayName}
                       </Text>
                       <Text
-                        style={{ color: isDark ? '#e5e5e5' : '#374151' }}
-                        className="flex-1"
+                        className="text-xl font-bold"
+                        style={{
+                          color: day.isToday
+                            ? isDark
+                              ? '#fff'
+                              : '#1e3a8a'
+                            : isDark
+                              ? '#fff'
+                              : '#111',
+                        }}
                       >
-                        {activity.name || activity.type}
+                        {day.dayNumber}
                       </Text>
-                      {activity.completed ? (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={18}
-                          color="#22C55E"
-                        />
-                      ) : (
-                        <Ionicons
-                          name="ellipse-outline"
-                          size={18}
-                          color="#D1D5DB"
-                        />
+                    </View>
+
+                    <View className="flex-row flex-wrap justify-end">
+                      {dayActivities.slice(0, 10).map((activity, index) => (
+                        <Text key={activity.id} className="text-lg ml-1 mb-1">
+                          {activity.emoji || '💪'}
+                        </Text>
+                      ))}
+                      {dayActivities.length > 10 && (
+                        <Text
+                          style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                          className="ml-1 text-sm"
+                        >
+                          +{dayActivities.length - 10}
+                        </Text>
                       )}
                     </View>
-                  ))}
-                </View>
-              )}
+                  </View>
 
-              {dayActivities.length > 0 && (
-                <View style={{ marginTop: 14 }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom: 4,
-                    }}
-                  >
+                  {dayActivities.length === 0 && (
                     <Text
-                      style={{
-                        color: isDark ? '#a3a3a3' : '#6b7280',
-                        fontSize: 12,
-                      }}
+                      style={{ color: isDark ? '#a3a3a3' : '#9ca3af' }}
+                      className="text-sm"
                     >
-                      {dayActivities.filter(a => a.completed).length}/
-                      {dayActivities.length} complete
+                      No activities planned
                     </Text>
-                    {allCompleted && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={14}
-                        color="#22C55E"
-                        style={{ marginLeft: 4 }}
-                      />
-                    )}
-                  </View>
-                  <View
-                    style={{
-                      height: 4,
-                      backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <View
-                      style={{
-                        height: '100%',
-                        width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
-                        backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                        borderRadius: 2,
-                      }}
-                    />
-                  </View>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+                  )}
+
+                  {dayActivities.length > 0 && (
+                    <View>
+                      {dayActivities.map(activity => (
+                        <View
+                          key={activity.id}
+                          className="flex-row items-center mt-1"
+                        >
+                          <Text className="text-lg mr-2">
+                            {activity.emoji || '💪'}
+                          </Text>
+                          <Text
+                            style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+                            className="flex-1"
+                          >
+                            {activity.name || activity.type}
+                          </Text>
+                          {activity.completed ? (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={18}
+                              color="#22C55E"
+                            />
+                          ) : (
+                            <Ionicons
+                              name="ellipse-outline"
+                              size={18}
+                              color="#D1D5DB"
+                            />
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {dayActivities.length > 0 && (
+                    <View style={{ marginTop: 14 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: isDark ? '#a3a3a3' : '#6b7280',
+                            fontSize: 12,
+                          }}
+                        >
+                          {dayActivities.filter(a => a.completed).length}/
+                          {dayActivities.length} complete
+                        </Text>
+                        {allCompleted && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={14}
+                            color="#22C55E"
+                            style={{ marginLeft: 4 }}
+                          />
+                        )}
+                      </View>
+                      <View
+                        style={{
+                          height: 4,
+                          backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: '100%',
+                            width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
+                            backgroundColor: allCompleted
+                              ? '#22C55E'
+                              : '#3B82F6',
+                            borderRadius: 2,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
+      </GestureDetector>
 
       {/* Floating Add Button */}
       <TouchableOpacity
