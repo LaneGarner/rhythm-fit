@@ -3,50 +3,65 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
 interface PlateIconProps {
-  weight: number;
+  weight?: number;
   size?: number;
   count?: number;
+  variant?: 'default' | 'tooltip';
 }
 
 export default function PlateIcon({
-  weight,
-  size = 60,
+  weight = 45,
+  size,
   count,
+  variant = 'default',
 }: PlateIconProps) {
-  // Format weight for display (remove trailing zeros)
-  const weightLabel = weight % 1 === 0 ? weight.toString() : weight.toFixed(1);
+  const isTooltip = variant === 'tooltip';
+  const iconSize = size ?? (isTooltip ? 20 : 60);
+
+  // Tooltip variant: centered "?" with no center hole
+  // Default variant: weight label at bottom with center hole
+  const displayLabel = isTooltip
+    ? '?'
+    : weight % 1 === 0
+      ? weight.toString()
+      : weight.toFixed(1);
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <View style={[styles.container, { width: iconSize, height: iconSize }]}>
+      <Svg
+        width={iconSize}
+        height={iconSize}
+        viewBox={`0 0 ${iconSize} ${iconSize}`}
+      >
         {/* Outer circle (plate body) */}
         <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={size / 2 - 2}
+          cx={iconSize / 2}
+          cy={iconSize / 2}
+          r={iconSize / 2 - 2}
           fill="#1a1a1a"
           stroke="#333"
           strokeWidth={1}
         />
         {/* Inner circle (center hole) */}
         <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={size / 6}
+          cx={iconSize / 2}
+          cy={iconSize / 2}
+          r={iconSize / 6}
           fill="#333"
           stroke="#444"
           strokeWidth={1}
         />
-        {/* Weight text */}
+        {/* Label text */}
         <SvgText
-          x={size / 2}
-          y={size * 0.86}
+          x={iconSize / 2}
+          y={isTooltip ? iconSize / 2 : iconSize * 0.82}
           fill="white"
-          fontSize={size / 5}
+          fontSize={isTooltip ? iconSize * 0.55 : iconSize / 4}
           fontWeight="bold"
           textAnchor="middle"
+          alignmentBaseline="central"
         >
-          {weightLabel}
+          {displayLabel}
         </SvgText>
       </Svg>
       {count !== undefined && count > 0 && (

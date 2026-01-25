@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import PlateCalculatorModal from '../components/PlateCalculatorModal';
+import PlateIcon from '../components/PlateIcon';
 import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
@@ -52,6 +54,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [isCompleted, setIsCompleted] = useState(activity?.completed || false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [showPlateCalculator, setShowPlateCalculator] = useState(false);
+  const [activeSetId, setActiveSetId] = useState<string | null>(null);
 
   const scrollViewRef = useRef<ScrollView | null>(null);
   const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
@@ -216,6 +220,14 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       };
       dispatch(updateActivity(updatedActivity));
     }
+  };
+
+  const handlePlateWeightSelect = (weight: number) => {
+    if (activeSetId) {
+      handleUpdateSet(activeSetId, { weight });
+    }
+    setShowPlateCalculator(false);
+    setActiveSetId(null);
   };
 
   const showSetOptions = (set: SetData) => {
@@ -729,13 +741,27 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </View>
                 <View className="flex-row space-x-4">
                   <View className="flex-1">
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
-                    >
-                      Weight (lbs)
-                    </Text>
+                    <View className="flex-row items-center mb-1">
+                      <Text
+                        className={`text-sm ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}
+                      >
+                        Weight (lbs)
+                      </Text>
+                      {activity.type === 'weight-training' && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setActiveSetId(set.id);
+                            setShowPlateCalculator(true);
+                          }}
+                          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                          style={{ marginLeft: 8 }}
+                        >
+                          <PlateIcon variant="tooltip" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <TextInput
                       ref={ref => {
                         setInputRefs.current[set.id] = ref;
@@ -802,19 +828,23 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   }
                   className="mt-5 px-4 py-4 rounded-lg"
                   style={{
-                    backgroundColor: set.completed
-                      ? isDark
-                        ? '#1f2937'
-                        : '#fff'
-                      : '#D1D5DB',
+                    backgroundColor: isDark ? '#1f2937' : '#fff',
                     borderWidth: 2,
-                    borderColor: set.completed ? '#22C55E' : '#D1D5DB',
+                    borderColor: set.completed
+                      ? '#22C55E'
+                      : isDark
+                        ? '#4B5563'
+                        : '#D1D5DB',
                   }}
                 >
                   <Text
                     className={`text-center font-semibold text-lg`}
                     style={{
-                      color: set.completed ? '#22C55E' : '#374151',
+                      color: set.completed
+                        ? '#22C55E'
+                        : isDark
+                          ? '#9CA3AF'
+                          : '#6B7280',
                     }}
                   >
                     {set.completed ? 'Completed  ✅' : 'Mark Complete'}
@@ -856,6 +886,19 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Plate Calculator Modal */}
+      <PlateCalculatorModal
+        visible={showPlateCalculator}
+        onClose={() => {
+          setShowPlateCalculator(false);
+          setActiveSetId(null);
+        }}
+        onSelectWeight={handlePlateWeightSelect}
+        initialWeight={
+          activeSetId ? sets.find(s => s.id === activeSetId)?.weight : undefined
+        }
+      />
     </View>
   );
 }

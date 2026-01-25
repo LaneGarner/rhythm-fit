@@ -213,12 +213,14 @@ export default function CalculatorScreen({ navigation }: any) {
               const startWeight = Math.ceil(barbellWeight / 5) * 5;
 
               // Calculate max weight based on available equipment
-              const availablePlates = equipment?.plates.filter(p => p.count > 0) || [];
+              const availablePlates =
+                equipment?.plates.filter(p => p.count > 0) || [];
               const maxPlateWeight = availablePlates.reduce(
                 (sum, plate) => sum + plate.weight * plate.count,
                 0
               );
-              const maxWeight = Math.floor((barbellWeight + maxPlateWeight) / 5) * 5;
+              const maxWeight =
+                Math.floor((barbellWeight + maxPlateWeight) / 5) * 5;
 
               // Build rows dynamically based on max weight
               const allRows = [
@@ -238,7 +240,9 @@ export default function CalculatorScreen({ navigation }: any) {
                   end: Math.min(row.end, maxWeight),
                 }));
 
-              const rows = showAllWeights ? filteredRows : filteredRows.slice(0, 3);
+              const rows = showAllWeights
+                ? filteredRows
+                : filteredRows.slice(0, 3);
               const hasMoreRows = filteredRows.length > 3;
 
               return (
@@ -374,7 +378,6 @@ export default function CalculatorScreen({ navigation }: any) {
             )}
           </View>
         )}
-
       </ScrollView>
     </View>
   );
