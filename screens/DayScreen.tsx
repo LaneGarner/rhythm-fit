@@ -882,26 +882,28 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </View>
-        {/* Right: Bulk button */}
-        <TouchableOpacity
-          onPress={toggleBulkMode}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={{
-            position: 'absolute',
-            right: 20,
-            top: 44,
-            height: 88,
-            justifyContent: 'center',
-            zIndex: 2,
-            padding: 8,
-          }}
-        >
-          <Ionicons
-            name={isBulkMode ? 'close' : 'pencil'}
-            size={20}
-            color={isDark ? '#fff' : '#111'}
-          />
-        </TouchableOpacity>
+        {/* Right: Bulk button - only show if there are activities */}
+        {(dayActivities.length > 0 || isBulkMode) && (
+          <TouchableOpacity
+            onPress={toggleBulkMode}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{
+              position: 'absolute',
+              right: 20,
+              top: 44,
+              height: 88,
+              justifyContent: 'center',
+              zIndex: 2,
+              padding: 8,
+            }}
+          >
+            <Ionicons
+              name={isBulkMode ? 'close' : 'pencil'}
+              size={20}
+              color={isDark ? '#fff' : '#111'}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Bulk Actions */}
