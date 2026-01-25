@@ -16,6 +16,7 @@ import { AppDispatch, RootState, store } from './redux/store';
 import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TimerProvider } from './context/TimerContext';
 import { syncActivities } from './services/syncService';
 import { initializeExercises } from './services/exerciseService';
 import { initializeActivityTypes } from './services/activityTypeService';
@@ -165,9 +166,11 @@ export default function App() {
       <Provider store={store}>
         <ThemeProvider>
           <AuthProvider>
-            <WeekProvider>
-              <AppContent />
-            </WeekProvider>
+            <TimerProvider>
+              <WeekProvider>
+                <AppContent />
+              </WeekProvider>
+            </TimerProvider>
           </AuthProvider>
         </ThemeProvider>
       </Provider>
