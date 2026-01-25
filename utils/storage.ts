@@ -96,8 +96,13 @@ export const generateRandomWeekActivities = (
   const today = dayjs();
   const targetWeek = today.add(weekOffset, 'week');
 
-  // Get Monday of the target week
-  const startOfWeek = targetWeek.startOf('week').add(1, 'day'); // dayjs week starts on Sunday, so add 1 day for Monday
+  // Get Monday of the target week (Monday-Sunday week model)
+  // dayjs startOf('week') uses Sunday as start, so we need to calculate Monday properly
+  const dayOfWeek = targetWeek.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  // For Monday-Sunday week: go back to Monday
+  // Sunday (0) -> go back 6 days, Monday (1) -> go back 0 days, Tuesday (2) -> go back 1 day, etc.
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const startOfWeek = targetWeek.subtract(daysToSubtract, 'day').startOf('day');
 
   // Sample exercises by category
   const weightTrainingExercises = [

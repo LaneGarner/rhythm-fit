@@ -10,11 +10,29 @@ interface ChatMessage {
   content: string;
 }
 
-interface ChatResponse {
+export type ActivityType =
+  | 'weight-training'
+  | 'calisthenics'
+  | 'cardio'
+  | 'mobility'
+  | 'recovery'
+  | 'sports'
+  | 'other';
+
+export interface ParsedActivity {
+  date: string;
+  exercises: string[];
+  type: ActivityType;
+  isRecurring: boolean;
+  weeksToRepeat: number;
+}
+
+export interface ChatResponse {
   message: {
     role: 'assistant';
     content: string;
   };
+  activities?: ParsedActivity[];
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;
