@@ -8,6 +8,7 @@ import {
   getActivityTypes,
   clearActivityTypesCache,
 } from '../services/activityTypeService';
+import { clearEmojiLibraryCache } from '../services/emojiLibraryService';
 
 // Activity storage functions
 export const saveActivities = async (activities: Activity[]) => {
@@ -107,6 +108,7 @@ export const clearUserData = async (): Promise<void> => {
     await Promise.all([
       clearAllActivities(),
       clearLibraryCache(),
+      clearEmojiLibraryCache(),
       AsyncStorage.multiRemove(chatHistoryKeys),
     ]);
   } catch (error) {

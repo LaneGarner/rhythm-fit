@@ -30,6 +30,7 @@ import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
 import DayScreen from './screens/DayScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
+import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   EditActivity: { activityId: string };
   Settings: undefined;
   ActivityLibrary: undefined;
+  EmojiLibrary: undefined;
 };
 
 function AppContent() {
@@ -146,6 +148,7 @@ function AppContent() {
             name="ActivityLibrary"
             component={ActivityLibraryScreen}
           />
+          <Stack.Screen name="EmojiLibrary" component={EmojiLibraryScreen} />
         </Stack.Navigator>
       </NavigationContainer>
 

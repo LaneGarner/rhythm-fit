@@ -755,9 +755,11 @@ export default function WeeklyScreen({ navigation }: any) {
                       </View>
                       <View
                         style={{
-                          height: 4,
-                          backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                          borderRadius: 2,
+                          height: 6,
+                          backgroundColor: isDark ? '#1f2937' : '#fff',
+                          borderRadius: 3,
+                          borderWidth: 1,
+                          borderColor: isDark ? '#4B5563' : '#d1d5db',
                           overflow: 'hidden',
                         }}
                       >
