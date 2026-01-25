@@ -676,7 +676,7 @@ export default function ActivityForm({
                 }`}
               >
                 {recurringConfig
-                  ? `${recurringConfig.pattern === 'daily' ? 'Every day' : 'Weekly'} (${recurringConfig.occurrences} times)`
+                  ? `${recurringConfig.pattern === 'daily' ? 'Every day' : 'Weekly'} (${recurringConfig.occurrences} ${recurringConfig.pattern === 'daily' ? 'days' : 'weeks'})`
                   : 'Set up recurring schedule'}
               </Text>
               <Ionicons
@@ -819,6 +819,7 @@ export default function ActivityForm({
         onClose={() => setShowRecurringModal(false)}
         onSave={setRecurringConfig}
         startDate={dayjs(selectedDate).format('YYYY-MM-DD')}
+        initialConfig={recurringConfig}
       />
     </View>
   );

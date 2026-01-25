@@ -1,4 +1,5 @@
-import React, { useContext, useRef, useState } from 'react';
+import dayjs from 'dayjs';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -6,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  findNodeHandle,
 } from 'react-native';
 import { ThemeContext } from '../theme/ThemeContext';
 import {
@@ -20,6 +20,7 @@ interface RecurringActivityModalProps {
   onClose: () => void;
   onSave: (config: RecurringConfig) => void;
   startDate: string;
+  initialConfig?: RecurringConfig | null;
 }
 
 const DAYS_OF_WEEK = [
@@ -37,6 +38,7 @@ export default function RecurringActivityModal({
   onClose,
   onSave,
   startDate,
+  initialConfig,
 }: RecurringActivityModalProps) {
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
@@ -46,8 +48,26 @@ export default function RecurringActivityModal({
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [occurrences, setOccurrences] = useState<string>('4');
 
+  // Initialize state from initialConfig or auto-select current day
+  useEffect(() => {
+    if (visible) {
+      if (initialConfig) {
+        setPattern(initialConfig.pattern);
+        setFrequency(initialConfig.frequency);
+        setSelectedDays(initialConfig.daysOfWeek || []);
+        setOccurrences(String(initialConfig.occurrences || 4));
+      } else {
+        // Auto-select the day of week from startDate
+        const dayOfWeek = dayjs(startDate).day();
+        setSelectedDays([dayOfWeek]);
+        setPattern('weekly');
+        setFrequency('every');
+        setOccurrences('4');
+      }
+    }
+  }, [visible, initialConfig, startDate]);
+
   const scrollViewRef = useRef<ScrollView>(null);
-  const occurrencesInputRef = useRef<TextInput>(null);
 
   const toggleDay = (day: number) => {
     setSelectedDays(prev =>
@@ -60,7 +80,8 @@ export default function RecurringActivityModal({
       pattern,
       frequency,
       daysOfWeek: pattern === 'weekly' ? selectedDays : undefined,
-      startDate,
+      // Preserve original start date when editing, otherwise use the new start date
+      startDate: initialConfig?.startDate || startDate,
       occurrences: parseInt(occurrences) || 4,
     };
     onSave(config);
@@ -68,18 +89,8 @@ export default function RecurringActivityModal({
   };
 
   const scrollToOccurrencesInput = () => {
-    if (occurrencesInputRef.current && scrollViewRef.current) {
-      const scrollViewNode = findNodeHandle(scrollViewRef.current);
-      if (scrollViewNode) {
-        occurrencesInputRef.current.measureLayout(
-          scrollViewNode,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 100, animated: true });
-          },
-          () => {}
-        );
-      }
-    }
+    // Scroll to end to ensure the input is visible
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
   return (
@@ -310,16 +321,15 @@ export default function RecurringActivityModal({
             </View>
           )}
 
-          {/* Occurrences */}
+          {/* Duration */}
           {pattern === 'weekly' && frequency === 'this' ? null : (
             <View className="mb-6">
               <Text
                 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}
               >
-                Number of Occurrences
+                {pattern === 'daily' ? 'How many days?' : 'How many weeks?'}
               </Text>
               <TextInput
-                ref={occurrencesInputRef}
                 value={occurrences}
                 onChangeText={setOccurrences}
                 keyboardType="numeric"

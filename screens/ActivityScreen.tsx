@@ -1,5 +1,8 @@
 import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import React from 'react';
+
+dayjs.extend(isSameOrAfter);
 import { useDispatch } from 'react-redux';
 import ActivityForm from '../components/ActivityForm';
 import { addActivity } from '../redux/activitySlice';
@@ -40,24 +43,28 @@ export default function ActivityScreen({ navigation, route }: any) {
           });
         });
       } else {
-        // ... existing logic for 'every'
-        let occurrenceCount = 0;
-        let currentDate = dayjs(config.startDate);
-        while (occurrenceCount < config.occurrences!) {
-          const dayOfWeek = currentDate.day();
-          if (config.daysOfWeek?.includes(dayOfWeek)) {
-            activities.push({
-              ...baseActivity,
-              id: `${baseActivity.id}_${occurrenceCount}`,
-              date: currentDate.format('YYYY-MM-DD'),
-              recurring: config,
-            });
-            occurrenceCount++;
-          }
-          currentDate = currentDate.add(1, 'day');
-          // Safety check to prevent infinite loop
-          if (currentDate.diff(dayjs(config.startDate), 'day') > 365) {
-            break;
+        // "every" frequency - occurrences now means weeks
+        // For each week, create activities for ALL selectedDays
+        const weeks = config.occurrences || 1;
+        const startDateObj = dayjs(config.startDate);
+        let activityIndex = 0;
+
+        for (let week = 0; week < weeks; week++) {
+          for (const dayOfWeek of config.daysOfWeek || []) {
+            // Find the date for this dayOfWeek in this week
+            const weekStart = startDateObj.add(week, 'week').startOf('week');
+            const activityDate = weekStart.day(dayOfWeek);
+
+            // Only include if date is >= startDate
+            if (activityDate.isSameOrAfter(startDateObj, 'day')) {
+              activities.push({
+                ...baseActivity,
+                id: `${baseActivity.id}_${activityIndex}`,
+                date: activityDate.format('YYYY-MM-DD'),
+                recurring: config,
+              });
+              activityIndex++;
+            }
           }
         }
       }

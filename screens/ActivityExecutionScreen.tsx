@@ -53,6 +53,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
+
   // Auto-expand timer when running for this activity
   useEffect(() => {
     if (isTimerRunning) {
@@ -295,9 +298,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       </View>
     );
   }
-
-  const scrollViewRef = useRef<ScrollView | null>(null);
-  const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
   const scrollToSetInput = (setId: string) => {
     const inputRef = setInputRefs.current[setId];
