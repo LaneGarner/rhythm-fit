@@ -17,6 +17,7 @@ import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { syncActivities } from './services/syncService';
+import { initializeExercises } from './services/exerciseService';
 import { isBackendConfigured } from './config/api';
 import { Activity } from './types/activity';
 
@@ -65,6 +66,8 @@ function AppContent() {
   useEffect(() => {
     // Load activities from storage on app start
     dispatch(loadActivitiesFromStorage());
+    // Initialize exercise database from backend
+    initializeExercises();
   }, [dispatch]);
 
   // Sync activities when user is authenticated

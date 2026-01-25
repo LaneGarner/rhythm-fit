@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
 import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
+import { clearExerciseCache } from '../services/exerciseService';
 
 // Activity storage functions
 export const saveActivities = async (activities: Activity[]) => {
@@ -80,6 +81,7 @@ export const clearAllAppData = async (): Promise<void> => {
       clearAllActivities(),
       clearChatHistory(),
       clearLibraryCache(),
+      clearExerciseCache(),
       clearThemeMode(),
     ]);
   } catch (error) {

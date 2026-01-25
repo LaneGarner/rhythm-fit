@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import {
-  EXERCISE_DATABASE,
+  getExercises,
   findExerciseByName,
   searchExercises,
-} from '../constants/exercises';
+} from '../services/exerciseService';
 import { RootState } from '../redux/store';
 import { getCachedLibrary, LibraryItem } from '../services/libraryService';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -77,7 +77,7 @@ export default function ActivityNameInput({
   // Show suggestions immediately on focus
   useEffect(() => {
     if (isFocused) {
-      const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const allExercises = getExercises().map(ex => ex.name);
       const customExerciseNames = libraryItems.map(ex => ex.name);
       const recentActivities = activities
         .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
@@ -134,7 +134,7 @@ export default function ActivityNameInput({
         .filter(Boolean)
         .slice(0, 5);
 
-      const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const allExercises = getExercises().map(ex => ex.name);
       const customExerciseNames = libraryItems.map(ex => ex.name);
       const initialSuggestions = [
         ...new Set([

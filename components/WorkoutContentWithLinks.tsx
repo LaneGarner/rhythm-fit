@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { ACTIVITY_TYPES } from '../constants';
-import { EXERCISE_DATABASE } from '../constants/exercises';
+import { getExerciseNames } from '../services/exerciseService';
 import {
   generateYouTubeSearchQuery,
   openYouTubeSearch,
@@ -19,7 +19,7 @@ export const WorkoutContentWithLinks = (
   const { text, isDark } = props;
 
   // Extract exercise names for matching
-  const exerciseNames = EXERCISE_DATABASE.map(exercise => exercise.name);
+  const exerciseNames = getExerciseNames();
   const activityTypeLabels = ACTIVITY_TYPES.map(type => type.label);
 
   // Custom link handler for YouTube links

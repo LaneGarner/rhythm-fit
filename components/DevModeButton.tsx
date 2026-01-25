@@ -10,9 +10,9 @@ import {
   clearAllActivities,
   clearAllAppData,
   clearChatHistory,
-  clearCustomExercises,
   generateRandomWeekActivities,
 } from '../utils/storage';
+import { clearExerciseCache } from '../services/exerciseService';
 import { useWeekContext } from '../WeekContext';
 
 interface DevModeButtonProps {
@@ -147,7 +147,7 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await clearCustomExercises();
+              await clearExerciseCache();
               Alert.alert('✅ Success', 'Custom exercises have been cleared');
             } catch (error) {
               Alert.alert('❌ Error', 'Failed to clear custom exercises');
