@@ -97,6 +97,10 @@ export default function WeeklyScreen({ navigation }: any) {
         duration: 65,
         useNativeDriver: true,
       }).start(() => {
+        // Scroll to top while content is off-screen (unless going to current week)
+        if (newOffset !== 0 && scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ y: 0, animated: false });
+        }
         // Update the week
         currentWeekOffsetRef.current = newOffset;
         setWeekOffset(newOffset);
@@ -112,6 +116,10 @@ export default function WeeklyScreen({ navigation }: any) {
         }).start();
       });
     } else {
+      // Scroll to top for non-current weeks (arrow button navigation)
+      if (newOffset !== 0 && scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
       currentWeekOffsetRef.current = newOffset;
       setWeekOffset(newOffset);
     }
@@ -150,30 +158,27 @@ export default function WeeklyScreen({ navigation }: any) {
     setContextWeekOffset(weekOffset);
   }, [weekOffset, setContextWeekOffset]);
 
-  // Scroll to current day when component mounts or week changes
+  // Scroll behavior when week changes
   useEffect(() => {
-    const scrollToCurrentDay = () => {
-      if (scrollViewRef.current && currentDayRef.current) {
-        // Add a small delay to ensure the layout is complete
-        setTimeout(() => {
+    if (weekOffset === 0) {
+      // Current week: scroll to today (needs brief delay for measureLayout)
+      setTimeout(() => {
+        if (scrollViewRef.current && currentDayRef.current) {
           currentDayRef.current?.measureLayout(
             scrollViewRef.current as any,
             (x, y) => {
               scrollViewRef.current?.scrollTo({
-                y: Math.max(0, y - 20), // Scroll to current day with some padding
+                y: Math.max(0, y - 20),
                 animated: true,
               });
             },
             () => {
               // Fallback if measureLayout fails
-              // Failed to measure current day position
             }
           );
-        }, 100);
-      }
-    };
-
-    scrollToCurrentDay();
+        }
+      }, 50);
+    }
   }, [weekOffset]);
 
   const handleSinglePress = (direction: 'prev' | 'next') => {
