@@ -494,8 +494,7 @@ export default function CoachScreen({ navigation }: any) {
                   date: activityDate.format('YYYY-MM-DD'),
                   type: request.type,
                   name: toTitleCase(exercise),
-                  emoji:
-                    getEmojiForType(request.type),
+                  emoji: getEmojiForType(request.type),
                   completed: false,
                   notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
                 };
@@ -510,8 +509,7 @@ export default function CoachScreen({ navigation }: any) {
                 date: request.date,
                 type: request.type,
                 name: toTitleCase(exercise),
-                emoji:
-                  getEmojiForType(request.type),
+                emoji: getEmojiForType(request.type),
                 completed: false,
                 notes: `Created by AI coach based on your request`,
               };
@@ -532,8 +530,7 @@ export default function CoachScreen({ navigation }: any) {
                 date: activityDate.format('YYYY-MM-DD'),
                 type: request.type, // keep as enum value
                 name: request.exercises.map(toTitleCase).join(', '),
-                emoji:
-                  getEmojiForType(request.type),
+                emoji: getEmojiForType(request.type),
                 completed: false,
                 notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
               };

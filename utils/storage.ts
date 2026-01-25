@@ -4,7 +4,10 @@ import { Activity } from '../types/activity';
 import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
 import { clearExerciseCache, getExercises } from '../services/exerciseService';
-import { getActivityTypes, clearActivityTypesCache } from '../services/activityTypeService';
+import {
+  getActivityTypes,
+  clearActivityTypesCache,
+} from '../services/activityTypeService';
 
 // Activity storage functions
 export const saveActivities = async (activities: Activity[]) => {
@@ -91,6 +94,26 @@ export const clearAllAppData = async (): Promise<void> => {
   }
 };
 
+// Clear user-specific data on sign out
+// Preserves: exercises cache, activity types cache, theme (not user-specific)
+export const clearUserData = async (): Promise<void> => {
+  try {
+    // Get all keys to find chat_history_* keys (user-specific chat histories)
+    const allKeys = await AsyncStorage.getAllKeys();
+    const chatHistoryKeys = allKeys.filter(key =>
+      key.startsWith('chat_history')
+    );
+
+    await Promise.all([
+      clearAllActivities(),
+      clearLibraryCache(),
+      AsyncStorage.multiRemove(chatHistoryKeys),
+    ]);
+  } catch (error) {
+    console.error('Error clearing user data:', error);
+  }
+};
+
 // Generate random activities for a specific week (dev mode)
 // Uses cached exercises and activity types from backend
 export const generateRandomWeekActivities = (
@@ -124,7 +147,9 @@ export const generateRandomWeekActivities = (
 
   // Fallback if no cached data available
   if (exerciseCategories.length === 0) {
-    console.warn('No cached exercises/types available for test data generation');
+    console.warn(
+      'No cached exercises/types available for test data generation'
+    );
     return [];
   }
 

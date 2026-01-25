@@ -43,12 +43,15 @@ async function fetchActivityTypesFromApi(): Promise<ActivityTypeDefinition[]> {
 /**
  * Load activity types from AsyncStorage cache
  */
-async function loadCachedActivityTypes(): Promise<ActivityTypeDefinition[] | null> {
+async function loadCachedActivityTypes(): Promise<
+  ActivityTypeDefinition[] | null
+> {
   try {
     const cached = await AsyncStorage.getItem(ACTIVITY_TYPES_CACHE_KEY);
     if (!cached) return null;
 
-    const { activityTypes, timestamp }: CachedActivityTypes = JSON.parse(cached);
+    const { activityTypes, timestamp }: CachedActivityTypes =
+      JSON.parse(cached);
 
     // Check if cache is still valid
     if (Date.now() - timestamp > CACHE_DURATION_MS) {
@@ -64,13 +67,18 @@ async function loadCachedActivityTypes(): Promise<ActivityTypeDefinition[] | nul
 /**
  * Save activity types to AsyncStorage cache
  */
-async function saveActivityTypesToCache(activityTypes: ActivityTypeDefinition[]): Promise<void> {
+async function saveActivityTypesToCache(
+  activityTypes: ActivityTypeDefinition[]
+): Promise<void> {
   try {
     const cached: CachedActivityTypes = {
       activityTypes,
       timestamp: Date.now(),
     };
-    await AsyncStorage.setItem(ACTIVITY_TYPES_CACHE_KEY, JSON.stringify(cached));
+    await AsyncStorage.setItem(
+      ACTIVITY_TYPES_CACHE_KEY,
+      JSON.stringify(cached)
+    );
   } catch (error) {
     console.error('Failed to cache activity types:', error);
   }
@@ -80,7 +88,9 @@ async function saveActivityTypesToCache(activityTypes: ActivityTypeDefinition[])
  * Initialize activity types - call this on app startup
  * Fetches from API and caches, or uses cached/default version if available
  */
-export async function initializeActivityTypes(): Promise<ActivityTypeDefinition[]> {
+export async function initializeActivityTypes(): Promise<
+  ActivityTypeDefinition[]
+> {
   // Return memory cache if available
   if (memoryCache) {
     return memoryCache;

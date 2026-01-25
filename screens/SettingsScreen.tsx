@@ -1,9 +1,12 @@
 import React, { useContext } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 import { HEADER_STYLES } from '../constants';
 import { ThemeContext } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clearSyncData } from '../services/syncService';
+import { clearUserData } from '../utils/storage';
+import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
 
 const modes = [
@@ -14,6 +17,7 @@ const modes = [
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme } = useContext(ThemeContext);
   const { user, signOut, isConfigured } = useAuth();
+  const dispatch = useDispatch();
   const isDark = colorScheme === 'dark';
   const showAccountSection = isConfigured && isBackendConfigured();
 
@@ -24,7 +28,9 @@ export default function SettingsScreen({ navigation }: any) {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
+          await clearUserData();
           await clearSyncData();
+          dispatch(clearAllActivities());
           await signOut();
           navigation.reset({
             index: 0,

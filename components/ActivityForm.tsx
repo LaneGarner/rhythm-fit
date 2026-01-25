@@ -12,7 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { getActivityTypes, getActivityEmojis } from '../services/activityTypeService';
+import {
+  getActivityTypes,
+  getActivityEmojis,
+} from '../services/activityTypeService';
 import { useAuth } from '../context/AuthContext';
 import { addToLibrary } from '../services/libraryService';
 import { ThemeContext } from '../theme/ThemeContext';
