@@ -28,6 +28,8 @@ export default function EditActivityScreen({ navigation, route }: any) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            // Navigate to Day view first to avoid crash from rendering deleted activity
+            navigation.navigate('Day', { date: activity.date });
             dispatch(deleteActivity(activityId));
             // Sync deletion to backend
             try {
@@ -38,7 +40,6 @@ export default function EditActivityScreen({ navigation, route }: any) {
             } catch (err) {
               console.error('Failed to sync deletion:', err);
             }
-            navigation.goBack();
           },
         },
       ]
