@@ -168,7 +168,7 @@ export default function SettingsScreen({ navigation }: any) {
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={14}
-          className="p-4 rounded-lg mb-8 flex-row items-center justify-between"
+          className="p-4 rounded-lg mb-3 flex-row items-center justify-between"
           style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
           onPress={() => navigation.navigate('EmojiLibrary')}
         >
@@ -190,14 +190,6 @@ export default function SettingsScreen({ navigation }: any) {
             {'>'}
           </Text>
         </TouchableOpacity>
-
-        {/* Equipment Section */}
-        <Text
-          className="text-lg font-semibold mb-4"
-          style={{ color: isDark ? '#e5e5e5' : '#222' }}
-        >
-          Equipment
-        </Text>
         <TouchableOpacity
           hitSlop={14}
           className="p-4 rounded-lg mb-8 flex-row items-center justify-between"

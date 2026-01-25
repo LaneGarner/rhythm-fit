@@ -66,7 +66,7 @@ export default function EquipmentScreen({ navigation }: any) {
 
     Alert.alert(
       'Delete Barbell',
-      `Are you sure you want to delete "${barbell.name}"?`,
+      `Are you sure you want to delete "${barbell.name}"? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -85,7 +85,7 @@ export default function EquipmentScreen({ navigation }: any) {
   const handleDeletePlate = async (plate: Plate) => {
     Alert.alert(
       'Delete Plate',
-      `Are you sure you want to remove all ${plate.weight} lb plates?`,
+      `Are you sure you want to remove all ${plate.weight} lb plates? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -255,7 +255,6 @@ export default function EquipmentScreen({ navigation }: any) {
                 <TouchableOpacity
                   key={barbell.id}
                   onPress={() => handleSelectBarbell(barbell)}
-                  onLongPress={() => handleDeleteBarbell(barbell)}
                   style={{
                     backgroundColor: isDark ? '#18181b' : '#fff',
                     borderColor:
@@ -338,8 +337,8 @@ export default function EquipmentScreen({ navigation }: any) {
                   {equipment?.plates.map(plate => (
                     <TouchableOpacity
                       key={plate.id}
-                      onPress={() => openEditPlate(plate)}
-                      onLongPress={() => handleDeletePlate(plate)}
+                      onLongPress={() => openEditPlate(plate)}
+                      delayLongPress={300}
                       style={{
                         backgroundColor: isDark ? '#18181b' : '#fff',
                         shadowColor: '#000',
@@ -406,7 +405,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 className="text-sm mt-2"
                 style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
               >
-                Tap to edit count, hold to delete
+                Hold to edit count
               </Text>
             </View>
           </>

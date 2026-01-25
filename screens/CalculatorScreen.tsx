@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ScrollView,
   Text,
@@ -27,10 +28,13 @@ export default function CalculatorScreen({ navigation }: any) {
   const [targetWeight, setTargetWeight] = useState('');
   const [result, setResult] = useState<PlateResult | null>(null);
   const [showBarbellPicker, setShowBarbellPicker] = useState(false);
+  const [showAllWeights, setShowAllWeights] = useState(false);
 
-  useEffect(() => {
-    loadEquipment();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadEquipment();
+    }, [])
+  );
 
   const loadEquipment = async () => {
     const config = await getCachedEquipment();
@@ -52,7 +56,7 @@ export default function CalculatorScreen({ navigation }: any) {
     const plateResult = calculatePlates(
       target,
       selectedBarbell.weight,
-      equipment.plates
+      equipment.plates.filter(p => p.count > 0)
     );
     setResult(plateResult);
   };
@@ -67,7 +71,7 @@ export default function CalculatorScreen({ navigation }: any) {
         const plateResult = calculatePlates(
           target,
           barbell.weight,
-          equipment.plates
+          equipment.plates.filter(p => p.count > 0)
         );
         setResult(plateResult);
       }
@@ -84,6 +88,14 @@ export default function CalculatorScreen({ navigation }: any) {
       </AppHeader>
 
       <ScrollView className="flex-1 px-4 pt-4">
+        {/* Equipment link */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Equipment')}
+          className="mb-4"
+        >
+          <Text style={{ color: '#3b82f6' }}>Configure Equipment</Text>
+        </TouchableOpacity>
+
         {/* Barbell Selector */}
         <View
           style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
@@ -173,13 +185,16 @@ export default function CalculatorScreen({ navigation }: any) {
                 backgroundColor: isDark ? '#27272a' : '#f3f4f6',
                 borderColor: isDark ? '#3f3f46' : '#d1d5db',
                 color: isDark ? '#fff' : '#111',
+                height: 44,
+                fontSize: 16,
+                width: 120,
               }}
-              className="flex-1 p-3 rounded-lg border text-lg"
+              className="px-3 rounded-lg border"
             />
             <TouchableOpacity
               onPress={handleCalculate}
-              style={{ backgroundColor: '#3b82f6' }}
-              className="ml-3 px-6 py-3 rounded-lg"
+              style={{ backgroundColor: '#3b82f6', height: 44 }}
+              className="ml-3 px-6 rounded-lg justify-center"
             >
               <Text className="text-white font-semibold">Calculate</Text>
             </TouchableOpacity>
@@ -187,32 +202,108 @@ export default function CalculatorScreen({ navigation }: any) {
         </View>
 
         {/* Quick Weight Buttons */}
-        <View className="flex-row flex-wrap mb-4">
-          {[135, 185, 225, 275, 315, 405].map(weight => (
-            <TouchableOpacity
-              key={weight}
-              onPress={() => {
-                setTargetWeight(weight.toString());
-                if (selectedBarbell && equipment) {
-                  const plateResult = calculatePlates(
-                    weight,
-                    selectedBarbell.weight,
-                    equipment.plates
-                  );
-                  setResult(plateResult);
-                }
-              }}
-              style={{
-                backgroundColor: isDark ? '#27272a' : '#e5e7eb',
-              }}
-              className="px-4 py-2 rounded-full mr-2 mb-2"
-            >
-              <Text style={{ color: isDark ? '#e5e5e5' : '#374151' }}>
-                {weight}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4"
+        >
+          <View>
+            {(() => {
+              const barbellWeight = selectedBarbell?.weight || 45;
+              const startWeight = Math.ceil(barbellWeight / 5) * 5;
+
+              // Calculate max weight based on available equipment
+              const availablePlates = equipment?.plates.filter(p => p.count > 0) || [];
+              const maxPlateWeight = availablePlates.reduce(
+                (sum, plate) => sum + plate.weight * plate.count,
+                0
+              );
+              const maxWeight = Math.floor((barbellWeight + maxPlateWeight) / 5) * 5;
+
+              // Build rows dynamically based on max weight
+              const allRows = [
+                { start: startWeight, end: 95 },
+                { start: 100, end: 195 },
+                { start: 200, end: 295 },
+                { start: 300, end: 395 },
+                { start: 400, end: 495 },
+                { start: 500, end: 595 },
+                { start: 600, end: 695 },
+              ];
+
+              const filteredRows = allRows
+                .filter(row => row.start <= maxWeight)
+                .map(row => ({
+                  start: row.start,
+                  end: Math.min(row.end, maxWeight),
+                }));
+
+              const rows = showAllWeights ? filteredRows : filteredRows.slice(0, 3);
+              const hasMoreRows = filteredRows.length > 3;
+
+              return (
+                <>
+                  {rows.map((row, rowIndex) => (
+                    <View key={rowIndex} className="flex-row mb-2">
+                      {Array.from(
+                        { length: Math.floor((row.end - row.start) / 5) + 1 },
+                        (_, i) => row.start + i * 5
+                      ).map(weight => (
+                        <TouchableOpacity
+                          key={weight}
+                          onPress={() => {
+                            setTargetWeight(weight.toString());
+                            if (selectedBarbell && equipment) {
+                              const plateResult = calculatePlates(
+                                weight,
+                                selectedBarbell.weight,
+                                equipment.plates.filter(p => p.count > 0)
+                              );
+                              setResult(plateResult);
+                            }
+                          }}
+                          style={{
+                            backgroundColor:
+                              targetWeight === weight.toString()
+                                ? '#3b82f6'
+                                : isDark
+                                  ? '#27272a'
+                                  : '#e5e7eb',
+                          }}
+                          className="px-3 py-1.5 rounded-full mr-2"
+                        >
+                          <Text
+                            className="text-sm"
+                            style={{
+                              color:
+                                targetWeight === weight.toString()
+                                  ? '#fff'
+                                  : isDark
+                                    ? '#e5e5e5'
+                                    : '#374151',
+                            }}
+                          >
+                            {weight}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ))}
+                  {hasMoreRows && (
+                    <TouchableOpacity
+                      onPress={() => setShowAllWeights(!showAllWeights)}
+                      className="py-1"
+                    >
+                      <Text style={{ color: '#3b82f6' }}>
+                        {showAllWeights ? 'Show less' : 'Show more'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
+          </View>
+        </ScrollView>
 
         {/* Result */}
         {result && (
@@ -284,34 +375,6 @@ export default function CalculatorScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Equipment info */}
-        {equipment && (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Equipment')}
-            style={{
-              backgroundColor: isDark ? '#18181b' : '#fff',
-              borderColor: isDark ? '#27272a' : '#e5e7eb',
-            }}
-            className="p-4 rounded-xl mb-6 border flex-row justify-between items-center"
-          >
-            <View>
-              <Text
-                className="font-medium"
-                style={{ color: isDark ? '#fff' : '#111' }}
-              >
-                Configure Equipment
-              </Text>
-              <Text
-                className="text-sm"
-                style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-              >
-                {equipment.barbells.length} barbells, {equipment.plates.length}{' '}
-                plate sizes
-              </Text>
-            </View>
-            <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>›</Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
     </View>
   );

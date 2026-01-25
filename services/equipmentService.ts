@@ -117,13 +117,18 @@ export async function addBarbell(
   // Sync to server if authenticated
   if (accessToken && API_URL) {
     try {
-      const response = await fetch(`${API_URL}/api/equipment/barbells`, {
+      const response = await fetch(`${API_URL}/api/equipment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(barbell),
+        body: JSON.stringify({
+          type: 'barbell',
+          name: barbell.name,
+          weight: barbell.weight,
+          isDefault: barbell.isDefault,
+        }),
       });
 
       if (response.ok) {
@@ -134,7 +139,7 @@ export async function addBarbell(
           b => b.id === newBarbell.id
         );
         if (idx !== -1) {
-          updatedConfig.barbells[idx] = data.barbell;
+          updatedConfig.barbells[idx] = data.item;
           await cacheEquipment(updatedConfig);
         }
       }
@@ -164,7 +169,7 @@ export async function removeBarbell(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !barbellId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment/barbells?id=${barbellId}`, {
+      await fetch(`${API_URL}/api/equipment?id=${barbellId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -209,13 +214,13 @@ export async function addPlate(
   // Sync to server if authenticated
   if (accessToken && API_URL) {
     try {
-      const response = await fetch(`${API_URL}/api/equipment/plates`, {
+      const response = await fetch(`${API_URL}/api/equipment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ weight, count: asPair ? 2 : 1 }),
+        body: JSON.stringify({ type: 'plate', weight, count: asPair ? 2 : 1 }),
       });
 
       if (response.ok) {
@@ -224,7 +229,7 @@ export async function addPlate(
         const updatedConfig = await getCachedEquipment();
         const idx = updatedConfig.plates.findIndex(p => p.id === newPlate.id);
         if (idx !== -1) {
-          updatedConfig.plates[idx] = data.plate;
+          updatedConfig.plates[idx] = data.item;
           await cacheEquipment(updatedConfig);
         }
       }
@@ -248,7 +253,7 @@ export async function removePlate(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !plateId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment/plates?id=${plateId}`, {
+      await fetch(`${API_URL}/api/equipment?id=${plateId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -279,7 +284,7 @@ export async function updatePlateCount(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !plateId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment/plates`, {
+      await fetch(`${API_URL}/api/equipment`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
