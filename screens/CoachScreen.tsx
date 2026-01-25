@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -13,6 +14,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  ActionSheetIOS,
   Alert,
   Animated,
   Easing,
@@ -563,6 +565,32 @@ export default function CoachScreen({ navigation }: any) {
     setInputText(suggestion);
   };
 
+  const handleMessageLongPress = (messageText: string) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Copy'],
+          cancelButtonIndex: 0,
+        },
+        async buttonIndex => {
+          if (buttonIndex === 1) {
+            await Clipboard.setStringAsync(messageText);
+          }
+        }
+      );
+    } else {
+      Alert.alert('Message', undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Copy',
+          onPress: async () => {
+            await Clipboard.setStringAsync(messageText);
+          },
+        },
+      ]);
+    }
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || isProcessing) return;
 
@@ -960,7 +988,10 @@ Use Markdown formatting. ${activityContext}`;
                 }
                 className={`mb-4 ${message.type === 'user' ? 'items-end' : 'items-start'}`}
               >
-                <View
+                <TouchableOpacity
+                  onLongPress={() => handleMessageLongPress(message.text)}
+                  delayLongPress={300}
+                  activeOpacity={0.8}
                   className={`max-w-[80%] p-3 rounded-2xl ${
                     message.type === 'user'
                       ? isDark
@@ -985,7 +1016,7 @@ Use Markdown formatting. ${activityContext}`;
                       isDark={isDark}
                     />
                   )}
-                </View>
+                </TouchableOpacity>
               </View>
             ))}
             {isProcessing && (

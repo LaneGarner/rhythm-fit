@@ -31,6 +31,7 @@ import AuthScreen from './screens/AuthScreen';
 import DayScreen from './screens/DayScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
+import EquipmentScreen from './screens/EquipmentScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   Settings: undefined;
   ActivityLibrary: undefined;
   EmojiLibrary: undefined;
+  Equipment: undefined;
 };
 
 function AppContent() {
@@ -149,6 +151,7 @@ function AppContent() {
             component={ActivityLibraryScreen}
           />
           <Stack.Screen name="EmojiLibrary" component={EmojiLibraryScreen} />
+          <Stack.Screen name="Equipment" component={EquipmentScreen} />
         </Stack.Navigator>
       </NavigationContainer>
 
