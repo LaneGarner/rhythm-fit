@@ -472,7 +472,28 @@ export default function DayScreen({ navigation, route }: any) {
               </Text>
             </View>
           </View>
-          {activity.completed ? (
+          {isBulkMode ? (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('EditActivity', {
+                  activityId: activity.id,
+                  fromDayEdit: true,
+                  date: date,
+                })
+              }
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text
+                style={{
+                  color: isDark ? '#60A5FA' : '#2563EB',
+                  fontSize: 14,
+                  fontWeight: '600',
+                }}
+              >
+                Edit
+              </Text>
+            </TouchableOpacity>
+          ) : activity.completed ? (
             <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
           ) : (
             <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
@@ -578,7 +599,28 @@ export default function DayScreen({ navigation, route }: any) {
                 </Text>
               </View>
             </View>
-            {activity.completed ? (
+            {isBulkMode ? (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('EditActivity', {
+                    activityId: activity.id,
+                    fromDayEdit: true,
+                    date: date,
+                  })
+                }
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? '#60A5FA' : '#2563EB',
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  Edit
+                </Text>
+              </TouchableOpacity>
+            ) : activity.completed ? (
               <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
             ) : (
               <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
@@ -844,7 +886,7 @@ export default function DayScreen({ navigation, route }: any) {
       >
         {/* Left: Back button */}
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('Main')}
           style={{
             paddingVertical: 4,
             paddingHorizontal: 8,
@@ -900,11 +942,15 @@ export default function DayScreen({ navigation, route }: any) {
               padding: 8,
             }}
           >
-            <Ionicons
-              name={isBulkMode ? 'close' : 'pencil'}
-              size={20}
-              color={isDark ? '#fff' : '#111'}
-            />
+            <Text
+              style={{
+                color: isDark ? '#60A5FA' : '#2563EB',
+                fontSize: 16,
+                fontWeight: '600',
+              }}
+            >
+              {isBulkMode ? 'Done' : 'Edit'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

@@ -17,7 +17,7 @@ import { Activity, RecurringConfig } from '../types/activity';
 dayjs.extend(isSameOrAfter);
 
 export default function EditActivityScreen({ navigation, route }: any) {
-  const { activityId } = route.params;
+  const { activityId, fromDayEdit, date: returnDate } = route.params;
   const dispatch = useDispatch();
   const { getAccessToken } = useAuth();
 
@@ -180,12 +180,20 @@ export default function EditActivityScreen({ navigation, route }: any) {
         recurring: recurringConfig || undefined,
       };
       dispatch(updateActivity(finalActivity));
-      navigation.goBack();
+      if (fromDayEdit && returnDate) {
+        navigation.replace('Day', { date: returnDate });
+      } else {
+        navigation.goBack();
+      }
     }
   };
 
   const handleCancel = () => {
-    navigation.goBack();
+    if (fromDayEdit && returnDate) {
+      navigation.replace('Day', { date: returnDate });
+    } else {
+      navigation.goBack();
+    }
   };
 
   if (!activity) {

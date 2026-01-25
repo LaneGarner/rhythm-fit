@@ -376,7 +376,15 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             padding: 8,
           }}
         >
-          <Ionicons name="pencil" size={20} color={isDark ? '#fff' : '#111'} />
+          <Text
+            style={{
+              color: isDark ? '#60A5FA' : '#2563EB',
+              fontSize: 16,
+              fontWeight: '600',
+            }}
+          >
+            Edit
+          </Text>
         </TouchableOpacity>
       </View>
 

@@ -303,25 +303,24 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                         >
                           <TouchableOpacity
                             onPress={() => handleEdit(item)}
+                            hitSlop={{
+                              top: 10,
+                              bottom: 10,
+                              left: 10,
+                              right: 10,
+                            }}
                             style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
                               paddingVertical: 12,
                               paddingHorizontal: 16,
                               borderBottomWidth: 1,
                               borderBottomColor: isDark ? '#4B5563' : '#e5e7eb',
                             }}
                           >
-                            <Ionicons
-                              name="pencil-outline"
-                              size={18}
-                              color={isDark ? '#fff' : '#374151'}
-                              style={{ marginRight: 10 }}
-                            />
                             <Text
                               style={{
-                                color: isDark ? '#fff' : '#374151',
+                                color: isDark ? '#60A5FA' : '#2563EB',
                                 fontSize: 16,
+                                fontWeight: '600',
                               }}
                             >
                               Edit
