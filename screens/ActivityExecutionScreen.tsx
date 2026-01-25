@@ -218,7 +218,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       Alert.alert('Set Options', 'What would you like to do?', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Duplicate', onPress: () => handleDuplicateSet(set) },
-        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteSet(set.id) },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteSet(set.id),
+        },
       ]);
     }
   };
@@ -344,7 +348,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         </View>
         <TouchableOpacity
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          onPress={() => navigation.navigate('EditActivity', { activityId: activity.id })}
+          onPress={() =>
+            navigation.navigate('EditActivity', { activityId: activity.id })
+          }
           style={{
             position: 'absolute',
             right: 16,
@@ -352,11 +358,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             padding: 8,
           }}
         >
-          <Ionicons
-            name="pencil"
-            size={20}
-            color={isDark ? '#fff' : '#111'}
-          />
+          <Ionicons name="pencil" size={20} color={isDark ? '#fff' : '#111'} />
         </TouchableOpacity>
       </View>
 
@@ -561,7 +563,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       }}
                       value={set.weight != null ? set.weight.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { weight: text ? parseInt(text) : undefined })
+                        handleUpdateSet(set.id, {
+                          weight: text ? parseInt(text) : undefined,
+                        })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -591,7 +595,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     <TextInput
                       value={set.reps != null ? set.reps.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { reps: text ? parseInt(text) : undefined })
+                        handleUpdateSet(set.id, {
+                          reps: text ? parseInt(text) : undefined,
+                        })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -618,7 +624,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   className="mt-5 px-4 py-4 rounded-lg"
                   style={{
                     backgroundColor: set.completed
-                      ? isDark ? '#1f2937' : '#fff'
+                      ? isDark
+                        ? '#1f2937'
+                        : '#fff'
                       : '#D1D5DB',
                     borderWidth: 2,
                     borderColor: set.completed ? '#22C55E' : '#D1D5DB',

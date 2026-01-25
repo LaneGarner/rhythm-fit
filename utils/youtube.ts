@@ -28,7 +28,6 @@ export const openYouTubeSearch = async (searchQuery: string) => {
       const browserUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`;
       await Linking.openURL(browserUrl);
     }
-
   } catch (error) {
     console.error('Error opening YouTube search:', error);
     Alert.alert('Error', 'Could not open YouTube search');

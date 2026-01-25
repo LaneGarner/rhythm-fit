@@ -115,7 +115,8 @@ export default function DayScreen({ navigation, route }: any) {
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
-  const allCompleted = dayActivities.length > 0 && dayActivities.every(a => a.completed);
+  const allCompleted =
+    dayActivities.length > 0 && dayActivities.every(a => a.completed);
   const completedCount = dayActivities.filter(a => a.completed).length;
   const totalCount = dayActivities.length;
 
@@ -292,9 +293,10 @@ export default function DayScreen({ navigation, route }: any) {
     const newCompleted = !activity.completed;
 
     // When marking incomplete, also mark all sets as incomplete
-    const updatedSets = !newCompleted && activity.sets
-      ? activity.sets.map((set: any) => ({ ...set, completed: false }))
-      : activity.sets;
+    const updatedSets =
+      !newCompleted && activity.sets
+        ? activity.sets.map((set: any) => ({ ...set, completed: false }))
+        : activity.sets;
 
     dispatch(
       updateActivity({
@@ -704,26 +706,46 @@ export default function DayScreen({ navigation, route }: any) {
         <ScrollView className="flex-1 p-4">
           {totalCount > 0 && !isBulkMode && (
             <View style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 14 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? '#a3a3a3' : '#6b7280',
+                    fontSize: 14,
+                  }}
+                >
                   {completedCount}/{totalCount} complete
                 </Text>
                 {allCompleted && (
-                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{ marginLeft: 6 }} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginLeft: 6 }}
+                  />
                 )}
               </View>
-              <View style={{
-                height: 6,
-                backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                borderRadius: 3,
-                overflow: 'hidden'
-              }}>
-                <View style={{
-                  height: '100%',
-                  width: `${(completedCount / totalCount) * 100}%`,
-                  backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                  borderRadius: 3
-                }} />
+              <View
+                style={{
+                  height: 6,
+                  backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                }}
+              >
+                <View
+                  style={{
+                    height: '100%',
+                    width: `${(completedCount / totalCount) * 100}%`,
+                    backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                    borderRadius: 3,
+                  }}
+                />
               </View>
             </View>
           )}
@@ -750,26 +772,46 @@ export default function DayScreen({ navigation, route }: any) {
         ListHeaderComponent={
           totalCount > 0 && !isBulkMode ? (
             <View style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 14 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? '#a3a3a3' : '#6b7280',
+                    fontSize: 14,
+                  }}
+                >
                   {completedCount}/{totalCount} complete
                 </Text>
                 {allCompleted && (
-                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{ marginLeft: 6 }} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginLeft: 6 }}
+                  />
                 )}
               </View>
-              <View style={{
-                height: 6,
-                backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                borderRadius: 3,
-                overflow: 'hidden'
-              }}>
-                <View style={{
-                  height: '100%',
-                  width: `${(completedCount / totalCount) * 100}%`,
-                  backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                  borderRadius: 3
-                }} />
+              <View
+                style={{
+                  height: 6,
+                  backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                }}
+              >
+                <View
+                  style={{
+                    height: '100%',
+                    width: `${(completedCount / totalCount) * 100}%`,
+                    backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                    borderRadius: 3,
+                  }}
+                />
               </View>
             </View>
           ) : null

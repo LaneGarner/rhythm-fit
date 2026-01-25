@@ -40,11 +40,9 @@ export async function sendChatMessage(
   accessToken: string,
   messages: ChatMessage[],
   options?: {
+    activityContext?: string;
     sessionId?: string;
     sessionTitle?: string;
-    model?: string;
-    maxTokens?: number;
-    temperature?: number;
   }
 ): Promise<ChatResponse> {
   const response = await fetch(`${API_URL}/api/chat`, {
@@ -55,11 +53,9 @@ export async function sendChatMessage(
     },
     body: JSON.stringify({
       messages,
+      activityContext: options?.activityContext,
       sessionId: options?.sessionId,
       sessionTitle: options?.sessionTitle,
-      model: options?.model || 'gpt-4o-mini',
-      maxTokens: options?.maxTokens || 500,
-      temperature: options?.temperature || 0.7,
     }),
   });
 

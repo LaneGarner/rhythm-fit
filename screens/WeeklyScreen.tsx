@@ -535,10 +535,15 @@ export default function WeeklyScreen({ navigation }: any) {
           </View>
         </View>
       </View>
-      <ScrollView ref={scrollViewRef} className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        ref={scrollViewRef}
+        className="flex-1 px-4 pt-4"
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {weekDays.map(day => {
           const dayActivities = getActivitiesForDate(day.date);
-          const allCompleted = dayActivities.length > 0 && dayActivities.every(a => a.completed);
+          const allCompleted =
+            dayActivities.length > 0 && dayActivities.every(a => a.completed);
           return (
             <TouchableOpacity
               key={day.date}
@@ -641,9 +646,17 @@ export default function WeeklyScreen({ navigation }: any) {
                         {activity.name || activity.type}
                       </Text>
                       {activity.completed ? (
-                        <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={18}
+                          color="#22C55E"
+                        />
                       ) : (
-                        <Ionicons name="ellipse-outline" size={18} color="#D1D5DB" />
+                        <Ionicons
+                          name="ellipse-outline"
+                          size={18}
+                          color="#D1D5DB"
+                        />
                       )}
                     </View>
                   ))}
@@ -652,26 +665,47 @@ export default function WeeklyScreen({ navigation }: any) {
 
               {dayActivities.length > 0 && (
                 <View style={{ marginTop: 14 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 12 }}>
-                      {dayActivities.filter(a => a.completed).length}/{dayActivities.length} complete
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: isDark ? '#a3a3a3' : '#6b7280',
+                        fontSize: 12,
+                      }}
+                    >
+                      {dayActivities.filter(a => a.completed).length}/
+                      {dayActivities.length} complete
                     </Text>
                     {allCompleted && (
-                      <Ionicons name="checkmark-circle" size={14} color="#22C55E" style={{ marginLeft: 4 }} />
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color="#22C55E"
+                        style={{ marginLeft: 4 }}
+                      />
                     )}
                   </View>
-                  <View style={{
-                    height: 4,
-                    backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                    borderRadius: 2,
-                    overflow: 'hidden'
-                  }}>
-                    <View style={{
-                      height: '100%',
-                      width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
-                      backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                      borderRadius: 2
-                    }} />
+                  <View
+                    style={{
+                      height: 4,
+                      backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <View
+                      style={{
+                        height: '100%',
+                        width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
+                        backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                        borderRadius: 2,
+                      }}
+                    />
                   </View>
                 </View>
               )}

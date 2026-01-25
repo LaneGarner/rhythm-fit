@@ -37,7 +37,9 @@ async function cacheLibrary(items: LibraryItem[]): Promise<void> {
 }
 
 // Fetch library from server and update cache
-export async function fetchLibrary(accessToken: string): Promise<LibraryItem[]> {
+export async function fetchLibrary(
+  accessToken: string
+): Promise<LibraryItem[]> {
   if (!API_URL) {
     return getCachedLibrary();
   }
