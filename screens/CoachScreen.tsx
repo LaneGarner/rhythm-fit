@@ -37,7 +37,7 @@ import {
   getChatSession,
   deleteChatSession,
 } from '../services/chatApi';
-import { ACTIVITY_EMOJIS } from '../constants';
+import { getEmojiForType } from '../services/activityTypeService';
 import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -495,9 +495,7 @@ export default function CoachScreen({ navigation }: any) {
                   type: request.type,
                   name: toTitleCase(exercise),
                   emoji:
-                    ACTIVITY_EMOJIS[
-                      request.type as keyof typeof ACTIVITY_EMOJIS
-                    ] || '💪',
+                    getEmojiForType(request.type),
                   completed: false,
                   notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
                 };
@@ -513,9 +511,7 @@ export default function CoachScreen({ navigation }: any) {
                 type: request.type,
                 name: toTitleCase(exercise),
                 emoji:
-                  ACTIVITY_EMOJIS[
-                    request.type as keyof typeof ACTIVITY_EMOJIS
-                  ] || '💪',
+                  getEmojiForType(request.type),
                 completed: false,
                 notes: `Created by AI coach based on your request`,
               };
@@ -537,9 +533,7 @@ export default function CoachScreen({ navigation }: any) {
                 type: request.type, // keep as enum value
                 name: request.exercises.map(toTitleCase).join(', '),
                 emoji:
-                  ACTIVITY_EMOJIS[
-                    request.type as keyof typeof ACTIVITY_EMOJIS
-                  ] || '💪',
+                  getEmojiForType(request.type),
                 completed: false,
                 notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
               };
@@ -553,9 +547,7 @@ export default function CoachScreen({ navigation }: any) {
               date: request.date,
               type: request.type, // keep as enum value
               name: request.exercises.map(toTitleCase).join(', '),
-              emoji:
-                ACTIVITY_EMOJIS[request.type as keyof typeof ACTIVITY_EMOJIS] ||
-                '💪',
+              emoji: getEmojiForType(request.type),
               completed: false,
               notes: `Created by AI coach based on your request`,
             };

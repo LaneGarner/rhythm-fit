@@ -18,6 +18,7 @@ import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { syncActivities } from './services/syncService';
 import { initializeExercises } from './services/exerciseService';
+import { initializeActivityTypes } from './services/activityTypeService';
 import { isBackendConfigured } from './config/api';
 import { Activity } from './types/activity';
 
@@ -66,8 +67,9 @@ function AppContent() {
   useEffect(() => {
     // Load activities from storage on app start
     dispatch(loadActivitiesFromStorage());
-    // Initialize exercise database from backend
+    // Initialize exercise database and activity types from backend
     initializeExercises();
+    initializeActivityTypes();
   }, [dispatch]);
 
   // Sync activities when user is authenticated

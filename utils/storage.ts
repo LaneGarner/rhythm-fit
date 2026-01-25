@@ -3,7 +3,8 @@ import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
 import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
-import { clearExerciseCache } from '../services/exerciseService';
+import { clearExerciseCache, getExercises } from '../services/exerciseService';
+import { getActivityTypes, clearActivityTypesCache } from '../services/activityTypeService';
 
 // Activity storage functions
 export const saveActivities = async (activities: Activity[]) => {
@@ -82,6 +83,7 @@ export const clearAllAppData = async (): Promise<void> => {
       clearChatHistory(),
       clearLibraryCache(),
       clearExerciseCache(),
+      clearActivityTypesCache(),
       clearThemeMode(),
     ]);
   } catch (error) {
@@ -90,6 +92,7 @@ export const clearAllAppData = async (): Promise<void> => {
 };
 
 // Generate random activities for a specific week (dev mode)
+// Uses cached exercises and activity types from backend
 export const generateRandomWeekActivities = (
   weekOffset: number = 0
 ): Activity[] => {
@@ -98,94 +101,32 @@ export const generateRandomWeekActivities = (
   // Get Monday of the target week
   const startOfWeek = getMondayOfWeekByOffset(weekOffset);
 
-  // Sample exercises by category
-  const weightTrainingExercises = [
-    'Bench Press',
-    'Squat',
-    'Deadlift',
-    'Overhead Press',
-    'Bent Over Row',
-    'Dumbbell Curl',
-    'Tricep Extension',
-    'Lat Pulldown',
-    'Lunge',
-    'Hip Thrust',
-    'Calf Raise',
-    'Lateral Raise',
-    'Leg Extension',
-    'Leg Curl',
-  ];
+  // Get exercises and activity types from cache
+  const allExercises = getExercises();
+  const activityTypes = getActivityTypes();
 
-  const calisthenicsExercises = [
-    'Push-Up',
-    'Pull-Up',
-    'Plank',
-    'Dip',
-    'Burpee',
-    'Mountain Climber',
-    'Jumping Jack',
-    'Handstand Push-Up',
-    'Pistol Squat',
-    'L-Sit',
-  ];
+  // Group exercises by type
+  const exercisesByType = new Map<string, string[]>();
+  for (const exercise of allExercises) {
+    const existing = exercisesByType.get(exercise.type) || [];
+    existing.push(exercise.name);
+    exercisesByType.set(exercise.type, existing);
+  }
 
-  const cardioExercises = [
-    'Running',
-    'Cycling',
-    'Swimming',
-    'Rowing',
-    'Jump Rope',
-    'Elliptical',
-    'HIIT',
-    'Stair Climber',
-  ];
+  // Build categories from cached data
+  const exerciseCategories = activityTypes
+    .filter(at => exercisesByType.has(at.value)) // Only include types that have exercises
+    .map(at => ({
+      exercises: exercisesByType.get(at.value) || [],
+      type: at.value as Activity['type'],
+      emoji: at.emoji,
+    }));
 
-  const mobilityExercises = [
-    'Yoga',
-    'Sun Salutation',
-    'Downward Dog',
-    'Pigeon Pose',
-    'Hip Flexor Stretch',
-    'Hamstring Stretch',
-    'Shoulder Stretch',
-  ];
-
-  const recoveryExercises = [
-    'Foam Rolling',
-    'Stretching',
-    'Meditation',
-    'Walking',
-    'Sauna',
-  ];
-
-  const sportsExercises = [
-    'Basketball',
-    'Soccer',
-    'Tennis',
-    'Golf',
-    'Volleyball',
-    'Rock Climbing',
-    'Boxing',
-    'Hiking',
-  ];
-
-  // Exercise categories with their types and emojis
-  const exerciseCategories = [
-    {
-      exercises: weightTrainingExercises,
-      type: 'weight-training' as const,
-      emoji: '🏋️',
-    },
-    {
-      exercises: calisthenicsExercises,
-      type: 'calisthenics' as const,
-      emoji: '💪',
-    },
-    { exercises: cardioExercises, type: 'cardio' as const, emoji: '🏃' },
-    { exercises: mobilityExercises, type: 'mobility' as const, emoji: '🧘' },
-    { exercises: recoveryExercises, type: 'recovery' as const, emoji: '🛌' },
-    { exercises: sportsExercises, type: 'sports' as const, emoji: '⚽' },
-  ];
+  // Fallback if no cached data available
+  if (exerciseCategories.length === 0) {
+    console.warn('No cached exercises/types available for test data generation');
+    return [];
+  }
 
   // Track used exercises to ensure uniqueness within the week
   const usedExercises = new Set<string>();
@@ -215,7 +156,7 @@ export const generateRandomWeekActivities = (
             Math.floor(Math.random() * category.exercises.length)
           ];
         attempts++;
-      } while (usedExercises.has(exercise) && attempts < 20); // Try up to 20 times to find unique exercise
+      } while (usedExercises.has(exercise) && attempts < 20);
 
       // If we couldn't find a unique exercise after 20 attempts, allow duplicates
       if (attempts < 20) {

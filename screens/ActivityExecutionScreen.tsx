@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { ACTIVITY_TYPES } from '../constants';
+import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -40,7 +40,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
 
   // Helper function to get activity type label
   const getActivityTypeLabel = (type: string) => {
-    const activityType = ACTIVITY_TYPES.find(at => at.value === type);
+    const activityType = getActivityTypes().find(at => at.value === type);
     return activityType?.label || type;
   };
 

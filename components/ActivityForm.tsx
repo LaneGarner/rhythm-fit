@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ACTIVITY_EMOJIS, ACTIVITY_TYPES } from '../constants';
+import { getActivityTypes, getActivityEmojis } from '../services/activityTypeService';
 import { useAuth } from '../context/AuthContext';
 import { addToLibrary } from '../services/libraryService';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -97,7 +97,7 @@ export default function ActivityForm({
   // Auto-set emoji when activity type changes or is initially set
   useEffect(() => {
     if (activityType && !selectedEmoji) {
-      const defaultEmoji = ACTIVITY_EMOJIS[activityType];
+      const defaultEmoji = getActivityEmojis()[activityType];
       if (defaultEmoji) {
         setSelectedEmoji(defaultEmoji);
       }
@@ -195,8 +195,7 @@ export default function ActivityForm({
     setActivityName(name);
     if (type) {
       setActivityType(type as ActivityType);
-      const defaultEmoji =
-        ACTIVITY_EMOJIS[type as keyof typeof ACTIVITY_EMOJIS];
+      const defaultEmoji = getActivityEmojis()[type];
       if (defaultEmoji) {
         setSelectedEmoji(defaultEmoji);
       }
@@ -421,7 +420,7 @@ export default function ActivityForm({
               Activity Type *
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {ACTIVITY_TYPES.map(type => (
+              {getActivityTypes().map(type => (
                 <TouchableOpacity
                   key={type.value}
                   onPress={() => {
@@ -477,7 +476,7 @@ export default function ActivityForm({
               Emoji *
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {Object.entries(ACTIVITY_EMOJIS).map(([type, emoji]) => (
+              {Object.entries(getActivityEmojis()).map(([type, emoji]) => (
                 <TouchableOpacity
                   key={type}
                   onPress={() => setSelectedEmoji(emoji)}
