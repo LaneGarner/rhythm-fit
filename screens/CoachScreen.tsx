@@ -431,9 +431,6 @@ export default function CoachScreen({ navigation }: any) {
     response: string,
     userInput: string
   ): Promise<any[]> => {
-    console.log('Parsing activity from response:', response);
-    console.log('User input:', userInput);
-
     const activityRequests = [];
     let bulkWorkoutProcessed = false; // Flag to prevent duplicate processing
 
@@ -582,20 +579,16 @@ export default function CoachScreen({ navigation }: any) {
     };
 
     for (const pattern of activityPatterns) {
-      console.log('Testing pattern:', pattern.source);
-
       // Skip other patterns if bulk workout was already processed
       if (
         bulkWorkoutProcessed &&
         pattern.source !== "I've scheduled\\s+([^.]+?)\\s+for\\s+(\\w+)\\.?\\s*"
       ) {
-        console.log('Skipping pattern - bulk workout already processed');
         continue;
       }
 
       let match;
       while ((match = pattern.exec(response)) !== null) {
-        console.log('Pattern matched:', match);
         let exercises: string;
         let dateText: string;
         let numberedList: string | undefined;
@@ -609,10 +602,6 @@ export default function CoachScreen({ navigation }: any) {
           exercises = cleanExerciseName(match[1]);
           dateText = match[2].trim();
 
-          console.log('Processing bulk workout pattern');
-          console.log('Raw exercises:', match[1]);
-          console.log('Raw dateText:', match[2]);
-
           // Parse exercises - handle compound names better
           // Only split on commas and "and" as separators, not on spaces within exercise names
           let exerciseList = exercises
@@ -624,13 +613,8 @@ export default function CoachScreen({ navigation }: any) {
             )
             .filter(e => e.length > 0);
 
-          console.log('Parsed exercises:', exerciseList);
-          console.log('Date text:', dateText);
-          console.log('User input for context:', userInput);
-
           // Skip if no valid exercises were found
           if (exerciseList.length === 0) {
-            console.log('No valid exercises found, skipping activity creation');
             continue;
           }
 
@@ -663,11 +647,6 @@ export default function CoachScreen({ navigation }: any) {
             }
           }
 
-          console.log(
-            'Calculated target date:',
-            targetDate.format('YYYY-MM-DD')
-          );
-
           activityRequests.push({
             date: targetDate.format('YYYY-MM-DD'),
             exercises: exerciseList,
@@ -687,8 +666,6 @@ export default function CoachScreen({ navigation }: any) {
           const exerciseList = extractExercisesFromNumberedList(numberedList);
 
           if (exerciseList.length > 0) {
-            console.log('Found numbered list exercises:', exerciseList);
-
             // Process each exercise individually
             for (const exercise of exerciseList) {
               // Try to match exercise against the comprehensive exercise database
@@ -733,7 +710,6 @@ export default function CoachScreen({ navigation }: any) {
                   };
                   try {
                     await addCustomExercise(newExercise);
-                    console.log(`Added new exercise: ${exerciseName}`);
                   } catch (error) {
                     console.error('Error adding custom exercise:', error);
                   }
@@ -820,7 +796,6 @@ export default function CoachScreen({ navigation }: any) {
               pattern.test(exercise)
             );
             if (isGeneric || exercise.length < 3) {
-              console.log(`Skipping generic exercise name: ${exercise}`);
               continue;
             }
 
@@ -854,7 +829,6 @@ export default function CoachScreen({ navigation }: any) {
                 };
                 try {
                   await addCustomExercise(newExercise);
-                  console.log(`Added new exercise: ${exerciseName}`);
                 } catch (error) {
                   console.error('Error adding custom exercise:', error);
                 }
@@ -876,13 +850,8 @@ export default function CoachScreen({ navigation }: any) {
           }
           exerciseList = uniqueExercises;
 
-          console.log('Parsed exercises:', exerciseList);
-          console.log('Date text:', dateText);
-          console.log('User input for context:', userInput);
-
           // Skip if no valid exercises were found
           if (exerciseList.length === 0) {
-            console.log('No valid exercises found, skipping activity creation');
             continue;
           }
 
@@ -1183,10 +1152,6 @@ export default function CoachScreen({ navigation }: any) {
               }
             }
 
-            console.log(
-              `Fallback: Extracted exercise "${exerciseName}" for ${dayText} from AI response`
-            );
-
             activityRequests.push({
               date: targetDate.format('YYYY-MM-DD'),
               exercises: [exerciseName],
@@ -1245,7 +1210,6 @@ export default function CoachScreen({ navigation }: any) {
 
             // Validate the exercise name before proceeding
             if (!isValidExerciseName(exerciseName)) {
-              console.log(`Skipping invalid exercise name: "${exerciseName}"`);
               continue;
             }
 
@@ -1303,10 +1267,6 @@ export default function CoachScreen({ navigation }: any) {
                 }
               }
 
-              console.log(
-                `Fallback: Extracted exercise "${exerciseName}" for ${dayText} from user input`
-              );
-
               activityRequests.push({
                 date: targetDate.format('YYYY-MM-DD'),
                 exercises: [exerciseName],
@@ -1351,10 +1311,6 @@ export default function CoachScreen({ navigation }: any) {
           }
         }
 
-        console.log(
-          `Fallback: Using extracted exercise "${extractedExercise}" with day "${dayText}" from user input`
-        );
-
         activityRequests.push({
           date: targetDate.format('YYYY-MM-DD'),
           exercises: [extractedExercise],
@@ -1367,10 +1323,6 @@ export default function CoachScreen({ navigation }: any) {
 
     // Final emergency fallback: if we still have no activity requests, force extract from user input
     if (activityRequests.length === 0) {
-      console.log(
-        'No activity patterns found in AI response, trying fallback parsing'
-      );
-
       const userInputLower = userInput.toLowerCase();
 
       // Look for exercise keywords in user input
@@ -1445,10 +1397,6 @@ export default function CoachScreen({ navigation }: any) {
               targetDate = targetDate.add(daysToAdd, 'day');
             }
           }
-
-          console.log(
-            `Emergency fallback: Created activity for "${foundExercise}" on ${dayText}`
-          );
 
           activityRequests.push({
             date: targetDate.format('YYYY-MM-DD'),
@@ -1601,13 +1549,10 @@ export default function CoachScreen({ navigation }: any) {
   const createActivitiesFromRequest = (activityRequests: any[]) => {
     const createdActivities = [];
 
-    console.log('createActivitiesFromRequest called with:', activityRequests);
-
     for (const request of activityRequests) {
       try {
         // Validate the request has required fields
         if (!request.date || !request.exercises || !request.exercises.length) {
-          console.log('Invalid activity request:', request);
           continue;
         }
 
@@ -1651,10 +1596,6 @@ export default function CoachScreen({ navigation }: any) {
         );
 
         if (hasGenericExercises) {
-          console.log(
-            'Activity request contains generic exercise names, skipping:',
-            request
-          );
           continue;
         }
 
@@ -1666,7 +1607,6 @@ export default function CoachScreen({ navigation }: any) {
         if (exercises) {
           for (const exercise of exercises) {
             if (!exercise || typeof exercise !== 'string') {
-              console.log('Invalid exercise:', exercise);
               continue;
             }
 
@@ -1712,7 +1652,6 @@ export default function CoachScreen({ navigation }: any) {
               };
               dispatch(addActivity(activity));
               createdActivities.push(activity);
-              console.log('Created individual activity:', activity);
             }
           }
         } else {
@@ -1753,17 +1692,12 @@ export default function CoachScreen({ navigation }: any) {
             };
             dispatch(addActivity(activity));
             createdActivities.push(activity);
-            console.log('Created combined activity:', activity);
           }
         }
       } catch (error) {
         console.error('Error creating activity from request:', request, error);
       }
     }
-
-    console.log(
-      `Successfully created ${createdActivities.length} activities out of ${activityRequests.length} requests`
-    );
     return createdActivities;
   };
 
@@ -2157,8 +2091,6 @@ Keep responses conversational and helpful. If creating activities, be specific a
       }
 
       // Debug logging
-      console.log('AI Response:', botResponse);
-      console.log('User Input:', currentInput);
 
       // Check if user is asking for routine suggestions vs explicit scheduling
       const isRoutineSuggestion = (() => {
@@ -2224,9 +2156,7 @@ Keep responses conversational and helpful. If creating activities, be specific a
       // Create activities if any were requested
       let createdActivities: Activity[] = [];
       if (activityRequests.length > 0) {
-        console.log('Creating activities from AI response:', activityRequests);
         createdActivities = createActivitiesFromRequest(activityRequests);
-        console.log('Created activities:', createdActivities.length);
 
         // Check if activities were actually created and provide honest feedback
         if (createdActivities.length === 0) {
@@ -2235,9 +2165,6 @@ Keep responses conversational and helpful. If creating activities, be specific a
         } else {
           // Success! Don't show confusing messages about "formatting issues"
           // The system correctly splits workout requests into individual exercises
-          console.log(
-            `Successfully created ${createdActivities.length} activities from ${activityRequests.length} workout requests`
-          );
         }
       }
 

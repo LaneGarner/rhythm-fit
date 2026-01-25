@@ -29,7 +29,13 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
         borderBottomColor: isDark ? '#222' : '#e5e7eb',
       }}
     >
-      {/* Left: Settings Cog */}
+      {/* Left: Optional (spacer if no action) */}
+      {rightAction ? rightAction : <View style={{ width: 40 }} />}
+
+      {/* Center: Children */}
+      <View className="flex-1 items-center justify-center">{children}</View>
+
+      {/* Right: Settings Cog */}
       <TouchableOpacity
         hitSlop={14}
         onPress={() => navigation.navigate('Settings')}
@@ -42,12 +48,6 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
           color={isDark ? '#e5e5e5' : '#64748b'}
         />
       </TouchableOpacity>
-
-      {/* Center: Children */}
-      <View className="flex-1 items-center justify-center">{children}</View>
-
-      {/* Right: Optional */}
-      {rightAction ? rightAction : <View style={{ width: 40 }} />}
     </View>
   );
 }

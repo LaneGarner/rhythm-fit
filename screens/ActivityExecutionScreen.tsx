@@ -1,7 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
   Alert,
   Keyboard,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -28,6 +31,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
   const [isCompleted, setIsCompleted] = useState(activity?.completed || false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -101,8 +105,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   };
 
   const handleAddSet = () => {
+    const newSetId = Date.now().toString();
     const newSet: SetData = {
-      id: Date.now().toString(),
+      id: newSetId,
       reps: 0,
       weight: 0,
       completed: false,
@@ -119,6 +124,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       };
       dispatch(updateActivity(updatedActivity));
     }
+
+    // Focus the weight input of the new set after render
+    setTimeout(() => {
+      setInputRefs.current[newSetId]?.focus();
+    }, 100);
   };
 
   const handleDuplicateSet = (setToDuplicate: SetData) => {
@@ -155,22 +165,85 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         sets: updatedSets,
       };
       dispatch(updateActivity(updatedActivity));
+
+      // Check if all sets are now complete - auto-complete activity
+      const allSetsComplete =
+        updatedSets.length > 0 && updatedSets.every(s => s.completed);
+      if (allSetsComplete && !activity.completed) {
+        const completedActivity: Activity = {
+          ...activity,
+          completed: true,
+          sets: updatedSets,
+        };
+        dispatch(updateActivity(completedActivity));
+        Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
+    }
+  };
+
+  const handleDeleteSet = (setId: string) => {
+    const updatedSets = sets.filter(set => set.id !== setId);
+    setSets(updatedSets);
+
+    // Auto-save progress when set is deleted
+    if (activity) {
+      const updatedActivity: Activity = {
+        ...activity,
+        sets: updatedSets,
+      };
+      dispatch(updateActivity(updatedActivity));
+    }
+  };
+
+  const showSetOptions = (set: SetData) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Duplicate', 'Delete'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+          userInterfaceStyle: isDark ? 'dark' : 'light',
+        },
+        buttonIndex => {
+          if (buttonIndex === 1) {
+            handleDuplicateSet(set);
+          } else if (buttonIndex === 2) {
+            handleDeleteSet(set.id);
+          }
+        }
+      );
+    } else {
+      Alert.alert('Set Options', 'What would you like to do?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Duplicate', onPress: () => handleDuplicateSet(set) },
+        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteSet(set.id) },
+      ]);
     }
   };
 
   const handleCompleteActivity = () => {
     if (!activity) return;
 
+    // Mark all sets as completed first for visual feedback
+    const completedSets = sets.map(set => ({ ...set, completed: true }));
+    setSets(completedSets);
+
     const updatedActivity: Activity = {
       ...activity,
       completed: true,
-      sets: sets,
+      sets: completedSets,
     };
 
     dispatch(updateActivity(updatedActivity));
-    Alert.alert('Activity Completed!', 'Great job!', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+
+    // Delay alert so user can see all sets turn green
+    setTimeout(() => {
+      Alert.alert('🎉 Nice Work!', 'Activity complete!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    }, 300);
   };
 
   const handleSaveProgress = () => {
@@ -216,7 +289,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           });
         },
         () => {
-          console.log('Failed to measure set input position');
+          // Failed to measure set input position
         }
       );
     }
@@ -269,6 +342,22 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             {activity.name}
           </Text>
         </View>
+        <TouchableOpacity
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          onPress={() => navigation.navigate('EditActivity', { activityId: activity.id })}
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: 66,
+            padding: 8,
+          }}
+        >
+          <Ionicons
+            name="pencil"
+            size={20}
+            color={isDark ? '#fff' : '#111'}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -300,52 +389,115 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             </Text>
           </View>
 
-          {/* Timer */}
-          <View
-            className={`p-4 rounded-lg ${
-              isDark ? 'bg-gray-800' : 'bg-white'
-            } shadow-sm`}
-          >
-            <Text
-              className={`text-lg font-semibold mb-3 text-center ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
+          {/* Notes */}
+          {activity.notes && (
+            <View
+              className={`p-4 rounded-lg ${
+                isDark ? 'bg-gray-800' : 'bg-white'
+              } shadow-sm`}
             >
-              Timer
-            </Text>
-            <Text
-              className={`text-4xl font-mono text-center mb-4 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              {formatTime(timerSeconds)}
-            </Text>
-            <View className="flex-row justify-center space-x-4">
-              {!isTimerRunning ? (
-                <TouchableOpacity
-                  onPress={handleStartTimer}
-                  className="bg-green-500 px-6 py-2 rounded-lg"
-                  style={{ minWidth: 80, alignItems: 'center' }}
+              <View className="flex-row items-center mb-2">
+                <Ionicons
+                  name="document-text-outline"
+                  size={18}
+                  color={isDark ? '#9CA3AF' : '#6B7280'}
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  className={`text-sm font-medium ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`}
                 >
-                  <Text className="text-white font-semibold">Start</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={handlePauseTimer}
-                  className="bg-yellow-500 px-6 py-2 rounded-lg"
-                  style={{ minWidth: 80, alignItems: 'center' }}
-                >
-                  <Text className="text-white font-semibold">Pause</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={handleResetTimer}
-                className="bg-red-500 px-6 py-2 rounded-lg"
-                style={{ minWidth: 80, alignItems: 'center' }}
+                  Notes
+                </Text>
+              </View>
+              <Text
+                className={`text-base ${
+                  isDark ? 'text-gray-200' : 'text-gray-700'
+                }`}
               >
-                <Text className="text-white font-semibold">Reset</Text>
-              </TouchableOpacity>
+                {activity.notes}
+              </Text>
             </View>
+          )}
+
+          {/* Timer - Collapsible */}
+          <View
+            className={`rounded-lg ${
+              isDark ? 'bg-gray-800' : 'bg-white'
+            } shadow-sm overflow-hidden`}
+          >
+            <TouchableOpacity
+              onPress={() => setIsTimerExpanded(!isTimerExpanded)}
+              className="flex-row items-center justify-between p-4"
+            >
+              <View className="flex-row items-center">
+                <Ionicons
+                  name="timer-outline"
+                  size={22}
+                  color={isDark ? '#9CA3AF' : '#6B7280'}
+                  style={{ marginRight: 8 }}
+                />
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  Timer
+                </Text>
+                {isTimerRunning && (
+                  <Text
+                    className="ml-3 text-base font-mono"
+                    style={{ color: '#22C55E' }}
+                  >
+                    {formatTime(timerSeconds)}
+                  </Text>
+                )}
+              </View>
+              <Ionicons
+                name={isTimerExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color={isDark ? '#9CA3AF' : '#6B7280'}
+              />
+            </TouchableOpacity>
+
+            {isTimerExpanded && (
+              <View className="px-4 pb-4">
+                <Text
+                  className={`text-4xl font-mono text-center mb-4 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  {formatTime(timerSeconds)}
+                </Text>
+                <View className="flex-row justify-center space-x-4">
+                  {!isTimerRunning ? (
+                    <TouchableOpacity
+                      onPress={handleStartTimer}
+                      className="bg-green-500 px-6 py-2 rounded-lg"
+                      style={{ minWidth: 80, alignItems: 'center' }}
+                    >
+                      <Text className="text-white font-semibold">Start</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={handlePauseTimer}
+                      className="bg-yellow-500 px-6 py-2 rounded-lg"
+                      style={{ minWidth: 80, alignItems: 'center' }}
+                    >
+                      <Text className="text-white font-semibold">Pause</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={handleResetTimer}
+                    className="bg-red-500 px-6 py-2 rounded-lg"
+                    style={{ minWidth: 80, alignItems: 'center' }}
+                  >
+                    <Text className="text-white font-semibold">Reset</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Sets */}
@@ -374,13 +526,26 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   isDark ? 'bg-gray-800' : 'bg-white'
                 } shadow-sm`}
               >
-                <Text
-                  className={`text-lg font-semibold mb-3 ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Set {index + 1}
-                </Text>
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text
+                    className={`text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Set {index + 1}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => showSetOptions(set)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    className="p-1"
+                  >
+                    <Ionicons
+                      name="ellipsis-vertical"
+                      size={20}
+                      color={isDark ? '#9CA3AF' : '#6B7280'}
+                    />
+                  </TouchableOpacity>
+                </View>
                 <View className="flex-row space-x-4">
                   <View className="flex-1">
                     <Text
@@ -394,9 +559,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       ref={ref => {
                         setInputRefs.current[set.id] = ref;
                       }}
-                      value={set.weight?.toString() || ''}
+                      value={set.weight != null ? set.weight.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { weight: parseInt(text) || 0 })
+                        handleUpdateSet(set.id, { weight: text ? parseInt(text) : undefined })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -404,9 +569,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                           ? 'bg-gray-700 border-gray-600 text-white'
                           : 'bg-white border-gray-300 text-gray-900'
                       }`}
-                      placeholder="0"
+                      placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      returnKeyType="next"
+                      returnKeyType="done"
                       blurOnSubmit={false}
                       onFocus={() => {
                         setTimeout(() => {
@@ -424,9 +589,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       Reps
                     </Text>
                     <TextInput
-                      value={set.reps?.toString() || ''}
+                      value={set.reps != null ? set.reps.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { reps: parseInt(text) || 0 })
+                        handleUpdateSet(set.id, { reps: text ? parseInt(text) : undefined })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -434,7 +599,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                           ? 'bg-gray-700 border-gray-600 text-white'
                           : 'bg-white border-gray-300 text-gray-900'
                       }`}
-                      placeholder="0"
+                      placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                       returnKeyType="done"
                       blurOnSubmit={true}
@@ -446,32 +611,28 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     />
                   </View>
                 </View>
-                <View className="flex-row space-x-3 mt-3">
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleUpdateSet(set.id, { completed: !set.completed })
-                    }
-                    className={`flex-1 px-4 py-2 rounded-lg ${
-                      set.completed ? 'bg-green-500' : 'bg-gray-300'
-                    }`}
+                <TouchableOpacity
+                  onPress={() =>
+                    handleUpdateSet(set.id, { completed: !set.completed })
+                  }
+                  className="mt-5 px-4 py-4 rounded-lg"
+                  style={{
+                    backgroundColor: set.completed
+                      ? isDark ? '#1f2937' : '#fff'
+                      : '#D1D5DB',
+                    borderWidth: 2,
+                    borderColor: set.completed ? '#22C55E' : '#D1D5DB',
+                  }}
+                >
+                  <Text
+                    className={`text-center font-semibold text-lg`}
+                    style={{
+                      color: set.completed ? '#22C55E' : '#374151',
+                    }}
                   >
-                    <Text
-                      className={`text-center font-semibold ${
-                        set.completed ? 'text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {set.completed ? 'Completed' : 'Mark Complete'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDuplicateSet(set)}
-                    className="bg-blue-500 px-4 py-2 rounded-lg"
-                  >
-                    <Text className="text-white text-center font-semibold">
-                      Duplicate
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                    {set.completed ? 'Completed  ✅' : 'Mark Complete'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             ))}
 
@@ -495,6 +656,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         }`}
         style={{
           bottom: isKeyboardVisible ? keyboardHeight : 0,
+          paddingBottom: isKeyboardVisible ? 16 : 34,
           zIndex: 1000,
         }}
       >

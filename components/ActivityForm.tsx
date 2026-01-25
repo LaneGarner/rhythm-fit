@@ -3,6 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Keyboard,
   Modal,
   ScrollView,
@@ -12,6 +13,8 @@ import {
   View,
 } from 'react-native';
 import { ACTIVITY_EMOJIS, ACTIVITY_TYPES } from '../constants';
+import { useAuth } from '../context/AuthContext';
+import { addToLibrary } from '../services/libraryService';
 import { ThemeContext } from '../theme/ThemeContext';
 import {
   Activity,
@@ -27,6 +30,7 @@ interface ActivityFormProps {
   initialActivity?: Activity;
   onSave: (activity: Activity, recurringConfig?: RecurringConfig) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }
 
 export default function ActivityForm({
@@ -34,9 +38,11 @@ export default function ActivityForm({
   initialActivity,
   onSave,
   onCancel,
+  onDelete,
 }: ActivityFormProps) {
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
+  const { getAccessToken } = useAuth();
 
   const [activityName, setActivityName] = useState(initialActivity?.name || '');
   const [activityType, setActivityType] = useState<ActivityType>(
@@ -63,6 +69,7 @@ export default function ActivityForm({
 
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
   // Keyboard listeners
   useEffect(() => {
@@ -108,7 +115,25 @@ export default function ActivityForm({
           });
         },
         () => {
-          console.log('Failed to measure input position');
+          // Failed to measure input position
+        }
+      );
+    }
+  };
+
+  const scrollToSetInput = (setId: string) => {
+    const inputRef = setInputRefs.current[setId];
+    if (inputRef && scrollViewRef.current) {
+      inputRef.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({
+            y: y - 100,
+            animated: true,
+          });
+        },
+        () => {
+          // Failed to measure set input position
         }
       );
     }
@@ -167,45 +192,59 @@ export default function ActivityForm({
   };
 
   const handleNameSelect = (name: string, type?: string) => {
-    console.log(
-      'ActivityForm: handleNameSelect called with:',
-      name,
-      'type:',
-      type
-    );
     setActivityName(name);
-    console.log('ActivityForm: setActivityName called with:', name);
     if (type) {
-      console.log('ActivityForm: setting activity type to:', type);
       setActivityType(type as ActivityType);
       const defaultEmoji =
         ACTIVITY_EMOJIS[type as keyof typeof ACTIVITY_EMOJIS];
-      console.log(
-        'ActivityForm: default emoji for type',
-        type,
-        'is:',
-        defaultEmoji
-      );
       if (defaultEmoji) {
-        console.log('ActivityForm: setting selected emoji to:', defaultEmoji);
         setSelectedEmoji(defaultEmoji);
       }
     }
   };
 
   const handleAddToLibrary = async (name: string) => {
-    // This would need to be implemented based on your storage utilities
-    console.log('Add to library:', name);
+    // Save to library immediately (syncs to database if logged in)
+    try {
+      const token = await getAccessToken();
+      const result = await addToLibrary(token, {
+        name: name,
+        type: activityType,
+        category: 'Strength',
+        muscle_groups: ['Full Body'],
+        difficulty: 'Intermediate',
+      });
+
+      if (result.success) {
+        Alert.alert(
+          'Added to Library',
+          `"${name}" has been added to your activity library.`
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          result.error || 'Failed to add activity to library.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add activity to library.');
+    }
   };
 
   const handleAddSet = () => {
+    const newSetId = Date.now().toString();
     const newSet: SetData = {
-      id: Date.now().toString(),
-      reps: 0,
-      weight: 0,
+      id: newSetId,
+      reps: undefined,
+      weight: undefined,
       completed: false,
     };
     setSets([...sets, newSet]);
+
+    // Focus the weight input of the new set after render
+    setTimeout(() => {
+      setInputRefs.current[`${newSetId}-weight`]?.focus();
+    }, 100);
   };
 
   const handleUpdateSet = (setId: string, updates: Partial<SetData>) => {
@@ -220,6 +259,10 @@ export default function ActivityForm({
       completed: false,
     };
     setSets([...sets, newSet]);
+  };
+
+  const handleDeleteSet = (setId: string) => {
+    setSets(sets.filter(set => set.id !== setId));
   };
 
   return (
@@ -297,6 +340,39 @@ export default function ActivityForm({
               onAddToLibrary={handleAddToLibrary}
               placeholder="e.g., Bench Press, Pull-ups, Running"
               error={errors.name}
+            />
+          </View>
+
+          {/* Notes */}
+          <View>
+            <Text
+              className={`text-lg font-semibold mb-2 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              Notes
+            </Text>
+            <TextInput
+              ref={notesInputRef}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Optional notes about this activity"
+              placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+              multiline
+              numberOfLines={3}
+              className={`px-4 py-3 border rounded-lg text-base ${
+                isDark
+                  ? 'bg-gray-800 border-gray-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              textAlignVertical="top"
+              returnKeyType="done"
+              blurOnSubmit={true}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollToInput(notesInputRef);
+                }, 100);
+              }}
             />
           </View>
 
@@ -485,9 +561,14 @@ export default function ActivityForm({
                       Weight (lbs)
                     </Text>
                     <TextInput
-                      value={set.weight?.toString() || ''}
+                      ref={ref => {
+                        setInputRefs.current[`${set.id}-weight`] = ref;
+                      }}
+                      value={set.weight != null ? set.weight.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { weight: parseInt(text) || 0 })
+                        handleUpdateSet(set.id, {
+                          weight: text ? parseInt(text) : undefined,
+                        })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -495,8 +576,13 @@ export default function ActivityForm({
                           ? 'bg-gray-700 border-gray-600 text-white'
                           : 'bg-white border-gray-300 text-gray-900'
                       }`}
-                      placeholder="0"
+                      placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollToSetInput(`${set.id}-weight`);
+                        }, 100);
+                      }}
                     />
                   </View>
                   <View className="flex-1">
@@ -508,9 +594,14 @@ export default function ActivityForm({
                       Reps
                     </Text>
                     <TextInput
-                      value={set.reps?.toString() || ''}
+                      ref={ref => {
+                        setInputRefs.current[`${set.id}-reps`] = ref;
+                      }}
+                      value={set.reps != null ? set.reps.toString() : ''}
                       onChangeText={text =>
-                        handleUpdateSet(set.id, { reps: parseInt(text) || 0 })
+                        handleUpdateSet(set.id, {
+                          reps: text ? parseInt(text) : undefined,
+                        })
                       }
                       keyboardType="numeric"
                       className={`px-3 py-2 border rounded-lg ${
@@ -518,19 +609,34 @@ export default function ActivityForm({
                           ? 'bg-gray-700 border-gray-600 text-white'
                           : 'bg-white border-gray-300 text-gray-900'
                       }`}
-                      placeholder="0"
+                      placeholder=""
                       placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollToSetInput(`${set.id}-reps`);
+                        }, 100);
+                      }}
                     />
                   </View>
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleDuplicateSet(set)}
-                  className="mt-3 bg-blue-500 px-4 py-2 rounded-lg"
-                >
-                  <Text className="text-white text-center font-semibold">
-                    Duplicate
-                  </Text>
-                </TouchableOpacity>
+                <View className="flex-row space-x-3 mt-3">
+                  <TouchableOpacity
+                    onPress={() => handleDuplicateSet(set)}
+                    className="flex-1 bg-blue-500 px-4 py-2 rounded-lg"
+                  >
+                    <Text className="text-white text-center font-semibold">
+                      Duplicate
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteSet(set.id)}
+                    className="flex-1 bg-red-500 px-4 py-2 rounded-lg"
+                  >
+                    <Text className="text-white text-center font-semibold">
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
 
@@ -579,38 +685,14 @@ export default function ActivityForm({
             </TouchableOpacity>
           </View>
 
-          {/* Notes */}
-          <View>
-            <Text
-              className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              Notes
-            </Text>
-            <TextInput
-              ref={notesInputRef}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Optional notes about this activity"
-              placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-              multiline
-              numberOfLines={3}
-              className={`px-4 py-3 border rounded-lg text-base ${
-                isDark
-                  ? 'bg-gray-800 border-gray-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              textAlignVertical="top"
-              returnKeyType="done"
-              blurOnSubmit={true}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollToInput(notesInputRef);
-                }, 100);
-              }}
-            />
-          </View>
+          {/* Delete Activity Link */}
+          {mode === 'edit' && onDelete && (
+            <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
+              <Text className="text-red-500 text-center text-base">
+                Delete Activity
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
@@ -621,6 +703,7 @@ export default function ActivityForm({
         }`}
         style={{
           bottom: isKeyboardVisible ? keyboardHeight : 0,
+          paddingBottom: isKeyboardVisible ? 16 : 34,
           zIndex: 1000,
         }}
       >
@@ -721,6 +804,7 @@ export default function ActivityForm({
                 maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
                 minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
                 style={{ height: 200, width: '100%' }}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             </View>
           </View>

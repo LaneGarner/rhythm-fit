@@ -15,6 +15,7 @@ import {
   searchExercises,
 } from '../constants/exercises';
 import { RootState } from '../redux/store';
+import { getCachedLibrary, LibraryItem } from '../services/libraryService';
 import { ThemeContext } from '../theme/ThemeContext';
 
 interface ActivityNameInputProps {
@@ -39,11 +40,32 @@ export default function ActivityNameInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const inputRef = useRef<TextInput>(null);
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
 
   const activities = useSelector((state: RootState) => state.activities.data);
+
+  // Load library items from cache
+  useEffect(() => {
+    const loadLibrary = async () => {
+      const items = await getCachedLibrary();
+      setLibraryItems(items);
+    };
+    loadLibrary();
+  }, []);
+
+  // Reload library items when input is focused (to catch newly added ones)
+  useEffect(() => {
+    if (isFocused) {
+      const loadLibrary = async () => {
+        const items = await getCachedLibrary();
+        setLibraryItems(items);
+      };
+      loadLibrary();
+    }
+  }, [isFocused]);
 
   // Sync local state if parent value changes (e.g., parent clears input)
   React.useEffect(() => {
@@ -56,6 +78,7 @@ export default function ActivityNameInput({
   useEffect(() => {
     if (isFocused) {
       const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const customExerciseNames = libraryItems.map(ex => ex.name);
       const recentActivities = activities
         .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
         .map(a => a.name)
@@ -63,18 +86,27 @@ export default function ActivityNameInput({
         .slice(0, 5);
 
       const initialSuggestions = [
-        ...new Set([...allExercises.slice(0, 10), ...recentActivities]),
+        ...new Set([
+          ...customExerciseNames,
+          ...allExercises.slice(0, 10),
+          ...recentActivities,
+        ]),
       ];
       setSuggestions(initialSuggestions);
       setShowSuggestions(true);
     }
-  }, [isFocused, activities]);
+  }, [isFocused, activities, libraryItems]);
 
   // Update suggestions based on input
   useEffect(() => {
     if (localValue.trim().length > 0) {
       const results = searchExercises(localValue);
       const suggestionNames = results.map(ex => ex.name);
+
+      // Search custom exercises
+      const matchingCustom = libraryItems
+        .filter(ex => ex.name.toLowerCase().includes(localValue.toLowerCase()))
+        .map(ex => ex.name);
 
       // Add recent activities (last 30 days)
       const recentActivities = activities
@@ -85,9 +117,13 @@ export default function ActivityNameInput({
         )
         .slice(0, 5);
 
-      // Combine and deduplicate
+      // Combine and deduplicate (custom first, then database, then recent)
       const allSuggestions = [
-        ...new Set([...suggestionNames, ...recentActivities]),
+        ...new Set([
+          ...matchingCustom,
+          ...suggestionNames,
+          ...recentActivities,
+        ]),
       ];
       setSuggestions(allSuggestions);
     } else if (isFocused) {
@@ -99,67 +135,47 @@ export default function ActivityNameInput({
         .slice(0, 5);
 
       const allExercises = EXERCISE_DATABASE.map(ex => ex.name);
+      const customExerciseNames = libraryItems.map(ex => ex.name);
       const initialSuggestions = [
-        ...new Set([...allExercises.slice(0, 10), ...recentActivities]),
+        ...new Set([
+          ...customExerciseNames,
+          ...allExercises.slice(0, 10),
+          ...recentActivities,
+        ]),
       ];
       setSuggestions(initialSuggestions);
     }
-  }, [localValue, activities, isFocused]);
+  }, [localValue, activities, isFocused, libraryItems]);
 
   const handleSelectSuggestion = (suggestion: string) => {
-    console.log(
-      'ActivityNameInput: handleSelectSuggestion called with:',
-      suggestion
-    );
     setIsSelectingSuggestion(true);
     setLocalValue(suggestion);
     setShowSuggestions(false);
     // Sync to parent
     onChangeText(suggestion);
-    console.log('ActivityNameInput: onChangeText called with:', suggestion);
     // Then call onSelectSuggestion with type if available
     if (onSelectSuggestion) {
+      // Check database first, then custom exercises
       const exercise = findExerciseByName(suggestion);
-      console.log('ActivityNameInput: found exercise:', exercise);
+      const customExercise = libraryItems.find(
+        ex => ex.name.toLowerCase() === suggestion.toLowerCase()
+      );
       if (exercise) {
-        console.log(
-          'ActivityNameInput: calling onSelectSuggestion with type:',
-          suggestion,
-          exercise.type
-        );
         onSelectSuggestion(suggestion, exercise.type);
+      } else if (customExercise) {
+        onSelectSuggestion(suggestion, customExercise.type);
       } else {
-        console.log(
-          'ActivityNameInput: calling onSelectSuggestion without type:',
-          suggestion
-        );
         onSelectSuggestion(suggestion);
       }
-    } else {
-      console.log(
-        'ActivityNameInput: onSelectSuggestion callback not provided'
-      );
     }
     // Reset the flag after a short delay
     setTimeout(() => setIsSelectingSuggestion(false), 100);
   };
 
   const handleBlur = () => {
-    console.log(
-      'ActivityNameInput: handleBlur called, localValue:',
-      localValue,
-      'value:',
-      value,
-      'isSelectingSuggestion:',
-      isSelectingSuggestion
-    );
     setIsFocused(false);
     // Don't sync to parent if we're in the middle of selecting a suggestion
     if (!isSelectingSuggestion && localValue !== value) {
-      console.log(
-        'ActivityNameInput: syncing localValue to parent on blur:',
-        localValue
-      );
       onChangeText(localValue);
     }
     // Delay hiding suggestions to allow for touch events
@@ -173,6 +189,8 @@ export default function ActivityNameInput({
 
   const handleAddToLibrary = () => {
     if (localValue.trim()) {
+      // Sync value to parent before adding to library
+      onChangeText(localValue.trim());
       onAddToLibrary?.(localValue.trim());
       setShowSuggestions(false);
     }
@@ -213,7 +231,7 @@ export default function ActivityNameInput({
       {error && <Text className="text-red-500 text-sm mt-1">{error}</Text>}
 
       {/* Suggestions Dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && (suggestions.length > 0 || showAddToLibrary) && (
         <View
           className={`absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border ${
             isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
@@ -226,9 +244,6 @@ export default function ActivityNameInput({
             elevation: 5,
             zIndex: 1000,
           }}
-          onTouchStart={() =>
-            console.log('ActivityNameInput: Dropdown container touched')
-          }
         >
           <ScrollView
             style={{ maxHeight: 240 }}
@@ -246,13 +261,7 @@ export default function ActivityNameInput({
               return (
                 <TouchableOpacity
                   key={index}
-                  onPress={() => {
-                    console.log(
-                      'ActivityNameInput: TouchableOpacity onPress called for:',
-                      suggestion
-                    );
-                    handleSelectSuggestion(suggestion);
-                  }}
+                  onPress={() => handleSelectSuggestion(suggestion)}
                   activeOpacity={0.7}
                   style={{
                     paddingHorizontal: 16,

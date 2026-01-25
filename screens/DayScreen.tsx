@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
-import React, { useContext, useState, useCallback } from 'react';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -20,6 +20,8 @@ import {
   reorderActivities,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
+import { useAuth } from '../context/AuthContext';
+import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 
@@ -36,7 +38,7 @@ if (!isExpoGo) {
     DraggableFlatList = draggableModule.default;
     ScaleDecorator = draggableModule.ScaleDecorator;
   } catch (e) {
-    console.log('DraggableFlatList not available, using fallback');
+    // DraggableFlatList not available, using fallback
   }
 }
 
@@ -44,6 +46,7 @@ export default function DayScreen({ navigation, route }: any) {
   const { date } = route.params;
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
+  const { getAccessToken } = useAuth();
 
   // Bulk selection state
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -56,7 +59,7 @@ export default function DayScreen({ navigation, route }: any) {
   // Pending order state - only saved when user clicks Save
   const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
 
-  // Sort activities: by custom order if available, then incomplete first, then by id
+  // Sort activities: by custom order if available, then by id (preserve order regardless of completion)
   const savedActivities = activities
     .filter(activity => activity.date === date)
     .sort((a, b) => {
@@ -66,11 +69,7 @@ export default function DayScreen({ navigation, route }: any) {
       if (orderA !== orderB) {
         return orderA - orderB;
       }
-      // Secondary: Incomplete first
-      if (a.completed !== b.completed) {
-        return a.completed ? 1 : -1;
-      }
-      // Tertiary: By ID (timestamp-based, older first)
+      // Secondary: By ID (timestamp-based, older first)
       return a.id.localeCompare(b.id);
     });
 
@@ -81,12 +80,44 @@ export default function DayScreen({ navigation, route }: any) {
         .filter((a): a is Activity => a !== undefined)
     : savedActivities;
 
+  // Sync pendingOrderIds when activities are deleted or moved away
+  useEffect(() => {
+    if (pendingOrderIds) {
+      const savedIds = new Set(savedActivities.map(a => a.id));
+      const validPendingIds = pendingOrderIds.filter(id => savedIds.has(id));
+
+      // If any IDs were removed, update pending order
+      if (validPendingIds.length !== pendingOrderIds.length) {
+        if (validPendingIds.length === 0) {
+          // All activities were deleted, clear pending
+          setPendingOrderIds(null);
+        } else {
+          setPendingOrderIds(validPendingIds);
+        }
+      }
+
+      // Also add any new activities that aren't in pending order
+      const pendingSet = new Set(pendingOrderIds);
+      const newIds = savedActivities
+        .filter(a => !pendingSet.has(a.id))
+        .map(a => a.id);
+      if (newIds.length > 0) {
+        setPendingOrderIds([...validPendingIds, ...newIds]);
+      }
+    }
+  }, [savedActivities, pendingOrderIds]);
+
   const hasUnsavedChanges = pendingOrderIds !== null;
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
+
+  // Check if all activities for the day are completed
+  const allCompleted = dayActivities.length > 0 && dayActivities.every(a => a.completed);
+  const completedCount = dayActivities.filter(a => a.completed).length;
+  const totalCount = dayActivities.length;
 
   // Save pending order changes
   const saveChanges = useCallback(() => {
@@ -168,16 +199,28 @@ export default function DayScreen({ navigation, route }: any) {
 
     Alert.alert(
       'Delete Activities',
-      `Are you sure you want to delete ${selectedActivities.size} activit${selectedActivities.size > 1 ? 'ies' : 'y'}?`,
+      `Are you sure you want to delete ${selectedActivities.size} activit${selectedActivities.size > 1 ? 'ies' : 'y'}? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            selectedActivities.forEach(activityId => {
+          onPress: async () => {
+            for (const activityId of selectedActivities) {
+              const activity = activities.find(a => a.id === activityId);
               dispatch(deleteActivity(activityId));
-            });
+              // Sync deletion to backend
+              if (activity) {
+                try {
+                  const token = await getAccessToken();
+                  if (token) {
+                    await pushActivityChange(token, activity, true);
+                  }
+                } catch (err) {
+                  console.error('Failed to sync deletion:', err);
+                }
+              }
+            }
             setSelectedActivities(new Set());
             setIsBulkMode(false);
           },
@@ -213,15 +256,29 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   const handleDeleteActivity = (activityId: string) => {
+    const activity = activities.find(a => a.id === activityId);
     Alert.alert(
       'Delete Activity',
-      'Are you sure you want to delete this activity?',
+      'Are you sure you want to delete this activity? This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => dispatch(deleteActivity(activityId)),
+          onPress: async () => {
+            dispatch(deleteActivity(activityId));
+            // Sync deletion to backend
+            if (activity) {
+              try {
+                const token = await getAccessToken();
+                if (token) {
+                  await pushActivityChange(token, activity, true);
+                }
+              } catch (err) {
+                console.error('Failed to sync deletion:', err);
+              }
+            }
+          },
         },
       ]
     );
@@ -232,10 +289,18 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   const handleToggleCompletion = (activity: any) => {
+    const newCompleted = !activity.completed;
+
+    // When marking incomplete, also mark all sets as incomplete
+    const updatedSets = !newCompleted && activity.sets
+      ? activity.sets.map((set: any) => ({ ...set, completed: false }))
+      : activity.sets;
+
     dispatch(
       updateActivity({
         ...activity,
-        completed: !activity.completed,
+        completed: newCompleted,
+        sets: updatedSets,
       })
     );
   };
@@ -336,7 +401,6 @@ export default function DayScreen({ navigation, route }: any) {
           isDark ? 'bg-gray-800' : 'bg-white'
         } shadow-sm`}
         style={{
-          opacity: activity.completed ? 0.6 : 1,
           borderWidth: isSelected ? 2 : 0,
           borderColor: '#3B82F6',
         }}
@@ -405,11 +469,11 @@ export default function DayScreen({ navigation, route }: any) {
               </Text>
             </View>
           </View>
-          <View
-            className={`w-3 h-3 rounded-full ${
-              activity.completed ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          />
+          {activity.completed ? (
+            <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+          ) : (
+            <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -446,7 +510,6 @@ export default function DayScreen({ navigation, route }: any) {
             isDark ? 'bg-gray-800' : 'bg-white'
           } shadow-sm`}
           style={{
-            opacity: activity.completed && !isActive ? 0.6 : 1,
             borderWidth: isSelected ? 2 : isActive ? 2 : 0,
             borderColor: isActive ? '#10B981' : '#3B82F6',
             backgroundColor: isActive
@@ -512,11 +575,11 @@ export default function DayScreen({ navigation, route }: any) {
                 </Text>
               </View>
             </View>
-            <View
-              className={`w-3 h-3 rounded-full ${
-                activity.completed ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            />
+            {activity.completed ? (
+              <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+            ) : (
+              <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
+            )}
           </View>
         </TouchableOpacity>
       );
@@ -639,6 +702,31 @@ export default function DayScreen({ navigation, route }: any) {
     if (isExpoGo || !DraggableFlatList) {
       return (
         <ScrollView className="flex-1 p-4">
+          {totalCount > 0 && !isBulkMode && (
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 14 }}>
+                  {completedCount}/{totalCount} complete
+                </Text>
+                {allCompleted && (
+                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{ marginLeft: 6 }} />
+                )}
+              </View>
+              <View style={{
+                height: 6,
+                backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                borderRadius: 3,
+                overflow: 'hidden'
+              }}>
+                <View style={{
+                  height: '100%',
+                  width: `${(completedCount / totalCount) * 100}%`,
+                  backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                  borderRadius: 3
+                }} />
+              </View>
+            </View>
+          )}
           {dayActivities.map((activity, index) => (
             <ActivityItemWithArrows
               key={activity.id}
@@ -657,8 +745,35 @@ export default function DayScreen({ navigation, route }: any) {
         keyExtractor={(item: Activity) => item.id}
         renderItem={renderDraggableItem}
         onDragEnd={handleDragEnd}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
         activationDistance={isBulkMode ? 0 : 10000}
+        ListHeaderComponent={
+          totalCount > 0 && !isBulkMode ? (
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 14 }}>
+                  {completedCount}/{totalCount} complete
+                </Text>
+                {allCompleted && (
+                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{ marginLeft: 6 }} />
+                )}
+              </View>
+              <View style={{
+                height: 6,
+                backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                borderRadius: 3,
+                overflow: 'hidden'
+              }}>
+                <View style={{
+                  height: '100%',
+                  width: `${(completedCount / totalCount) * 100}%`,
+                  backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                  borderRadius: 3
+                }} />
+              </View>
+            </View>
+          ) : null
+        }
       />
     );
   };

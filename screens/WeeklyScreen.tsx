@@ -16,6 +16,8 @@ import {
   updateActivity,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
+import { useAuth } from '../context/AuthContext';
+import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 
@@ -25,6 +27,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
+  const { getAccessToken } = useAuth();
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -109,7 +112,7 @@ export default function WeeklyScreen({ navigation }: any) {
             });
           },
           () => {
-            console.log('Failed to measure current day position');
+            // Failed to measure current day position
           }
         );
       }
@@ -142,7 +145,7 @@ export default function WeeklyScreen({ navigation }: any) {
             },
             () => {
               // Fallback if measureLayout fails
-              console.log('Failed to measure current day position');
+              // Failed to measure current day position
             }
           );
         }, 100);
@@ -196,11 +199,7 @@ export default function WeeklyScreen({ navigation }: any) {
         if (orderA !== orderB) {
           return orderA - orderB;
         }
-        // Secondary: Incomplete first
-        if (a.completed !== b.completed) {
-          return a.completed ? 1 : -1;
-        }
-        // Tertiary: By ID (timestamp-based, older first)
+        // Secondary: By ID (timestamp-based, older first)
         return a.id.localeCompare(b.id);
       });
   };
@@ -213,6 +212,22 @@ export default function WeeklyScreen({ navigation }: any) {
   const getWeekActivities = (offset: number = 0) => {
     const weekDates = getWeekDates(offset);
     return activities.filter(activity => weekDates.includes(activity.date));
+  };
+
+  const handleClearActivitiesForDate = async (date: string) => {
+    const activitiesToDelete = activities.filter(a => a.date === date);
+    dispatch(deleteActivitiesForDate(date));
+    // Sync deletions to backend
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        for (const activity of activitiesToDelete) {
+          await pushActivityChange(token, activity, true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync deletions:', err);
+    }
   };
 
   const handleDayLongPress = (
@@ -311,13 +326,13 @@ export default function WeeklyScreen({ navigation }: any) {
           } else if (buttonIndex === clearIndex) {
             Alert.alert(
               'Clear Activities',
-              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}?`,
+              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Clear',
                   style: 'destructive',
-                  onPress: () => dispatch(deleteActivitiesForDate(date)),
+                  onPress: () => handleClearActivitiesForDate(date),
                 },
               ]
             );
@@ -387,13 +402,13 @@ export default function WeeklyScreen({ navigation }: any) {
           onPress: () => {
             Alert.alert(
               'Clear Activities',
-              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}?`,
+              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Clear',
                   style: 'destructive',
-                  onPress: () => dispatch(deleteActivitiesForDate(date)),
+                  onPress: () => handleClearActivitiesForDate(date),
                 },
               ]
             );
@@ -430,12 +445,12 @@ export default function WeeklyScreen({ navigation }: any) {
           marginTop: 2,
         }}
       >
-        {/* Settings Button - left positioned */}
+        {/* Settings Button - right positioned */}
         <TouchableOpacity
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
           accessibilityLabel="Settings"
-          style={{ position: 'absolute', left: 16, top: 69 }}
+          style={{ position: 'absolute', right: 16, top: 62 }}
         >
           <Ionicons
             name="settings-outline"
@@ -520,9 +535,10 @@ export default function WeeklyScreen({ navigation }: any) {
           </View>
         </View>
       </View>
-      <ScrollView ref={scrollViewRef} className="flex-1 px-4 pt-4 pb-20">
+      <ScrollView ref={scrollViewRef} className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 100 }}>
         {weekDays.map(day => {
           const dayActivities = getActivitiesForDate(day.date);
+          const allCompleted = dayActivities.length > 0 && dayActivities.every(a => a.completed);
           return (
             <TouchableOpacity
               key={day.date}
@@ -624,11 +640,39 @@ export default function WeeklyScreen({ navigation }: any) {
                       >
                         {activity.name || activity.type}
                       </Text>
-                      <View
-                        className={`w-3 h-3 rounded-full ${activity.completed ? 'bg-green-500' : 'bg-gray-300'}`}
-                      />
+                      {activity.completed ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                      ) : (
+                        <Ionicons name="ellipse-outline" size={18} color="#D1D5DB" />
+                      )}
                     </View>
                   ))}
+                </View>
+              )}
+
+              {dayActivities.length > 0 && (
+                <View style={{ marginTop: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280', fontSize: 12 }}>
+                      {dayActivities.filter(a => a.completed).length}/{dayActivities.length} complete
+                    </Text>
+                    {allCompleted && (
+                      <Ionicons name="checkmark-circle" size={14} color="#22C55E" style={{ marginLeft: 4 }} />
+                    )}
+                  </View>
+                  <View style={{
+                    height: 4,
+                    backgroundColor: isDark ? '#374151' : '#e5e7eb',
+                    borderRadius: 2,
+                    overflow: 'hidden'
+                  }}>
+                    <View style={{
+                      height: '100%',
+                      width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
+                      backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
+                      borderRadius: 2
+                    }} />
+                  </View>
                 </View>
               )}
             </TouchableOpacity>

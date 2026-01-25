@@ -202,7 +202,7 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
       style={{
         position: 'absolute',
         top: 50, // Below status bar
-        right: 16,
+        left: 16,
         zIndex: 1000,
       }}
     >

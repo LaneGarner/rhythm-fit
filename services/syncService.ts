@@ -131,7 +131,6 @@ export async function syncActivities(
   onActivitiesUpdated: (activities: Activity[]) => void
 ): Promise<void> {
   if (!API_URL) {
-    console.log('API not configured, skipping sync');
     return;
   }
 

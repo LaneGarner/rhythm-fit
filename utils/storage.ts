@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
-import { ExerciseDefinition } from '../constants/exercises';
 import { Activity } from '../types/activity';
+import { clearLibraryCache } from '../services/libraryService';
 
 // Activity storage functions
 export const saveActivities = async (activities: Activity[]) => {
@@ -48,54 +48,10 @@ export function toTitleCase(str: string): string {
   );
 }
 
-// Custom exercise storage functions
-export const saveCustomExercises = async (exercises: ExerciseDefinition[]) => {
-  try {
-    await AsyncStorage.setItem('customExercises', JSON.stringify(exercises));
-  } catch (error) {
-    console.error('Error saving custom exercises:', error);
-  }
-};
-
-export const loadCustomExercises = async (): Promise<ExerciseDefinition[]> => {
-  try {
-    const data = await AsyncStorage.getItem('customExercises');
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error loading custom exercises:', error);
-    return [];
-  }
-};
-
-export const addCustomExercise = async (
-  exercise: ExerciseDefinition
-): Promise<void> => {
-  try {
-    const existingExercises = await loadCustomExercises();
-    const updatedExercises = [...existingExercises, exercise];
-    await saveCustomExercises(updatedExercises);
-  } catch (error) {
-    console.error('Error adding custom exercise:', error);
-  }
-};
-
-export const getAllExercises = async (): Promise<ExerciseDefinition[]> => {
-  try {
-    const customExercises = await loadCustomExercises();
-    // Import the base exercise database dynamically to avoid circular imports
-    const { EXERCISE_DATABASE } = await import('../constants/exercises');
-    return [...EXERCISE_DATABASE, ...customExercises];
-  } catch (error) {
-    console.error('Error loading all exercises:', error);
-    return [];
-  }
-};
-
 // Clear all data functions
 export const clearAllActivities = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem('activities');
-    console.log('All activities cleared from storage');
   } catch (error) {
     console.error('Error clearing activities:', error);
   }
@@ -104,25 +60,14 @@ export const clearAllActivities = async (): Promise<void> => {
 export const clearChatHistory = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem('chat_history');
-    console.log('Chat history cleared from storage');
   } catch (error) {
     console.error('Error clearing chat history:', error);
-  }
-};
-
-export const clearCustomExercises = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem('customExercises');
-    console.log('Custom exercises cleared from storage');
-  } catch (error) {
-    console.error('Error clearing custom exercises:', error);
   }
 };
 
 export const clearThemeMode = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem('themeMode');
-    console.log('Theme mode cleared from storage');
   } catch (error) {
     console.error('Error clearing theme mode:', error);
   }
@@ -133,10 +78,9 @@ export const clearAllAppData = async (): Promise<void> => {
     await Promise.all([
       clearAllActivities(),
       clearChatHistory(),
-      clearCustomExercises(),
+      clearLibraryCache(),
       clearThemeMode(),
     ]);
-    console.log('All app data cleared from storage');
   } catch (error) {
     console.error('Error clearing all app data:', error);
   }
@@ -293,22 +237,5 @@ export const generateRandomWeekActivities = (
     }
   }
 
-  const weekLabel =
-    weekOffset === 0
-      ? 'current week'
-      : weekOffset === -1
-        ? 'last week'
-        : weekOffset === 1
-          ? 'next week'
-          : weekOffset < 0
-            ? `${Math.abs(weekOffset)} weeks ago`
-            : `${weekOffset} weeks from now`;
-
-  console.log(
-    `Generated ${activities.length} random activities for ${weekLabel}`
-  );
-  console.log(
-    `Week range: ${startOfWeek.format('MMM D')} - ${startOfWeek.add(6, 'day').format('MMM D, YYYY')}`
-  );
   return activities;
 };
