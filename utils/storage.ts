@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
+import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
 
 // Activity storage functions
@@ -92,17 +93,8 @@ export const generateRandomWeekActivities = (
 ): Activity[] => {
   const activities: Activity[] = [];
 
-  // Use dayjs for reliable date calculations
-  const today = dayjs();
-  const targetWeek = today.add(weekOffset, 'week');
-
-  // Get Monday of the target week (Monday-Sunday week model)
-  // dayjs startOf('week') uses Sunday as start, so we need to calculate Monday properly
-  const dayOfWeek = targetWeek.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  // For Monday-Sunday week: go back to Monday
-  // Sunday (0) -> go back 6 days, Monday (1) -> go back 0 days, Tuesday (2) -> go back 1 day, etc.
-  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const startOfWeek = targetWeek.subtract(daysToSubtract, 'day').startOf('day');
+  // Get Monday of the target week
+  const startOfWeek = getMondayOfWeekByOffset(weekOffset);
 
   // Sample exercises by category
   const weightTrainingExercises = [

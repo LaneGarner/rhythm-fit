@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
+import { getMondayOfWeekByOffset } from '../utils/dateUtils';
 import {
   ActionSheetIOS,
   Alert,
@@ -41,13 +42,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const getWeekDays = (offset: number = 0) => {
     const days = [];
     const today = dayjs();
-    const targetDate = today.add(offset * 7, 'day');
-
-    // Find the most recent Monday (or today if it's Monday)
-    const monday =
-      targetDate.day() === 1
-        ? targetDate
-        : targetDate.subtract(targetDate.day() - 1, 'day');
+    const monday = getMondayOfWeekByOffset(offset);
 
     for (let i = 0; i < 7; i++) {
       const date = monday.add(i, 'day');
@@ -62,12 +57,7 @@ export default function WeeklyScreen({ navigation }: any) {
   };
 
   const getWeekDateRange = (offset: number = 0) => {
-    const today = dayjs();
-    const targetDate = today.add(offset * 7, 'day');
-    const monday =
-      targetDate.day() === 1
-        ? targetDate
-        : targetDate.subtract(targetDate.day() - 1, 'day');
+    const monday = getMondayOfWeekByOffset(offset);
     const sunday = monday.add(6, 'day');
 
     // If both dates are in the same month
@@ -269,9 +259,9 @@ export default function WeeklyScreen({ navigation }: any) {
         markAllIncompleteIndex = options.length - 1;
       }
 
-      // Add "Clear" option if there are activities for this day
+      // Add "Delete" option if there are activities for this day
       if (dayActivities.length > 0) {
-        options.push(`Clear ${activityCount} ${activityText}`);
+        options.push(`Delete ${activityCount} ${activityText}`);
         clearIndex = options.length - 1;
         destructiveButtonIndex = clearIndex;
       }
@@ -325,12 +315,12 @@ export default function WeeklyScreen({ navigation }: any) {
             );
           } else if (buttonIndex === clearIndex) {
             Alert.alert(
-              'Clear Activities',
-              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
+              'Delete Activities',
+              `Are you sure you want to delete all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Clear',
+                  text: 'Delete',
                   style: 'destructive',
                   onPress: () => handleClearActivitiesForDate(date),
                 },
@@ -397,16 +387,16 @@ export default function WeeklyScreen({ navigation }: any) {
 
       if (dayActivities.length > 0) {
         alertOptions.push({
-          text: `Clear ${activityCount} ${activityText}`,
+          text: `Delete ${activityCount} ${activityText}`,
           style: 'destructive' as const,
           onPress: () => {
             Alert.alert(
-              'Clear Activities',
-              `Are you sure you want to remove all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
+              'Delete Activities',
+              `Are you sure you want to delete all ${activityCount} ${activityText} from ${formattedDate}? This cannot be undone.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Clear',
+                  text: 'Delete',
                   style: 'destructive',
                   onPress: () => handleClearActivitiesForDate(date),
                 },

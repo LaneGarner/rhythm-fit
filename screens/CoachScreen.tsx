@@ -42,6 +42,7 @@ import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity, ActivityType } from '../types/activity';
+import { getMondayOfWeek, getSundayOfWeek } from '../utils/dateUtils';
 import { toTitleCase } from '../utils/storage';
 
 const GLOW_COLOR_LIGHT = '#3b82f6';
@@ -270,14 +271,8 @@ export default function CoachScreen({ navigation }: any) {
       .slice(0, 5);
 
     // Get this week's activities (Monday to Sunday)
-    // dayjs startOf('week') uses Sunday as start, so we need to calculate Monday properly
-    const today = dayjs();
-    const dayOfWeek = today.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    // For Monday-Sunday week: go back to Monday
-    // Sunday (0) -> go back 6 days, Monday (1) -> go back 0 days, Tuesday (2) -> go back 1 day, etc.
-    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = today.subtract(daysToSubtract, 'day').startOf('day');
-    const endOfWeek = startOfWeek.add(6, 'day'); // Sunday
+    const startOfWeek = getMondayOfWeek();
+    const endOfWeek = getSundayOfWeek();
     const thisWeekActivities = activities.filter(a => {
       const activityDate = dayjs(a.date);
       return (
