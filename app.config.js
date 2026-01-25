@@ -6,6 +6,9 @@ export default {
     slug: 'rhythm',
     ios: {
       bundleIdentifier: 'com.yourname.rhythm', // replace with your actual identifier
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       package: 'com.yourname.rhythm', // replace with your actual package name
