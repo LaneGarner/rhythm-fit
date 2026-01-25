@@ -25,6 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
+import ProgressBar from '../components/ProgressBar';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -758,6 +759,14 @@ export default function DayScreen({ navigation, route }: any) {
                   marginBottom: 6,
                 }}
               >
+                {allCompleted && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
                 <Text
                   style={{
                     color: isDark ? '#a3a3a3' : '#6b7280',
@@ -766,32 +775,12 @@ export default function DayScreen({ navigation, route }: any) {
                 >
                   {completedCount}/{totalCount} complete
                 </Text>
-                {allCompleted && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color="#22C55E"
-                    style={{ marginLeft: 6 }}
-                  />
-                )}
               </View>
-              <View
-                style={{
-                  height: 6,
-                  backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                }}
-              >
-                <View
-                  style={{
-                    height: '100%',
-                    width: `${(completedCount / totalCount) * 100}%`,
-                    backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                    borderRadius: 3,
-                  }}
-                />
-              </View>
+              <ProgressBar
+                completed={completedCount}
+                total={totalCount}
+                isDark={isDark}
+              />
             </View>
           )}
           {dayActivities.map((activity, index) => (
@@ -824,6 +813,14 @@ export default function DayScreen({ navigation, route }: any) {
                   marginBottom: 6,
                 }}
               >
+                {allCompleted && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
                 <Text
                   style={{
                     color: isDark ? '#a3a3a3' : '#6b7280',
@@ -832,32 +829,12 @@ export default function DayScreen({ navigation, route }: any) {
                 >
                   {completedCount}/{totalCount} complete
                 </Text>
-                {allCompleted && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color="#22C55E"
-                    style={{ marginLeft: 6 }}
-                  />
-                )}
               </View>
-              <View
-                style={{
-                  height: 6,
-                  backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                }}
-              >
-                <View
-                  style={{
-                    height: '100%',
-                    width: `${(completedCount / totalCount) * 100}%`,
-                    backgroundColor: allCompleted ? '#22C55E' : '#3B82F6',
-                    borderRadius: 3,
-                  }}
-                />
-              </View>
+              <ProgressBar
+                completed={completedCount}
+                total={totalCount}
+                isDark={isDark}
+              />
             </View>
           ) : null
         }

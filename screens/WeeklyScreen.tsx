@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { getMondayOfWeekByOffset } from '../utils/dateUtils';
+import ProgressBar from '../components/ProgressBar';
 import {
   ActionSheetIOS,
   Alert,
@@ -735,6 +736,14 @@ export default function WeeklyScreen({ navigation }: any) {
                           marginBottom: 4,
                         }}
                       >
+                        {allCompleted && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={14}
+                            color="#22C55E"
+                            style={{ marginRight: 4 }}
+                          />
+                        )}
                         <Text
                           style={{
                             color: isDark ? '#a3a3a3' : '#6b7280',
@@ -744,36 +753,14 @@ export default function WeeklyScreen({ navigation }: any) {
                           {dayActivities.filter(a => a.completed).length}/
                           {dayActivities.length} complete
                         </Text>
-                        {allCompleted && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={14}
-                            color="#22C55E"
-                            style={{ marginLeft: 4 }}
-                          />
-                        )}
                       </View>
-                      <View
-                        style={{
-                          height: 6,
-                          backgroundColor: isDark ? '#1f2937' : '#fff',
-                          borderRadius: 3,
-                          borderWidth: 1,
-                          borderColor: isDark ? '#4B5563' : '#d1d5db',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <View
-                          style={{
-                            height: '100%',
-                            width: `${(dayActivities.filter(a => a.completed).length / dayActivities.length) * 100}%`,
-                            backgroundColor: allCompleted
-                              ? '#22C55E'
-                              : '#3B82F6',
-                            borderRadius: 2,
-                          }}
-                        />
-                      </View>
+                      <ProgressBar
+                        completed={
+                          dayActivities.filter(a => a.completed).length
+                        }
+                        total={dayActivities.length}
+                        isDark={isDark}
+                      />
                     </View>
                   )}
                 </TouchableOpacity>
