@@ -1,6 +1,11 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Activity } from '../types/activity';
 import { loadActivities, saveActivities } from '../utils/storage';
+import {
+  generateSupersetId,
+  getNextSupersetPosition,
+  getSupersetActivities,
+} from '../utils/supersetUtils';
 
 interface ActivityState {
   data: Activity[];
@@ -52,7 +57,46 @@ const activitySlice = createSlice({
       });
     },
     deleteActivity(state, action: PayloadAction<string>) {
+      const activityToDelete = state.data.find(a => a.id === action.payload);
+      const supersetId = activityToDelete?.supersetId;
+
       state.data = state.data.filter(a => a.id !== action.payload);
+
+      // Handle superset cleanup if the deleted activity was in a superset
+      if (supersetId) {
+        const now = new Date().toISOString();
+        const remainingInSuperset = state.data.filter(
+          a => a.supersetId === supersetId
+        );
+
+        if (remainingInSuperset.length === 1) {
+          // Only one activity left - break the superset
+          const lastIdx = state.data.findIndex(
+            a => a.id === remainingInSuperset[0].id
+          );
+          if (lastIdx !== -1) {
+            const { supersetId: _, supersetPosition: __, ...rest } =
+              state.data[lastIdx];
+            state.data[lastIdx] = { ...rest, updated_at: now };
+          }
+        } else if (remainingInSuperset.length > 1) {
+          // Re-number positions
+          const sorted = [...remainingInSuperset].sort(
+            (a, b) => (a.supersetPosition || 0) - (b.supersetPosition || 0)
+          );
+          sorted.forEach((act, index) => {
+            const idx = state.data.findIndex(a => a.id === act.id);
+            if (idx !== -1) {
+              state.data[idx] = {
+                ...state.data[idx],
+                supersetPosition: index + 1,
+                updated_at: now,
+              };
+            }
+          });
+        }
+      }
+
       // Auto-save to storage
       saveActivities(state.data).catch(error => {
         console.error('Error saving activities to storage:', error);
@@ -129,6 +173,166 @@ const activitySlice = createSlice({
         console.error('Error saving activities to storage:', error);
       });
     },
+    createSuperset(state, action: PayloadAction<{ activityIds: string[] }>) {
+      const { activityIds } = action.payload;
+      if (activityIds.length < 2) return;
+
+      const supersetId = generateSupersetId();
+      const now = new Date().toISOString();
+
+      activityIds.forEach((id, index) => {
+        const activityIndex = state.data.findIndex(a => a.id === id);
+        if (activityIndex !== -1) {
+          state.data[activityIndex] = {
+            ...state.data[activityIndex],
+            supersetId,
+            supersetPosition: index + 1,
+            updated_at: now,
+          };
+        }
+      });
+
+      // Auto-save to storage
+      saveActivities(state.data).catch(error => {
+        console.error('Error saving activities to storage:', error);
+      });
+    },
+    addToSuperset(
+      state,
+      action: PayloadAction<{ supersetId: string; activityId: string }>
+    ) {
+      const { supersetId, activityId } = action.payload;
+      const now = new Date().toISOString();
+
+      // Get existing activities in the superset
+      const existingActivities = getSupersetActivities(state.data, supersetId);
+      const nextPosition = getNextSupersetPosition(existingActivities);
+
+      const activityIndex = state.data.findIndex(a => a.id === activityId);
+      if (activityIndex !== -1) {
+        state.data[activityIndex] = {
+          ...state.data[activityIndex],
+          supersetId,
+          supersetPosition: nextPosition,
+          updated_at: now,
+        };
+      }
+
+      // Auto-save to storage
+      saveActivities(state.data).catch(error => {
+        console.error('Error saving activities to storage:', error);
+      });
+    },
+    removeFromSuperset(state, action: PayloadAction<string>) {
+      const activityId = action.payload;
+      const now = new Date().toISOString();
+
+      const activity = state.data.find(a => a.id === activityId);
+      if (!activity?.supersetId) return;
+
+      const supersetId = activity.supersetId;
+
+      // Remove this activity from the superset
+      const activityIndex = state.data.findIndex(a => a.id === activityId);
+      if (activityIndex !== -1) {
+        const { supersetId: _, supersetPosition: __, ...rest } =
+          state.data[activityIndex];
+        state.data[activityIndex] = {
+          ...rest,
+          updated_at: now,
+        };
+      }
+
+      // Check remaining activities in the superset
+      const remainingActivities = state.data.filter(
+        a => a.supersetId === supersetId
+      );
+
+      // If only one activity remains, break the superset
+      if (remainingActivities.length === 1) {
+        const lastActivityIndex = state.data.findIndex(
+          a => a.id === remainingActivities[0].id
+        );
+        if (lastActivityIndex !== -1) {
+          const { supersetId: _, supersetPosition: __, ...rest } =
+            state.data[lastActivityIndex];
+          state.data[lastActivityIndex] = {
+            ...rest,
+            updated_at: now,
+          };
+        }
+      } else {
+        // Re-number positions for remaining activities
+        const sorted = [...remainingActivities].sort(
+          (a, b) => (a.supersetPosition || 0) - (b.supersetPosition || 0)
+        );
+        sorted.forEach((act, index) => {
+          const idx = state.data.findIndex(a => a.id === act.id);
+          if (idx !== -1) {
+            state.data[idx] = {
+              ...state.data[idx],
+              supersetPosition: index + 1,
+              updated_at: now,
+            };
+          }
+        });
+      }
+
+      // Auto-save to storage
+      saveActivities(state.data).catch(error => {
+        console.error('Error saving activities to storage:', error);
+      });
+    },
+    breakSuperset(state, action: PayloadAction<string>) {
+      const supersetId = action.payload;
+      const now = new Date().toISOString();
+
+      state.data.forEach((activity, index) => {
+        if (activity.supersetId === supersetId) {
+          const { supersetId: _, supersetPosition: __, ...rest } = activity;
+          state.data[index] = {
+            ...rest,
+            updated_at: now,
+          };
+        }
+      });
+
+      // Auto-save to storage
+      saveActivities(state.data).catch(error => {
+        console.error('Error saving activities to storage:', error);
+      });
+    },
+    swapSupersetOrder(
+      state,
+      action: PayloadAction<{ supersetId: string; id1: string; id2: string }>
+    ) {
+      const { supersetId, id1, id2 } = action.payload;
+      const now = new Date().toISOString();
+
+      const idx1 = state.data.findIndex(a => a.id === id1);
+      const idx2 = state.data.findIndex(a => a.id === id2);
+
+      if (idx1 !== -1 && idx2 !== -1) {
+        const pos1 = state.data[idx1].supersetPosition;
+        const pos2 = state.data[idx2].supersetPosition;
+
+        state.data[idx1] = {
+          ...state.data[idx1],
+          supersetPosition: pos2,
+          updated_at: now,
+        };
+        state.data[idx2] = {
+          ...state.data[idx2],
+          supersetPosition: pos1,
+          updated_at: now,
+        };
+      }
+
+      // Auto-save to storage
+      saveActivities(state.data).catch(error => {
+        console.error('Error saving activities to storage:', error);
+      });
+    },
   },
   extraReducers: builder => {
     builder
@@ -157,5 +361,10 @@ export const {
   markAllActivitiesIncompleteForWeek,
   clearAllActivities,
   reorderActivities,
+  createSuperset,
+  addToSuperset,
+  removeFromSuperset,
+  breakSuperset,
+  swapSupersetOrder,
 } = activitySlice.actions;
 export default activitySlice.reducer;

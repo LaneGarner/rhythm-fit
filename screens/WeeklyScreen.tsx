@@ -25,6 +25,13 @@ import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
+import {
+  groupActivitiesWithSupersets,
+  getSupersetEmojis,
+  getSupersetEmojisCompact,
+  isSupersetComplete,
+  ActivityGroup,
+} from '../utils/supersetUtils';
 
 export default function WeeklyScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -668,19 +675,50 @@ export default function WeeklyScreen({ navigation }: any) {
                     </View>
 
                     <View className="flex-row flex-wrap justify-end">
-                      {dayActivities.slice(0, 10).map((activity, index) => (
-                        <Text key={activity.id} className="text-lg ml-1 mb-1">
-                          {activity.emoji || '💪'}
-                        </Text>
-                      ))}
-                      {dayActivities.length > 10 && (
-                        <Text
-                          style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-                          className="ml-1 text-sm"
-                        >
-                          +{dayActivities.length - 10}
-                        </Text>
-                      )}
+                      {(() => {
+                        const groups = groupActivitiesWithSupersets(
+                          dayActivities
+                        );
+                        const displayGroups = groups.slice(0, 6);
+                        const remainingCount =
+                          dayActivities.length -
+                          displayGroups.reduce(
+                            (sum, g) => sum + g.activities.length,
+                            0
+                          );
+                        return (
+                          <>
+                            {displayGroups.map((group: ActivityGroup) => {
+                              if (group.type === 'superset') {
+                                return (
+                                  <Text
+                                    key={group.supersetId}
+                                    className="text-lg ml-1 mb-1"
+                                  >
+                                    {getSupersetEmojisCompact(group.activities)}
+                                  </Text>
+                                );
+                              }
+                              return (
+                                <Text
+                                  key={group.activities[0].id}
+                                  className="text-lg ml-1 mb-1"
+                                >
+                                  {group.activities[0].emoji || '💪'}
+                                </Text>
+                              );
+                            })}
+                            {remainingCount > 0 && (
+                              <Text
+                                style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                                className="ml-1 text-sm"
+                              >
+                                +{remainingCount}
+                              </Text>
+                            )}
+                          </>
+                        );
+                      })()}
                     </View>
                   </View>
 
@@ -695,35 +733,76 @@ export default function WeeklyScreen({ navigation }: any) {
 
                   {dayActivities.length > 0 && (
                     <View>
-                      {dayActivities.map(activity => (
-                        <View
-                          key={activity.id}
-                          className="flex-row items-center mt-1"
-                        >
-                          <Text className="text-lg mr-2">
-                            {activity.emoji || '💪'}
-                          </Text>
-                          <Text
-                            style={{ color: isDark ? '#e5e5e5' : '#374151' }}
-                            className="flex-1"
-                          >
-                            {activity.name || activity.type}
-                          </Text>
-                          {activity.completed ? (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={18}
-                              color="#22C55E"
-                            />
-                          ) : (
-                            <Ionicons
-                              name="ellipse-outline"
-                              size={18}
-                              color="#D1D5DB"
-                            />
-                          )}
-                        </View>
-                      ))}
+                      {groupActivitiesWithSupersets(dayActivities).map(
+                        (group: ActivityGroup) => {
+                          if (group.type === 'superset') {
+                            // Render superset as combined row
+                            const supersetComplete = isSupersetComplete(
+                              group.activities
+                            );
+                            return (
+                              <View
+                                key={group.supersetId}
+                                className="flex-row items-center mt-1"
+                              >
+                                <Text
+                                  style={{
+                                    color: isDark ? '#e5e5e5' : '#374151',
+                                  }}
+                                  className="flex-1"
+                                  numberOfLines={1}
+                                >
+                                  {getSupersetEmojis(group.activities)}
+                                </Text>
+                                {supersetComplete ? (
+                                  <Ionicons
+                                    name="checkmark-circle"
+                                    size={18}
+                                    color="#22C55E"
+                                  />
+                                ) : (
+                                  <Ionicons
+                                    name="ellipse-outline"
+                                    size={18}
+                                    color="#D1D5DB"
+                                  />
+                                )}
+                              </View>
+                            );
+                          }
+                          // Render single activity
+                          const activity = group.activities[0];
+                          return (
+                            <View
+                              key={activity.id}
+                              className="flex-row items-center mt-1"
+                            >
+                              <Text className="text-lg mr-2">
+                                {activity.emoji || '💪'}
+                              </Text>
+                              <Text
+                                style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+                                className="flex-1"
+                              >
+                                {activity.name || activity.type}
+                              </Text>
+                              {activity.completed ? (
+                                <Ionicons
+                                  name="checkmark-circle"
+                                  size={18}
+                                  color="#22C55E"
+                                />
+                              ) : (
+                                <Ionicons
+                                  name="ellipse-outline"
+                                  size={18}
+                                  color="#D1D5DB"
+                                />
+                              )}
+                            </View>
+                          );
+                        }
+                      )}
                     </View>
                   )}
 

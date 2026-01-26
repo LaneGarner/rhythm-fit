@@ -34,6 +34,7 @@ import EditActivityScreen from './screens/EditActivityScreen';
 import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import SupersetExecutionScreen from './screens/SupersetExecutionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   Day: { date: string };
   Activity: { date: string };
   ActivityExecution: { activityId: string };
+  SupersetExecution: { supersetId: string };
   EditActivity: { activityId: string };
   Settings: undefined;
   ActivityLibrary: undefined;
@@ -176,6 +178,10 @@ function AppContent() {
           <Stack.Screen
             name="ActivityExecution"
             component={ActivityExecutionScreen}
+          />
+          <Stack.Screen
+            name="SupersetExecution"
+            component={SupersetExecutionScreen}
           />
           <Stack.Screen name="EditActivity" component={EditActivityScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />

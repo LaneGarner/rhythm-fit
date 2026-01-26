@@ -44,6 +44,8 @@ export interface Activity {
   updated_at?: string; // ISO timestamp for sync
   order?: number; // Custom sort order for manual reordering
   trackingFields?: TrackingField[]; // Fields to show for sets
+  supersetId?: string; // Shared ID between grouped activities in a superset
+  supersetPosition?: number; // 1, 2, 3... for ordering within the superset
 }
 
 export interface SetData {

@@ -19,6 +19,10 @@ import {
   deleteActivity,
   updateActivity,
   reorderActivities,
+  createSuperset,
+  addToSuperset,
+  removeFromSuperset,
+  breakSuperset,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +30,14 @@ import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 import ProgressBar from '../components/ProgressBar';
+import {
+  groupActivitiesWithSupersets,
+  getSupersetEmojis,
+  getSupersetLabel,
+  isSupersetComplete,
+  getSupersetCompletedCount,
+  ActivityGroup,
+} from '../utils/supersetUtils';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -291,6 +303,61 @@ export default function DayScreen({ navigation, route }: any) {
     navigation.navigate('EditActivity', { activityId: activity.id });
   };
 
+  // Superset handlers
+  const handleCreateSuperset = () => {
+    if (selectedActivities.size < 2) {
+      Alert.alert('Select Activities', 'Please select at least 2 activities to create a superset.');
+      return;
+    }
+
+    // Get selected activities in their current order
+    const selectedIds = Array.from(selectedActivities);
+    const orderedIds = dayActivities
+      .filter(a => selectedIds.includes(a.id))
+      .map(a => a.id);
+
+    // Check if any selected activity is already in a superset
+    const existingSuperset = dayActivities.find(
+      a => selectedIds.includes(a.id) && a.supersetId
+    );
+
+    if (existingSuperset) {
+      // Add other activities to the existing superset
+      const supersetId = existingSuperset.supersetId!;
+      orderedIds.forEach(id => {
+        const activity = dayActivities.find(a => a.id === id);
+        if (activity && !activity.supersetId) {
+          dispatch(addToSuperset({ supersetId, activityId: id }));
+        }
+      });
+    } else {
+      // Create a new superset
+      dispatch(createSuperset({ activityIds: orderedIds }));
+    }
+
+    setSelectedActivities(new Set());
+    setIsBulkMode(false);
+  };
+
+  const handleBreakSuperset = (supersetId: string) => {
+    Alert.alert(
+      'Break Superset',
+      'Are you sure you want to unlink these activities?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Break Superset',
+          style: 'destructive',
+          onPress: () => dispatch(breakSuperset(supersetId)),
+        },
+      ]
+    );
+  };
+
+  const handleRemoveFromSuperset = (activityId: string) => {
+    dispatch(removeFromSuperset(activityId));
+  };
+
   const handleToggleCompletion = (activity: any) => {
     const newCompleted = !activity.completed;
 
@@ -495,6 +562,129 @@ export default function DayScreen({ navigation, route }: any) {
               </Text>
             </TouchableOpacity>
           ) : activity.completed ? (
+            <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+          ) : (
+            <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Superset Card component (for non-bulk mode)
+  const SupersetCard = ({
+    group,
+    index,
+  }: {
+    group: ActivityGroup;
+    index: number;
+  }) => {
+    const activities = group.activities;
+    const supersetComplete = isSupersetComplete(activities);
+    const completedCount = getSupersetCompletedCount(activities);
+
+    const handlePress = () => {
+      if (isBulkMode) {
+        // In bulk mode, select all activities in the superset
+        activities.forEach(a => {
+          if (!selectedActivities.has(a.id)) {
+            toggleActivitySelection(a.id);
+          }
+        });
+      } else {
+        // Navigate to superset execution
+        navigation.navigate('SupersetExecution', { supersetId: group.supersetId });
+      }
+    };
+
+    const handleLongPress = () => {
+      if (!isBulkMode && group.supersetId) {
+        if (Platform.OS === 'ios') {
+          ActionSheetIOS.showActionSheetWithOptions(
+            {
+              options: ['Cancel', 'Break Superset'],
+              cancelButtonIndex: 0,
+              destructiveButtonIndex: 1,
+              userInterfaceStyle: isDark ? 'dark' : 'light',
+            },
+            buttonIndex => {
+              if (buttonIndex === 1) {
+                handleBreakSuperset(group.supersetId!);
+              }
+            }
+          );
+        } else {
+          Alert.alert('Superset Options', 'What would you like to do?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Break Superset',
+              style: 'destructive',
+              onPress: () => handleBreakSuperset(group.supersetId!),
+            },
+          ]);
+        }
+      }
+    };
+
+    // Check if any activity in superset is selected
+    const hasSelectedActivity = activities.some(a =>
+      selectedActivities.has(a.id)
+    );
+
+    return (
+      <TouchableOpacity
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+        style={{
+          borderWidth: hasSelectedActivity ? 2 : 0,
+          borderColor: '#8B5CF6',
+          borderLeftWidth: 4,
+          borderLeftColor: '#8B5CF6',
+        }}
+      >
+        {/* Superset badge */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#8B5CF6',
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
+              {getSupersetLabel(activities.length)}
+            </Text>
+          </View>
+          <Text
+            style={{
+              marginLeft: 8,
+              color: isDark ? '#9CA3AF' : '#6B7280',
+              fontSize: 12,
+            }}
+          >
+            {completedCount}/{activities.length} complete
+          </Text>
+        </View>
+
+        {/* Combined emoji + name display */}
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 mr-2">
+            <Text
+              className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              numberOfLines={2}
+            >
+              {getSupersetEmojis(activities)}
+            </Text>
+          </View>
+          {supersetComplete ? (
             <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
           ) : (
             <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
@@ -783,62 +973,100 @@ export default function DayScreen({ navigation, route }: any) {
               />
             </View>
           )}
-          {dayActivities.map((activity, index) => (
-            <ActivityItemWithArrows
-              key={activity.id}
-              activity={activity}
-              index={index}
-            />
-          ))}
+          {isBulkMode
+            ? // In bulk mode, show all activities individually for selection
+              dayActivities.map((activity, index) => (
+                <ActivityItemWithArrows
+                  key={activity.id}
+                  activity={activity}
+                  index={index}
+                />
+              ))
+            : // In normal mode, group supersets
+              groupActivitiesWithSupersets(dayActivities).map((group, index) =>
+                group.type === 'superset' ? (
+                  <SupersetCard
+                    key={group.supersetId}
+                    group={group}
+                    index={index}
+                  />
+                ) : (
+                  <ActivityItemWithArrows
+                    key={group.activities[0].id}
+                    activity={group.activities[0]}
+                    index={index}
+                  />
+                )
+              )}
         </ScrollView>
       );
     }
 
-    // Production build: Use DraggableFlatList
+    // Production build: Use DraggableFlatList for bulk mode, ScrollView for normal mode
+    if (isBulkMode) {
+      return (
+        <DraggableFlatList
+          data={dayActivities}
+          keyExtractor={(item: Activity) => item.id}
+          renderItem={renderDraggableItem}
+          onDragEnd={handleDragEnd}
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+          activationDistance={0}
+        />
+      );
+    }
+
+    // Normal mode with grouped superset rendering
     return (
-      <DraggableFlatList
-        data={dayActivities}
-        keyExtractor={(item: Activity) => item.id}
-        renderItem={renderDraggableItem}
-        onDragEnd={handleDragEnd}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        activationDistance={isBulkMode ? 0 : 10000}
-        ListHeaderComponent={
-          totalCount > 0 && !isBulkMode ? (
-            <View style={{ marginBottom: 16 }}>
-              <View
+      <ScrollView
+        className="flex-1 p-4"
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {totalCount > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 6,
+              }}
+            >
+              {allCompleted && (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color="#22C55E"
+                  style={{ marginRight: 6 }}
+                />
+              )}
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: 6,
+                  color: isDark ? '#a3a3a3' : '#6b7280',
+                  fontSize: 14,
                 }}
               >
-                {allCompleted && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color="#22C55E"
-                    style={{ marginRight: 6 }}
-                  />
-                )}
-                <Text
-                  style={{
-                    color: isDark ? '#a3a3a3' : '#6b7280',
-                    fontSize: 14,
-                  }}
-                >
-                  {completedCount}/{totalCount} complete
-                </Text>
-              </View>
-              <ProgressBar
-                completed={completedCount}
-                total={totalCount}
-                isDark={isDark}
-              />
+                {completedCount}/{totalCount} complete
+              </Text>
             </View>
-          ) : null
-        }
-      />
+            <ProgressBar
+              completed={completedCount}
+              total={totalCount}
+              isDark={isDark}
+            />
+          </View>
+        )}
+        {groupActivitiesWithSupersets(dayActivities).map((group, index) =>
+          group.type === 'superset' ? (
+            <SupersetCard key={group.supersetId} group={group} index={index} />
+          ) : (
+            <ActivityItemWithArrows
+              key={group.activities[0].id}
+              activity={group.activities[0]}
+              index={index}
+            />
+          )
+        )}
+      </ScrollView>
     );
   };
 
@@ -990,6 +1218,18 @@ export default function DayScreen({ navigation, route }: any) {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Superset button - show when 2+ activities selected */}
+          {selectedActivities.size >= 2 && (
+            <TouchableOpacity
+              onPress={handleCreateSuperset}
+              className="bg-purple-500 py-2 rounded-lg mb-2"
+            >
+              <Text className="text-white text-center font-semibold">
+                Link as Superset
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Save/Undo buttons - only show when there are unsaved changes */}
           {hasUnsavedChanges && (

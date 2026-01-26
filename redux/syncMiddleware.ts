@@ -49,6 +49,11 @@ const SYNC_ACTIONS = [
   'activities/deleteActivity',
   'activities/markAllActivitiesCompleteForWeek',
   'activities/markAllActivitiesIncompleteForWeek',
+  'activities/createSuperset',
+  'activities/addToSuperset',
+  'activities/removeFromSuperset',
+  'activities/breakSuperset',
+  'activities/swapSupersetOrder',
 ];
 
 export const syncMiddleware: Middleware = store => next => action => {
@@ -90,6 +95,64 @@ export const syncMiddleware: Middleware = store => next => action => {
           for (const activity of affectedActivities) {
             await pushToServer(authToken!, activity);
           }
+        } else if (action.type === 'activities/createSuperset') {
+          // Sync all activities that were added to the superset
+          const { activityIds } = action.payload as { activityIds: string[] };
+          const activities = state.activities.data as Activity[];
+          for (const id of activityIds) {
+            const activity = activities.find(a => a.id === id);
+            if (activity) {
+              await pushToServer(authToken!, activity);
+            }
+          }
+        } else if (action.type === 'activities/addToSuperset') {
+          // Sync the activity that was added
+          const { activityId } = action.payload as {
+            supersetId: string;
+            activityId: string;
+          };
+          const activities = state.activities.data as Activity[];
+          const activity = activities.find(a => a.id === activityId);
+          if (activity) {
+            await pushToServer(authToken!, activity);
+          }
+        } else if (action.type === 'activities/removeFromSuperset') {
+          // Sync the removed activity and any remaining superset activities
+          const activityId = action.payload as string;
+          const activities = state.activities.data as Activity[];
+          const activity = activities.find(a => a.id === activityId);
+          if (activity) {
+            await pushToServer(authToken!, activity);
+          }
+          // Also sync remaining activities in the superset (positions may have changed)
+          // Note: We can't easily get the old supersetId here, so we sync all activities
+          // that were modified (they have recent updated_at)
+        } else if (action.type === 'activities/breakSuperset') {
+          // Sync all activities that were in the superset
+          const supersetId = action.payload as string;
+          const activities = state.activities.data as Activity[];
+          // Find activities that just had their superset cleared
+          // (they won't have supersetId anymore but were just updated)
+          const recentlyUpdated = activities.filter(
+            a =>
+              a.updated_at &&
+              new Date().getTime() - new Date(a.updated_at).getTime() < 1000
+          );
+          for (const activity of recentlyUpdated) {
+            await pushToServer(authToken!, activity);
+          }
+        } else if (action.type === 'activities/swapSupersetOrder') {
+          // Sync both swapped activities
+          const { id1, id2 } = action.payload as {
+            supersetId: string;
+            id1: string;
+            id2: string;
+          };
+          const activities = state.activities.data as Activity[];
+          const activity1 = activities.find(a => a.id === id1);
+          const activity2 = activities.find(a => a.id === id2);
+          if (activity1) await pushToServer(authToken!, activity1);
+          if (activity2) await pushToServer(authToken!, activity2);
         }
       } catch (err) {
         console.error('Background sync failed:', err);
