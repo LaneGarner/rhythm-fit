@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
+import HeaderButton from '../components/HeaderButton';
 import { HEADER_STYLES } from '../constants';
 import { ThemeContext } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -53,9 +54,7 @@ export default function SettingsScreen({ navigation }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        <TouchableOpacity hitSlop={14} onPress={() => navigation.goBack()}>
-          <Text className="text-blue-500 text-lg">Back</Text>
-        </TouchableOpacity>
+        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View className="flex-1 items-center">
           <Text
             className="text-2xl font-bold mt-0"

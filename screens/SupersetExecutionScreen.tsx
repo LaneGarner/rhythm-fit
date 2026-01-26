@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
+import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
@@ -310,31 +311,18 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        <TouchableOpacity
-          hitSlop={14}
-          onPress={() => navigation.goBack()}
-          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
-          </Text>
-        </TouchableOpacity>
+        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 66,
-            height: 40,
+            flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            pointerEvents: 'none',
           }}
         >
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: 'bold',
+              fontSize: 17,
+              fontWeight: '600',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
@@ -342,6 +330,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             Activity
           </Text>
         </View>
+        {/* Spacer to balance the header */}
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Content area wrapper for sticky header positioning */}

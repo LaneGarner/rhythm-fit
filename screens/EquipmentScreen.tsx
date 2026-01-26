@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import HeaderButton from '../components/HeaderButton';
 import PlateIcon from '../components/PlateIcon';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -189,31 +190,14 @@ export default function EquipmentScreen({ navigation }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        <TouchableOpacity
-          hitSlop={14}
-          onPress={() => navigation.goBack()}
-          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
-          </Text>
-        </TouchableOpacity>
+        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 54,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text
             style={{
-              fontSize: 20,
-              fontWeight: 'bold',
+              fontSize: 17,
+              fontWeight: '600',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
@@ -221,6 +205,7 @@ export default function EquipmentScreen({ navigation }: any) {
             Equipment
           </Text>
         </View>
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Content */}

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
+import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
@@ -303,31 +304,18 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        <TouchableOpacity
-          hitSlop={14}
-          onPress={() => navigation.goBack()}
-          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
-          </Text>
-        </TouchableOpacity>
+        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 66,
-            height: 40,
+            flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            pointerEvents: 'none',
           }}
         >
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: 'bold',
+              fontSize: 17,
+              fontWeight: '600',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
@@ -335,28 +323,12 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             Activity
           </Text>
         </View>
-        <TouchableOpacity
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        <HeaderButton
+          label="Edit"
           onPress={() =>
             navigation.navigate('EditActivity', { activityId: activity.id })
           }
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: 66,
-            padding: 8,
-          }}
-        >
-          <Text
-            style={{
-              color: isDark ? '#60A5FA' : '#2563EB',
-              fontSize: 16,
-              fontWeight: '600',
-            }}
-          >
-            Edit
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* Content area wrapper for sticky header positioning */}
@@ -414,9 +386,17 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </Text>
                 <TouchableOpacity
                   onPress={handleAddSet}
-                  className="bg-blue-500 px-4 py-2 rounded-lg"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text className="text-white font-semibold">Add Set</Text>
+                  <Text
+                    style={{
+                      color: isDark ? '#60A5FA' : '#2563EB',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    + Add Set
+                  </Text>
                 </TouchableOpacity>
               </View>
 

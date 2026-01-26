@@ -29,6 +29,7 @@ import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
+import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
 import {
@@ -934,40 +935,10 @@ export default function DayScreen({ navigation, route }: any) {
     // Use arrows in Expo Go or if DraggableFlatList isn't available
     if (isExpoGo || !DraggableFlatList) {
       return (
-        <ScrollView className="flex-1 p-4">
-          {totalCount > 0 && !isBulkMode && (
-            <View style={{ marginBottom: 16 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: 6,
-                }}
-              >
-                {allCompleted && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color="#22C55E"
-                    style={{ marginRight: 6 }}
-                  />
-                )}
-                <Text
-                  style={{
-                    color: isDark ? '#a3a3a3' : '#6b7280',
-                    fontSize: 14,
-                  }}
-                >
-                  {completedCount}/{totalCount} complete
-                </Text>
-              </View>
-              <ProgressBar
-                completed={completedCount}
-                total={totalCount}
-                isDark={isDark}
-              />
-            </View>
-          )}
+        <ScrollView
+          className="flex-1 p-4"
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
           {isBulkMode
             ? // In bulk mode, show all activities individually for selection
               dayActivities.map((activity, index) => (
@@ -1017,39 +988,6 @@ export default function DayScreen({ navigation, route }: any) {
         className="flex-1 p-4"
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {totalCount > 0 && (
-          <View style={{ marginBottom: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}
-            >
-              {allCompleted && (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color="#22C55E"
-                  style={{ marginRight: 6 }}
-                />
-              )}
-              <Text
-                style={{
-                  color: isDark ? '#a3a3a3' : '#6b7280',
-                  fontSize: 14,
-                }}
-              >
-                {completedCount}/{totalCount} complete
-              </Text>
-            </View>
-            <ProgressBar
-              completed={completedCount}
-              total={totalCount}
-              isDark={isDark}
-            />
-          </View>
-        )}
         {groupActivitiesWithSupersets(dayActivities).map((group, index) =>
           group.type === 'superset' ? (
             <SupersetCard key={group.supersetId} group={group} index={index} />
@@ -1085,12 +1023,10 @@ export default function DayScreen({ navigation, route }: any) {
         }}
       >
         {/* Left: Back button */}
-        <TouchableOpacity
+        <HeaderButton
+          label="Back"
           onPress={() => navigation.navigate('Main')}
           style={{
-            paddingVertical: 4,
-            paddingHorizontal: 8,
-            marginRight: 8,
             position: 'absolute',
             left: 16,
             top: 44,
@@ -1098,11 +1034,7 @@ export default function DayScreen({ navigation, route }: any) {
             justifyContent: 'center',
             zIndex: 2,
           }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
-          </Text>
-        </TouchableOpacity>
+        />
         {/* Center: Title */}
         <View
           style={{
@@ -1118,8 +1050,8 @@ export default function DayScreen({ navigation, route }: any) {
         >
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: 'bold',
+              fontSize: 17,
+              fontWeight: '600',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
@@ -1129,29 +1061,18 @@ export default function DayScreen({ navigation, route }: any) {
         </View>
         {/* Right: Bulk button - only show if there are activities */}
         {(dayActivities.length > 0 || isBulkMode) && (
-          <TouchableOpacity
+          <HeaderButton
+            label={isBulkMode ? 'Done' : 'Edit'}
             onPress={toggleBulkMode}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{
               position: 'absolute',
-              right: 20,
+              right: 16,
               top: 44,
               height: 88,
               justifyContent: 'center',
               zIndex: 2,
-              padding: 8,
             }}
-          >
-            <Text
-              style={{
-                color: isDark ? '#60A5FA' : '#2563EB',
-                fontSize: 16,
-                fontWeight: '600',
-              }}
-            >
-              {isBulkMode ? 'Done' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
+          />
         )}
       </View>
 
@@ -1247,6 +1168,49 @@ export default function DayScreen({ navigation, route }: any) {
               </TouchableOpacity>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Sticky Progress Bar */}
+      {totalCount > 0 && !isBulkMode && (
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: isDark ? '#000' : '#F9FAFB',
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 6,
+            }}
+          >
+            {allCompleted && (
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color="#22C55E"
+                style={{ marginRight: 6 }}
+              />
+            )}
+            <Text
+              style={{
+                color: isDark ? '#a3a3a3' : '#6b7280',
+                fontSize: 14,
+              }}
+            >
+              {completedCount}/{totalCount} complete
+            </Text>
+          </View>
+          <ProgressBar
+            completed={completedCount}
+            total={totalCount}
+            isDark={isDark}
+          />
         </View>
       )}
 
