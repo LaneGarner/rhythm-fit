@@ -443,6 +443,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 placeholder="e.g., EZ Curl Bar"
                 placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                 autoFocus
+                returnKeyType="done"
                 className={`px-3 border rounded-lg ${
                   isDark
                     ? 'bg-gray-800 border-gray-600 text-white'
@@ -528,6 +529,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                 keyboardType="numeric"
                 autoFocus
+                returnKeyType="done"
                 className={`px-3 border rounded-lg ${
                   isDark
                     ? 'bg-gray-800 border-gray-600 text-white'

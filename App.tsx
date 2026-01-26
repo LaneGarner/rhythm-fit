@@ -55,7 +55,7 @@ export type RootStackParamList = {
   Equipment: undefined;
 };
 
-function AppContent() {
+function AppContent({ isInitialLoad }: { isInitialLoad: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
   const { colorScheme } = useContext(ThemeContext);
   const {
@@ -133,8 +133,8 @@ function AppContent() {
     return null;
   }
 
-  // Show loading screen while syncing after login
-  if (isSyncing) {
+  // Show loading screen while syncing after login (but not during initial load)
+  if (isSyncing && !isInitialLoad) {
     return (
       <View
         style={{
@@ -202,9 +202,14 @@ function AppContent() {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 3000);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      // Give a brief moment for sync to start before marking initial load complete
+      setTimeout(() => setIsInitialLoad(false), 500);
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -219,7 +224,7 @@ export default function App() {
           <AuthProvider>
             <TimerProvider>
               <WeekProvider>
-                <AppContent />
+                <AppContent isInitialLoad={isInitialLoad} />
               </WeekProvider>
             </TimerProvider>
           </AuthProvider>

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -6,9 +7,11 @@ import { getMondayOfWeekByOffset } from '../utils/dateUtils';
 import ProgressBar from '../components/ProgressBar';
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
+  Modal,
   Platform,
   ScrollView,
   Text,
@@ -17,6 +20,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  addActivity,
   deleteActivitiesForDate,
   updateActivity,
 } from '../redux/activitySlice';
@@ -45,6 +49,12 @@ export default function WeeklyScreen({ navigation }: any) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const longPressInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // State for copy to date modal
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copySourceDate, setCopySourceDate] = useState<string | null>(null);
+  const [copyTargetDate, setCopyTargetDate] = useState(new Date());
+  const [isCopying, setIsCopying] = useState(false);
   const isScrollingRef = useRef(false);
   const currentWeekOffsetRef = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -264,6 +274,75 @@ export default function WeeklyScreen({ navigation }: any) {
     }
   };
 
+  const handleCopyToDate = (sourceDate: string) => {
+    setCopySourceDate(sourceDate);
+    // Default to the same date (user will pick the target)
+    setCopyTargetDate(dayjs(sourceDate).toDate());
+    setShowCopyModal(true);
+  };
+
+  const confirmCopyToDate = async () => {
+    if (!copySourceDate || isCopying) return;
+
+    setIsCopying(true);
+
+    const sourceActivities = getActivitiesForDate(copySourceDate);
+    const targetDateStr = dayjs(copyTargetDate).format('YYYY-MM-DD');
+    const targetDateFormatted = dayjs(copyTargetDate).format('dddd, MMMM D');
+
+    // Generate new superset IDs for copied supersets
+    const supersetIdMap = new Map<string, string>();
+
+    // Copy each activity with a new ID and mark as incomplete
+    for (let i = 0; i < sourceActivities.length; i++) {
+      const activity = sourceActivities[i];
+
+      // Generate new superset ID if this activity is in a superset
+      let newSupersetId = undefined;
+      if (activity.supersetId) {
+        if (!supersetIdMap.has(activity.supersetId)) {
+          supersetIdMap.set(
+            activity.supersetId,
+            `superset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          );
+        }
+        newSupersetId = supersetIdMap.get(activity.supersetId);
+      }
+
+      const newActivity = {
+        ...activity,
+        id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+        date: targetDateStr,
+        completed: false,
+        supersetId: newSupersetId,
+        // Reset sets to incomplete if they exist
+        sets: activity.sets?.map(set => ({ ...set, completed: false })),
+      };
+
+      dispatch(addActivity(newActivity));
+
+      // Sync to backend
+      try {
+        const token = await getAccessToken();
+        if (token) {
+          await pushActivityChange(token, newActivity);
+        }
+      } catch (err) {
+        console.error('Failed to sync copied activity:', err);
+      }
+    }
+
+    setIsCopying(false);
+    setShowCopyModal(false);
+    setCopySourceDate(null);
+
+    // Show confirmation
+    Alert.alert(
+      'Copied',
+      `${sourceActivities.length} activit${sourceActivities.length === 1 ? 'y' : 'ies'} copied to ${targetDateFormatted}`
+    );
+  };
+
   const handleDayLongPress = (
     date: string,
     dayName: string,
@@ -289,7 +368,14 @@ export default function WeeklyScreen({ navigation }: any) {
       let destructiveButtonIndex = -1;
       let markAllCompleteIndex = -1;
       let markAllIncompleteIndex = -1;
+      let copyToDateIndex = -1;
       let clearIndex = -1;
+
+      // Add "Copy to Date" option if there are activities for this day
+      if (dayActivities.length > 0) {
+        options.push(`Copy ${activityCount} ${activityText} to...`);
+        copyToDateIndex = options.length - 1;
+      }
 
       // Add "Mark All Complete" option if there are incomplete activities
       if (incompleteActivities.length > 0) {
@@ -319,7 +405,9 @@ export default function WeeklyScreen({ navigation }: any) {
           userInterfaceStyle: isDark ? 'dark' : 'light',
         },
         buttonIndex => {
-          if (buttonIndex === markAllCompleteIndex) {
+          if (buttonIndex === copyToDateIndex) {
+            handleCopyToDate(date);
+          } else if (buttonIndex === markAllCompleteIndex) {
             Alert.alert(
               'Mark All Complete',
               `Mark all ${incompleteActivities.length} incomplete activity${incompleteActivities.length > 1 ? 's' : ''} as complete?`,
@@ -376,6 +464,13 @@ export default function WeeklyScreen({ navigation }: any) {
     } else {
       // Fallback for Android - use Alert with multiple options
       const alertOptions = [];
+
+      if (dayActivities.length > 0) {
+        alertOptions.push({
+          text: `Copy ${activityCount} ${activityText} to...`,
+          onPress: () => handleCopyToDate(date),
+        });
+      }
 
       if (incompleteActivities.length > 0) {
         alertOptions.push({
@@ -880,6 +975,160 @@ export default function WeeklyScreen({ navigation }: any) {
       >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
+
+      {/* Copy to Date Modal */}
+      <Modal
+        visible={showCopyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCopyModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark ? '#1c1c1e' : '#fff',
+              borderRadius: 16,
+              padding: 20,
+              width: '85%',
+              maxWidth: 340,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '600',
+                color: isDark ? '#fff' : '#111',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              Copy Activities
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: isDark ? '#9CA3AF' : '#6B7280',
+                textAlign: 'center',
+                marginBottom: 16,
+              }}
+            >
+              {copySourceDate &&
+                `From ${dayjs(copySourceDate).format('dddd, MMMM D')}`}
+            </Text>
+
+            {/* Target date display */}
+            <Text
+              style={{
+                fontSize: 14,
+                color: isDark ? '#9CA3AF' : '#6B7280',
+                marginBottom: 8,
+              }}
+            >
+              Copy to:
+            </Text>
+            <View
+              style={{
+                backgroundColor: isDark ? '#2c2c2e' : '#f3f4f6',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: isDark ? '#fff' : '#111',
+                  textAlign: 'center',
+                }}
+              >
+                {dayjs(copyTargetDate).format('dddd, MMMM D, YYYY')}
+              </Text>
+            </View>
+
+            {/* Date Picker */}
+            <View
+              style={{
+                backgroundColor: isDark ? '#2c2c2e' : '#f3f4f6',
+                borderRadius: 12,
+                marginBottom: 20,
+                overflow: 'hidden',
+              }}
+            >
+              <DateTimePicker
+                value={copyTargetDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  if (selectedDate) {
+                    setCopyTargetDate(selectedDate);
+                  }
+                }}
+                textColor={isDark ? '#fff' : '#000'}
+                themeVariant={isDark ? 'dark' : 'light'}
+                style={{ height: 150 }}
+              />
+            </View>
+
+            {/* Action buttons */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setShowCopyModal(false)}
+                disabled={isCopying}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: isDark ? '#3a3a3c' : '#e5e7eb',
+                  opacity: isCopying ? 0.5 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    color: isDark ? '#fff' : '#374151',
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmCopyToDate}
+                disabled={isCopying}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#2563eb',
+                  opacity: isCopying ? 0.8 : 1,
+                }}
+              >
+                {isCopying ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontWeight: '600',
+                      color: '#fff',
+                    }}
+                  >
+                    Copy
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

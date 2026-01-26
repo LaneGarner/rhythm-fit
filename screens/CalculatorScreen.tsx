@@ -181,6 +181,7 @@ export default function CalculatorScreen({ navigation }: any) {
               keyboardType="numeric"
               placeholder="Enter weight"
               placeholderTextColor={isDark ? '#71717a' : '#9ca3af'}
+              returnKeyType="done"
               style={{
                 backgroundColor: isDark ? '#27272a' : '#f3f4f6',
                 borderColor: isDark ? '#3f3f46' : '#d1d5db',

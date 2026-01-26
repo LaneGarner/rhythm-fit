@@ -228,6 +228,7 @@ export default function ActivityNameInput({
         autoCapitalize="words"
         autoCorrect={false}
         returnKeyType="done"
+        blurOnSubmit={true}
         onSubmitEditing={() => Keyboard.dismiss()}
       />
 

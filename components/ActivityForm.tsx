@@ -6,6 +6,7 @@ import {
   Alert,
   Keyboard,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -876,7 +877,7 @@ export default function ActivityForm({
                           placeholder=""
                           placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
                           returnKeyType="done"
-                          onSubmitEditing={() => Keyboard.dismiss()}
+                                  onSubmitEditing={() => Keyboard.dismiss()}
                           onFocus={() => {
                             setTimeout(() => {
                               scrollToSetInput(`${set.id}-${field}`);
