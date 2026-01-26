@@ -27,13 +27,6 @@ export function getSupersetLabel(count: number): string {
 }
 
 /**
- * Get display title for a superset: "Bench Press -> Band Rows -> Face Pulls"
- */
-export function getSupersetTitle(activities: Activity[]): string {
-  return activities.map(a => a.name || a.type).join(' → ');
-}
-
-/**
  * Get combined emoji + name pairs for superset display: "🏋️ Bench Press → 🚣 Band Rows"
  */
 export function getSupersetEmojis(activities: Activity[]): string {
@@ -158,17 +151,6 @@ export function getSupersetCompletedCount(activities: Activity[]): number {
  */
 export function generateSupersetId(): string {
   return `superset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Check if an activity can be added to a superset (must be on the same date)
- */
-export function canAddToSuperset(
-  existingActivities: Activity[],
-  newActivity: Activity
-): boolean {
-  if (existingActivities.length === 0) return true;
-  return existingActivities[0].date === newActivity.date;
 }
 
 /**

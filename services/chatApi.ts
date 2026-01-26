@@ -150,10 +150,6 @@ export async function deleteChatSession(
   }
 }
 
-export function isApiConfigured(): boolean {
-  return Boolean(API_URL);
-}
-
 export type ChatSuggestions = Record<string, string[]>;
 
 export async function getChatSuggestions(): Promise<ChatSuggestions> {
