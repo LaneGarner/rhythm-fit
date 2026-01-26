@@ -655,7 +655,14 @@ export default function CoachScreen({ navigation }: any) {
         activityRequests = response.activities || [];
       } else {
         // Fallback for unauthenticated users - minimal system prompt, no activity parsing
-        const fallbackSystemPrompt = `You are an AI fitness coach. Help users with workout advice and motivation.
+        const fallbackSystemPrompt = `You are an AI fitness coach. You can ONLY help with:
+- Workouts, exercises, and fitness routines
+- Health, nutrition, and recovery
+- Scheduling activities
+- Fitness motivation and advice
+
+If asked about non-fitness topics, politely redirect: "I'm your fitness coach - I focus on workouts, health, and nutrition. What fitness goals can I help you with?"
+
 Use Markdown formatting. ${activityContext}`;
         const response = await openai.chat.completions
           .create({
