@@ -10,10 +10,16 @@ export const OPENAI_CONFIG = {
 };
 
 // Backend API configuration
-export const API_URL =
+// In dev mode, use local server; in prod, use deployed server
+const DEV_API_URL = 'http://localhost:3000'; // Use localhost for simulator, or deploy to prod for physical device
+const PROD_API_URL =
   (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
   (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
   '';
+
+// For physical device testing, use PROD_API_URL since localhost won't work
+// For simulator testing, you can use DEV_API_URL
+export const API_URL = PROD_API_URL || DEV_API_URL;
 
 // Supabase configuration
 export const SUPABASE_URL =

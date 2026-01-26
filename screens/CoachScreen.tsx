@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -130,7 +131,7 @@ export default function CoachScreen({ navigation }: any) {
       },
     ]);
     setChatHistory([]);
-    setCurrentSessionId(Date.now().toString());
+    setCurrentSessionId(Crypto.randomUUID());
     loadChatHistory();
   }, [user?.id]);
 
@@ -242,8 +243,11 @@ export default function CoachScreen({ navigation }: any) {
   const saveCurrentSession = useCallback(async () => {
     if (messages.length <= 1) return; // Don't save if only initial message
 
-    const sessionTitle =
-      messages[1]?.text?.substring(0, 50) + '...' || 'Chat Session';
+    // Find the first user message for the title
+    const firstUserMessage = messages.find(m => m.type === 'user');
+    const sessionTitle = firstUserMessage
+      ? firstUserMessage.text.substring(0, 50)
+      : 'Chat Session';
 
     const newSession: ChatSession = {
       id: currentSessionId,
@@ -644,10 +648,16 @@ export default function CoachScreen({ navigation }: any) {
           ...conversationHistory,
           { role: 'user' as const, content: currentInput },
         ];
+        // Use current input for title if this is the first user message, otherwise use first user message
+        const isFirstUserMessage = messages.length === 1; // Only welcome message exists
+        const sessionTitle = isFirstUserMessage
+          ? currentInput.substring(0, 50)
+          : messages[1]?.text?.substring(0, 50) || 'Chat Session';
+
         const response = await sendChatMessage(token, allMessages, {
           activityContext,
           sessionId: currentSessionId,
-          sessionTitle: messages[1]?.text?.substring(0, 50) || 'Chat Session',
+          sessionTitle,
         });
         botResponse =
           response.message.content || "Sorry, I couldn't process that request.";
@@ -655,13 +665,7 @@ export default function CoachScreen({ navigation }: any) {
         activityRequests = response.activities || [];
       } else {
         // Fallback for unauthenticated users - minimal system prompt, no activity parsing
-        const fallbackSystemPrompt = `You are an AI fitness coach. You can ONLY help with:
-- Workouts, exercises, and fitness routines
-- Health, nutrition, and recovery
-- Scheduling activities
-- Fitness motivation and advice
-
-If asked about non-fitness topics, politely redirect: "I'm your fitness coach - I focus on workouts, health, and nutrition. What fitness goals can I help you with?"
+        const fallbackSystemPrompt = `You are an AI fitness coach. Help with workouts, nutrition, sleep, recovery, motivation, and any health/wellness topics. Only redirect if asked about something completely unrelated (like coding or math).
 
 Use Markdown formatting. ${activityContext}`;
         const response = await openai.chat.completions
@@ -714,8 +718,11 @@ Use Markdown formatting. ${activityContext}`;
 
       setMessages(prev => [...prev, botMessage]);
 
-      // Save session after each message
-      setTimeout(() => saveCurrentSession(), 100);
+      // Save session after each message and refresh history
+      setTimeout(() => {
+        saveCurrentSession();
+        loadChatHistory(); // Refresh history to show new/updated session
+      }, 100);
     } catch (error) {
       console.error('OpenAI API Error:', error);
 
@@ -744,7 +751,7 @@ Use Markdown formatting. ${activityContext}`;
       },
     ]);
     // Always create a new session ID when starting a new chat
-    const newSessionId = Date.now().toString();
+    const newSessionId = Crypto.randomUUID();
     setCurrentSessionId(newSessionId);
     setActiveTab('chat');
 

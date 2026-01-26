@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { getChatSuggestions, ChatSuggestions as SuggestionsType } from '../services/chatApi';
 import { ThemeContext } from '../theme/ThemeContext';
 
 interface ChatSuggestionsProps {
@@ -8,77 +9,52 @@ interface ChatSuggestionsProps {
   visible?: boolean;
 }
 
-const WORKOUT_SUGGESTIONS = [
+// Fallback suggestions in case API fails
+const FALLBACK_SUGGESTIONS = [
   'Create a push day workout for Monday',
   'Make me a leg day workout',
-  'Design a pull workout with 5 exercises',
-  'Create a full body workout over 3 days',
-  'Make me an upper body workout',
-  'Design a beginner-friendly workout',
-  'Create a HIIT cardio session',
-  'Make me a core strengthening routine',
-  'Design a home workout with no equipment',
-  'Create a gym workout for chest and triceps',
-];
-
-const RECOVERY_SUGGESTIONS = [
   'What can I do for recovery?',
-  'Suggest some stretching exercises',
-  'Create a mobility routine',
-  'What are good recovery activities?',
-  'How can I improve my sleep for recovery?',
-  'Suggest foam rolling exercises',
-  'What should I do on rest days?',
-];
-
-const NUTRITION_SUGGESTIONS = [
   'How can I improve my nutrition?',
-  'What should I eat before a workout?',
-  'Suggest post-workout meals',
-  'How much protein should I eat daily?',
-  'What are good pre-workout snacks?',
-  'Help me plan healthy meals',
-  'What supplements should I consider?',
-];
-
-const PROGRESS_SUGGESTIONS = [
-  'How can I track my progress?',
-  'What exercises improve strength?',
-  'How often should I increase weights?',
-  "Copy this week's activities to next week",
-  'How can I break through a plateau?',
-  "What's a good progression plan?",
-];
-
-const FORM_SUGGESTIONS = [
   'How do I improve my squat form?',
-  "What's proper deadlift technique?",
-  'Show me correct push-up form',
-  'How do I do a proper plank?',
-  "What's the right way to bench press?",
-  'Help me with pull-up technique',
+  'What supplements should I consider?',
+  'Design a beginner-friendly workout',
+  'How can I break through a plateau?',
 ];
 
-const ALL_SUGGESTIONS = [
-  ...WORKOUT_SUGGESTIONS,
-  ...RECOVERY_SUGGESTIONS,
-  ...NUTRITION_SUGGESTIONS,
-  ...PROGRESS_SUGGESTIONS,
-  ...FORM_SUGGESTIONS,
-];
+// Cache for suggestions from API
+let cachedSuggestions: string[] | null = null;
 
 export const ChatSuggestions = (props: ChatSuggestionsProps) => {
   const { onSuggestionPress, visible = true } = props;
   const { colorScheme } = useContext(ThemeContext);
   const isDark = colorScheme === 'dark';
   const [refreshKey, setRefreshKey] = useState(0);
+  const [allSuggestions, setAllSuggestions] = useState<string[]>(
+    cachedSuggestions || FALLBACK_SUGGESTIONS
+  );
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Fetch suggestions from API on mount
+  useEffect(() => {
+    if (cachedSuggestions) return; // Already cached
+
+    getChatSuggestions()
+      .then(data => {
+        const suggestions = Object.values(data).flat();
+        cachedSuggestions = suggestions;
+        setAllSuggestions(suggestions);
+      })
+      .catch(() => {
+        // Use fallback on error
+        setAllSuggestions(FALLBACK_SUGGESTIONS);
+      });
+  }, []);
 
   // Randomly select 4 suggestions each render
   const randomSuggestions = useMemo(() => {
-    const shuffled = [...ALL_SUGGESTIONS].sort(() => 0.5 - Math.random());
+    const shuffled = [...allSuggestions].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 4);
-  }, [refreshKey]);
+  }, [refreshKey, allSuggestions]);
 
   const handleMoreSuggestions = () => {
     setRefreshKey(prev => prev + 1);

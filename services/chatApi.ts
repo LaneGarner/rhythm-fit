@@ -153,3 +153,13 @@ export async function deleteChatSession(
 export function isApiConfigured(): boolean {
   return Boolean(API_URL);
 }
+
+export type ChatSuggestions = Record<string, string[]>;
+
+export async function getChatSuggestions(): Promise<ChatSuggestions> {
+  const response = await fetch(`${API_URL}/api/suggestions`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch suggestions');
+  }
+  return response.json();
+}
