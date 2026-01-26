@@ -3,9 +3,9 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Animated,
   Keyboard,
   Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,6 +16,10 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
+import {
+  ContentHeader,
+  StickyCompactHeader,
+} from '../components/StickyActivityHeader';
 import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
@@ -44,8 +48,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
 
-  const scrollViewRef = useRef<ScrollView | null>(null);
+  const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
+    null
+  );
   const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Helper function to get activity type label
   const getActivityTypeLabel = (type: string) => {
@@ -325,7 +332,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               textAlign: 'center',
             }}
           >
-            {activity.name}
+            Activity
           </Text>
         </View>
         <TouchableOpacity
@@ -352,225 +359,231 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        className={`flex-1`}
-        contentContainerStyle={{
-          paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 200,
-        }}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-        ref={scrollViewRef}
-      >
-        <View className="p-4" style={{ gap: 24 }}>
-          {/* Header */}
-          <View className="items-center">
-            <Text className="text-4xl mb-2">{activity.emoji}</Text>
-            <Text
-              className={`text-2xl font-bold text-center ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              {activity.name}
-            </Text>
-            <Text
-              className={`text-base mt-1 ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}
-            >
-              {getActivityTypeLabel(activity.type)}
-            </Text>
-          </View>
+      {/* Content area wrapper for sticky header positioning */}
+      <View style={{ flex: 1, position: 'relative' }}>
+        {/* Sticky compact header - positioned at top of content area */}
+        <StickyCompactHeader
+          emoji={activity.emoji || '💪'}
+          title={activity.name}
+          subtitle={getActivityTypeLabel(activity.type)}
+          scrollY={scrollY}
+        />
 
-          {/* Timer - Collapsible */}
-          <CollapsibleTimer
-            activityId={activity.id}
-            activityName={activity.name}
-            defaultExpanded={isTimerRunning}
+        <Animated.ScrollView
+          className={`flex-1`}
+          contentContainerStyle={{
+            paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 200,
+          }}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          ref={scrollViewRef}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        >
+          {/* Large content header - fades out on scroll */}
+          <ContentHeader
+            emoji={activity.emoji || '💪'}
+            title={activity.name}
+            subtitle={getActivityTypeLabel(activity.type)}
+            scrollY={scrollY}
           />
 
-          {/* Notes */}
-          <NotesCard notes={activity.notes || ''} />
+          <View className="p-4" style={{ gap: 24 }}>
+            {/* Timer - Collapsible */}
+            <CollapsibleTimer
+              activityId={activity.id}
+              activityName={activity.name}
+              defaultExpanded={isTimerRunning}
+            />
 
-          {/* Sets */}
-          <View>
-            <View className="flex-row justify-between items-center mb-4">
-              <Text
-                className={`text-lg font-semibold ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}
-              >
-                Sets ({sets.length})
-              </Text>
-              <TouchableOpacity
-                onPress={handleAddSet}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-              >
-                <Text className="text-white font-semibold">Add Set</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Notes */}
+            <NotesCard notes={activity.notes || ''} />
 
-            {/* Add refs for set inputs */}
-            {sets.map((set, index) => {
-              const fields: TrackingField[] = activity.trackingFields || [
-                'weight',
-                'reps',
-              ];
-              const fieldConfig: Record<
-                TrackingField,
-                { label: string; unit?: string }
-              > = {
-                weight: { label: 'Weight', unit: 'lbs' },
-                reps: { label: 'Reps' },
-                time: { label: 'Time', unit: 'sec' },
-                distance: { label: 'Distance', unit: 'mi' },
-              };
-
-              return (
-                <View
-                  key={set.id}
-                  className={`p-4 rounded-lg mb-3 ${
-                    isDark ? 'bg-gray-800' : 'bg-white'
-                  } shadow-sm`}
+            {/* Sets */}
+            <View>
+              <View className="flex-row justify-between items-center mb-4">
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
                 >
-                  <View className="flex-row justify-between items-center mb-3">
-                    <Text
-                      className={`text-lg font-semibold ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
-                      Set {index + 1}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => showSetOptions(set)}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      className="p-1"
-                    >
-                      <Ionicons
-                        name="ellipsis-vertical"
-                        size={20}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <View className="flex-row flex-wrap" style={{ gap: 12 }}>
-                    {fields.map(field => {
-                      const config = fieldConfig[field];
-                      const value = set[field];
-                      const showPlateIcon =
-                        field === 'weight' &&
-                        activity.type === 'weight-training';
+                  Sets ({sets.length})
+                </Text>
+                <TouchableOpacity
+                  onPress={handleAddSet}
+                  className="bg-blue-500 px-4 py-2 rounded-lg"
+                >
+                  <Text className="text-white font-semibold">Add Set</Text>
+                </TouchableOpacity>
+              </View>
 
-                      return (
-                        <View
-                          key={field}
-                          style={{
-                            flex: 1,
-                            minWidth: fields.length > 2 ? '45%' : undefined,
-                          }}
-                        >
-                          <View className="flex-row items-center mb-1">
-                            <Text
-                              className={`text-sm ${
-                                isDark ? 'text-gray-300' : 'text-gray-600'
-                              }`}
-                            >
-                              {config.label}
-                              {config.unit ? ` (${config.unit})` : ''}
-                            </Text>
-                            {showPlateIcon && (
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setActiveSetId(set.id);
-                                  setShowPlateCalculator(true);
-                                }}
-                                hitSlop={{
-                                  top: 16,
-                                  bottom: 16,
-                                  left: 16,
-                                  right: 16,
-                                }}
-                                style={{ marginLeft: 8 }}
-                              >
-                                <PlateIcon variant="tooltip" />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                          <TextInput
-                            ref={ref => {
-                              setInputRefs.current[`${set.id}-${field}`] = ref;
-                            }}
-                            value={value != null ? value.toString() : ''}
-                            onChangeText={text =>
-                              handleUpdateSet(set.id, {
-                                [field]: text ? parseFloat(text) : undefined,
-                              })
-                            }
-                            keyboardType="numeric"
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-gray-700 border-gray-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
-                            placeholder=""
-                            placeholderTextColor={
-                              isDark ? '#9CA3AF' : '#6B7280'
-                            }
-                            returnKeyType="done"
-                            onSubmitEditing={() => Keyboard.dismiss()}
-                            onFocus={() => {
-                              setTimeout(() => {
-                                scrollToSetInput(`${set.id}-${field}`);
-                              }, 100);
-                            }}
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleUpdateSet(set.id, { completed: !set.completed })
-                    }
-                    className="mt-5 px-4 py-4 rounded-lg"
-                    style={{
-                      backgroundColor: isDark ? '#1f2937' : '#fff',
-                      borderWidth: 2,
-                      borderColor: set.completed
-                        ? '#22C55E'
-                        : isDark
-                          ? '#4B5563'
-                          : '#D1D5DB',
-                    }}
+              {/* Add refs for set inputs */}
+              {sets.map((set, index) => {
+                const fields: TrackingField[] = activity.trackingFields || [
+                  'weight',
+                  'reps',
+                ];
+                const fieldConfig: Record<
+                  TrackingField,
+                  { label: string; unit?: string }
+                > = {
+                  weight: { label: 'Weight', unit: 'lbs' },
+                  reps: { label: 'Reps' },
+                  time: { label: 'Time', unit: 'sec' },
+                  distance: { label: 'Distance', unit: 'mi' },
+                };
+
+                return (
+                  <View
+                    key={set.id}
+                    className={`p-4 rounded-lg mb-3 ${
+                      isDark ? 'bg-gray-800' : 'bg-white'
+                    } shadow-sm`}
                   >
-                    <Text
-                      className={`text-center font-semibold text-lg`}
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text
+                        className={`text-lg font-semibold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        Set {index + 1}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => showSetOptions(set)}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        className="p-1"
+                      >
+                        <Ionicons
+                          name="ellipsis-vertical"
+                          size={20}
+                          color={isDark ? '#9CA3AF' : '#6B7280'}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <View className="flex-row flex-wrap" style={{ gap: 12 }}>
+                      {fields.map(field => {
+                        const config = fieldConfig[field];
+                        const value = set[field];
+                        const showPlateIcon =
+                          field === 'weight' &&
+                          activity.type === 'weight-training';
+
+                        return (
+                          <View
+                            key={field}
+                            style={{
+                              flex: 1,
+                              minWidth: fields.length > 2 ? '45%' : undefined,
+                            }}
+                          >
+                            <View className="flex-row items-center mb-1">
+                              <Text
+                                className={`text-sm ${
+                                  isDark ? 'text-gray-300' : 'text-gray-600'
+                                }`}
+                              >
+                                {config.label}
+                                {config.unit ? ` (${config.unit})` : ''}
+                              </Text>
+                              {showPlateIcon && (
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    setActiveSetId(set.id);
+                                    setShowPlateCalculator(true);
+                                  }}
+                                  hitSlop={{
+                                    top: 16,
+                                    bottom: 16,
+                                    left: 16,
+                                    right: 16,
+                                  }}
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  <PlateIcon variant="tooltip" />
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                            <TextInput
+                              ref={ref => {
+                                setInputRefs.current[`${set.id}-${field}`] =
+                                  ref;
+                              }}
+                              value={value != null ? value.toString() : ''}
+                              onChangeText={text =>
+                                handleUpdateSet(set.id, {
+                                  [field]: text ? parseFloat(text) : undefined,
+                                })
+                              }
+                              keyboardType="numeric"
+                              className={`px-3 py-2 border rounded-lg ${
+                                isDark
+                                  ? 'bg-gray-700 border-gray-600 text-white'
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                              placeholder=""
+                              placeholderTextColor={
+                                isDark ? '#9CA3AF' : '#6B7280'
+                              }
+                              returnKeyType="done"
+                              onSubmitEditing={() => Keyboard.dismiss()}
+                              onFocus={() => {
+                                setTimeout(() => {
+                                  scrollToSetInput(`${set.id}-${field}`);
+                                }, 100);
+                              }}
+                            />
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleUpdateSet(set.id, { completed: !set.completed })
+                      }
+                      className="mt-5 px-4 py-4 rounded-lg"
                       style={{
-                        color: set.completed
+                        backgroundColor: isDark ? '#1f2937' : '#fff',
+                        borderWidth: 2,
+                        borderColor: set.completed
                           ? '#22C55E'
                           : isDark
-                            ? '#9CA3AF'
-                            : '#6B7280',
+                            ? '#4B5563'
+                            : '#D1D5DB',
                       }}
                     >
-                      {set.completed ? 'Completed  ✅' : 'Mark Complete'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                      <Text
+                        className={`text-center font-semibold text-lg`}
+                        style={{
+                          color: set.completed
+                            ? '#22C55E'
+                            : isDark
+                              ? '#9CA3AF'
+                              : '#6B7280',
+                        }}
+                      >
+                        {set.completed ? 'Completed  ✅' : 'Mark Complete'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
 
-            {sets.length === 0 && (
-              <Text
-                className={`text-center py-8 ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                No sets added yet. Tap "Add Set" to get started.
-              </Text>
-            )}
+              {sets.length === 0 && (
+                <Text
+                  className={`text-center py-8 ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  No sets added yet. Tap "Add Set" to get started.
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </Animated.ScrollView>
+      </View>
 
       {/* Sticky Action Buttons */}
       <View

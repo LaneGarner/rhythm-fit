@@ -42,7 +42,9 @@ export default function CollapsibleTimer({
   const isTimerRunning = isTimerOwner && timer.isRunning;
   const timerSeconds = isTimerOwner ? timer.seconds : 0;
 
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded || isTimerRunning);
+  const [isExpanded, setIsExpanded] = useState(
+    defaultExpanded || isTimerRunning
+  );
 
   // Auto-expand timer when running for this activity
   useEffect(() => {
@@ -277,7 +279,9 @@ export default function CollapsibleTimer({
           <View className="flex-row justify-center space-x-4">
             {!isTimerRunning ? (
               <TouchableOpacity
-                onPress={showResumeButton ? handleResumeTimer : handleStartTimer}
+                onPress={
+                  showResumeButton ? handleResumeTimer : handleStartTimer
+                }
                 className="bg-green-500 px-6 py-2 rounded-lg"
                 style={{ minWidth: 102, alignItems: 'center' }}
               >

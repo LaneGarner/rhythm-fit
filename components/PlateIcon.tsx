@@ -20,8 +20,7 @@ export default function PlateIcon({
 
   // Tooltip variant: blank plate
   // Default variant: weight label at bottom with center hole
-  const displayLabel =
-    weight % 1 === 0 ? weight.toString() : weight.toFixed(1);
+  const displayLabel = weight % 1 === 0 ? weight.toString() : weight.toFixed(1);
 
   return (
     <View style={[styles.container, { width: iconSize, height: iconSize }]}>

@@ -30,6 +30,7 @@ import { pushActivityChange } from '../services/syncService';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 import ProgressBar from '../components/ProgressBar';
+import SupersetBadge from '../components/SupersetBadge';
 import {
   groupActivitiesWithSupersets,
   getSupersetEmojis,
@@ -306,7 +307,10 @@ export default function DayScreen({ navigation, route }: any) {
   // Superset handlers
   const handleCreateSuperset = () => {
     if (selectedActivities.size < 2) {
-      Alert.alert('Select Activities', 'Please select at least 2 activities to create a superset.');
+      Alert.alert(
+        'Select Activities',
+        'Please select at least 2 activities to create a superset.'
+      );
       return;
     }
 
@@ -593,7 +597,9 @@ export default function DayScreen({ navigation, route }: any) {
         });
       } else {
         // Navigate to superset execution
-        navigation.navigate('SupersetExecution', { supersetId: group.supersetId });
+        navigation.navigate('SupersetExecution', {
+          supersetId: group.supersetId,
+        });
       }
     };
 
@@ -651,18 +657,7 @@ export default function DayScreen({ navigation, route }: any) {
             marginBottom: 8,
           }}
         >
-          <View
-            style={{
-              backgroundColor: '#8B5CF6',
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
-              {getSupersetLabel(activities.length)}
-            </Text>
-          </View>
+          <SupersetBadge label={getSupersetLabel(activities.length)} />
           <Text
             style={{
               marginLeft: 8,

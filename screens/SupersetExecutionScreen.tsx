@@ -3,9 +3,9 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Animated,
   Keyboard,
   Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,6 +16,10 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
+import {
+  ContentHeader,
+  StickyCompactHeader,
+} from '../components/StickyActivityHeader';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -45,9 +49,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   // Sync local sets when activities change from outside
   useEffect(() => {
-    setLocalSets(
-      new Map(supersetActivities.map(a => [a.id, a.sets || []]))
-    );
+    setLocalSets(new Map(supersetActivities.map(a => [a.id, a.sets || []])));
   }, [supersetActivities.map(a => a.id).join(',')]);
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -58,8 +60,11 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     setId: string;
   } | null>(null);
 
-  const scrollViewRef = useRef<ScrollView | null>(null);
+  const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
+    null
+  );
   const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Keyboard listeners
   useEffect(() => {
@@ -174,6 +179,27 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     });
   };
 
+  const handleAddSetToActivity = (activityId: string) => {
+    const activity = supersetActivities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const newSet: SetData = {
+      id: `${activityId}-${Date.now()}`,
+      reps: 0,
+      weight: 0,
+      completed: false,
+    };
+
+    const updatedSets = [...(activity.sets || []), newSet];
+
+    dispatch(
+      updateActivity({
+        ...activity,
+        sets: updatedSets,
+      })
+    );
+  };
+
   const handleDeleteSet = (activityId: string, setId: string) => {
     const activity = supersetActivities.find(a => a.id === activityId);
     if (!activity) return;
@@ -211,7 +237,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const handlePlateWeightSelect = (weight: number) => {
     if (activeSetInfo) {
-      handleUpdateSet(activeSetInfo.activityId, activeSetInfo.setId, { weight });
+      handleUpdateSet(activeSetInfo.activityId, activeSetInfo.setId, {
+        weight,
+      });
     }
     setShowPlateCalculator(false);
     setActiveSetInfo(null);
@@ -305,372 +333,409 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         >
           <Text
             style={{
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: 'bold',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
           >
-            {getSupersetLabel(supersetActivities.length)}
+            Activity
           </Text>
         </View>
       </View>
 
-      <ScrollView
-        ref={scrollViewRef}
-        className="flex-1"
-        contentContainerStyle={{
-          paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 200,
-        }}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="p-4" style={{ gap: 24 }}>
-          {/* Superset Header */}
-          <View className="items-center">
-            <Text
-              className={`text-lg font-semibold text-center ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-              style={{ paddingHorizontal: 16 }}
-            >
-              {getSupersetEmojis(supersetActivities)}
-            </Text>
-            <View
-              style={{
-                marginTop: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 4,
-                backgroundColor: isDark ? '#374151' : '#E5E7EB',
-                borderRadius: 12,
-              }}
-            >
-              <Text
-                style={{
-                  color: isDark ? '#D1D5DB' : '#4B5563',
-                  fontSize: 12,
-                  fontWeight: '600',
-                }}
-              >
-                {getSupersetLabel(supersetActivities.length)}
-              </Text>
-            </View>
-          </View>
+      {/* Content area wrapper for sticky header positioning */}
+      <View style={{ flex: 1, position: 'relative' }}>
+        {/* Sticky compact header - positioned at top of content area */}
+        <StickyCompactHeader
+          emoji=""
+          title={getSupersetEmojis(supersetActivities)}
+          subtitle={getSupersetLabel(supersetActivities.length)}
+          badge={getSupersetLabel(supersetActivities.length)}
+          scrollY={scrollY}
+        />
 
-          {/* Timer - Collapsible */}
-          <CollapsibleTimer
-            activityId={supersetId}
-            activityName={getSupersetLabel(supersetActivities.length)}
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          className="flex-1"
+          contentContainerStyle={{
+            paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 200,
+          }}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        >
+          {/* Large content header - fades out on scroll */}
+          <ContentHeader
+            emoji=""
+            title={getSupersetEmojis(supersetActivities)}
+            subtitle={getSupersetLabel(supersetActivities.length)}
+            badge={getSupersetLabel(supersetActivities.length)}
+            scrollY={scrollY}
           />
 
-          {/* Notes - combined from all activities */}
-          {supersetActivities.some(a => a.notes) && (
-            <NotesCard
-              notes={supersetActivities
-                .filter(a => a.notes)
-                .map(a => `${a.emoji || '💪'} ${a.name}: ${a.notes}`)
-                .join('\n\n')}
+          <View className="p-4" style={{ gap: 24 }}>
+            {/* Timer - Collapsible */}
+            <CollapsibleTimer
+              activityId={supersetId}
+              activityName={getSupersetLabel(supersetActivities.length)}
             />
-          )}
 
-          {/* Superset Rounds */}
-          {supersetRounds.map((round, roundIndex) => (
-            <View key={round.roundNumber}>
-              {/* Round Header */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: 12,
-                  marginTop: roundIndex > 0 ? 8 : 0,
-                }}
-              >
+            {/* Notes - combined from all activities */}
+            {supersetActivities.some(a => a.notes) && (
+              <NotesCard
+                notes={supersetActivities
+                  .filter(a => a.notes)
+                  .map(a => `${a.emoji || '💪'} ${a.name}: ${a.notes}`)
+                  .join('\n\n')}
+              />
+            )}
+
+            {/* Superset Rounds */}
+            {supersetRounds.map((round, roundIndex) => (
+              <View key={round.roundNumber}>
+                {/* Round Header */}
                 <View
                   style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: isDark ? '#374151' : '#D1D5DB',
-                  }}
-                />
-                <Text
-                  style={{
-                    paddingHorizontal: 12,
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: isDark ? '#9CA3AF' : '#6B7280',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    marginTop: roundIndex > 0 ? 8 : 0,
                   }}
                 >
-                  Superset {round.roundNumber}
-                </Text>
-                <View
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: isDark ? '#374151' : '#D1D5DB',
-                  }}
-                />
-              </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      backgroundColor: isDark ? '#374151' : '#D1D5DB',
+                    }}
+                  />
+                  <Text
+                    style={{
+                      paddingHorizontal: 12,
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: isDark ? '#9CA3AF' : '#6B7280',
+                    }}
+                  >
+                    Superset {round.roundNumber}
+                  </Text>
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      backgroundColor: isDark ? '#374151' : '#D1D5DB',
+                    }}
+                  />
+                </View>
 
-              {/* Sets for each activity in this round */}
-              {round.sets.map(({ activity, set, setIndex }, activityIndex) => {
-                const isLastActivity = activityIndex === round.sets.length - 1;
-                const accentColor = set?.completed ? '#22C55E' : '#3B82F6';
+                {/* Sets for each activity in this round */}
+                {round.sets.map(
+                  ({ activity, set, setIndex }, activityIndex) => {
+                    const isLastActivity =
+                      activityIndex === round.sets.length - 1;
+                    const accentColor = set?.completed ? '#22C55E' : '#3B82F6';
 
-                if (!set) {
-                  // No set for this activity in this round - show placeholder
-                  return (
-                    <View key={`${activity.id}-empty-${setIndex}`}>
-                      <View
-                        className={`p-4 rounded-lg ${
-                          isDark ? 'bg-gray-800' : 'bg-white'
-                        } shadow-sm`}
-                        style={{ opacity: 0.5 }}
-                      >
-                        <View className="flex-row items-center">
-                          <Text className="text-xl mr-2">
-                            {activity.emoji || '💪'}
-                          </Text>
-                          <Text
-                            className={`text-base font-medium ${
-                              isDark ? 'text-gray-400' : 'text-gray-500'
-                            }`}
+                    if (!set) {
+                      // No set for this activity in this round - show add set option
+                      return (
+                        <View key={`${activity.id}-empty-${setIndex}`}>
+                          <TouchableOpacity
+                            onPress={() => handleAddSetToActivity(activity.id)}
+                            className={`p-4 rounded-lg ${
+                              isDark ? 'bg-gray-800' : 'bg-white'
+                            } shadow-sm`}
+                            style={{
+                              borderWidth: 2,
+                              borderStyle: 'dashed',
+                              borderColor: isDark ? '#4B5563' : '#D1D5DB',
+                            }}
                           >
-                            {activity.name} - No set
-                          </Text>
+                            <View className="flex-row items-center justify-between">
+                              <View className="flex-row items-center flex-1">
+                                <Text className="text-xl mr-2">
+                                  {activity.emoji || '💪'}
+                                </Text>
+                                <Text
+                                  className={`text-base font-medium ${
+                                    isDark ? 'text-gray-400' : 'text-gray-500'
+                                  }`}
+                                  numberOfLines={1}
+                                >
+                                  {activity.name}
+                                </Text>
+                              </View>
+                              <View className="flex-row items-center">
+                                <Ionicons
+                                  name="add-circle-outline"
+                                  size={20}
+                                  color={isDark ? '#60A5FA' : '#3B82F6'}
+                                />
+                                <Text
+                                  style={{
+                                    color: isDark ? '#60A5FA' : '#3B82F6',
+                                    marginLeft: 4,
+                                    fontWeight: '600',
+                                  }}
+                                >
+                                  Add Set
+                                </Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                          {/* Connecting line */}
+                          {!isLastActivity && (
+                            <View
+                              style={{
+                                alignItems: 'center',
+                                paddingVertical: 4,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 2,
+                                  height: 16,
+                                  backgroundColor: accentColor,
+                                  borderRadius: 1,
+                                }}
+                              />
+                            </View>
+                          )}
                         </View>
-                      </View>
-                      {/* Connecting line */}
-                      {!isLastActivity && (
+                      );
+                    }
+
+                    const fields: TrackingField[] = activity.trackingFields || [
+                      'weight',
+                      'reps',
+                    ];
+                    const showPlateIcon =
+                      fields.includes('weight') &&
+                      activity.type === 'weight-training';
+
+                    return (
+                      <View key={`${activity.id}-${set.id}`}>
                         <View
+                          className={`p-4 rounded-lg ${
+                            isDark ? 'bg-gray-800' : 'bg-white'
+                          } shadow-sm`}
                           style={{
-                            alignItems: 'center',
-                            paddingVertical: 4,
+                            borderLeftWidth: 4,
+                            borderLeftColor: accentColor,
                           }}
                         >
+                          {/* Activity name header */}
+                          <View className="flex-row justify-between items-center mb-3">
+                            <View className="flex-row items-center flex-1">
+                              <Text className="text-xl mr-2">
+                                {activity.emoji || '💪'}
+                              </Text>
+                              <Text
+                                className={`text-base font-semibold ${
+                                  isDark ? 'text-white' : 'text-gray-900'
+                                }`}
+                                numberOfLines={1}
+                              >
+                                {activity.name}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => showSetOptions(activity.id, set)}
+                              hitSlop={{
+                                top: 12,
+                                bottom: 12,
+                                left: 12,
+                                right: 12,
+                              }}
+                              className="p-1"
+                            >
+                              <Ionicons
+                                name="ellipsis-vertical"
+                                size={20}
+                                color={isDark ? '#9CA3AF' : '#6B7280'}
+                              />
+                            </TouchableOpacity>
+                          </View>
+
+                          {/* Set inputs */}
                           <View
+                            className="flex-row flex-wrap"
+                            style={{ gap: 12 }}
+                          >
+                            {fields.map(field => {
+                              const config = fieldConfig[field];
+                              const value = set[field];
+                              const isWeightField =
+                                field === 'weight' &&
+                                activity.type === 'weight-training';
+
+                              return (
+                                <View
+                                  key={field}
+                                  style={{
+                                    flex: 1,
+                                    minWidth:
+                                      fields.length > 2 ? '45%' : undefined,
+                                  }}
+                                >
+                                  <View className="flex-row items-center mb-1">
+                                    <Text
+                                      className={`text-sm ${
+                                        isDark
+                                          ? 'text-gray-300'
+                                          : 'text-gray-600'
+                                      }`}
+                                    >
+                                      {config.label}
+                                      {config.unit ? ` (${config.unit})` : ''}
+                                    </Text>
+                                    {isWeightField && (
+                                      <TouchableOpacity
+                                        onPress={() => {
+                                          setActiveSetInfo({
+                                            activityId: activity.id,
+                                            setId: set.id,
+                                          });
+                                          setShowPlateCalculator(true);
+                                        }}
+                                        hitSlop={{
+                                          top: 16,
+                                          bottom: 16,
+                                          left: 16,
+                                          right: 16,
+                                        }}
+                                        style={{ marginLeft: 8 }}
+                                      >
+                                        <PlateIcon variant="tooltip" />
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
+                                  <TextInput
+                                    ref={ref => {
+                                      setInputRefs.current[
+                                        `${activity.id}-${set.id}-${field}`
+                                      ] = ref;
+                                    }}
+                                    value={
+                                      value != null ? value.toString() : ''
+                                    }
+                                    onChangeText={text =>
+                                      handleUpdateSet(activity.id, set.id, {
+                                        [field]: text
+                                          ? parseFloat(text)
+                                          : undefined,
+                                      })
+                                    }
+                                    keyboardType="numeric"
+                                    className={`px-3 py-2 border rounded-lg ${
+                                      isDark
+                                        ? 'bg-gray-700 border-gray-600 text-white'
+                                        : 'bg-white border-gray-300 text-gray-900'
+                                    }`}
+                                    placeholder=""
+                                    placeholderTextColor={
+                                      isDark ? '#9CA3AF' : '#6B7280'
+                                    }
+                                    returnKeyType="done"
+                                    onSubmitEditing={() => Keyboard.dismiss()}
+                                    onFocus={() => {
+                                      setTimeout(() => {
+                                        scrollToSetInput(
+                                          `${activity.id}-${set.id}-${field}`
+                                        );
+                                      }, 100);
+                                    }}
+                                  />
+                                </View>
+                              );
+                            })}
+                          </View>
+
+                          {/* Complete button */}
+                          <TouchableOpacity
+                            onPress={() =>
+                              handleUpdateSet(activity.id, set.id, {
+                                completed: !set.completed,
+                              })
+                            }
+                            className="mt-4 px-4 py-3 rounded-lg"
                             style={{
-                              width: 2,
-                              height: 16,
-                              backgroundColor: accentColor,
-                              borderRadius: 1,
-                            }}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  );
-                }
-
-                const fields: TrackingField[] = activity.trackingFields || [
-                  'weight',
-                  'reps',
-                ];
-                const showPlateIcon =
-                  fields.includes('weight') &&
-                  activity.type === 'weight-training';
-
-                return (
-                  <View key={`${activity.id}-${set.id}`}>
-                    <View
-                      className={`p-4 rounded-lg ${
-                        isDark ? 'bg-gray-800' : 'bg-white'
-                      } shadow-sm`}
-                      style={{
-                        borderLeftWidth: 4,
-                        borderLeftColor: accentColor,
-                      }}
-                    >
-                    {/* Activity name header */}
-                    <View className="flex-row justify-between items-center mb-3">
-                      <View className="flex-row items-center flex-1">
-                        <Text className="text-xl mr-2">
-                          {activity.emoji || '💪'}
-                        </Text>
-                        <Text
-                          className={`text-base font-semibold ${
-                            isDark ? 'text-white' : 'text-gray-900'
-                          }`}
-                          numberOfLines={1}
-                        >
-                          {activity.name}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => showSetOptions(activity.id, set)}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                        className="p-1"
-                      >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={20}
-                          color={isDark ? '#9CA3AF' : '#6B7280'}
-                        />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Set inputs */}
-                    <View className="flex-row flex-wrap" style={{ gap: 12 }}>
-                      {fields.map(field => {
-                        const config = fieldConfig[field];
-                        const value = set[field];
-                        const isWeightField =
-                          field === 'weight' &&
-                          activity.type === 'weight-training';
-
-                        return (
-                          <View
-                            key={field}
-                            style={{
-                              flex: 1,
-                              minWidth: fields.length > 2 ? '45%' : undefined,
+                              backgroundColor: isDark ? '#1f2937' : '#fff',
+                              borderWidth: 2,
+                              borderColor: set.completed
+                                ? '#22C55E'
+                                : isDark
+                                  ? '#4B5563'
+                                  : '#D1D5DB',
                             }}
                           >
-                            <View className="flex-row items-center mb-1">
-                              <Text
-                                className={`text-sm ${
-                                  isDark ? 'text-gray-300' : 'text-gray-600'
-                                }`}
-                              >
-                                {config.label}
-                                {config.unit ? ` (${config.unit})` : ''}
-                              </Text>
-                              {isWeightField && (
-                                <TouchableOpacity
-                                  onPress={() => {
-                                    setActiveSetInfo({
-                                      activityId: activity.id,
-                                      setId: set.id,
-                                    });
-                                    setShowPlateCalculator(true);
-                                  }}
-                                  hitSlop={{
-                                    top: 16,
-                                    bottom: 16,
-                                    left: 16,
-                                    right: 16,
-                                  }}
-                                  style={{ marginLeft: 8 }}
-                                >
-                                  <PlateIcon variant="tooltip" />
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                            <TextInput
-                              ref={ref => {
-                                setInputRefs.current[
-                                  `${activity.id}-${set.id}-${field}`
-                                ] = ref;
+                            <Text
+                              className="text-center font-semibold"
+                              style={{
+                                color: set.completed
+                                  ? '#22C55E'
+                                  : isDark
+                                    ? '#9CA3AF'
+                                    : '#6B7280',
                               }}
-                              value={value != null ? value.toString() : ''}
-                              onChangeText={text =>
-                                handleUpdateSet(activity.id, set.id, {
-                                  [field]: text ? parseFloat(text) : undefined,
-                                })
-                              }
-                              keyboardType="numeric"
-                              className={`px-3 py-2 border rounded-lg ${
-                                isDark
-                                  ? 'bg-gray-700 border-gray-600 text-white'
-                                  : 'bg-white border-gray-300 text-gray-900'
-                              }`}
-                              placeholder=""
-                              placeholderTextColor={
-                                isDark ? '#9CA3AF' : '#6B7280'
-                              }
-                              returnKeyType="done"
-                              onSubmitEditing={() => Keyboard.dismiss()}
-                              onFocus={() => {
-                                setTimeout(() => {
-                                  scrollToSetInput(
-                                    `${activity.id}-${set.id}-${field}`
-                                  );
-                                }, 100);
+                            >
+                              {set.completed ? 'Completed' : 'Mark Complete'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                        {/* Connecting line */}
+                        {!isLastActivity && (
+                          <View
+                            style={{
+                              alignItems: 'center',
+                              paddingVertical: 4,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 2,
+                                height: 16,
+                                backgroundColor: accentColor,
+                                borderRadius: 1,
                               }}
                             />
                           </View>
-                        );
-                      })}
-                    </View>
-
-                      {/* Complete button */}
-                      <TouchableOpacity
-                        onPress={() =>
-                          handleUpdateSet(activity.id, set.id, {
-                            completed: !set.completed,
-                          })
-                        }
-                        className="mt-4 px-4 py-3 rounded-lg"
-                        style={{
-                          backgroundColor: isDark ? '#1f2937' : '#fff',
-                          borderWidth: 2,
-                          borderColor: set.completed
-                            ? '#22C55E'
-                            : isDark
-                              ? '#4B5563'
-                              : '#D1D5DB',
-                        }}
-                      >
-                        <Text
-                          className="text-center font-semibold"
-                          style={{
-                            color: set.completed
-                              ? '#22C55E'
-                              : isDark
-                                ? '#9CA3AF'
-                                : '#6B7280',
-                          }}
-                        >
-                          {set.completed ? 'Completed' : 'Mark Complete'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    {/* Connecting line */}
-                    {!isLastActivity && (
-                      <View
-                        style={{
-                          alignItems: 'center',
-                          paddingVertical: 4,
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: 2,
-                            height: 16,
-                            backgroundColor: accentColor,
-                            borderRadius: 1,
-                          }}
-                        />
+                        )}
                       </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ))}
+                    );
+                  }
+                )}
+              </View>
+            ))}
 
-          {/* Add Round Button */}
-          <TouchableOpacity
-            onPress={handleAddSupersetRound}
-            className={`p-4 rounded-lg border-2 border-dashed ${
-              isDark ? 'border-gray-600' : 'border-gray-300'
-            }`}
-            style={{ alignItems: 'center' }}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={24}
-              color={isDark ? '#9CA3AF' : '#6B7280'}
-            />
-            <Text
-              className={`mt-2 font-medium ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
+            {/* Add Round Button */}
+            <TouchableOpacity
+              onPress={handleAddSupersetRound}
+              className={`p-4 rounded-lg border-2 border-dashed ${
+                isDark ? 'border-gray-600' : 'border-gray-300'
               }`}
+              style={{ alignItems: 'center' }}
             >
-              Add Superset
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={isDark ? '#9CA3AF' : '#6B7280'}
+              />
+              <Text
+                className={`mt-2 font-medium ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                Add Superset
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.ScrollView>
+      </View>
 
       {/* Sticky Action Button */}
       <View

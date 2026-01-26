@@ -75,8 +75,11 @@ const activitySlice = createSlice({
             a => a.id === remainingInSuperset[0].id
           );
           if (lastIdx !== -1) {
-            const { supersetId: _, supersetPosition: __, ...rest } =
-              state.data[lastIdx];
+            const {
+              supersetId: _,
+              supersetPosition: __,
+              ...rest
+            } = state.data[lastIdx];
             state.data[lastIdx] = { ...rest, updated_at: now };
           }
         } else if (remainingInSuperset.length > 1) {
@@ -235,8 +238,11 @@ const activitySlice = createSlice({
       // Remove this activity from the superset
       const activityIndex = state.data.findIndex(a => a.id === activityId);
       if (activityIndex !== -1) {
-        const { supersetId: _, supersetPosition: __, ...rest } =
-          state.data[activityIndex];
+        const {
+          supersetId: _,
+          supersetPosition: __,
+          ...rest
+        } = state.data[activityIndex];
         state.data[activityIndex] = {
           ...rest,
           updated_at: now,
@@ -254,8 +260,11 @@ const activitySlice = createSlice({
           a => a.id === remainingActivities[0].id
         );
         if (lastActivityIndex !== -1) {
-          const { supersetId: _, supersetPosition: __, ...rest } =
-            state.data[lastActivityIndex];
+          const {
+            supersetId: _,
+            supersetPosition: __,
+            ...rest
+          } = state.data[lastActivityIndex];
           state.data[lastActivityIndex] = {
             ...rest,
             updated_at: now,

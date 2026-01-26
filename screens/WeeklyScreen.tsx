@@ -676,9 +676,8 @@ export default function WeeklyScreen({ navigation }: any) {
 
                     <View className="flex-row flex-wrap justify-end">
                       {(() => {
-                        const groups = groupActivitiesWithSupersets(
-                          dayActivities
-                        );
+                        const groups =
+                          groupActivitiesWithSupersets(dayActivities);
                         const displayGroups = groups.slice(0, 6);
                         const remainingCount =
                           dayActivities.length -
@@ -710,7 +709,9 @@ export default function WeeklyScreen({ navigation }: any) {
                             })}
                             {remainingCount > 0 && (
                               <Text
-                                style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                                style={{
+                                  color: isDark ? '#a3a3a3' : '#6b7280',
+                                }}
                                 className="ml-1 text-sm"
                               >
                                 +{remainingCount}
@@ -781,7 +782,9 @@ export default function WeeklyScreen({ navigation }: any) {
                                 {activity.emoji || '💪'}
                               </Text>
                               <Text
-                                style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+                                style={{
+                                  color: isDark ? '#e5e5e5' : '#374151',
+                                }}
                                 className="flex-1"
                               >
                                 {activity.name || activity.type}

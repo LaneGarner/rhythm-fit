@@ -77,7 +77,7 @@ export default function TabNavigator() {
         name="Weekly"
         component={WeeklyScreen}
         options={{
-          tabBarLabel: 'Weekly',
+          tabBarLabel: 'Activities',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'calendar' : 'calendar-outline'}
