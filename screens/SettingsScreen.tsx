@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { HEADER_STYLES } from '../constants';

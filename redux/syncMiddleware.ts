@@ -1,6 +1,11 @@
-import { Middleware } from '@reduxjs/toolkit';
+import { Middleware, UnknownAction } from '@reduxjs/toolkit';
 import Constants from 'expo-constants';
 import { Activity } from '../types/activity';
+
+// Type guard for actions with payload
+interface ActionWithPayload<T = unknown> extends UnknownAction {
+  payload: T;
+}
 
 const API_URL =
   (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
@@ -56,9 +61,10 @@ const SYNC_ACTIONS = [
   'activities/swapSupersetOrder',
 ];
 
-export const syncMiddleware: Middleware = store => next => action => {
+export const syncMiddleware: Middleware = store => next => unknownAction => {
   // Always let the action pass through first (local update)
-  const result = next(action);
+  const result = next(unknownAction);
+  const action = unknownAction as ActionWithPayload;
 
   // Then sync in background if authenticated
   if (SYNC_ACTIONS.includes(action.type) && authToken && isConfigured) {
@@ -129,7 +135,6 @@ export const syncMiddleware: Middleware = store => next => action => {
           // that were modified (they have recent updated_at)
         } else if (action.type === 'activities/breakSuperset') {
           // Sync all activities that were in the superset
-          const supersetId = action.payload as string;
           const activities = state.activities.data as Activity[];
           // Find activities that just had their superset cleared
           // (they won't have supersetId anymore but were just updated)

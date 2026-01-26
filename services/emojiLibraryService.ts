@@ -117,7 +117,7 @@ export async function fetchEmojiLibrary(
   accessToken: string
 ): Promise<EmojiItem[]> {
   if (!API_URL) {
-    return getCachedEmojiLibrary();
+    return getCachedCustomEmojis();
   }
 
   try {

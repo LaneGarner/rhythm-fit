@@ -15,13 +15,14 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActionSheetIOS,
   Alert,
   Animated,
   Easing,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -569,29 +570,19 @@ export default function CoachScreen({ navigation }: any) {
     setInputText(suggestion);
   };
 
-  const handleMessageLongPress = (messageText: string) => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Copy'],
-          cancelButtonIndex: 0,
-        },
-        async buttonIndex => {
-          if (buttonIndex === 1) {
-            await Clipboard.setStringAsync(messageText);
-          }
-        }
-      );
-    } else {
-      Alert.alert('Message', undefined, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Copy',
-          onPress: async () => {
-            await Clipboard.setStringAsync(messageText);
-          },
-        },
-      ]);
+  const [selectedMessage, setSelectedMessage] = useState<{ id: string; text: string } | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleMessageLongPress = (messageText: string, messageId: string) => {
+    setSelectedMessage({ id: messageId, text: messageText });
+  };
+
+  const handleCopyMessage = async () => {
+    if (selectedMessage) {
+      await Clipboard.setStringAsync(selectedMessage.text);
+      setCopiedMessageId(selectedMessage.id);
+      setSelectedMessage(null);
+      setTimeout(() => setCopiedMessageId(null), 1500);
     }
   };
 
@@ -1003,7 +994,7 @@ Use Markdown formatting. ${activityContext}`;
                 className={`mb-4 ${message.type === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <TouchableOpacity
-                  onLongPress={() => handleMessageLongPress(message.text)}
+                  onLongPress={() => handleMessageLongPress(message.text, message.id)}
                   delayLongPress={300}
                   activeOpacity={0.8}
                   className={`max-w-[80%] p-3 rounded-2xl ${
@@ -1016,6 +1007,17 @@ Use Markdown formatting. ${activityContext}`;
                         : 'bg-white border border-gray-200'
                   }`}
                 >
+                  {copiedMessageId === message.id && (
+                    <View
+                      className="absolute -top-8 left-1/2 px-2 py-1 rounded"
+                      style={{
+                        backgroundColor: isDark ? '#22c55e' : '#16a34a',
+                        transform: [{ translateX: -24 }],
+                      }}
+                    >
+                      <Text className="text-white text-xs font-medium">Copied!</Text>
+                    </View>
+                  )}
                   {message.type === 'user' ? (
                     <Text
                       style={{
@@ -1111,6 +1113,51 @@ Use Markdown formatting. ${activityContext}`;
       ) : (
         renderChatHistory()
       )}
+
+      {/* Copy Message Modal */}
+      <Modal
+        visible={selectedMessage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedMessage(null)}
+      >
+        <Pressable
+          className="flex-1 justify-center items-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+          onPress={() => setSelectedMessage(null)}
+        >
+          <View
+            className="rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: isDark ? '#1c1c1e' : '#fff',
+              minWidth: 200,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
+            <TouchableOpacity
+              className="flex-row items-center px-5 py-4"
+              onPress={handleCopyMessage}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="copy-outline"
+                size={20}
+                color={isDark ? '#fff' : '#111'}
+              />
+              <Text
+                className="text-base font-medium ml-3"
+                style={{ color: isDark ? '#fff' : '#111' }}
+              >
+                Copy Message
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
