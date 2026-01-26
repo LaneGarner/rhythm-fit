@@ -18,13 +18,10 @@ export default function PlateIcon({
   const isTooltip = variant === 'tooltip';
   const iconSize = size ?? (isTooltip ? 20 : 60);
 
-  // Tooltip variant: centered "?" with no center hole
+  // Tooltip variant: blank plate
   // Default variant: weight label at bottom with center hole
-  const displayLabel = isTooltip
-    ? '?'
-    : weight % 1 === 0
-      ? weight.toString()
-      : weight.toFixed(1);
+  const displayLabel =
+    weight % 1 === 0 ? weight.toString() : weight.toFixed(1);
 
   return (
     <View style={[styles.container, { width: iconSize, height: iconSize }]}>
@@ -51,18 +48,20 @@ export default function PlateIcon({
           stroke="#444"
           strokeWidth={1}
         />
-        {/* Label text */}
-        <SvgText
-          x={iconSize / 2}
-          y={isTooltip ? iconSize / 2 : iconSize * 0.82}
-          fill="white"
-          fontSize={isTooltip ? iconSize * 0.55 : iconSize / 4}
-          fontWeight="bold"
-          textAnchor="middle"
-          alignmentBaseline="central"
-        >
-          {displayLabel}
-        </SvgText>
+        {/* Label text (not shown for tooltip variant) */}
+        {!isTooltip && (
+          <SvgText
+            x={iconSize / 2}
+            y={iconSize * 0.82}
+            fill="white"
+            fontSize={iconSize / 4}
+            fontWeight="bold"
+            textAnchor="middle"
+            alignmentBaseline="central"
+          >
+            {displayLabel}
+          </SvgText>
+        )}
       </Svg>
       {count !== undefined && count > 0 && (
         <View style={styles.badge}>
