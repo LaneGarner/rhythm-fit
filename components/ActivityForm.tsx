@@ -27,8 +27,10 @@ import { ThemeContext } from '../theme/ThemeContext';
 import {
   Activity,
   ActivityType,
+  DEFAULT_TRACKING_FIELDS,
   RecurringConfig,
   SetData,
+  TrackingField,
 } from '../types/activity';
 import ActivityNameInput from './ActivityNameInput';
 import RecurringActivityModal from './RecurringActivityModal';
@@ -55,6 +57,10 @@ export default function ActivityForm({
   const [activityName, setActivityName] = useState(initialActivity?.name || '');
   const [activityType, setActivityType] = useState<ActivityType>(
     initialActivity?.type || 'weight-training'
+  );
+  const [trackingFields, setTrackingFields] = useState<TrackingField[]>(
+    initialActivity?.trackingFields ||
+      DEFAULT_TRACKING_FIELDS[initialActivity?.type || 'weight-training']
   );
   const [selectedEmoji, setSelectedEmoji] = useState(
     initialActivity?.emoji || ''
@@ -140,6 +146,13 @@ export default function ActivityForm({
     }
   }, [activityType, selectedEmoji]);
 
+  // Auto-set tracking fields when activity type changes (only for new activities)
+  useEffect(() => {
+    if (mode === 'create') {
+      setTrackingFields(DEFAULT_TRACKING_FIELDS[activityType]);
+    }
+  }, [activityType, mode]);
+
   const scrollToInput = (inputRef: React.RefObject<TextInput | null>) => {
     if (inputRef.current && scrollViewRef.current) {
       inputRef.current.measureLayout(
@@ -222,6 +235,7 @@ export default function ActivityForm({
       notes: notes.trim() || undefined,
       sets: sets,
       recurring: recurringConfig || undefined,
+      trackingFields: trackingFields,
     };
 
     onSave(activity, recurringConfig || undefined);
@@ -272,13 +286,16 @@ export default function ActivityForm({
       id: newSetId,
       reps: undefined,
       weight: undefined,
+      time: undefined,
+      distance: undefined,
       completed: false,
     };
     setSets([...sets, newSet]);
 
-    // Focus the weight input of the new set after render
+    // Focus the first tracking field input of the new set after render
     setTimeout(() => {
-      setInputRefs.current[`${newSetId}-weight`]?.focus();
+      const firstField = trackingFields[0];
+      setInputRefs.current[`${newSetId}-${firstField}`]?.focus();
     }, 100);
   };
 
@@ -291,6 +308,8 @@ export default function ActivityForm({
       id: Date.now().toString(),
       reps: setToDuplicate.reps,
       weight: setToDuplicate.weight,
+      time: setToDuplicate.time,
+      distance: setToDuplicate.distance,
       completed: false,
     };
     setSets([...sets, newSet]);
@@ -707,6 +726,74 @@ export default function ActivityForm({
             )}
           </View>
 
+          {/* Tracking Fields */}
+          <View>
+            <Text
+              className={`text-lg font-semibold mb-2 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              Tracking Fields
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {(
+                [
+                  { field: 'weight', label: 'Weight' },
+                  { field: 'reps', label: 'Reps' },
+                  { field: 'time', label: 'Time' },
+                  { field: 'distance', label: 'Distance' },
+                ] as { field: TrackingField; label: string }[]
+              ).map(({ field, label }) => {
+                const isSelected = trackingFields.includes(field);
+                return (
+                  <TouchableOpacity
+                    key={field}
+                    onPress={() => {
+                      if (isSelected) {
+                        // Don't allow removing the last field
+                        if (trackingFields.length > 1) {
+                          setTrackingFields(
+                            trackingFields.filter(f => f !== field)
+                          );
+                        }
+                      } else {
+                        setTrackingFields([...trackingFields, field]);
+                      }
+                    }}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: isSelected
+                        ? isDark
+                          ? '#6366f1'
+                          : '#a5b4fc'
+                        : isDark
+                          ? '#444'
+                          : '#d1d5db',
+                      backgroundColor: isSelected
+                        ? isDark
+                          ? '#23263a'
+                          : '#e0e7ff'
+                        : isDark
+                          ? '#1a1a1a'
+                          : '#fff',
+                    }}
+                  >
+                    <Text
+                      className={`text-base ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      {label} {isSelected ? '✓' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Sets */}
           <View>
             <View className="flex-row justify-between items-center mb-4">
@@ -739,77 +826,66 @@ export default function ActivityForm({
                 >
                   Set {index + 1}
                 </Text>
-                <View className="flex-row space-x-4">
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
-                    >
-                      Weight (lbs)
-                    </Text>
-                    <TextInput
-                      ref={ref => {
-                        setInputRefs.current[`${set.id}-weight`] = ref;
-                      }}
-                      value={set.weight != null ? set.weight.toString() : ''}
-                      onChangeText={text =>
-                        handleUpdateSet(set.id, {
-                          weight: text ? parseInt(text) : undefined,
-                        })
-                      }
-                      keyboardType="numeric"
-                      className={`px-3 py-2 border rounded-lg ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder=""
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                      onFocus={() => {
-                        setTimeout(() => {
-                          scrollToSetInput(`${set.id}-weight`);
-                        }, 100);
-                      }}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
-                    >
-                      Reps
-                    </Text>
-                    <TextInput
-                      ref={ref => {
-                        setInputRefs.current[`${set.id}-reps`] = ref;
-                      }}
-                      value={set.reps != null ? set.reps.toString() : ''}
-                      onChangeText={text =>
-                        handleUpdateSet(set.id, {
-                          reps: text ? parseInt(text) : undefined,
-                        })
-                      }
-                      keyboardType="numeric"
-                      className={`px-3 py-2 border rounded-lg ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder=""
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                      onFocus={() => {
-                        setTimeout(() => {
-                          scrollToSetInput(`${set.id}-reps`);
-                        }, 100);
-                      }}
-                    />
-                  </View>
+                <View className="flex-row flex-wrap" style={{ gap: 12 }}>
+                  {trackingFields.map(field => {
+                    const fieldConfig: Record<
+                      TrackingField,
+                      { label: string; unit?: string }
+                    > = {
+                      weight: { label: 'Weight', unit: 'lbs' },
+                      reps: { label: 'Reps' },
+                      time: { label: 'Time', unit: 'sec' },
+                      distance: { label: 'Distance', unit: 'mi' },
+                    };
+                    const config = fieldConfig[field];
+                    const value = set[field];
+
+                    return (
+                      <View
+                        key={field}
+                        style={{
+                          flex: 1,
+                          minWidth:
+                            trackingFields.length > 2 ? '45%' : undefined,
+                        }}
+                      >
+                        <Text
+                          className={`text-sm mb-1 ${
+                            isDark ? 'text-gray-300' : 'text-gray-600'
+                          }`}
+                        >
+                          {config.label}
+                          {config.unit ? ` (${config.unit})` : ''}
+                        </Text>
+                        <TextInput
+                          ref={ref => {
+                            setInputRefs.current[`${set.id}-${field}`] = ref;
+                          }}
+                          value={value != null ? value.toString() : ''}
+                          onChangeText={text =>
+                            handleUpdateSet(set.id, {
+                              [field]: text ? parseFloat(text) : undefined,
+                            })
+                          }
+                          keyboardType="numeric"
+                          className={`px-3 py-2 border rounded-lg ${
+                            isDark
+                              ? 'bg-gray-700 border-gray-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                          placeholder=""
+                          placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                          returnKeyType="done"
+                          onSubmitEditing={() => Keyboard.dismiss()}
+                          onFocus={() => {
+                            setTimeout(() => {
+                              scrollToSetInput(`${set.id}-${field}`);
+                            }, 100);
+                          }}
+                        />
+                      </View>
+                    );
+                  })}
                 </View>
                 <View className="flex-row space-x-3 mt-3">
                   <TouchableOpacity

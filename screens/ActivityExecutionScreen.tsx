@@ -19,7 +19,7 @@ import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
-import { Activity, SetData } from '../types/activity';
+import { Activity, SetData, TrackingField } from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
@@ -135,6 +135,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       id: newSetId,
       reps: 0,
       weight: 0,
+      time: undefined,
+      distance: undefined,
       completed: false,
     };
     const updatedSets = [...sets, newSet];
@@ -150,9 +152,10 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       dispatch(updateActivity(updatedActivity));
     }
 
-    // Focus the weight input of the new set after render
+    // Focus the first tracking field input of the new set after render
+    const fields = activity?.trackingFields || ['weight', 'reps'];
     setTimeout(() => {
-      setInputRefs.current[newSetId]?.focus();
+      setInputRefs.current[`${newSetId}-${fields[0]}`]?.focus();
     }, 100);
   };
 
@@ -161,6 +164,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       id: Date.now().toString(),
       reps: setToDuplicate.reps,
       weight: setToDuplicate.weight,
+      time: setToDuplicate.time,
+      distance: setToDuplicate.distance,
       completed: false,
     };
     const updatedSets = [...sets, newSet];
@@ -311,8 +316,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     );
   }
 
-  const scrollToSetInput = (setId: string) => {
-    const inputRef = setInputRefs.current[setId];
+  const scrollToSetInput = (refKey: string) => {
+    const inputRef = setInputRefs.current[refKey];
     if (inputRef && scrollViewRef.current) {
       inputRef.measureLayout(
         scrollViewRef.current as any,
@@ -712,146 +717,154 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             </View>
 
             {/* Add refs for set inputs */}
-            {sets.map((set, index) => (
-              <View
-                key={set.id}
-                className={`p-4 rounded-lg mb-3 ${
-                  isDark ? 'bg-gray-800' : 'bg-white'
-                } shadow-sm`}
-              >
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text
-                    className={`text-lg font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    Set {index + 1}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => showSetOptions(set)}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    className="p-1"
-                  >
-                    <Ionicons
-                      name="ellipsis-vertical"
-                      size={20}
-                      color={isDark ? '#9CA3AF' : '#6B7280'}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View className="flex-row space-x-4">
-                  <View className="flex-1">
-                    <View className="flex-row items-center mb-1">
-                      <Text
-                        className={`text-sm ${
-                          isDark ? 'text-gray-300' : 'text-gray-600'
-                        }`}
-                      >
-                        Weight (lbs)
-                      </Text>
-                      {activity.type === 'weight-training' && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            setActiveSetId(set.id);
-                            setShowPlateCalculator(true);
-                          }}
-                          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-                          style={{ marginLeft: 8 }}
-                        >
-                          <PlateIcon variant="tooltip" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <TextInput
-                      ref={ref => {
-                        setInputRefs.current[set.id] = ref;
-                      }}
-                      value={set.weight != null ? set.weight.toString() : ''}
-                      onChangeText={text =>
-                        handleUpdateSet(set.id, {
-                          weight: text ? parseInt(text) : undefined,
-                        })
-                      }
-                      keyboardType="numeric"
-                      className={`px-3 py-2 border rounded-lg ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder=""
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                      onFocus={() => {
-                        setTimeout(() => {
-                          scrollToSetInput(set.id);
-                        }, 100);
-                      }}
-                    />
-                  </View>
-                  <View className="flex-1">
+            {sets.map((set, index) => {
+              const fields: TrackingField[] = activity.trackingFields || [
+                'weight',
+                'reps',
+              ];
+              const fieldConfig: Record<
+                TrackingField,
+                { label: string; unit?: string }
+              > = {
+                weight: { label: 'Weight', unit: 'lbs' },
+                reps: { label: 'Reps' },
+                time: { label: 'Time', unit: 'sec' },
+                distance: { label: 'Distance', unit: 'mi' },
+              };
+
+              return (
+                <View
+                  key={set.id}
+                  className={`p-4 rounded-lg mb-3 ${
+                    isDark ? 'bg-gray-800' : 'bg-white'
+                  } shadow-sm`}
+                >
+                  <View className="flex-row justify-between items-center mb-3">
                     <Text
-                      className={`text-sm mb-1 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      className={`text-lg font-semibold ${
+                        isDark ? 'text-white' : 'text-gray-900'
                       }`}
                     >
-                      Reps
+                      Set {index + 1}
                     </Text>
-                    <TextInput
-                      value={set.reps != null ? set.reps.toString() : ''}
-                      onChangeText={text =>
-                        handleUpdateSet(set.id, {
-                          reps: text ? parseInt(text) : undefined,
-                        })
-                      }
-                      keyboardType="numeric"
-                      className={`px-3 py-2 border rounded-lg ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder=""
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                      onFocus={() => {
-                        setTimeout(() => {
-                          scrollToSetInput(set.id);
-                        }, 100);
-                      }}
-                    />
+                    <TouchableOpacity
+                      onPress={() => showSetOptions(set)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      className="p-1"
+                    >
+                      <Ionicons
+                        name="ellipsis-vertical"
+                        size={20}
+                        color={isDark ? '#9CA3AF' : '#6B7280'}
+                      />
+                    </TouchableOpacity>
                   </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() =>
-                    handleUpdateSet(set.id, { completed: !set.completed })
-                  }
-                  className="mt-5 px-4 py-4 rounded-lg"
-                  style={{
-                    backgroundColor: isDark ? '#1f2937' : '#fff',
-                    borderWidth: 2,
-                    borderColor: set.completed
-                      ? '#22C55E'
-                      : isDark
-                        ? '#4B5563'
-                        : '#D1D5DB',
-                  }}
-                >
-                  <Text
-                    className={`text-center font-semibold text-lg`}
+                  <View className="flex-row flex-wrap" style={{ gap: 12 }}>
+                    {fields.map(field => {
+                      const config = fieldConfig[field];
+                      const value = set[field];
+                      const showPlateIcon =
+                        field === 'weight' &&
+                        activity.type === 'weight-training';
+
+                      return (
+                        <View
+                          key={field}
+                          style={{
+                            flex: 1,
+                            minWidth: fields.length > 2 ? '45%' : undefined,
+                          }}
+                        >
+                          <View className="flex-row items-center mb-1">
+                            <Text
+                              className={`text-sm ${
+                                isDark ? 'text-gray-300' : 'text-gray-600'
+                              }`}
+                            >
+                              {config.label}
+                              {config.unit ? ` (${config.unit})` : ''}
+                            </Text>
+                            {showPlateIcon && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setActiveSetId(set.id);
+                                  setShowPlateCalculator(true);
+                                }}
+                                hitSlop={{
+                                  top: 16,
+                                  bottom: 16,
+                                  left: 16,
+                                  right: 16,
+                                }}
+                                style={{ marginLeft: 8 }}
+                              >
+                                <PlateIcon variant="tooltip" />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                          <TextInput
+                            ref={ref => {
+                              setInputRefs.current[`${set.id}-${field}`] = ref;
+                            }}
+                            value={value != null ? value.toString() : ''}
+                            onChangeText={text =>
+                              handleUpdateSet(set.id, {
+                                [field]: text ? parseFloat(text) : undefined,
+                              })
+                            }
+                            keyboardType="numeric"
+                            className={`px-3 py-2 border rounded-lg ${
+                              isDark
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                            placeholder=""
+                            placeholderTextColor={
+                              isDark ? '#9CA3AF' : '#6B7280'
+                            }
+                            returnKeyType="done"
+                            onSubmitEditing={() => Keyboard.dismiss()}
+                            onFocus={() => {
+                              setTimeout(() => {
+                                scrollToSetInput(`${set.id}-${field}`);
+                              }, 100);
+                            }}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleUpdateSet(set.id, { completed: !set.completed })
+                    }
+                    className="mt-5 px-4 py-4 rounded-lg"
                     style={{
-                      color: set.completed
+                      backgroundColor: isDark ? '#1f2937' : '#fff',
+                      borderWidth: 2,
+                      borderColor: set.completed
                         ? '#22C55E'
                         : isDark
-                          ? '#9CA3AF'
-                          : '#6B7280',
+                          ? '#4B5563'
+                          : '#D1D5DB',
                     }}
                   >
-                    {set.completed ? 'Completed  ✅' : 'Mark Complete'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+                    <Text
+                      className={`text-center font-semibold text-lg`}
+                      style={{
+                        color: set.completed
+                          ? '#22C55E'
+                          : isDark
+                            ? '#9CA3AF'
+                            : '#6B7280',
+                      }}
+                    >
+                      {set.completed ? 'Completed  ✅' : 'Mark Complete'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
 
             {sets.length === 0 && (
               <Text

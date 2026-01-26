@@ -7,6 +7,18 @@ export type ActivityType =
   | 'sports'
   | 'other';
 
+export type TrackingField = 'weight' | 'reps' | 'time' | 'distance';
+
+export const DEFAULT_TRACKING_FIELDS: Record<ActivityType, TrackingField[]> = {
+  'weight-training': ['weight', 'reps'],
+  calisthenics: ['reps', 'weight', 'time'],
+  cardio: ['time', 'distance'],
+  mobility: ['time', 'reps'],
+  recovery: ['time', 'reps'],
+  sports: ['time', 'reps'],
+  other: ['reps', 'time'],
+};
+
 export type RecurringPattern = 'daily' | 'weekly' | 'custom';
 export type RecurringFrequency = 'every' | 'this'; // for "this Monday" vs "every Monday"
 
@@ -31,6 +43,7 @@ export interface Activity {
   recurring?: RecurringConfig;
   updated_at?: string; // ISO timestamp for sync
   order?: number; // Custom sort order for manual reordering
+  trackingFields?: TrackingField[]; // Fields to show for sets
 }
 
 export interface SetData {
