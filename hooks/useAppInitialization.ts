@@ -9,6 +9,9 @@ import {
 import { syncActivities } from '../services/syncService';
 import { initializeExercises } from '../services/exerciseService';
 import { initializeActivityTypes } from '../services/activityTypeService';
+import { fetchEquipment } from '../services/equipmentService';
+import { fetchLibrary } from '../services/libraryService';
+import { fetchEmojiLibrary } from '../services/emojiLibraryService';
 import { AppDispatch, RootState } from '../redux/store';
 import { Activity } from '../types/activity';
 
@@ -96,6 +99,13 @@ export function useAppInitialization() {
           activitiesRef.current,
           handleActivitiesUpdated
         );
+
+        // Sync user-specific data in parallel (non-blocking)
+        Promise.all([
+          fetchEquipment(token),
+          fetchLibrary(token),
+          fetchEmojiLibrary(token),
+        ]).catch(err => console.error('Failed to sync user data:', err));
       } catch (err) {
         console.error('Failed to sync activities during initialization:', err);
       } finally {
