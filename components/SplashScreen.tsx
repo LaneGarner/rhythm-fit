@@ -2,25 +2,13 @@ import React from 'react';
 import { Animated, View } from 'react-native';
 import Logo from './Logo';
 
-interface SplashScreenProps {
-  onFinish: () => void;
-}
-
-export default function SplashScreen({ onFinish }: SplashScreenProps) {
+export default function SplashScreen() {
   // Simple loading animation for dots
   const dotAnimations = React.useRef([
     new Animated.Value(0.3),
     new Animated.Value(0.3),
     new Animated.Value(0.3),
   ]).current;
-
-  // Simple static splash screen - no animations
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      onFinish();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [onFinish]);
 
   // Start dot animation
   React.useEffect(() => {

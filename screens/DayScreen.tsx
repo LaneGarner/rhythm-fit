@@ -200,7 +200,8 @@ export default function DayScreen({ navigation, route }: any) {
         const lastIndex = Math.max(...indices);
 
         if (direction === 'up' && firstIndex === 0) return;
-        if (direction === 'down' && lastIndex === dayActivities.length - 1) return;
+        if (direction === 'down' && lastIndex === dayActivities.length - 1)
+          return;
 
         // Create new order by moving the entire superset group
         const reordered = [...dayActivities];
@@ -224,7 +225,8 @@ export default function DayScreen({ navigation, route }: any) {
         const currentIndex = dayActivities.findIndex(a => a.id === activityId);
 
         // Find the target index, skipping over any superset groups
-        let targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        let targetIndex =
+          direction === 'up' ? currentIndex - 1 : currentIndex + 1;
         if (targetIndex < 0 || targetIndex >= dayActivities.length) return;
 
         const targetActivity = dayActivities[targetIndex];
@@ -235,7 +237,9 @@ export default function DayScreen({ navigation, route }: any) {
             a => a.supersetId === targetActivity.supersetId
           );
           const supersetIndices = dayActivities
-            .map((a, i) => (a.supersetId === targetActivity.supersetId ? i : -1))
+            .map((a, i) =>
+              a.supersetId === targetActivity.supersetId ? i : -1
+            )
             .filter(i => i >= 0);
 
           if (direction === 'up') {
@@ -250,7 +254,8 @@ export default function DayScreen({ navigation, route }: any) {
         const [movedActivity] = reordered.splice(currentIndex, 1);
 
         // Adjust target index after removal if needed
-        const adjustedTarget = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+        const adjustedTarget =
+          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
         reordered.splice(adjustedTarget, 0, movedActivity);
 
         const orderedIds = reordered.map(a => a.id);
@@ -547,7 +552,8 @@ export default function DayScreen({ navigation, route }: any) {
     };
 
     // Determine margins for connected superset items
-    const marginBottom = supersetInfo.isInSuperset && !supersetInfo.isLastInSuperset ? 0 : 12;
+    const marginBottom =
+      supersetInfo.isInSuperset && !supersetInfo.isLastInSuperset ? 0 : 12;
     const borderRadius = supersetInfo.isInSuperset
       ? {
           borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 8 : 0,
@@ -584,16 +590,28 @@ export default function DayScreen({ navigation, route }: any) {
             marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
             borderColor: supersetInfo.isInSuperset ? '#8B5CF6' : '#3B82F6',
-            borderTopWidth: supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset ? 1 : (isSelected ? 2 : 0),
-            borderTopColor: supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
-              ? (isDark ? '#374151' : '#E5E7EB')
-              : (supersetInfo.isInSuperset ? '#8B5CF6' : '#3B82F6'),
+            borderTopWidth:
+              supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
+                ? 1
+                : isSelected
+                  ? 2
+                  : 0,
+            borderTopColor:
+              supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
+                ? isDark
+                  ? '#374151'
+                  : '#E5E7EB'
+                : supersetInfo.isInSuperset
+                  ? '#8B5CF6'
+                  : '#3B82F6',
           }}
         >
           {/* Superset label for first item */}
           {supersetInfo.isInSuperset && supersetInfo.isFirstInSuperset && (
             <View style={{ marginBottom: 8 }}>
-              <SupersetBadge label={getSupersetLabel(supersetInfo.supersetSize)} />
+              <SupersetBadge
+                label={getSupersetLabel(supersetInfo.supersetSize)}
+              />
             </View>
           )}
           <View className="flex-row items-center justify-between">
@@ -869,10 +887,20 @@ export default function DayScreen({ navigation, route }: any) {
 
   // Render a draggable group (single activity or superset)
   const renderDraggableGroup = useCallback(
-    ({ item: group, drag, isActive }: { item: ActivityGroup; drag: () => void; isActive: boolean }) => {
+    ({
+      item: group,
+      drag,
+      isActive,
+    }: {
+      item: ActivityGroup;
+      drag: () => void;
+      isActive: boolean;
+    }) => {
       const isSuperset = group.type === 'superset';
       const activities = group.activities;
-      const hasSelectedActivity = activities.some(a => selectedActivities.has(a.id));
+      const hasSelectedActivity = activities.some(a =>
+        selectedActivities.has(a.id)
+      );
 
       const content = (
         <View style={{ marginBottom: 12 }}>
@@ -880,12 +908,28 @@ export default function DayScreen({ navigation, route }: any) {
             className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
             style={{
               borderWidth: hasSelectedActivity ? 2 : isActive ? 2 : 0,
-              borderColor: isActive ? '#10B981' : (isSuperset ? '#8B5CF6' : '#3B82F6'),
-              borderLeftWidth: isSuperset ? 4 : (hasSelectedActivity || isActive ? 2 : 0),
-              borderLeftColor: isSuperset ? '#8B5CF6' : (isActive ? '#10B981' : '#3B82F6'),
+              borderColor: isActive
+                ? '#10B981'
+                : isSuperset
+                  ? '#8B5CF6'
+                  : '#3B82F6',
+              borderLeftWidth: isSuperset
+                ? 4
+                : hasSelectedActivity || isActive
+                  ? 2
+                  : 0,
+              borderLeftColor: isSuperset
+                ? '#8B5CF6'
+                : isActive
+                  ? '#10B981'
+                  : '#3B82F6',
               backgroundColor: isActive
-                ? isDark ? '#374151' : '#F3F4F6'
-                : isDark ? '#1f2937' : '#ffffff',
+                ? isDark
+                  ? '#374151'
+                  : '#F3F4F6'
+                : isDark
+                  ? '#1f2937'
+                  : '#ffffff',
             }}
           >
             {/* Header with drag handle */}
@@ -897,7 +941,9 @@ export default function DayScreen({ navigation, route }: any) {
                 className="mr-2 p-2"
                 style={{
                   backgroundColor: isActive
-                    ? isDark ? '#4B5563' : '#E5E7EB'
+                    ? isDark
+                      ? '#4B5563'
+                      : '#E5E7EB'
                     : 'transparent',
                   borderRadius: 4,
                 }}
@@ -920,12 +966,22 @@ export default function DayScreen({ navigation, route }: any) {
                     className="mr-2"
                   >
                     <Ionicons
-                      name={selectedActivities.has(activities[0].id) ? 'checkbox' : 'square-outline'}
+                      name={
+                        selectedActivities.has(activities[0].id)
+                          ? 'checkbox'
+                          : 'square-outline'
+                      }
                       size={24}
-                      color={selectedActivities.has(activities[0].id) ? '#3B82F6' : '#6B7280'}
+                      color={
+                        selectedActivities.has(activities[0].id)
+                          ? '#3B82F6'
+                          : '#6B7280'
+                      }
                     />
                   </TouchableOpacity>
-                  <Text className="text-2xl mr-3">{activities[0].emoji || '💪'}</Text>
+                  <Text className="text-2xl mr-3">
+                    {activities[0].emoji || '💪'}
+                  </Text>
                   <View className="flex-1">
                     <Text
                       className={`text-lg font-semibold ${
@@ -962,7 +1018,9 @@ export default function DayScreen({ navigation, route }: any) {
             {/* Superset activities list */}
             {isSuperset && (
               <View style={{ marginTop: 8 }}>
-                {activities.map(activity => renderBulkActivityRow(activity, isActive))}
+                {activities.map(activity =>
+                  renderBulkActivityRow(activity, isActive)
+                )}
               </View>
             )}
           </View>

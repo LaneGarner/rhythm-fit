@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { getChatSuggestions, ChatSuggestions as SuggestionsType } from '../services/chatApi';
+import {
+  getChatSuggestions,
+  ChatSuggestions as SuggestionsType,
+} from '../services/chatApi';
 import { ThemeContext } from '../theme/ThemeContext';
 
 interface ChatSuggestionsProps {

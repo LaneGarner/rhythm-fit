@@ -2,27 +2,18 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import React, { useContext, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Provider } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
 import TabNavigator from './navigation/TabNavigator';
-import {
-  loadActivitiesFromStorage,
-  setActivities,
-} from './redux/activitySlice';
-import { AppDispatch, RootState, store } from './redux/store';
+import { store } from './redux/store';
 import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
-import { syncActivities } from './services/syncService';
-import { initializeExercises } from './services/exerciseService';
-import { initializeActivityTypes } from './services/activityTypeService';
-import { isBackendConfigured } from './config/api';
-import { Activity } from './types/activity';
+import { useAppInitialization } from './hooks/useAppInitialization';
 
 // Import screens
 import ActivityExecutionScreen from './screens/ActivityExecutionScreen';
@@ -55,68 +46,8 @@ export type RootStackParamList = {
   Equipment: undefined;
 };
 
-function AppContent({ isInitialLoad }: { isInitialLoad: boolean }) {
-  const dispatch = useDispatch<AppDispatch>();
+function AppContent() {
   const { colorScheme } = useContext(ThemeContext);
-  const {
-    user,
-    isLoading: authLoading,
-    getAccessToken,
-    isConfigured,
-  } = useAuth();
-  const [hasSynced, setHasSynced] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const activities = useSelector((state: RootState) => state.activities.data);
-
-  const handleActivitiesUpdated = useCallback(
-    (updatedActivities: Activity[]) => {
-      dispatch(setActivities(updatedActivities));
-    },
-    [dispatch]
-  );
-
-  useEffect(() => {
-    // Load activities from storage on app start
-    dispatch(loadActivitiesFromStorage());
-    // Initialize exercise database and activity types from backend
-    initializeExercises();
-    initializeActivityTypes();
-  }, [dispatch]);
-
-  // Sync activities when user is authenticated
-  useEffect(() => {
-    const performSync = async () => {
-      if (user && isConfigured && isBackendConfigured() && !hasSynced) {
-        const token = getAccessToken();
-        if (token) {
-          setIsSyncing(true);
-          try {
-            await syncActivities(token, activities, handleActivitiesUpdated);
-            setHasSynced(true);
-          } catch (err) {
-            console.error('Failed to sync activities:', err);
-          } finally {
-            setIsSyncing(false);
-          }
-        }
-      }
-    };
-    performSync();
-  }, [
-    user,
-    isConfigured,
-    hasSynced,
-    getAccessToken,
-    activities,
-    handleActivitiesUpdated,
-  ]);
-
-  // Reset sync flag when user logs out
-  useEffect(() => {
-    if (!user) {
-      setHasSynced(false);
-    }
-  }, [user]);
 
   // Lock orientation to portrait
   useEffect(() => {
@@ -127,39 +58,6 @@ function AppContent({ isInitialLoad }: { isInitialLoad: boolean }) {
     };
     lockOrientation();
   }, []);
-
-  // Show loading while checking auth (only if backend is configured)
-  if (authLoading && isConfigured) {
-    return null;
-  }
-
-  // Show loading screen while syncing after login (but not during initial load)
-  if (isSyncing && !isInitialLoad) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colorScheme === 'dark' ? '#000' : '#F9FAFB',
-        }}
-      >
-        <ActivityIndicator
-          size="large"
-          color={colorScheme === 'dark' ? '#60A5FA' : '#2563EB'}
-        />
-        <Text
-          style={{
-            marginTop: 16,
-            fontSize: 16,
-            color: colorScheme === 'dark' ? '#9CA3AF' : '#6B7280',
-          }}
-        >
-          Loading your data...
-        </Text>
-      </View>
-    );
-  }
 
   return (
     <>
@@ -200,23 +98,17 @@ function AppContent({ isInitialLoad }: { isInitialLoad: boolean }) {
   );
 }
 
-export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+function AppInitializer() {
+  const { isReady } = useAppInitialization();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      // Give a brief moment for sync to start before marking initial load complete
-      setTimeout(() => setIsInitialLoad(false), 500);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <SplashScreen onFinish={() => setIsLoading(false)} />;
+  if (!isReady) {
+    return <SplashScreen />;
   }
 
+  return <AppContent />;
+}
+
+export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
@@ -224,7 +116,7 @@ export default function App() {
           <AuthProvider>
             <TimerProvider>
               <WeekProvider>
-                <AppContent isInitialLoad={isInitialLoad} />
+                <AppInitializer />
               </WeekProvider>
             </TimerProvider>
           </AuthProvider>

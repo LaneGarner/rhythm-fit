@@ -570,7 +570,10 @@ export default function CoachScreen({ navigation }: any) {
     setInputText(suggestion);
   };
 
-  const [selectedMessage, setSelectedMessage] = useState<{ id: string; text: string } | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
   const handleMessageLongPress = (messageText: string, messageId: string) => {
@@ -994,7 +997,9 @@ Use Markdown formatting. ${activityContext}`;
                 className={`mb-4 ${message.type === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <TouchableOpacity
-                  onLongPress={() => handleMessageLongPress(message.text, message.id)}
+                  onLongPress={() =>
+                    handleMessageLongPress(message.text, message.id)
+                  }
                   delayLongPress={300}
                   activeOpacity={0.8}
                   className={`max-w-[80%] p-3 rounded-2xl ${
@@ -1015,7 +1020,9 @@ Use Markdown formatting. ${activityContext}`;
                         transform: [{ translateX: -24 }],
                       }}
                     >
-                      <Text className="text-white text-xs font-medium">Copied!</Text>
+                      <Text className="text-white text-xs font-medium">
+                        Copied!
+                      </Text>
                     </View>
                   )}
                   {message.type === 'user' ? (
