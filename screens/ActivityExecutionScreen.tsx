@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -60,6 +61,16 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     const activityType = getActivityTypes().find(at => at.value === type);
     return activityType?.label || type;
   };
+
+  // Sync local state when screen regains focus (e.g., returning from EditActivity)
+  useFocusEffect(
+    useCallback(() => {
+      if (activity) {
+        setSets(activity.sets || []);
+        setIsCompleted(activity.completed || false);
+      }
+    }, [activity])
+  );
 
   // Keyboard listeners
   useEffect(() => {
