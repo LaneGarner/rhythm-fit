@@ -33,12 +33,12 @@ import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
 import {
+  ActivityGroup,
   groupActivitiesWithSupersets,
   getSupersetEmojis,
   getSupersetLabel,
   isSupersetComplete,
   getSupersetCompletedCount,
-  ActivityGroup,
 } from '../utils/supersetUtils';
 
 // Check if running in Expo Go (StoreClient) vs a build
@@ -254,79 +254,6 @@ export default function DayScreen({ navigation, route }: any) {
         reordered.splice(adjustedTarget, 0, movedActivity);
 
         const orderedIds = reordered.map(a => a.id);
-        setPendingOrderIds(orderedIds);
-      }
-    },
-    [dayActivities]
-  );
-
-  // Handle drag end for DraggableFlatList (for builds)
-  // Keeps superset members together after dragging
-  const handleDragEnd = useCallback(
-    ({ data: reorderedData, from, to }: { data: Activity[]; from: number; to: number }) => {
-      // Get the dragged activity
-      const draggedActivity = dayActivities[from];
-
-      // If the dragged activity is part of a superset, we need to move all superset members together
-      if (draggedActivity?.supersetId) {
-        // Get all activities in this superset from the original order
-        const supersetIds = new Set(
-          dayActivities
-            .filter(a => a.supersetId === draggedActivity.supersetId)
-            .map(a => a.id)
-        );
-
-        // Find where the superset started in the original list
-        const originalSupersetIndices = dayActivities
-          .map((a, i) => (supersetIds.has(a.id) ? i : -1))
-          .filter(i => i >= 0);
-        const originalFirstIndex = Math.min(...originalSupersetIndices);
-
-        // Get non-superset activities in their new order
-        const nonSupersetActivities = reorderedData.filter(
-          a => !supersetIds.has(a.id)
-        );
-
-        // Get superset activities in their original relative order
-        const supersetActivities = dayActivities.filter(a =>
-          supersetIds.has(a.id)
-        );
-
-        // Figure out where to insert the superset group
-        // Find the position of the dragged item in the reordered list
-        const newDraggedIndex = reorderedData.findIndex(
-          a => a.id === draggedActivity.id
-        );
-
-        // Count how many non-superset items are before the dragged position
-        let insertPosition = 0;
-        for (let i = 0; i < newDraggedIndex; i++) {
-          if (!supersetIds.has(reorderedData[i].id)) {
-            insertPosition++;
-          }
-        }
-
-        // Build the final order: insert superset group at the calculated position
-        const finalOrder: Activity[] = [];
-        let nonSupersetIndex = 0;
-
-        for (let i = 0; i <= nonSupersetActivities.length; i++) {
-          if (i === insertPosition) {
-            // Insert all superset activities here
-            finalOrder.push(...supersetActivities);
-          }
-          if (nonSupersetIndex < nonSupersetActivities.length) {
-            finalOrder.push(nonSupersetActivities[nonSupersetIndex]);
-            nonSupersetIndex++;
-          }
-        }
-
-        const orderedIds = finalOrder.map(a => a.id);
-        setPendingOrderIds(orderedIds);
-      } else {
-        // Non-superset activity - use the reordered data as-is
-        // But ensure supersets stay together (they might have been split by the drag)
-        const orderedIds = reorderedData.map(activity => activity.id);
         setPendingOrderIds(orderedIds);
       }
     },
@@ -880,169 +807,165 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   // Build version: Drag handle reordering with DraggableFlatList
-  const renderDraggableItem = useCallback(
-    ({ item: activity, drag, isActive, getIndex }: any) => {
+  // Render a single activity row for bulk mode (used inside groups)
+  const renderBulkActivityRow = useCallback(
+    (activity: Activity, isActive: boolean) => {
       const isSelected = selectedActivities.has(activity.id);
-      const index = getIndex?.() ?? 0;
-      const supersetInfo = getSupersetPositionInfo(activity, index);
 
-      const handlePress = () => {
-        if (isBulkMode) {
-          toggleActivitySelection(activity.id);
-        } else if (!activity.completed) {
-          navigation.navigate('ActivityExecution', { activityId: activity.id });
-        } else {
-          showActivityOptions(activity);
-        }
-      };
+      return (
+        <View
+          key={activity.id}
+          className="flex-row items-center py-2"
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: isDark ? '#374151' : '#E5E7EB',
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => toggleActivitySelection(activity.id)}
+            className="mr-2"
+          >
+            <Ionicons
+              name={isSelected ? 'checkbox' : 'square-outline'}
+              size={24}
+              color={isSelected ? '#3B82F6' : '#6B7280'}
+            />
+          </TouchableOpacity>
+          <Text className="text-xl mr-2">{activity.emoji || '💪'}</Text>
+          <View className="flex-1">
+            <Text
+              className={`text-base font-medium ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              {activity.name || activity.type}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('EditActivity', {
+                activityId: activity.id,
+                fromDayEdit: true,
+                date: date,
+              })
+            }
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text
+              style={{
+                color: isDark ? '#60A5FA' : '#2563EB',
+                fontSize: 14,
+                fontWeight: '600',
+              }}
+            >
+              Edit
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    },
+    [selectedActivities, isDark, navigation, toggleActivitySelection, date]
+  );
 
-      const handleLongPress = () => {
-        if (!isBulkMode) {
-          showActivityOptions(activity);
-        }
-      };
-
-      // Determine margins for connected superset items
-      const marginBottom = supersetInfo.isInSuperset && !supersetInfo.isLastInSuperset ? 0 : 12;
-      const borderRadius = supersetInfo.isInSuperset
-        ? {
-            borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 8 : 0,
-            borderTopRightRadius: supersetInfo.isFirstInSuperset ? 8 : 0,
-            borderBottomLeftRadius: supersetInfo.isLastInSuperset ? 8 : 0,
-            borderBottomRightRadius: supersetInfo.isLastInSuperset ? 8 : 0,
-          }
-        : { borderRadius: 8 };
+  // Render a draggable group (single activity or superset)
+  const renderDraggableGroup = useCallback(
+    ({ item: group, drag, isActive }: { item: ActivityGroup; drag: () => void; isActive: boolean }) => {
+      const isSuperset = group.type === 'superset';
+      const activities = group.activities;
+      const hasSelectedActivity = activities.some(a => selectedActivities.has(a.id));
 
       const content = (
-        <View style={{ marginBottom }}>
-          {/* Superset indicator line on the left */}
-          {supersetInfo.isInSuperset && (
-            <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: supersetInfo.isFirstInSuperset ? 8 : 0,
-                bottom: supersetInfo.isLastInSuperset ? 8 : 0,
-                width: 4,
-                backgroundColor: '#8B5CF6',
-                borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 4 : 0,
-                borderBottomLeftRadius: supersetInfo.isLastInSuperset ? 4 : 0,
-                zIndex: 1,
-              }}
-            />
-          )}
-          <TouchableOpacity
-            onPress={handlePress}
-            onLongPress={isBulkMode ? undefined : handleLongPress}
-            disabled={isActive}
-            activeOpacity={0.7}
-            className={`p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+        <View style={{ marginBottom: 12 }}>
+          <View
+            className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
             style={{
-              ...borderRadius,
-              marginLeft: supersetInfo.isInSuperset ? 8 : 0,
-              borderWidth: isSelected ? 2 : isActive ? 2 : 0,
-              borderColor: isActive ? '#10B981' : (supersetInfo.isInSuperset ? '#8B5CF6' : '#3B82F6'),
-              borderTopWidth: supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset ? 1 : (isSelected || isActive ? 2 : 0),
-              borderTopColor: supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
-                ? (isDark ? '#374151' : '#E5E7EB')
-                : (isActive ? '#10B981' : (supersetInfo.isInSuperset ? '#8B5CF6' : '#3B82F6')),
+              borderWidth: hasSelectedActivity ? 2 : isActive ? 2 : 0,
+              borderColor: isActive ? '#10B981' : (isSuperset ? '#8B5CF6' : '#3B82F6'),
+              borderLeftWidth: isSuperset ? 4 : (hasSelectedActivity || isActive ? 2 : 0),
+              borderLeftColor: isSuperset ? '#8B5CF6' : (isActive ? '#10B981' : '#3B82F6'),
               backgroundColor: isActive
-                ? isDark
-                  ? '#374151'
-                  : '#F3F4F6'
-                : isDark
-                  ? '#1f2937'
-                  : '#ffffff',
+                ? isDark ? '#374151' : '#F3F4F6'
+                : isDark ? '#1f2937' : '#ffffff',
             }}
           >
-            {/* Superset label for first item */}
-            {supersetInfo.isInSuperset && supersetInfo.isFirstInSuperset && (
-              <View style={{ marginBottom: 8 }}>
-                <SupersetBadge label={getSupersetLabel(supersetInfo.supersetSize)} />
-              </View>
-            )}
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center flex-1">
-                {isBulkMode && (
-                  <>
-                    <TouchableOpacity
-                      onLongPress={drag}
-                      delayLongPress={100}
-                      disabled={isActive}
-                      className="mr-2 p-2"
+            {/* Header with drag handle */}
+            <View className="flex-row items-center">
+              <TouchableOpacity
+                onLongPress={drag}
+                delayLongPress={100}
+                disabled={isActive}
+                className="mr-2 p-2"
+                style={{
+                  backgroundColor: isActive
+                    ? isDark ? '#4B5563' : '#E5E7EB'
+                    : 'transparent',
+                  borderRadius: 4,
+                }}
+              >
+                <Ionicons
+                  name="reorder-three"
+                  size={24}
+                  color={isDark ? '#9CA3AF' : '#6B7280'}
+                />
+              </TouchableOpacity>
+
+              {isSuperset ? (
+                <View className="flex-1">
+                  <SupersetBadge label={getSupersetLabel(activities.length)} />
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    onPress={() => toggleActivitySelection(activities[0].id)}
+                    className="mr-2"
+                  >
+                    <Ionicons
+                      name={selectedActivities.has(activities[0].id) ? 'checkbox' : 'square-outline'}
+                      size={24}
+                      color={selectedActivities.has(activities[0].id) ? '#3B82F6' : '#6B7280'}
+                    />
+                  </TouchableOpacity>
+                  <Text className="text-2xl mr-3">{activities[0].emoji || '💪'}</Text>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-lg font-semibold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      {activities[0].name || activities[0].type}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('EditActivity', {
+                        activityId: activities[0].id,
+                        fromDayEdit: true,
+                        date: date,
+                      })
+                    }
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text
                       style={{
-                        backgroundColor: isActive
-                          ? isDark
-                            ? '#4B5563'
-                            : '#E5E7EB'
-                          : 'transparent',
-                        borderRadius: 4,
+                        color: isDark ? '#60A5FA' : '#2563EB',
+                        fontSize: 14,
+                        fontWeight: '600',
                       }}
                     >
-                      <Ionicons
-                        name="reorder-three"
-                        size={24}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => toggleActivitySelection(activity.id)}
-                      className="mr-2"
-                    >
-                      <Ionicons
-                        name={isSelected ? 'checkbox' : 'square-outline'}
-                        size={24}
-                        color={isSelected ? '#3B82F6' : '#6B7280'}
-                      />
-                    </TouchableOpacity>
-                  </>
-                )}
-                <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
-                <View className="flex-1">
-                  <Text
-                    className={`text-lg font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {activity.name || activity.type}
-                  </Text>
-                  <Text
-                    className={`text-sm ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
-                    }`}
-                  >
-                    {dayjs(activity.date).format('MMM D')}
-                  </Text>
-                </View>
-              </View>
-              {isBulkMode ? (
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('EditActivity', {
-                      activityId: activity.id,
-                      fromDayEdit: true,
-                      date: date,
-                    })
-                  }
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Text
-                    style={{
-                      color: isDark ? '#60A5FA' : '#2563EB',
-                      fontSize: 14,
-                      fontWeight: '600',
-                    }}
-                  >
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-              ) : activity.completed ? (
-                <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
-              ) : (
-                <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
-          </TouchableOpacity>
+
+            {/* Superset activities list */}
+            {isSuperset && (
+              <View style={{ marginTop: 8 }}>
+                {activities.map(activity => renderBulkActivityRow(activity, isActive))}
+              </View>
+            )}
+          </View>
         </View>
       );
 
@@ -1054,12 +977,27 @@ export default function DayScreen({ navigation, route }: any) {
     },
     [
       selectedActivities,
-      isBulkMode,
       isDark,
       navigation,
       toggleActivitySelection,
-      getSupersetPositionInfo,
+      renderBulkActivityRow,
+      date,
     ]
+  );
+
+  // Handle drag end for grouped data
+  const handleGroupDragEnd = useCallback(
+    ({ data: reorderedGroups }: { data: ActivityGroup[] }) => {
+      // Flatten groups back to activity IDs
+      const orderedIds: string[] = [];
+      for (const group of reorderedGroups) {
+        for (const activity of group.activities) {
+          orderedIds.push(activity.id);
+        }
+      }
+      setPendingOrderIds(orderedIds);
+    },
+    []
   );
 
   const MoveToDateModal = () => (
@@ -1201,12 +1139,16 @@ export default function DayScreen({ navigation, route }: any) {
 
     // Production build: Use DraggableFlatList for bulk mode, ScrollView for normal mode
     if (isBulkMode) {
+      const groupedData = groupActivitiesWithSupersets(dayActivities);
       return (
         <DraggableFlatList
-          data={dayActivities}
-          keyExtractor={(item: Activity) => item.id}
-          renderItem={renderDraggableItem}
-          onDragEnd={handleDragEnd}
+          data={groupedData}
+          keyExtractor={(item: ActivityGroup) =>
+            item.type === 'superset' ? item.supersetId! : item.activities[0].id
+          }
+          renderItem={renderDraggableGroup}
+          onDragEnd={handleGroupDragEnd}
+          containerStyle={{ flex: 1 }}
           contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
           activationDistance={0}
         />
