@@ -48,7 +48,7 @@ export default function SplashScreen() {
       <Logo width={280} showText={true} color="#FFFFFF" />
 
       {/* Animated loading dots */}
-      <View style={{ marginTop: 48, flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
         {[0, 1, 2].map(index => (
           <Animated.View
             key={index}
