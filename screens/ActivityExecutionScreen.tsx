@@ -34,6 +34,7 @@ import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { ThemeContext } from '../theme/ThemeContext';
 import { Activity, SetData, TrackingField } from '../types/activity';
+import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
@@ -429,7 +430,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 > = {
                   weight: { label: 'Weight', unit: 'lbs' },
                   reps: { label: 'Reps' },
-                  time: { label: 'Time', unit: 'sec' },
+                  time: { label: 'Time', unit: 'm:ss' },
                   distance: { label: 'Distance', unit: 'mi' },
                 };
 
@@ -508,19 +509,34 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                                 setInputRefs.current[`${set.id}-${field}`] =
                                   ref;
                               }}
-                              value={value != null ? value.toString() : ''}
+                              value={
+                                field === 'time'
+                                  ? secondsToTimeString(value)
+                                  : value != null
+                                    ? value.toString()
+                                    : ''
+                              }
                               onChangeText={text =>
                                 handleUpdateSet(set.id, {
-                                  [field]: text ? parseFloat(text) : undefined,
+                                  [field]:
+                                    field === 'time'
+                                      ? timeStringToSeconds(text)
+                                      : text
+                                        ? parseFloat(text)
+                                        : undefined,
                                 })
                               }
-                              keyboardType="numeric"
+                              keyboardType={
+                                field === 'time'
+                                  ? 'numbers-and-punctuation'
+                                  : 'numeric'
+                              }
                               className={`px-3 py-2 border rounded-lg ${
                                 isDark
                                   ? 'bg-gray-700 border-gray-600 text-white'
                                   : 'bg-white border-gray-300 text-gray-900'
                               }`}
-                              placeholder=""
+                              placeholder={field === 'time' ? '0:00' : ''}
                               placeholderTextColor={
                                 isDark ? '#9CA3AF' : '#6B7280'
                               }

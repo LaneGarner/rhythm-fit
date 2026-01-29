@@ -33,6 +33,7 @@ import {
   getSupersetLabel,
   isSupersetComplete,
 } from '../utils/supersetUtils';
+import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
 
 export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
@@ -292,7 +293,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const fieldConfig: Record<TrackingField, { label: string; unit?: string }> = {
     weight: { label: 'Weight', unit: 'lbs' },
     reps: { label: 'Reps' },
-    time: { label: 'Time', unit: 'sec' },
+    time: { label: 'Time', unit: 'm:ss' },
     distance: { label: 'Distance', unit: 'mi' },
   };
 
@@ -611,22 +612,33 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       ] = ref;
                                     }}
                                     value={
-                                      value != null ? value.toString() : ''
+                                      field === 'time'
+                                        ? secondsToTimeString(value)
+                                        : value != null
+                                          ? value.toString()
+                                          : ''
                                     }
                                     onChangeText={text =>
                                       handleUpdateSet(activity.id, set.id, {
-                                        [field]: text
-                                          ? parseFloat(text)
-                                          : undefined,
+                                        [field]:
+                                          field === 'time'
+                                            ? timeStringToSeconds(text)
+                                            : text
+                                              ? parseFloat(text)
+                                              : undefined,
                                       })
                                     }
-                                    keyboardType="numeric"
+                                    keyboardType={
+                                      field === 'time'
+                                        ? 'numbers-and-punctuation'
+                                        : 'numeric'
+                                    }
                                     className={`px-3 py-2 border rounded-lg ${
                                       isDark
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
                                     }`}
-                                    placeholder=""
+                                    placeholder={field === 'time' ? '0:00' : ''}
                                     placeholderTextColor={
                                       isDark ? '#9CA3AF' : '#6B7280'
                                     }
