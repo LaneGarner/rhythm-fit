@@ -200,6 +200,14 @@ export default function WeeklyScreen({ navigation }: any) {
     }
   }, [weekOffset]);
 
+  // Go to current week when Activities tab is pressed while already on this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      goToCurrentWeek();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const handleSinglePress = (direction: 'prev' | 'next') => {
     navigateWeek(direction);
   };
@@ -648,20 +656,33 @@ export default function WeeklyScreen({ navigation }: any) {
                 }
               />
             </TouchableOpacity>
-            {/* Week label - centered in its container */}
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <TouchableOpacity onPress={goToCurrentWeek} activeOpacity={0.7}>
-                <Text
-                  className="text-2xl font-bold"
-                  style={{
-                    color: colors.text,
-                    textAlign: 'center',
-                  }}
-                >
-                  {getWeekLabel(weekOffset)}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* Week label + date range - combined touchable area */}
+            <TouchableOpacity
+              onPress={goToCurrentWeek}
+              activeOpacity={0.7}
+              style={{ flex: 1, alignItems: 'center' }}
+            >
+              <Text
+                className="text-2xl font-bold"
+                style={{
+                  color: colors.text,
+                  textAlign: 'center',
+                }}
+              >
+                {getWeekLabel(weekOffset)}
+              </Text>
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  textAlign: 'center',
+                  fontSize: 14,
+                  lineHeight: 18,
+                  marginTop: 4,
+                }}
+              >
+                {getWeekDateRange(weekOffset)}
+              </Text>
+            </TouchableOpacity>
             {/* Right caret */}
             <TouchableOpacity
               onPress={() => handleSinglePress('next')}
@@ -681,20 +702,6 @@ export default function WeeklyScreen({ navigation }: any) {
                 }
               />
             </TouchableOpacity>
-          </View>
-          {/* Bottom container: dates centered */}
-          <View style={{ width: 240, alignItems: 'center' }}>
-            <Text
-              style={{
-                color: colors.textSecondary,
-                textAlign: 'center',
-                fontSize: 14,
-                lineHeight: 18,
-                marginTop: 4,
-              }}
-            >
-              {getWeekDateRange(weekOffset)}
-            </Text>
           </View>
         </View>
       </View>
