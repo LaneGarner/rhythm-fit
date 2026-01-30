@@ -49,6 +49,26 @@ export const loadThemeMode = async (): Promise<string> => {
   }
 };
 
+// First day of week preference storage
+export const saveFirstDayOfWeek = async (day: 0 | 1) => {
+  try {
+    await AsyncStorage.setItem('firstDayOfWeek', String(day));
+  } catch (error) {
+    console.error('Error saving first day of week:', error);
+  }
+};
+
+export const loadFirstDayOfWeek = async (): Promise<0 | 1> => {
+  try {
+    const data = await AsyncStorage.getItem('firstDayOfWeek');
+    if (data === '0') return 0;
+    return 1; // Default to Monday
+  } catch (error) {
+    console.error('Error loading first day of week:', error);
+    return 1;
+  }
+};
+
 export function toTitleCase(str: string): string {
   return str.replace(
     /\w\S*/g,

@@ -7,10 +7,12 @@ import { useDispatch } from 'react-redux';
 import ActivityForm from '../components/ActivityForm';
 import { addActivity } from '../redux/activitySlice';
 import { Activity, RecurringConfig } from '../types/activity';
+import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 
 export default function ActivityScreen({ navigation, route }: any) {
   const { date } = route.params || {};
   const dispatch = useDispatch();
+  const { getWeekStart } = useWeekBoundaries();
 
   const createRecurringActivities = (
     baseActivity: Activity,
@@ -52,7 +54,8 @@ export default function ActivityScreen({ navigation, route }: any) {
         for (let week = 0; week < weeks; week++) {
           for (const dayOfWeek of config.daysOfWeek || []) {
             // Find the date for this dayOfWeek in this week
-            const weekStart = startDateObj.add(week, 'week').startOf('week');
+            // Use user's week start preference instead of dayjs default (Sunday)
+            const weekStart = getWeekStart(startDateObj.add(week * 7, 'day'));
             const activityDate = weekStart.day(dayOfWeek);
 
             // Only include if date is >= startDate

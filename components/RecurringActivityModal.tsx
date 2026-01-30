@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
   Modal,
@@ -15,6 +15,7 @@ import {
   RecurringFrequency,
   RecurringPattern,
 } from '../types/activity';
+import { usePreferences } from '../context/PreferencesContext';
 
 interface RecurringActivityModalProps {
   visible: boolean;
@@ -24,7 +25,7 @@ interface RecurringActivityModalProps {
   initialConfig?: RecurringConfig | null;
 }
 
-const DAYS_OF_WEEK = [
+const DAYS_OF_WEEK_MONDAY_START = [
   { value: 1, label: 'Monday' },
   { value: 2, label: 'Tuesday' },
   { value: 3, label: 'Wednesday' },
@@ -32,6 +33,16 @@ const DAYS_OF_WEEK = [
   { value: 5, label: 'Friday' },
   { value: 6, label: 'Saturday' },
   { value: 0, label: 'Sunday' },
+];
+
+const DAYS_OF_WEEK_SUNDAY_START = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
 ];
 
 export default function RecurringActivityModal({
@@ -43,11 +54,20 @@ export default function RecurringActivityModal({
 }: RecurringActivityModalProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
+  const { firstDayOfWeek } = usePreferences();
 
   const [pattern, setPattern] = useState<RecurringPattern>('weekly');
   const [frequency, setFrequency] = useState<RecurringFrequency>('every');
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [occurrences, setOccurrences] = useState<string>('4');
+
+  const daysOfWeek = useMemo(
+    () =>
+      firstDayOfWeek === 0
+        ? DAYS_OF_WEEK_SUNDAY_START
+        : DAYS_OF_WEEK_MONDAY_START,
+    [firstDayOfWeek]
+  );
 
   // Initialize state from initialConfig or auto-select current day
   useEffect(() => {
@@ -286,7 +306,7 @@ export default function RecurringActivityModal({
                 Days of Week
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {DAYS_OF_WEEK.map(day => (
+                {daysOfWeek.map(day => (
                   <TouchableOpacity
                     key={day.value}
                     onPress={() => toggleDay(day.value)}

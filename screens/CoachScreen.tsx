@@ -45,7 +45,7 @@ import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, ActivityType } from '../types/activity';
-import { getMondayOfWeek, getSundayOfWeek } from '../utils/dateUtils';
+import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { toTitleCase } from '../utils/storage';
 
 import { palette } from '../theme/colors';
@@ -91,6 +91,7 @@ export default function CoachScreen({ navigation }: any) {
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   const isAuthenticated = Boolean(user) && isBackendConfigured();
+  const { getWeekStart, getWeekEnd } = useWeekBoundaries();
 
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -278,9 +279,9 @@ export default function CoachScreen({ navigation }: any) {
       .filter(a => dayjs(a.date).isSameOrAfter(dayjs(), 'day'))
       .slice(0, 5);
 
-    // Get this week's activities (Monday to Sunday)
-    const startOfWeek = getMondayOfWeek();
-    const endOfWeek = getSundayOfWeek();
+    // Get this week's activities (based on user's first day preference)
+    const startOfWeek = getWeekStart();
+    const endOfWeek = getWeekEnd();
     const thisWeekActivities = activities.filter(a => {
       const activityDate = dayjs(a.date);
       return (
@@ -323,7 +324,7 @@ export default function CoachScreen({ navigation }: any) {
     }
 
     return context;
-  }, [activities]);
+  }, [activities, getWeekStart, getWeekEnd]);
 
   const loadSession = async (session: ChatSession) => {
     // If authenticated and session has no messages (loaded from server), fetch them

@@ -13,6 +13,7 @@ import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
+import { PreferencesProvider } from './context/PreferencesContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
 
 // Import screens
@@ -113,13 +114,15 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <ThemeProvider>
-          <AuthProvider>
-            <TimerProvider>
-              <WeekProvider>
-                <AppInitializer />
-              </WeekProvider>
-            </TimerProvider>
-          </AuthProvider>
+          <PreferencesProvider>
+            <AuthProvider>
+              <TimerProvider>
+                <WeekProvider>
+                  <AppInitializer />
+                </WeekProvider>
+              </TimerProvider>
+            </AuthProvider>
+          </PreferencesProvider>
         </ThemeProvider>
       </Provider>
     </GestureHandlerRootView>

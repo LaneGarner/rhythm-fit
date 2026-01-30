@@ -1,19 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Alert, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { HEADER_STYLES } from '../constants';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { usePreferences } from '../context/PreferencesContext';
 import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
+import { WeekStartDay } from '../types/preferences';
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
+  const { firstDayOfWeek, setFirstDayOfWeek } = usePreferences();
   const dispatch = useDispatch();
   const isDark = colorScheme === 'dark';
   const showAccountSection = isConfigured && isBackendConfigured();
@@ -59,7 +62,7 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={{ width: 40 }} />
       </View>
 
-      <View className="flex-1 px-6 pt-8">
+      <ScrollView className="flex-1 px-6 pt-8" contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Account Section */}
         {showAccountSection && (
           <>
@@ -278,6 +281,90 @@ export default function SettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Calendar Section */}
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 13,
+            fontWeight: '400',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
+        >
+          Calendar
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            marginBottom: 32,
+            overflow: 'hidden',
+          }}
+        >
+          <View className="p-4">
+            <Text
+              className="text-base font-medium mb-3"
+              style={{ color: colors.text }}
+            >
+              First Day of Week
+            </Text>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => setFirstDayOfWeek(0)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  backgroundColor:
+                    firstDayOfWeek === 0
+                      ? colors.primary.main
+                      : colors.backgroundTertiary,
+                }}
+              >
+                <Text
+                  className="text-center font-medium"
+                  style={{
+                    color:
+                      firstDayOfWeek === 0
+                        ? colors.textInverse
+                        : colors.text,
+                  }}
+                >
+                  Sunday
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setFirstDayOfWeek(1)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  backgroundColor:
+                    firstDayOfWeek === 1
+                      ? colors.primary.main
+                      : colors.backgroundTertiary,
+                }}
+              >
+                <Text
+                  className="text-center font-medium"
+                  style={{
+                    color:
+                      firstDayOfWeek === 1
+                        ? colors.textInverse
+                        : colors.text,
+                  }}
+                >
+                  Monday
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         {/* Appearance Section */}
         <Text
           style={{
@@ -318,7 +405,7 @@ export default function SettingsScreen({ navigation }: any) {
             />
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
