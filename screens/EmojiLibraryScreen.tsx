@@ -202,7 +202,10 @@ export default function EmojiLibraryScreen({ navigation }: any) {
         )}
       </ScrollView>
 
-      <FloatingAddButton onPress={handleCreateNew} accessibilityLabel="Add Emoji" />
+      <FloatingAddButton
+        onPress={handleCreateNew}
+        accessibilityLabel="Add Emoji"
+      />
 
       {/* Create Modal */}
       <Modal

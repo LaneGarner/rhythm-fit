@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { HEADER_STYLES } from '../constants';
@@ -11,7 +18,6 @@ import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
-import { WeekStartDay } from '../types/preferences';
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
@@ -62,17 +68,18 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView className="flex-1 px-6 pt-8" contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        className="flex-1 px-6 pt-8"
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Account Section */}
         {showAccountSection && (
           <>
             <Text
               style={{
                 color: colors.textSecondary,
-                fontSize: 13,
-                fontWeight: '400',
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
+                fontSize: 15,
+                fontWeight: '500',
                 marginBottom: 8,
                 marginLeft: 16,
               }}
@@ -171,10 +178,8 @@ export default function SettingsScreen({ navigation }: any) {
         <Text
           style={{
             color: colors.textSecondary,
-            fontSize: 13,
-            fontWeight: '400',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
+            fontSize: 15,
+            fontWeight: '500',
             marginBottom: 8,
             marginLeft: 16,
             marginTop: 8,
@@ -281,28 +286,26 @@ export default function SettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar Section */}
+        {/* Preferences Section */}
         <Text
           style={{
             color: colors.textSecondary,
-            fontSize: 13,
-            fontWeight: '400',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
+            fontSize: 15,
+            fontWeight: '500',
             marginBottom: 8,
             marginLeft: 16,
           }}
         >
-          Calendar
+          Preferences
         </Text>
         <View
           style={{
             backgroundColor: colors.surfaceSecondary,
             borderRadius: 10,
-            marginBottom: 32,
             overflow: 'hidden',
           }}
         >
+          {/* First Day of Week */}
           <View className="p-4">
             <Text
               className="text-base font-medium mb-3"
@@ -328,9 +331,7 @@ export default function SettingsScreen({ navigation }: any) {
                   className="text-center font-medium"
                   style={{
                     color:
-                      firstDayOfWeek === 0
-                        ? colors.textInverse
-                        : colors.text,
+                      firstDayOfWeek === 0 ? colors.textInverse : colors.text,
                   }}
                 >
                   Sunday
@@ -353,9 +354,7 @@ export default function SettingsScreen({ navigation }: any) {
                   className="text-center font-medium"
                   style={{
                     color:
-                      firstDayOfWeek === 1
-                        ? colors.textInverse
-                        : colors.text,
+                      firstDayOfWeek === 1 ? colors.textInverse : colors.text,
                   }}
                 >
                   Monday
@@ -363,29 +362,14 @@ export default function SettingsScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        {/* Appearance Section */}
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: 13,
-            fontWeight: '400',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            marginBottom: 8,
-            marginLeft: 16,
-          }}
-        >
-          Appearance
-        </Text>
-        <View
-          style={{
-            backgroundColor: colors.surfaceSecondary,
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}
-        >
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Dark Mode */}
           <TouchableOpacity
             activeOpacity={0.7}
             className="flex-row items-center justify-between p-4"

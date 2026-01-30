@@ -114,15 +114,15 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <ThemeProvider>
-          <PreferencesProvider>
-            <AuthProvider>
+          <AuthProvider>
+            <PreferencesProvider>
               <TimerProvider>
                 <WeekProvider>
                   <AppInitializer />
                 </WeekProvider>
               </TimerProvider>
-            </AuthProvider>
-          </PreferencesProvider>
+            </PreferencesProvider>
+          </AuthProvider>
         </ThemeProvider>
       </Provider>
     </GestureHandlerRootView>

@@ -341,7 +341,10 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         </ScrollView>
       </Pressable>
 
-      <FloatingAddButton onPress={handleCreateNew} accessibilityLabel="Add Activity" />
+      <FloatingAddButton
+        onPress={handleCreateNew}
+        accessibilityLabel="Add Activity"
+      />
 
       {/* Edit/Create Modal */}
       <Modal
