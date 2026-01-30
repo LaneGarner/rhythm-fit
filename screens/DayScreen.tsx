@@ -1253,10 +1253,17 @@ export default function DayScreen({ navigation, route }: any) {
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
-        {/* Left: Back button */}
+        {/* Left: Back/Cancel button */}
         <HeaderButton
-          label="Back"
-          onPress={() => navigation.navigate('Main')}
+          label={isBulkMode ? 'Cancel' : 'Back'}
+          onPress={() => {
+            if (isBulkMode) {
+              discardChanges();
+              setIsBulkMode(false);
+              setSelectedActivities(new Set());
+            }
+            navigation.navigate('Main');
+          }}
           style={{
             position: 'absolute',
             left: 16,
@@ -1290,11 +1297,19 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </View>
-        {/* Right: Bulk button - only show if there are activities */}
+        {/* Right: Edit/Save button - only show if there are activities */}
         {(dayActivities.length > 0 || isBulkMode) && (
           <HeaderButton
-            label={isBulkMode ? 'Done' : 'Edit'}
-            onPress={toggleBulkMode}
+            label={isBulkMode ? 'Save' : 'Edit'}
+            onPress={() => {
+              if (isBulkMode) {
+                saveChanges();
+                setIsBulkMode(false);
+                setSelectedActivities(new Set());
+              } else {
+                setIsBulkMode(true);
+              }
+            }}
             style={{
               position: 'absolute',
               right: 16,
@@ -1326,19 +1341,23 @@ export default function DayScreen({ navigation, route }: any) {
               : ' (hold ≡ to drag)'}
           </Text>
 
-          {/* Select/Deselect buttons */}
-          <View className="flex-row space-x-2 mb-3">
+          {/* Select/Deselect toggle */}
+          <View className="flex-row mb-3">
             <TouchableOpacity
-              onPress={selectAll}
+              onPress={
+                selectedActivities.size === dayActivities.length &&
+                dayActivities.length > 0
+                  ? deselectAll
+                  : selectAll
+              }
               className="px-3 py-1 rounded bg-blue-500"
             >
-              <Text className="text-white text-sm">Select All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={deselectAll}
-              className="px-3 py-1 rounded bg-gray-500"
-            >
-              <Text className="text-white text-sm">Deselect All</Text>
+              <Text className="text-white text-sm">
+                {selectedActivities.size === dayActivities.length &&
+                dayActivities.length > 0
+                  ? 'Deselect All'
+                  : 'Select All'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -1376,28 +1395,6 @@ export default function DayScreen({ navigation, route }: any) {
                 Link as Superset
               </Text>
             </TouchableOpacity>
-          )}
-
-          {/* Save/Undo buttons - only show when there are unsaved changes */}
-          {hasUnsavedChanges && (
-            <View className="flex-row space-x-2">
-              <TouchableOpacity
-                onPress={discardChanges}
-                className="flex-1 bg-gray-500 py-3 rounded-lg"
-              >
-                <Text className="text-white text-center font-semibold text-base">
-                  Undo
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={saveChanges}
-                className="flex-1 bg-green-500 py-3 rounded-lg"
-              >
-                <Text className="text-white text-center font-semibold text-base">
-                  Save Order
-                </Text>
-              </TouchableOpacity>
-            </View>
           )}
         </View>
       )}

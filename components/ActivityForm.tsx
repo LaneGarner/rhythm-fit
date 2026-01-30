@@ -326,32 +326,38 @@ export default function ActivityForm({
       {/* Header */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: 72,
-          paddingBottom: 16,
+          height: 132,
           paddingHorizontal: 16,
           backgroundColor: isDark ? '#111' : '#fff',
           borderBottomWidth: 1,
           borderBottomColor: isDark ? '#222' : '#e5e7eb',
         }}
       >
+        {/* Left: Cancel button */}
         <TouchableOpacity
           hitSlop={14}
           onPress={onCancel}
-          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
+          style={{
+            position: 'absolute',
+            left: 16,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
         >
           <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
-            Back
+            Cancel
           </Text>
         </TouchableOpacity>
+        {/* Center: Title */}
         <View
           style={{
             position: 'absolute',
             left: 0,
             right: 0,
-            top: 66,
-            height: 40,
+            top: 44,
+            height: 88,
             alignItems: 'center',
             justifyContent: 'center',
             pointerEvents: 'none',
@@ -359,8 +365,8 @@ export default function ActivityForm({
         >
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: 'bold',
+              fontSize: 17,
+              fontWeight: '600',
               color: isDark ? '#fff' : '#111',
               textAlign: 'center',
             }}
@@ -368,6 +374,23 @@ export default function ActivityForm({
             {mode === 'create' ? 'New Activity' : 'Edit Activity'}
           </Text>
         </View>
+        {/* Right: Save button */}
+        <TouchableOpacity
+          hitSlop={14}
+          onPress={handleSave}
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: 44,
+            height: 88,
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+        >
+          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '600' }}>
+            Save
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -982,26 +1005,6 @@ export default function ActivityForm({
       </ScrollView>
 
       {/* Sticky Save Button */}
-      <View
-        className={`absolute left-0 right-0 p-4 border-t ${
-          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-        }`}
-        style={{
-          bottom: isKeyboardVisible ? keyboardHeight : 0,
-          paddingBottom: isKeyboardVisible ? 16 : 34,
-          zIndex: 1000,
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleSave}
-          className={`py-3 px-6 rounded-lg bg-blue-500 active:bg-blue-600`}
-        >
-          <Text className="text-white text-center font-semibold text-lg">
-            {mode === 'create' ? 'Save Activity' : 'Update Activity'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Date Picker Modal */}
       <Modal
         visible={showDatePicker}
