@@ -221,14 +221,21 @@ export default function CalculatorScreen({ navigation }: any) {
                 Math.floor((barbellWeight + maxPlateWeight) / 5) * 5;
 
               // Build rows dynamically based on max weight
+              // First row goes to 95, then break at 50s from second line down
               const allRows = [
                 { start: startWeight, end: 95 },
-                { start: 100, end: 195 },
-                { start: 200, end: 295 },
-                { start: 300, end: 395 },
-                { start: 400, end: 495 },
-                { start: 500, end: 595 },
-                { start: 600, end: 695 },
+                { start: 100, end: 145 },
+                { start: 150, end: 195 },
+                { start: 200, end: 245 },
+                { start: 250, end: 295 },
+                { start: 300, end: 345 },
+                { start: 350, end: 395 },
+                { start: 400, end: 445 },
+                { start: 450, end: 495 },
+                { start: 500, end: 545 },
+                { start: 550, end: 595 },
+                { start: 600, end: 645 },
+                { start: 650, end: 695 },
               ];
 
               const filteredRows = allRows
