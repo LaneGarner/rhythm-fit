@@ -29,6 +29,7 @@ import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
+import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
@@ -589,7 +590,9 @@ export default function DayScreen({ navigation, route }: any) {
             ...borderRadius,
             marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
-            borderColor: supersetInfo.isInSuperset ? colors.primary.main : '#3B82F6',
+            borderColor: supersetInfo.isInSuperset
+              ? colors.primary.main
+              : '#3B82F6',
             borderTopWidth:
               supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
                 ? 1
@@ -1440,30 +1443,10 @@ export default function DayScreen({ navigation, route }: any) {
       {/* Activities List */}
       {renderActivitiesList()}
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
+      <FloatingAddButton
         onPress={() => navigation.navigate('Activity', { date })}
-        style={{
-          position: 'absolute',
-          bottom: 50,
-          right: 34,
-          backgroundColor: colors.primary.main,
-          borderRadius: 32,
-          width: 56,
-          height: 56,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 5,
-        }}
-        activeOpacity={0.85}
         accessibilityLabel="Add Activity"
-      >
-        <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
+      />
 
       <MoveToDateModal />
     </View>

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -137,7 +138,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
           </Text>
         ) : customEmojis.length === 0 ? (
           <View className="items-center py-12">
-            <Text style={{ fontSize: 48 }}>+</Text>
+            <Text style={{ fontSize: 48 }}>👍</Text>
             <Text
               className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             >
@@ -201,29 +202,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
         )}
       </ScrollView>
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
-        onPress={handleCreateNew}
-        style={{
-          position: 'absolute',
-          bottom: 50,
-          right: 34,
-          backgroundColor: colors.primary.main,
-          borderRadius: 32,
-          width: 56,
-          height: 56,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 5,
-        }}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={32} color={colors.textInverse} />
-      </TouchableOpacity>
+      <FloatingAddButton onPress={handleCreateNew} accessibilityLabel="Add Emoji" />
 
       {/* Create Modal */}
       <Modal

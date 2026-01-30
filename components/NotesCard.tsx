@@ -25,7 +25,9 @@ export default function NotesCard({ notes }: NotesCardProps) {
         elevation: 1,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+      >
         <Ionicons
           name="document-text-outline"
           size={18}

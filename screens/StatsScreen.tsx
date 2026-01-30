@@ -69,8 +69,8 @@ export default function StatsScreen({ navigation }: any) {
       {/* Development Notice - Sticky */}
       <View
         style={{
-          backgroundColor: colors.primary.background,
-          borderColor: colors.primary.light,
+          backgroundColor: colors.warning.background,
+          borderColor: colors.warning.light,
           borderWidth: 1,
           marginHorizontal: 16,
           marginTop: 16,
@@ -79,7 +79,7 @@ export default function StatsScreen({ navigation }: any) {
         className="p-3 rounded-lg"
       >
         <Text
-          style={{ color: colors.primary.main }}
+          style={{ color: colors.warning.main }}
           className="text-sm text-center"
         >
           Stats page is still under development
@@ -219,10 +219,7 @@ export default function StatsScreen({ navigation }: any) {
                   key={type}
                   className="flex-row justify-between items-center py-2"
                 >
-                  <Text
-                    style={{ color: colors.text }}
-                    className="capitalize"
-                  >
+                  <Text style={{ color: colors.text }} className="capitalize">
                     {type.replace('-', ' ')}
                   </Text>
                   <Text
@@ -254,10 +251,7 @@ export default function StatsScreen({ navigation }: any) {
           >
             Most Common Activity Type
           </Text>
-          <Text
-            style={{ color: colors.text }}
-            className="capitalize"
-          >
+          <Text style={{ color: colors.text }} className="capitalize">
             {mostCommonType.replace('-', ' ')}
           </Text>
         </View>

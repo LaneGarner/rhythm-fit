@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { getMondayOfWeekByOffset } from '../utils/dateUtils';
+import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
 import {
   ActionSheetIOS,
@@ -611,7 +612,7 @@ export default function WeeklyScreen({ navigation }: any) {
           style={{ position: 'absolute', right: 16, top: 62 }}
         >
           <Ionicons
-            name="settings-outline"
+            name="person-circle-outline"
             size={28}
             color={colors.textSecondary}
           />
@@ -931,34 +932,14 @@ export default function WeeklyScreen({ navigation }: any) {
         </Animated.View>
       </GestureDetector>
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
+      <FloatingAddButton
         onPress={() =>
           navigation.navigate('Activity', {
             date: dayjs().format('YYYY-MM-DD'),
           })
         }
-        style={{
-          position: 'absolute',
-          bottom: 35,
-          right: 34,
-          backgroundColor: colors.primary.main,
-          borderRadius: 32,
-          width: 56,
-          height: 56,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 5,
-        }}
-        activeOpacity={0.85}
         accessibilityLabel="Add Activity"
-      >
-        <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
+      />
 
       {/* Copy to Date Modal */}
       <Modal

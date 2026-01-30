@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Alert, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
@@ -9,7 +10,6 @@ import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
-
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
@@ -64,64 +64,101 @@ export default function SettingsScreen({ navigation }: any) {
         {showAccountSection && (
           <>
             <Text
-              className="text-lg font-semibold mb-4"
-              style={{ color: colors.text }}
+              style={{
+                color: colors.textSecondary,
+                fontSize: 13,
+                fontWeight: '400',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+                marginBottom: 8,
+                marginLeft: 16,
+              }}
             >
               Account
             </Text>
             {user ? (
-              <View className="mb-8">
+              <View style={{ marginBottom: 32 }}>
                 <View
-                  className="p-4 rounded-lg mb-3"
-                  style={{ backgroundColor: colors.surfaceSecondary }}
+                  style={{
+                    backgroundColor: colors.surfaceSecondary,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                  }}
                 >
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.textSecondary }}
+                  <View className="p-4">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Signed in as
+                    </Text>
+                    <Text
+                      className="text-base font-medium mt-1"
+                      style={{ color: colors.text }}
+                    >
+                      {user.email}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      height: 0.5,
+                      backgroundColor: colors.border,
+                      marginLeft: 16,
+                    }}
+                  />
+                  <TouchableOpacity
+                    hitSlop={14}
+                    className="p-4"
+                    onPress={handleLogout}
                   >
-                    Signed in as
-                  </Text>
-                  <Text
-                    className="text-base font-medium mt-1"
-                    style={{ color: colors.text }}
-                  >
-                    {user.email}
-                  </Text>
+                    <Text className="text-red-500 text-center font-medium">
+                      Sign Out
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  hitSlop={14}
-                  className="p-4 rounded-lg border border-red-500"
-                  style={{ backgroundColor: isDark ? '#1a0000' : '#fff5f5' }}
-                  onPress={handleLogout}
-                >
-                  <Text className="text-red-500 text-center font-medium">
-                    Sign Out
-                  </Text>
-                </TouchableOpacity>
               </View>
             ) : (
-              <View className="mb-8">
-                <Text
-                  className="text-sm mb-3"
-                  style={{ color: colors.textSecondary }}
+              <View style={{ marginBottom: 32 }}>
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceSecondary,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                  }}
                 >
-                  Sign in to sync your workouts across devices
-                </Text>
-                <TouchableOpacity
-                  hitSlop={14}
-                  className="p-4 rounded-lg"
-                  style={{ backgroundColor: colors.primary.main }}
-                  onPress={() =>
-                    navigation.reset({
-                      index: 0,
-                      routes: [{ name: 'Auth' }],
-                    })
-                  }
-                >
-                  <Text className="text-white text-center font-medium">
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
+                  <View className="p-4">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Sign in to sync your workouts across devices
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      height: 0.5,
+                      backgroundColor: colors.border,
+                      marginLeft: 16,
+                    }}
+                  />
+                  <TouchableOpacity
+                    hitSlop={14}
+                    className="p-4"
+                    onPress={() =>
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Auth' }],
+                      })
+                    }
+                  >
+                    <Text
+                      style={{ color: colors.primary.main }}
+                      className="text-center font-medium"
+                    >
+                      Sign In
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </>
@@ -129,104 +166,157 @@ export default function SettingsScreen({ navigation }: any) {
 
         {/* Library Section */}
         <Text
-          className="text-lg font-semibold mb-4"
-          style={{ color: colors.text }}
+          style={{
+            color: colors.textSecondary,
+            fontSize: 13,
+            fontWeight: '400',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            marginBottom: 8,
+            marginLeft: 16,
+            marginTop: 8,
+          }}
         >
           Library
         </Text>
-        <TouchableOpacity
-          hitSlop={14}
-          className="p-4 rounded-lg mb-3 flex-row items-center justify-between"
-          style={{ backgroundColor: colors.surfaceSecondary }}
-          onPress={() => navigation.navigate('Equipment')}
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            marginBottom: 32,
+            overflow: 'hidden',
+          }}
         >
-          <View>
-            <Text
-              className="text-base font-medium"
-              style={{ color: colors.text }}
-            >
-              Equipment
-            </Text>
-            <Text
-              className="text-sm mt-1"
-              style={{ color: colors.textSecondary }}
-            >
-              Configure your barbells & plates
-            </Text>
-          </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
-            {'>'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          hitSlop={14}
-          className="p-4 rounded-lg mb-3 flex-row items-center justify-between"
-          style={{ backgroundColor: colors.surfaceSecondary }}
-          onPress={() => navigation.navigate('ActivityLibrary')}
-        >
-          <View>
-            <Text
-              className="text-base font-medium"
-              style={{ color: colors.text }}
-            >
-              Custom Activities
-            </Text>
-            <Text
-              className="text-sm mt-1"
-              style={{ color: colors.textSecondary }}
-            >
-              Manage activities you've created
-            </Text>
-          </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
-            {'>'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          hitSlop={14}
-          className="p-4 rounded-lg mb-8 flex-row items-center justify-between"
-          style={{ backgroundColor: colors.surfaceSecondary }}
-          onPress={() => navigation.navigate('EmojiLibrary')}
-        >
-          <View>
-            <Text
-              className="text-base font-medium"
-              style={{ color: colors.text }}
-            >
-              Custom Emojis
-            </Text>
-            <Text
-              className="text-sm mt-1"
-              style={{ color: colors.textSecondary }}
-            >
-              Manage emojis you've added
-            </Text>
-          </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
-            {'>'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={() => navigation.navigate('Equipment')}
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                Equipment
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Configure your barbells & plates
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={() => navigation.navigate('ActivityLibrary')}
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                Custom Activities
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Manage activities you've created
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={() => navigation.navigate('EmojiLibrary')}
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                Custom Emojis
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Manage emojis you've added
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* Appearance Section */}
         <Text
-          className="text-lg font-semibold mb-4"
-          style={{ color: colors.text }}
+          style={{
+            color: colors.textSecondary,
+            fontSize: 13,
+            fontWeight: '400',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
         >
           Appearance
         </Text>
         <View
-          className="flex-row items-center justify-between p-4 rounded-lg"
-          style={{ backgroundColor: colors.surfaceSecondary }}
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
         >
-          <Text className="text-base" style={{ color: colors.text }}>
-            Dark Mode
-          </Text>
-          <Switch
-            value={isDark}
-            onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
-            trackColor={{ false: '#767577', true: colors.primary.main }}
-            thumbColor="#ffffff"
-          />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
+          >
+            <Text className="text-base" style={{ color: colors.text }}>
+              Dark Mode
+            </Text>
+            <Switch
+              value={isDark}
+              onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
         </View>
       </View>
     </View>

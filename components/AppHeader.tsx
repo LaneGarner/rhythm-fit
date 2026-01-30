@@ -42,7 +42,7 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
         accessibilityLabel="Settings"
       >
         <Ionicons
-          name="settings-outline"
+          name="person-circle-outline"
           size={28}
           color={colors.textSecondary}
         />

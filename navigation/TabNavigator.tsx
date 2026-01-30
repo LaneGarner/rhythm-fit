@@ -123,7 +123,7 @@ export default function TabNavigator() {
           tabBarLabel: 'Coach',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'person' : 'person-outline'}
+              name={focused ? 'chatbubble' : 'chatbubble-outline'}
               size={24}
               color={color}
             />
