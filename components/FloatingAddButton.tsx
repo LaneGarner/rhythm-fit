@@ -19,7 +19,7 @@ export default function FloatingAddButton({
       onPress={onPress}
       style={{
         position: 'absolute',
-        bottom: 50,
+        bottom: 30,
         right: 34,
         backgroundColor: colors.primary.main,
         borderRadius: 32,

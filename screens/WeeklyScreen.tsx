@@ -3,7 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { getMondayOfWeekByOffset } from '../utils/dateUtils';
+import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
 import {
@@ -33,7 +33,6 @@ import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
   getSupersetEmojis,
-  getSupersetEmojisCompact,
   isSupersetComplete,
   ActivityGroup,
 } from '../utils/supersetUtils';
@@ -45,6 +44,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getAccessToken } = useAuth();
+  const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -66,10 +66,10 @@ export default function WeeklyScreen({ navigation }: any) {
   const getWeekDays = (offset: number = 0) => {
     const days = [];
     const today = dayjs();
-    const monday = getMondayOfWeekByOffset(offset);
+    const weekStart = getWeekStartByOffset(offset);
 
     for (let i = 0; i < 7; i++) {
-      const date = monday.add(i, 'day');
+      const date = weekStart.add(i, 'day');
       days.push({
         date: date.format('YYYY-MM-DD'),
         dayName: date.format('ddd'),
@@ -81,15 +81,15 @@ export default function WeeklyScreen({ navigation }: any) {
   };
 
   const getWeekDateRange = (offset: number = 0) => {
-    const monday = getMondayOfWeekByOffset(offset);
-    const sunday = monday.add(6, 'day');
+    const weekStart = getWeekStartByOffset(offset);
+    const weekEnd = weekStart.add(6, 'day');
 
     // If both dates are in the same month
-    if (monday.month() === sunday.month()) {
-      return `${monday.format('MMMM')} ${monday.format('D')}-${sunday.format('D')}, ${monday.format('YYYY')}`;
+    if (weekStart.month() === weekEnd.month()) {
+      return `${weekStart.format('MMMM')} ${weekStart.format('D')}-${weekEnd.format('D')}, ${weekStart.format('YYYY')}`;
     } else {
       // If dates span different months
-      return `${monday.format('MMM D')}-${sunday.format('MMM D')}, ${monday.format('YYYY')}`;
+      return `${weekStart.format('MMM D')}-${weekEnd.format('MMM D')}, ${weekStart.format('YYYY')}`;
     }
   };
 
@@ -740,74 +740,23 @@ export default function WeeklyScreen({ navigation }: any) {
                   delayLongPress={500}
                   activeOpacity={0.7}
                 >
-                  <View className="flex-row justify-between items-center mb-2">
-                    <View>
-                      <Text
-                        className="text-sm font-medium"
-                        style={{
-                          color: day.isToday
-                            ? colors.accent.main
-                            : colors.textSecondary,
-                        }}
-                      >
-                        {day.dayName}
-                      </Text>
-                      <Text
-                        className="text-xl font-bold"
-                        style={{ color: colors.text }}
-                      >
-                        {day.dayNumber}
-                      </Text>
-                    </View>
-
-                    <View className="flex-row flex-wrap justify-end">
-                      {(() => {
-                        const groups =
-                          groupActivitiesWithSupersets(dayActivities);
-                        const displayGroups = groups.slice(0, 6);
-                        const remainingCount =
-                          dayActivities.length -
-                          displayGroups.reduce(
-                            (sum, g) => sum + g.activities.length,
-                            0
-                          );
-                        return (
-                          <>
-                            {displayGroups.map((group: ActivityGroup) => {
-                              if (group.type === 'superset') {
-                                return (
-                                  <Text
-                                    key={group.supersetId}
-                                    className="text-lg ml-1 mb-1"
-                                    style={{ color: colors.text }}
-                                  >
-                                    {getSupersetEmojisCompact(group.activities)}
-                                  </Text>
-                                );
-                              }
-                              return (
-                                <Text
-                                  key={group.activities[0].id}
-                                  className="text-lg ml-1 mb-1"
-                                >
-                                  {group.activities[0].emoji || '💪'}
-                                </Text>
-                              );
-                            })}
-                            {remainingCount > 0 && (
-                              <Text
-                                style={{
-                                  color: colors.textSecondary,
-                                }}
-                                className="ml-1 text-sm"
-                              >
-                                +{remainingCount}
-                              </Text>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </View>
+                  <View className="mb-2">
+                    <Text
+                      className="text-sm font-medium"
+                      style={{
+                        color: day.isToday
+                          ? colors.accent.main
+                          : colors.textSecondary,
+                      }}
+                    >
+                      {day.dayName}
+                    </Text>
+                    <Text
+                      className="text-xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {day.dayNumber}
+                    </Text>
                   </View>
 
                   {dayActivities.length === 0 && (
