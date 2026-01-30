@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import { useTheme } from '../theme/ThemeContext';
 
 interface PlateIconProps {
   weight?: number;
@@ -15,6 +16,7 @@ export default function PlateIcon({
   count,
   variant = 'default',
 }: PlateIconProps) {
+  const { colors } = useTheme();
   const isTooltip = variant === 'tooltip';
   const iconSize = size ?? (isTooltip ? 20 : 60);
 
@@ -63,8 +65,10 @@ export default function PlateIcon({
         )}
       </Svg>
       {count !== undefined && count > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{count}</Text>
+        <View style={[styles.badge, { backgroundColor: colors.primary.main }]}>
+          <Text style={[styles.badgeText, { color: colors.textInverse }]}>
+            {count}
+          </Text>
         </View>
       )}
     </View>
@@ -79,7 +83,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#3b82f6',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -88,7 +91,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },

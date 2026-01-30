@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   Modal,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import {
   RecurringConfig,
   RecurringFrequency,
@@ -41,7 +41,7 @@ export default function RecurringActivityModal({
   startDate,
   initialConfig,
 }: RecurringActivityModalProps) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   const [pattern, setPattern] = useState<RecurringPattern>('weekly');
@@ -100,7 +100,7 @@ export default function RecurringActivityModal({
       animationType="slide"
       presentationStyle="pageSheet"
     >
-      <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+      <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
         {/* Header */}
         <View
           className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
@@ -147,7 +147,7 @@ export default function RecurringActivityModal({
                   borderColor:
                     pattern === 'daily'
                       ? isDark
-                        ? '#6366f1'
+                        ? colors.primary.main
                         : '#a5b4fc'
                       : isDark
                         ? '#444'
@@ -178,7 +178,7 @@ export default function RecurringActivityModal({
                   borderColor:
                     pattern === 'weekly'
                       ? isDark
-                        ? '#6366f1'
+                        ? colors.primary.main
                         : '#a5b4fc'
                       : isDark
                         ? '#444'
@@ -221,7 +221,7 @@ export default function RecurringActivityModal({
                     borderColor:
                       frequency === 'every'
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -252,7 +252,7 @@ export default function RecurringActivityModal({
                     borderColor:
                       frequency === 'this'
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -297,7 +297,7 @@ export default function RecurringActivityModal({
                       borderWidth: 2,
                       borderColor: selectedDays.includes(day.value)
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -340,7 +340,7 @@ export default function RecurringActivityModal({
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 placeholder="4"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 onFocus={scrollToOccurrencesInput}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}

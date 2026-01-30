@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { getActivityTypes } from '../services/activityTypeService';
 import { getExerciseNames } from '../services/exerciseService';
+import { useTheme } from '../theme/ThemeContext';
 import {
   generateYouTubeSearchQuery,
   openYouTubeSearch,
@@ -10,13 +11,14 @@ import {
 
 interface WorkoutContentWithLinksProps {
   text: string;
-  isDark: boolean;
+  isDark?: boolean; // Kept for backward compatibility but not used
 }
 
 export const WorkoutContentWithLinks = (
   props: WorkoutContentWithLinksProps
 ) => {
-  const { text, isDark } = props;
+  const { text } = props;
+  const { colors } = useTheme();
 
   // Extract exercise names for matching
   const exerciseNames = getExerciseNames();
@@ -140,39 +142,39 @@ export const WorkoutContentWithLinks = (
 
   const markdownStyles = {
     body: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 16,
       lineHeight: 22,
     },
     heading1: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 20,
       fontWeight: 'bold' as const,
       marginTop: 8,
       marginBottom: 4,
     },
     heading2: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 18,
       fontWeight: 'bold' as const,
       marginTop: 6,
       marginBottom: 3,
     },
     heading3: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 16,
       fontWeight: 'bold' as const,
       marginTop: 4,
       marginBottom: 2,
     },
     paragraph: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 16,
       lineHeight: 22,
       marginBottom: 8,
     },
     list_item: {
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
       fontSize: 16,
       lineHeight: 22,
       marginBottom: 4,
@@ -184,16 +186,16 @@ export const WorkoutContentWithLinks = (
       marginBottom: 8,
     },
     code_inline: {
-      backgroundColor: isDark ? '#333' : '#f0f0f0',
-      color: isDark ? '#00ff00' : '#d63384',
+      backgroundColor: colors.backgroundTertiary,
+      color: colors.primary.main,
       paddingHorizontal: 4,
       paddingVertical: 2,
       borderRadius: 3,
       fontFamily: 'monospace',
     },
     code_block: {
-      backgroundColor: isDark ? '#333' : '#f0f0f0',
-      color: isDark ? '#00ff00' : '#d63384',
+      backgroundColor: colors.backgroundTertiary,
+      color: colors.primary.main,
       padding: 12,
       borderRadius: 6,
       fontFamily: 'monospace',
@@ -201,23 +203,23 @@ export const WorkoutContentWithLinks = (
     },
     blockquote: {
       borderLeftWidth: 4,
-      borderLeftColor: isDark ? '#3b82f6' : '#3b82f6',
+      borderLeftColor: colors.primary.main,
       paddingLeft: 12,
       marginVertical: 8,
-      backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa',
+      backgroundColor: colors.backgroundSecondary,
       paddingVertical: 8,
       paddingRight: 8,
     },
     strong: {
       fontWeight: 'bold' as const,
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
     },
     em: {
       fontStyle: 'italic' as const,
-      color: isDark ? '#fff' : '#111',
+      color: colors.text,
     },
     link: {
-      color: isDark ? '#3b82f6' : '#2563eb',
+      color: colors.primary.main,
       textDecorationLine: 'underline' as const,
     },
   };

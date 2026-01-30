@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -18,10 +18,10 @@ import {
   EmojiItem,
   removeFromEmojiLibrary,
 } from '../services/emojiLibraryService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function EmojiLibraryScreen({ navigation }: any) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
 
@@ -95,10 +95,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#fff' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -107,9 +104,9 @@ export default function EmojiLibraryScreen({ navigation }: any) {
           paddingTop: 60,
           paddingBottom: 16,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
@@ -120,7 +117,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -182,7 +179,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
                         position: 'absolute',
                         top: -6,
                         right: -6,
-                        backgroundColor: isDark ? '#4B5563' : '#E5E7EB',
+                        backgroundColor: colors.border,
                         borderRadius: 10,
                         width: 20,
                         height: 20,
@@ -193,7 +190,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
                       <Ionicons
                         name="close"
                         size={14}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
+                        color={colors.textSecondary}
                       />
                     </View>
                   </View>
@@ -211,7 +208,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
           position: 'absolute',
           bottom: 50,
           right: 34,
-          backgroundColor: '#2563eb',
+          backgroundColor: colors.primary.main,
           borderRadius: 32,
           width: 56,
           height: 56,
@@ -225,7 +222,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
         }}
         activeOpacity={0.85}
       >
-        <Ionicons name="add" size={32} color="#fff" />
+        <Ionicons name="add" size={32} color={colors.textInverse} />
       </TouchableOpacity>
 
       {/* Create Modal */}
@@ -234,7 +231,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           {/* Modal Header */}
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
@@ -274,7 +271,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
                 value={newEmojiText}
                 onChangeText={text => setNewEmojiText(filterToEmoji(text))}
                 placeholder="Enter emoji"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 autoFocus
                 className={`px-3 border rounded-lg ${
                   isDark

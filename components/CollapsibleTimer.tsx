@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Keyboard,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useTimer } from '../context/TimerContext';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface CollapsibleTimerProps {
   activityId: string;
@@ -22,8 +22,7 @@ export default function CollapsibleTimer({
   activityName,
   defaultExpanded = false,
 }: CollapsibleTimerProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   const {
     timer,
@@ -96,9 +95,8 @@ export default function CollapsibleTimer({
 
   return (
     <View
-      className={`rounded-lg ${
-        isDark ? 'bg-gray-800' : 'bg-white'
-      } shadow-sm overflow-hidden`}
+      className="rounded-lg shadow-sm overflow-hidden"
+      style={{ backgroundColor: colors.surface }}
     >
       <TouchableOpacity
         onPress={() => setIsExpanded(!isExpanded)}
@@ -108,18 +106,20 @@ export default function CollapsibleTimer({
           <Ionicons
             name="timer-outline"
             size={22}
-            color={isDark ? '#9CA3AF' : '#6B7280'}
+            color={colors.textSecondary}
             style={{ marginRight: 8 }}
           />
           <Text
-            className={`text-lg font-semibold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
+            className="text-lg font-semibold"
+            style={{ color: colors.text }}
           >
             Timer
           </Text>
           {isPaused && (
-            <Text className="ml-3 text-sm" style={{ color: '#EAB308' }}>
+            <Text
+              className="ml-3 text-sm"
+              style={{ color: colors.warning.main }}
+            >
               (paused)
             </Text>
           )}
@@ -127,7 +127,7 @@ export default function CollapsibleTimer({
         <Ionicons
           name={isExpanded ? 'chevron-up' : 'chevron-down'}
           size={24}
-          color={isDark ? '#9CA3AF' : '#6B7280'}
+          color={colors.textSecondary}
         />
       </TouchableOpacity>
 
@@ -138,22 +138,22 @@ export default function CollapsibleTimer({
             <TouchableOpacity
               onPress={() => setTimerMode('countUp')}
               disabled={timer.isRunning}
-              className={`px-4 py-2 rounded-l-lg ${
-                timer.mode === 'countUp'
-                  ? 'bg-blue-500'
-                  : isDark
-                    ? 'bg-gray-700'
-                    : 'bg-gray-200'
-              }`}
+              className="px-4 py-2 rounded-l-lg"
+              style={{
+                backgroundColor:
+                  timer.mode === 'countUp'
+                    ? colors.primary.main
+                    : colors.backgroundTertiary,
+              }}
             >
               <Text
-                className={`font-semibold ${
-                  timer.mode === 'countUp'
-                    ? 'text-white'
-                    : isDark
-                      ? 'text-gray-300'
-                      : 'text-gray-600'
-                }`}
+                className="font-semibold"
+                style={{
+                  color:
+                    timer.mode === 'countUp'
+                      ? colors.textInverse
+                      : colors.textSecondary,
+                }}
               >
                 Count Up
               </Text>
@@ -161,22 +161,22 @@ export default function CollapsibleTimer({
             <TouchableOpacity
               onPress={() => setTimerMode('countDown')}
               disabled={timer.isRunning}
-              className={`px-4 py-2 rounded-r-lg ${
-                timer.mode === 'countDown'
-                  ? 'bg-blue-500'
-                  : isDark
-                    ? 'bg-gray-700'
-                    : 'bg-gray-200'
-              }`}
+              className="px-4 py-2 rounded-r-lg"
+              style={{
+                backgroundColor:
+                  timer.mode === 'countDown'
+                    ? colors.primary.main
+                    : colors.backgroundTertiary,
+              }}
             >
               <Text
-                className={`font-semibold ${
-                  timer.mode === 'countDown'
-                    ? 'text-white'
-                    : isDark
-                      ? 'text-gray-300'
-                      : 'text-gray-600'
-                }`}
+                className="font-semibold"
+                style={{
+                  color:
+                    timer.mode === 'countDown'
+                      ? colors.textInverse
+                      : colors.textSecondary,
+                }}
               >
                 Count Down
               </Text>
@@ -199,21 +199,21 @@ export default function CollapsibleTimer({
                 }}
                 keyboardType="numeric"
                 maxLength={3}
-                className={`w-16 px-3 py-2 border rounded-lg ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                style={{ textAlign: 'center' }}
+                className="w-16 px-3 py-2 border rounded-lg"
+                style={{
+                  textAlign: 'center',
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
                 placeholder="0"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
               />
               <Text
-                className={`mx-2 text-base ${
-                  isDark ? 'text-gray-300' : 'text-gray-600'
-                }`}
+                className="mx-2 text-base"
+                style={{ color: colors.textSecondary }}
               >
                 min
               </Text>
@@ -230,21 +230,21 @@ export default function CollapsibleTimer({
                 }}
                 keyboardType="numeric"
                 maxLength={2}
-                className={`w-16 px-3 py-2 border rounded-lg ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                style={{ textAlign: 'center' }}
+                className="w-16 px-3 py-2 border rounded-lg"
+                style={{
+                  textAlign: 'center',
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
                 placeholder="0"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
               />
               <Text
-                className={`ml-2 text-base ${
-                  isDark ? 'text-gray-300' : 'text-gray-600'
-                }`}
+                className="ml-2 text-base"
+                style={{ color: colors.textSecondary }}
               >
                 sec
               </Text>
@@ -252,9 +252,8 @@ export default function CollapsibleTimer({
           )}
 
           <Text
-            className={`text-4xl font-mono text-center mb-4 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
+            className="text-4xl font-mono text-center mb-4"
+            style={{ color: colors.text }}
           >
             {formatTime(
               isTimerOwner
@@ -268,9 +267,8 @@ export default function CollapsibleTimer({
           {/* Show notice if timer is running on another activity */}
           {timer.isRunning && !isTimerOwner && (
             <Text
-              className={`text-sm text-center mb-3 ${
-                isDark ? 'text-yellow-400' : 'text-yellow-600'
-              }`}
+              className="text-sm text-center mb-3"
+              style={{ color: colors.warning.main }}
             >
               Timer running on: {timer.activityName}
             </Text>

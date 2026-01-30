@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Animated, Text, View } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import SupersetBadge from './SupersetBadge';
 
 interface StickyActivityHeaderProps {
@@ -23,8 +23,7 @@ export function StickyCompactHeader({
   badge,
   scrollY,
 }: StickyActivityHeaderProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   const stickyOpacity = scrollY.interpolate({
     inputRange: [COLLAPSE_THRESHOLD - 20, COLLAPSE_THRESHOLD],
@@ -41,9 +40,9 @@ export function StickyCompactHeader({
         right: 0,
         zIndex: 100,
         opacity: stickyOpacity,
-        backgroundColor: isDark ? '#111' : '#fff',
+        backgroundColor: colors.surface,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? '#222' : '#e5e7eb',
+        borderBottomColor: colors.border,
         paddingVertical: 10,
         paddingHorizontal: 16,
       }}
@@ -64,7 +63,7 @@ export function StickyCompactHeader({
           style={{
             fontSize: 16,
             fontWeight: '600',
-            color: isDark ? '#fff' : '#111',
+            color: colors.text,
             maxWidth: emoji ? '60%' : '70%',
           }}
         >
@@ -76,7 +75,7 @@ export function StickyCompactHeader({
           <Text
             style={{
               fontSize: 14,
-              color: isDark ? '#9CA3AF' : '#6B7280',
+              color: colors.textSecondary,
               marginLeft: 8,
             }}
           >
@@ -98,8 +97,7 @@ export function ContentHeader({
   badge,
   scrollY,
 }: StickyActivityHeaderProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   const contentOpacity = scrollY.interpolate({
     inputRange: [0, COLLAPSE_THRESHOLD],
@@ -125,7 +123,7 @@ export function ContentHeader({
           fontSize: 24,
           fontWeight: 'bold',
           textAlign: 'center',
-          color: isDark ? '#fff' : '#111',
+          color: colors.text,
           paddingHorizontal: 16,
         }}
       >
@@ -138,7 +136,7 @@ export function ContentHeader({
           style={{
             fontSize: 16,
             marginTop: 4,
-            color: isDark ? '#D1D5DB' : '#4B5563',
+            color: colors.textSecondary,
           }}
         >
           {subtitle}

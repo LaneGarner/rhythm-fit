@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -24,7 +24,7 @@ import {
   addToEmojiLibrary,
   EmojiItem,
 } from '../services/emojiLibraryService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import {
   Activity,
   ActivityType,
@@ -52,7 +52,7 @@ export default function ActivityForm({
   onCancel,
   onDelete,
 }: ActivityFormProps) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
 
@@ -322,15 +322,15 @@ export default function ActivityForm({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#F9FAFB' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
           height: 132,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         {/* Left: Cancel button */}
@@ -346,7 +346,13 @@ export default function ActivityForm({
             zIndex: 2,
           }}
         >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '500' }}>
+          <Text
+            style={{
+              color: colors.primary.main,
+              fontSize: 18,
+              fontWeight: '500',
+            }}
+          >
             Cancel
           </Text>
         </TouchableOpacity>
@@ -367,7 +373,7 @@ export default function ActivityForm({
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -387,7 +393,13 @@ export default function ActivityForm({
             zIndex: 2,
           }}
         >
-          <Text style={{ color: '#2563eb', fontSize: 18, fontWeight: '600' }}>
+          <Text
+            style={{
+              color: colors.primary.main,
+              fontSize: 18,
+              fontWeight: '600',
+            }}
+          >
             Save
           </Text>
         </TouchableOpacity>
@@ -436,7 +448,7 @@ export default function ActivityForm({
               value={notes}
               onChangeText={setNotes}
               placeholder="Optional notes about this activity"
-              placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+              placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
               className={`px-4 py-3 border rounded-lg text-base ${
@@ -485,7 +497,7 @@ export default function ActivityForm({
               <Ionicons
                 name="calendar-outline"
                 size={20}
-                color={isDark ? '#9CA3AF' : '#6B7280'}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -516,7 +528,7 @@ export default function ActivityForm({
                     borderColor:
                       activityType === type.value
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -569,7 +581,7 @@ export default function ActivityForm({
                     borderColor:
                       selectedEmoji === emoji
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -607,7 +619,7 @@ export default function ActivityForm({
                     borderColor:
                       selectedEmoji === item.emoji
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -641,13 +653,13 @@ export default function ActivityForm({
                   borderRadius: 12,
                   borderWidth: 2,
                   borderStyle: 'dashed',
-                  borderColor: isDark ? '#444' : '#d1d5db',
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
                 }}
               >
                 <Text
                   className="text-2xl"
-                  style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+                  style={{ color: colors.textSecondary }}
                 >
                   +
                 </Text>
@@ -663,7 +675,7 @@ export default function ActivityForm({
                   onChangeText={text => setCustomEmojiText(filterToEmoji(text))}
                   autoFocus
                   placeholder="Enter emoji"
-                  placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                  placeholderTextColor={colors.textSecondary}
                   className={`px-3 border rounded-lg text-center ${
                     isDark
                       ? 'bg-gray-800 border-gray-600 text-white'
@@ -718,7 +730,7 @@ export default function ActivityForm({
                 >
                   <Text
                     style={{
-                      color: isDark ? '#60A5FA' : '#2563EB',
+                      color: colors.primary.main,
                       fontWeight: '600',
                       fontSize: 15,
                     }}
@@ -736,7 +748,7 @@ export default function ActivityForm({
                 >
                   <Text
                     style={{
-                      color: isDark ? '#9CA3AF' : '#6B7280',
+                      color: colors.textSecondary,
                       fontSize: 15,
                     }}
                   >
@@ -792,7 +804,7 @@ export default function ActivityForm({
                       borderWidth: 2,
                       borderColor: isSelected
                         ? isDark
-                          ? '#6366f1'
+                          ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
@@ -914,7 +926,7 @@ export default function ActivityForm({
                               : 'bg-white border-gray-300 text-gray-900'
                           }`}
                           placeholder={field === 'time' ? '0:00' : ''}
-                          placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                          placeholderTextColor={colors.textSecondary}
                           returnKeyType="done"
                           onSubmitEditing={() => Keyboard.dismiss()}
                           onFocus={() => {
@@ -988,7 +1000,7 @@ export default function ActivityForm({
               <Ionicons
                 name="repeat-outline"
                 size={20}
-                color={isDark ? '#9CA3AF' : '#6B7280'}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -1066,11 +1078,15 @@ export default function ActivityForm({
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                   borderRadius: 8,
-                  backgroundColor: isDark ? '#2563eb22' : '#2563eb22',
+                  backgroundColor: colors.primary.background,
                 }}
               >
                 <Text
-                  style={{ color: '#2563eb', fontWeight: '600', fontSize: 16 }}
+                  style={{
+                    color: colors.primary.main,
+                    fontWeight: '600',
+                    fontSize: 16,
+                  }}
                 >
                   Today
                 </Text>

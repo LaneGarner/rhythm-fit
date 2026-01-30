@@ -1,5 +1,6 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadThemeMode, saveThemeMode } from '../utils/storage';
+import { getColors, ThemeColors } from './colors';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -7,12 +8,14 @@ interface ThemeContextProps {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   colorScheme: 'light' | 'dark';
+  colors: ThemeColors;
 }
 
 export const ThemeContext = createContext<ThemeContextProps>({
   themeMode: 'light',
   setThemeMode: () => {},
   colorScheme: 'light',
+  colors: getColors('light'),
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -38,15 +41,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     saveThemeMode(mode);
   };
 
+  const colors = getColors(themeMode);
+
   return (
     <ThemeContext.Provider
       value={{
         themeMode,
         setThemeMode: handleSetThemeMode,
         colorScheme: themeMode,
+        colors,
       }}
     >
       {children}
     </ThemeContext.Provider>
   );
 };
+
+export const useTheme = () => useContext(ThemeContext);

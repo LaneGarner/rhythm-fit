@@ -1,5 +1,5 @@
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { ThemeContext } from '../theme/ThemeContext';
-
-// Theme colors
-const getColors = (isDark: boolean) => ({
-  background: isDark ? '#000' : '#fff',
-  text: isDark ? '#fff' : '#111',
-  textSecondary: isDark ? '#999' : '#666',
-  primary: isDark ? '#2563eb' : '#3b82f6',
-});
+import { useTheme } from '../theme/ThemeContext';
 
 export default function AuthScreen() {
   const { signIn, signUp, user } = useAuth();
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
-  const colors = getColors(isDark);
   const navigation = useNavigation();
 
   // Navigate to Main when user becomes authenticated
@@ -142,7 +133,7 @@ export default function AuthScreen() {
               <TextInput
                 className="rounded-xl px-4 py-4 text-base"
                 style={{
-                  backgroundColor: isDark ? '#1f1f1f' : '#f5f5f5',
+                  backgroundColor: colors.inputBackground,
                   color: colors.text,
                 }}
                 placeholder="Enter your email"
@@ -167,7 +158,7 @@ export default function AuthScreen() {
               <TextInput
                 className="rounded-xl px-4 py-4 text-base"
                 style={{
-                  backgroundColor: isDark ? '#1f1f1f' : '#f5f5f5',
+                  backgroundColor: colors.inputBackground,
                   color: colors.text,
                 }}
                 placeholder="Enter your password"
@@ -192,7 +183,7 @@ export default function AuthScreen() {
                 <TextInput
                   className="rounded-xl px-4 py-4 text-base"
                   style={{
-                    backgroundColor: isDark ? '#1f1f1f' : '#f5f5f5',
+                    backgroundColor: colors.inputBackground,
                     color: colors.text,
                   }}
                   placeholder="Confirm your password"
@@ -226,7 +217,7 @@ export default function AuthScreen() {
             {/* Submit Button */}
             <TouchableOpacity
               className="mt-6 rounded-xl py-4 items-center"
-              style={{ backgroundColor: colors.primary }}
+              style={{ backgroundColor: colors.primary.main }}
               onPress={handleSubmit}
               disabled={isLoading}
             >
@@ -248,7 +239,7 @@ export default function AuthScreen() {
                 {isLogin
                   ? "Don't have an account? "
                   : 'Already have an account? '}
-                <Text style={{ color: colors.primary, fontWeight: '600' }}>
+                <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
                   {isLogin ? 'Sign Up' : 'Sign In'}
                 </Text>
               </Text>

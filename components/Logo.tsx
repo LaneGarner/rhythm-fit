@@ -1,5 +1,6 @@
 import React from 'react';
-import Svg, { Path, Defs, ClipPath, Rect, G } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../theme/ThemeContext';
 
 interface LogoProps {
   width?: number;
@@ -26,8 +27,10 @@ export default function Logo({
   width,
   height,
   showText = true,
-  color = '#10110D',
+  color,
 }: LogoProps) {
+  const { colors } = useTheme();
+  const logoColor = color ?? colors.text;
   // Calculate dimensions based on provided width/height and aspect ratio
   const aspectRatio = showText ? FULL_ASPECT_RATIO : ICON_ASPECT_RATIO;
 
@@ -59,7 +62,7 @@ export default function Logo({
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
     >
-      <Path d={pathData} fill={color} />
+      <Path d={pathData} fill={logoColor} />
     </Svg>
   );
 }

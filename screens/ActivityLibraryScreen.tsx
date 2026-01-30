@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -21,11 +21,11 @@ import {
   updateLibraryItem,
 } from '../services/libraryService';
 import { getActivityTypes } from '../services/activityTypeService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { toTitleCase } from '../utils/storage';
 
 export default function ActivityLibraryScreen({ navigation }: any) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
 
@@ -147,10 +147,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#fff' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -159,9 +156,9 @@ export default function ActivityLibraryScreen({ navigation }: any) {
           paddingTop: 60,
           paddingBottom: 16,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
@@ -172,7 +169,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -199,7 +196,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
               <Ionicons
                 name="library-outline"
                 size={48}
-                color={isDark ? '#6B7280' : '#9CA3AF'}
+                color={colors.textSecondary}
               />
               <Text
                 className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
@@ -264,7 +261,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                         <Ionicons
                           name="ellipsis-vertical"
                           size={20}
-                          color={isDark ? '#9CA3AF' : '#6B7280'}
+                          color={colors.textSecondary}
                         />
                       </TouchableOpacity>
                       {openMenuId === item.id && (
@@ -273,7 +270,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                             position: 'absolute',
                             top: 30,
                             right: 0,
-                            backgroundColor: isDark ? '#374151' : '#fff',
+                            backgroundColor: colors.surface,
                             borderRadius: 8,
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },
@@ -283,7 +280,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                             zIndex: 1000,
                             minWidth: 120,
                             borderWidth: isDark ? 0 : 1,
-                            borderColor: '#e5e7eb',
+                            borderColor: colors.border,
                           }}
                         >
                           <TouchableOpacity
@@ -298,12 +295,12 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                               paddingVertical: 12,
                               paddingHorizontal: 16,
                               borderBottomWidth: 1,
-                              borderBottomColor: isDark ? '#4B5563' : '#e5e7eb',
+                              borderBottomColor: colors.border,
                             }}
                           >
                             <Text
                               style={{
-                                color: isDark ? '#60A5FA' : '#2563EB',
+                                color: colors.primary.main,
                                 fontSize: 16,
                                 fontWeight: '600',
                               }}
@@ -323,10 +320,12 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                             <Ionicons
                               name="trash-outline"
                               size={18}
-                              color="#EF4444"
+                              color={colors.error.main}
                               style={{ marginRight: 10 }}
                             />
-                            <Text style={{ color: '#EF4444', fontSize: 16 }}>
+                            <Text
+                              style={{ color: colors.error.main, fontSize: 16 }}
+                            >
                               Delete
                             </Text>
                           </TouchableOpacity>
@@ -348,7 +347,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
           position: 'absolute',
           bottom: 50,
           right: 34,
-          backgroundColor: '#2563eb',
+          backgroundColor: colors.primary.main,
           borderRadius: 32,
           width: 56,
           height: 56,
@@ -362,7 +361,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         }}
         activeOpacity={0.85}
       >
-        <Ionicons name="add" size={32} color="#fff" />
+        <Ionicons name="add" size={32} color={colors.textInverse} />
       </TouchableOpacity>
 
       {/* Edit/Create Modal */}
@@ -371,7 +370,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           {/* Modal Header */}
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
@@ -415,7 +414,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                   setEditName(isCreating ? toTitleCase(text) : text)
                 }
                 placeholder="Enter activity name"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 className={`px-4 border rounded-lg ${
                   isDark
                     ? 'bg-gray-800 border-gray-600 text-white'
@@ -452,20 +451,12 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                       borderWidth: 2,
                       borderColor:
                         editType === type.value
-                          ? isDark
-                            ? '#6366f1'
-                            : '#a5b4fc'
-                          : isDark
-                            ? '#444'
-                            : '#d1d5db',
+                          ? colors.primary.main
+                          : colors.border,
                       backgroundColor:
                         editType === type.value
-                          ? isDark
-                            ? '#23263a'
-                            : '#e0e7ff'
-                          : isDark
-                            ? '#1a1a1a'
-                            : '#fff',
+                          ? colors.primary.background
+                          : colors.surface,
                     }}
                   >
                     <Text

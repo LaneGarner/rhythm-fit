@@ -8,7 +8,6 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import OpenAI from 'openai';
 import React, {
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -44,13 +43,15 @@ import {
 import { getEmojiForType } from '../services/activityTypeService';
 import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Activity, ActivityType } from '../types/activity';
 import { getMondayOfWeek, getSundayOfWeek } from '../utils/dateUtils';
 import { toTitleCase } from '../utils/storage';
 
-const GLOW_COLOR_LIGHT = '#3b82f6';
-const GLOW_COLOR_DARK = '#2563eb';
+import { palette } from '../theme/colors';
+
+const GLOW_COLOR_LIGHT = palette.blue[400];
+const GLOW_COLOR_DARK = palette.blue[500];
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -86,7 +87,7 @@ export default function CoachScreen({ navigation }: any) {
 
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   const isAuthenticated = Boolean(user) && isBackendConfigured();
@@ -767,7 +768,7 @@ Use Markdown formatting. ${activityContext}`;
         <ScrollView className="flex-1 px-4 pt-4">
           <TouchableOpacity
             hitSlop={14}
-            style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+            style={{ backgroundColor: colors.primary.main }}
             className="px-4 py-3 rounded-lg mb-4 flex-row items-center justify-center"
             onPress={startNewChat}
           >
@@ -780,16 +781,16 @@ Use Markdown formatting. ${activityContext}`;
               <Ionicons
                 name="chatbubbles-outline"
                 size={48}
-                color={isDark ? '#a3a3a3' : '#6b7280'}
+                color={colors.textSecondary}
               />
               <Text
                 className="text-lg font-medium mt-4"
-                style={{ color: isDark ? '#fff' : '#111' }}
+                style={{ color: colors.text }}
               >
                 No chat history
               </Text>
               <Text
-                style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                style={{ color: colors.textSecondary }}
                 className="text-center mt-2"
               >
                 Start a conversation to see your chat history here
@@ -811,18 +812,18 @@ Use Markdown formatting. ${activityContext}`;
                   <View className="flex-1">
                     <Text
                       className="font-semibold"
-                      style={{ color: isDark ? '#fff' : '#111' }}
+                      style={{ color: colors.text }}
                     >
                       {session.title}
                     </Text>
                     <Text
-                      style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                      style={{ color: colors.textSecondary }}
                       className="text-sm mt-1"
                     >
                       {dayjs(session.timestamp).format('MMM D, YYYY h:mm A')}
                     </Text>
                     <Text
-                      style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                      style={{ color: colors.textSecondary }}
                       className="text-sm"
                     >
                       {session.messages.length} messages
@@ -836,7 +837,7 @@ Use Markdown formatting. ${activityContext}`;
                     <Ionicons
                       name="trash"
                       size={16}
-                      color={isDark ? '#ef4444' : '#dc2626'}
+                      color={colors.error.main}
                     />
                   </TouchableOpacity>
                 </View>
@@ -851,10 +852,7 @@ Use Markdown formatting. ${activityContext}`;
   // Show login wall for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <View
-        className="flex-1"
-        style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-      >
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
           <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
         </AppHeader>
@@ -862,7 +860,7 @@ Use Markdown formatting. ${activityContext}`;
           <View
             className="items-center p-8 rounded-2xl"
             style={{
-              backgroundColor: isDark ? '#1a1a1a' : '#fff',
+              backgroundColor: colors.cardBackground,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: isDark ? 0.3 : 0.1,
@@ -873,23 +871,23 @@ Use Markdown formatting. ${activityContext}`;
             <Ionicons
               name="chatbubbles-outline"
               size={64}
-              color={isDark ? '#60a5fa' : '#3b82f6'}
+              color={colors.primary.main}
             />
             <Text
               className="text-xl font-bold mt-4 text-center"
-              style={{ color: isDark ? '#fff' : '#111827' }}
+              style={{ color: colors.text }}
             >
               Sign In to Get Started
             </Text>
             <Text
               className="text-center mt-2 mb-6"
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+              style={{ color: colors.textSecondary }}
             >
               Create an account or sign in to chat with your AI fitness coach
             </Text>
             <TouchableOpacity
               className="px-8 py-3 rounded-full"
-              style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+              style={{ backgroundColor: colors.primary.main }}
               onPress={() => navigation.navigate('Settings')}
             >
               <Text className="text-white font-semibold text-base">
@@ -905,7 +903,7 @@ Use Markdown formatting. ${activityContext}`;
   return (
     <KeyboardAvoidingView
       className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
+      style={{ backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
@@ -916,20 +914,16 @@ Use Markdown formatting. ${activityContext}`;
       {/* Tab Navigation */}
       <View
         className="flex-row border-b"
-        style={{ borderBottomColor: isDark ? '#222' : '#e5e7eb' }}
+        style={{ borderBottomColor: colors.border }}
       >
         <TouchableOpacity
           hitSlop={14}
           className={`flex-1 py-3 ${activeTab === 'chat' ? '' : ''}`}
           style={{
             backgroundColor:
-              activeTab === 'chat'
-                ? isDark
-                  ? '#2563eb'
-                  : '#3b82f6'
-                : 'transparent',
+              activeTab === 'chat' ? colors.primary.main : 'transparent',
             borderBottomWidth: activeTab === 'chat' ? 2 : 0,
-            borderBottomColor: isDark ? '#2563eb' : '#3b82f6',
+            borderBottomColor: colors.primary.main,
           }}
           onPress={() => setActiveTab('chat')}
         >
@@ -937,7 +931,9 @@ Use Markdown formatting. ${activityContext}`;
             className="text-center font-medium"
             style={{
               color:
-                activeTab === 'chat' ? '#fff' : isDark ? '#a3a3a3' : '#6b7280',
+                activeTab === 'chat'
+                  ? colors.textInverse
+                  : colors.textSecondary,
             }}
           >
             Chat
@@ -948,13 +944,9 @@ Use Markdown formatting. ${activityContext}`;
           className={`flex-1 py-3 ${activeTab === 'history' ? '' : ''}`}
           style={{
             backgroundColor:
-              activeTab === 'history'
-                ? isDark
-                  ? '#2563eb'
-                  : '#3b82f6'
-                : 'transparent',
+              activeTab === 'history' ? colors.primary.main : 'transparent',
             borderBottomWidth: activeTab === 'history' ? 2 : 0,
-            borderBottomColor: isDark ? '#2563eb' : '#3b82f6',
+            borderBottomColor: colors.primary.main,
           }}
           onPress={() => setActiveTab('history')}
         >
@@ -963,10 +955,8 @@ Use Markdown formatting. ${activityContext}`;
             style={{
               color:
                 activeTab === 'history'
-                  ? '#fff'
-                  : isDark
-                    ? '#a3a3a3'
-                    : '#6b7280',
+                  ? colors.textInverse
+                  : colors.textSecondary,
             }}
           >
             History
@@ -1016,7 +1006,7 @@ Use Markdown formatting. ${activityContext}`;
                     <View
                       className="absolute -top-8 left-1/2 px-2 py-1 rounded"
                       style={{
-                        backgroundColor: isDark ? '#22c55e' : '#16a34a',
+                        backgroundColor: colors.success.main,
                         transform: [{ translateX: -24 }],
                       }}
                     >
@@ -1065,7 +1055,7 @@ Use Markdown formatting. ${activityContext}`;
                 <View
                   className={`max-w-[80%] p-3 rounded-2xl ${isDark ? 'bg-[#18181b] border border-[#222]' : 'bg-white border border-gray-200'}`}
                 >
-                  <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>
+                  <Text style={{ color: colors.textSecondary }}>
                     Thinking...
                   </Text>
                 </View>
@@ -1080,8 +1070,8 @@ Use Markdown formatting. ${activityContext}`;
 
           <View
             style={{
-              backgroundColor: isDark ? '#111' : '#fff',
-              borderTopColor: isDark ? '#222' : '#e5e7eb',
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
             }}
             className="p-4 border-t"
           >
@@ -1089,7 +1079,7 @@ Use Markdown formatting. ${activityContext}`;
               <TextInput
                 className="flex-1 bg-gray-100 p-3 rounded-full mr-3"
                 placeholder="Ask your AI coach anything..."
-                placeholderTextColor={isDark ? '#a3a3a3' : '#6b7280'}
+                placeholderTextColor={colors.textSecondary}
                 value={inputText}
                 onChangeText={setInputText}
                 multiline
@@ -1098,14 +1088,14 @@ Use Markdown formatting. ${activityContext}`;
                 blurOnSubmit={false}
                 returnKeyType="send"
                 style={{
-                  color: isDark ? '#fff' : '#111',
-                  backgroundColor: isDark ? '#18181b' : '#f3f4f6',
+                  color: colors.text,
+                  backgroundColor: colors.inputBackground,
                 }}
               />
               <TouchableOpacity
                 hitSlop={14}
                 style={{
-                  backgroundColor: isDark ? '#2563eb' : '#3b82f6',
+                  backgroundColor: colors.primary.main,
                   opacity: isProcessing ? 0.5 : 1,
                 }}
                 className="w-10 h-10 rounded-full items-center justify-center"
@@ -1136,7 +1126,7 @@ Use Markdown formatting. ${activityContext}`;
           <View
             className="rounded-2xl overflow-hidden"
             style={{
-              backgroundColor: isDark ? '#1c1c1e' : '#fff',
+              backgroundColor: colors.modalBackground,
               minWidth: 200,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
@@ -1150,14 +1140,10 @@ Use Markdown formatting. ${activityContext}`;
               onPress={handleCopyMessage}
               activeOpacity={0.7}
             >
-              <Ionicons
-                name="copy-outline"
-                size={20}
-                color={isDark ? '#fff' : '#111'}
-              />
+              <Ionicons name="copy-outline" size={20} color={colors.text} />
               <Text
                 className="text-base font-medium ml-3"
-                style={{ color: isDark ? '#fff' : '#111' }}
+                style={{ color: colors.text }}
               >
                 Copy Message
               </Text>

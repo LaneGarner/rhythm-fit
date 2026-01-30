@@ -1,14 +1,14 @@
 import dayjs from 'dayjs';
-import React, { useContext } from 'react';
+import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { RootState } from '../redux/store';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function StatsScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   // Calculate stats for the last 30 days (today and earlier only)
@@ -61,10 +61,7 @@ export default function StatsScreen({ navigation }: any) {
     .slice(0, 3);
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <AppHeader>
         <AppHeaderTitle title="Your Stats" subtitle="Last 30 Days" />
       </AppHeader>
@@ -72,8 +69,8 @@ export default function StatsScreen({ navigation }: any) {
       {/* Development Notice - Sticky */}
       <View
         style={{
-          backgroundColor: isDark ? '#1e3a5f' : '#dbeafe',
-          borderColor: isDark ? '#3b82f6' : '#93c5fd',
+          backgroundColor: colors.primary.background,
+          borderColor: colors.primary.light,
           borderWidth: 1,
           marginHorizontal: 16,
           marginTop: 16,
@@ -82,7 +79,7 @@ export default function StatsScreen({ navigation }: any) {
         className="p-3 rounded-lg"
       >
         <Text
-          style={{ color: isDark ? '#93c5fd' : '#1e40af' }}
+          style={{ color: colors.primary.main }}
           className="text-sm text-center"
         >
           Stats page is still under development
@@ -93,36 +90,30 @@ export default function StatsScreen({ navigation }: any) {
         {/* Summary Cards */}
         <View className="flex-row justify-between mb-6">
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+              style={{ color: colors.primary.main }}
             >
               {recentActivities.length}
             </Text>
-            <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-              className="text-sm"
-            >
+            <Text style={{ color: colors.textSecondary }} className="text-sm">
               Total Activities
             </Text>
           </View>
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: isDark ? '#34d399' : '#22c55e' }}
+              style={{ color: colors.success.main }}
             >
               {completionRate}%
             </Text>
-            <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-              className="text-sm"
-            >
+            <Text style={{ color: colors.textSecondary }} className="text-sm">
               Completion Rate
             </Text>
           </View>
@@ -130,36 +121,30 @@ export default function StatsScreen({ navigation }: any) {
 
         <View className="flex-row justify-between mb-6">
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: isDark ? '#a78bfa' : '#7c3aed' }}
+              style={{ color: colors.secondary.main }}
             >
               {completedActivities.length}
             </Text>
-            <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-              className="text-sm"
-            >
+            <Text style={{ color: colors.textSecondary }} className="text-sm">
               Completed
             </Text>
           </View>
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: isDark ? '#fdba74' : '#f59e42' }}
+              style={{ color: colors.warning.main }}
             >
               {Math.round((recentActivities.length / 30) * 7)}/week
             </Text>
-            <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
-              className="text-sm"
-            >
+            <Text style={{ color: colors.textSecondary }} className="text-sm">
               Avg. Per Week
             </Text>
           </View>
@@ -167,12 +152,12 @@ export default function StatsScreen({ navigation }: any) {
 
         {/* Top 3 Most Common Exercises */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-6 shadow-sm"
         >
           <Text
             className="text-lg font-semibold mb-3"
-            style={{ color: isDark ? '#fff' : '#111' }}
+            style={{ color: colors.text }}
           >
             Top 3 Most Common Exercises
           </Text>
@@ -185,12 +170,12 @@ export default function StatsScreen({ navigation }: any) {
                 <View className="flex-row items-center flex-1">
                   <Text
                     className="text-lg mr-3"
-                    style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+                    style={{ color: colors.primary.main }}
                   >
                     #{index + 1}
                   </Text>
                   <Text
-                    style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+                    style={{ color: colors.text }}
                     className="capitalize flex-1"
                     numberOfLines={2}
                   >
@@ -199,7 +184,7 @@ export default function StatsScreen({ navigation }: any) {
                 </View>
                 <Text
                   className="font-semibold ml-2"
-                  style={{ color: isDark ? '#fff' : '#111' }}
+                  style={{ color: colors.text }}
                 >
                   {count}
                 </Text>
@@ -207,7 +192,7 @@ export default function StatsScreen({ navigation }: any) {
             ))
           ) : (
             <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+              style={{ color: colors.textSecondary }}
               className="text-center py-4"
             >
               No exercises recorded yet
@@ -217,12 +202,12 @@ export default function StatsScreen({ navigation }: any) {
 
         {/* Activity Type Breakdown */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-6 shadow-sm"
         >
           <Text
             className="text-lg font-semibold"
-            style={{ color: isDark ? '#fff' : '#111' }}
+            style={{ color: colors.text }}
           >
             Activity Types
           </Text>
@@ -235,14 +220,14 @@ export default function StatsScreen({ navigation }: any) {
                   className="flex-row justify-between items-center py-2"
                 >
                   <Text
-                    style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+                    style={{ color: colors.text }}
                     className="capitalize"
                   >
                     {type.replace('-', ' ')}
                   </Text>
                   <Text
                     className="font-semibold"
-                    style={{ color: isDark ? '#fff' : '#111' }}
+                    style={{ color: colors.text }}
                   >
                     {count}
                   </Text>
@@ -250,7 +235,7 @@ export default function StatsScreen({ navigation }: any) {
               ))
           ) : (
             <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+              style={{ color: colors.textSecondary }}
               className="text-center py-4"
             >
               No activities yet
@@ -260,17 +245,17 @@ export default function StatsScreen({ navigation }: any) {
 
         {/* Most Common Type */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-6 shadow-sm"
         >
           <Text
             className="text-lg font-semibold"
-            style={{ color: isDark ? '#fff' : '#111' }}
+            style={{ color: colors.text }}
           >
             Most Common Activity Type
           </Text>
           <Text
-            style={{ color: isDark ? '#e5e5e5' : '#374151' }}
+            style={{ color: colors.text }}
             className="capitalize"
           >
             {mostCommonType.replace('-', ' ')}
@@ -279,12 +264,12 @@ export default function StatsScreen({ navigation }: any) {
 
         {/* Recent Activity */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-6 shadow-sm"
         >
           <Text
             className="text-lg font-semibold"
-            style={{ color: isDark ? '#fff' : '#111' }}
+            style={{ color: colors.text }}
           >
             Recent Activity
           </Text>
@@ -295,14 +280,11 @@ export default function StatsScreen({ navigation }: any) {
             >
               <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
               <View className="flex-1">
-                <Text
-                  className="font-medium"
-                  style={{ color: isDark ? '#fff' : '#111' }}
-                >
+                <Text className="font-medium" style={{ color: colors.text }}>
                   {activity.name || activity.type}
                 </Text>
                 <Text
-                  style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                  style={{ color: colors.textSecondary }}
                   className="text-sm"
                 >
                   {dayjs(activity.date).format('MMM D')}
@@ -315,7 +297,7 @@ export default function StatsScreen({ navigation }: any) {
           ))}
           {recentActivities.length === 0 && (
             <Text
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+              style={{ color: colors.textSecondary }}
               className="text-center py-4"
             >
               No recent activities

@@ -2,14 +2,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
 import TabNavigator from './navigation/TabNavigator';
 import { store } from './redux/store';
-import { ThemeContext, ThemeProvider } from './theme/ThemeContext';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
@@ -47,7 +47,7 @@ export type RootStackParamList = {
 };
 
 function AppContent() {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme } = useTheme();
 
   // Lock orientation to portrait
   useEffect(() => {

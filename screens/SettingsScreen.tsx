@@ -1,22 +1,18 @@
-import React, { useContext } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Alert, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { HEADER_STYLES } from '../constants';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
 
-const modes = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-];
 
 export default function SettingsScreen({ navigation }: any) {
-  const { themeMode, setThemeMode, colorScheme } = useContext(ThemeContext);
+  const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
   const dispatch = useDispatch();
   const isDark = colorScheme === 'dark';
@@ -43,22 +39,19 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#fff' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
         className={HEADER_STYLES}
         style={{
-          backgroundColor: isDark ? '#111' : '#fff',
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View className="flex-1 items-center">
           <Text
             className="text-2xl font-bold mt-0"
-            style={{ color: isDark ? '#fff' : '#111' }}
+            style={{ color: colors.text }}
           >
             Settings
           </Text>
@@ -72,7 +65,7 @@ export default function SettingsScreen({ navigation }: any) {
           <>
             <Text
               className="text-lg font-semibold mb-4"
-              style={{ color: isDark ? '#e5e5e5' : '#222' }}
+              style={{ color: colors.text }}
             >
               Account
             </Text>
@@ -80,17 +73,17 @@ export default function SettingsScreen({ navigation }: any) {
               <View className="mb-8">
                 <View
                   className="p-4 rounded-lg mb-3"
-                  style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
+                  style={{ backgroundColor: colors.surfaceSecondary }}
                 >
                   <Text
                     className="text-sm"
-                    style={{ color: isDark ? '#999' : '#666' }}
+                    style={{ color: colors.textSecondary }}
                   >
                     Signed in as
                   </Text>
                   <Text
                     className="text-base font-medium mt-1"
-                    style={{ color: isDark ? '#fff' : '#111' }}
+                    style={{ color: colors.text }}
                   >
                     {user.email}
                   </Text>
@@ -110,14 +103,14 @@ export default function SettingsScreen({ navigation }: any) {
               <View className="mb-8">
                 <Text
                   className="text-sm mb-3"
-                  style={{ color: isDark ? '#999' : '#666' }}
+                  style={{ color: colors.textSecondary }}
                 >
                   Sign in to sync your workouts across devices
                 </Text>
                 <TouchableOpacity
                   hitSlop={14}
                   className="p-4 rounded-lg"
-                  style={{ backgroundColor: isDark ? '#2563eb' : '#3b82f6' }}
+                  style={{ backgroundColor: colors.primary.main }}
                   onPress={() =>
                     navigation.reset({
                       index: 0,
@@ -137,79 +130,79 @@ export default function SettingsScreen({ navigation }: any) {
         {/* Library Section */}
         <Text
           className="text-lg font-semibold mb-4"
-          style={{ color: isDark ? '#e5e5e5' : '#222' }}
+          style={{ color: colors.text }}
         >
           Library
         </Text>
         <TouchableOpacity
           hitSlop={14}
           className="p-4 rounded-lg mb-3 flex-row items-center justify-between"
-          style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
-          onPress={() => navigation.navigate('ActivityLibrary')}
+          style={{ backgroundColor: colors.surfaceSecondary }}
+          onPress={() => navigation.navigate('Equipment')}
         >
           <View>
             <Text
               className="text-base font-medium"
-              style={{ color: isDark ? '#fff' : '#111' }}
+              style={{ color: colors.text }}
             >
-              Custom Activities
+              Equipment
             </Text>
             <Text
               className="text-sm mt-1"
-              style={{ color: isDark ? '#999' : '#666' }}
+              style={{ color: colors.textSecondary }}
             >
-              Manage activities you've created
+              Configure your barbells & plates
             </Text>
           </View>
-          <Text style={{ color: isDark ? '#666' : '#999', fontSize: 18 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
             {'>'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={14}
           className="p-4 rounded-lg mb-3 flex-row items-center justify-between"
-          style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
-          onPress={() => navigation.navigate('EmojiLibrary')}
+          style={{ backgroundColor: colors.surfaceSecondary }}
+          onPress={() => navigation.navigate('ActivityLibrary')}
         >
           <View>
             <Text
               className="text-base font-medium"
-              style={{ color: isDark ? '#fff' : '#111' }}
+              style={{ color: colors.text }}
             >
-              Custom Emojis
+              Custom Activities
             </Text>
             <Text
               className="text-sm mt-1"
-              style={{ color: isDark ? '#999' : '#666' }}
+              style={{ color: colors.textSecondary }}
             >
-              Manage emojis you've added
+              Manage activities you've created
             </Text>
           </View>
-          <Text style={{ color: isDark ? '#666' : '#999', fontSize: 18 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
             {'>'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={14}
           className="p-4 rounded-lg mb-8 flex-row items-center justify-between"
-          style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
-          onPress={() => navigation.navigate('Equipment')}
+          style={{ backgroundColor: colors.surfaceSecondary }}
+          onPress={() => navigation.navigate('EmojiLibrary')}
         >
           <View>
             <Text
               className="text-base font-medium"
-              style={{ color: isDark ? '#fff' : '#111' }}
+              style={{ color: colors.text }}
             >
-              Barbells & Plates
+              Custom Emojis
             </Text>
             <Text
               className="text-sm mt-1"
-              style={{ color: isDark ? '#999' : '#666' }}
+              style={{ color: colors.textSecondary }}
             >
-              Configure your gym equipment
+              Manage emojis you've added
             </Text>
           </View>
-          <Text style={{ color: isDark ? '#666' : '#999', fontSize: 18 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
             {'>'}
           </Text>
         </TouchableOpacity>
@@ -217,29 +210,24 @@ export default function SettingsScreen({ navigation }: any) {
         {/* Appearance Section */}
         <Text
           className="text-lg font-semibold mb-4"
-          style={{ color: isDark ? '#e5e5e5' : '#222' }}
+          style={{ color: colors.text }}
         >
           Appearance
         </Text>
-        {modes.map(mode => (
-          <TouchableOpacity
-            key={mode.value}
-            hitSlop={14}
-            className={`flex-row items-center mb-4 p-4 rounded-lg border ${themeMode === mode.value ? 'border-blue-500' : 'border-gray-300'}`}
-            style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}
-            onPress={() => setThemeMode(mode.value as any)}
-          >
-            <View
-              className={`w-5 h-5 rounded-full mr-3 ${themeMode === mode.value ? 'bg-blue-500' : 'bg-gray-300'}`}
-            />
-            <Text
-              className="text-base"
-              style={{ color: isDark ? '#fff' : '#111' }}
-            >
-              {mode.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View
+          className="flex-row items-center justify-between p-4 rounded-lg"
+          style={{ backgroundColor: colors.surfaceSecondary }}
+        >
+          <Text className="text-base" style={{ color: colors.text }}>
+            Dark Mode
+          </Text>
+          <Switch
+            value={isDark}
+            onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
+            trackColor={{ false: '#767577', true: colors.primary.main }}
+            thumbColor="#ffffff"
+          />
+        </View>
       </View>
     </View>
   );

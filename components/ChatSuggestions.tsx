@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import {
   getChatSuggestions,
   ChatSuggestions as SuggestionsType,
 } from '../services/chatApi';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ChatSuggestionsProps {
   onSuggestionPress: (suggestion: string) => void;
@@ -29,8 +29,7 @@ let cachedSuggestions: string[] | null = null;
 
 export const ChatSuggestions = (props: ChatSuggestionsProps) => {
   const { onSuggestionPress, visible = true } = props;
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
   const [refreshKey, setRefreshKey] = useState(0);
   const [allSuggestions, setAllSuggestions] = useState<string[]>(
     cachedSuggestions || FALLBACK_SUGGESTIONS
@@ -74,8 +73,8 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
   return (
     <View
       style={{
-        backgroundColor: isDark ? '#111' : '#fff',
-        borderTopColor: isDark ? '#222' : '#e5e7eb',
+        backgroundColor: colors.surface,
+        borderTopColor: colors.border,
       }}
       className="border-t px-4 py-2"
     >
@@ -92,15 +91,15 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
               hitSlop={8}
               onPress={() => onSuggestionPress(suggestion)}
               style={{
-                backgroundColor: isDark ? '#18181b' : '#f3f4f6',
-                borderColor: isDark ? '#333' : '#e5e7eb',
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
               }}
               className="px-3 py-2 rounded-full border"
               activeOpacity={0.7}
             >
               <Text
                 style={{
-                  color: isDark ? '#e5e5e5' : '#374151',
+                  color: colors.text,
                   fontSize: 14,
                 }}
                 numberOfLines={1}
@@ -115,8 +114,8 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
             hitSlop={8}
             onPress={handleMoreSuggestions}
             style={{
-              backgroundColor: isDark ? '#2563eb' : '#3b82f6',
-              borderColor: isDark ? '#2563eb' : '#3b82f6',
+              backgroundColor: colors.primary.main,
+              borderColor: colors.primary.main,
             }}
             className="px-3 py-2 rounded-full border flex-row items-center"
             activeOpacity={0.7}
@@ -124,12 +123,12 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
             <Ionicons
               name="refresh-outline"
               size={14}
-              color="#fff"
+              color={colors.textInverse}
               style={{ marginRight: 4 }}
             />
             <Text
               style={{
-                color: '#fff',
+                color: colors.textInverse,
                 fontSize: 14,
                 fontWeight: '500',
               }}

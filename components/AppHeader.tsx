@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useContext } from 'react';
+import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../App';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface AppHeaderProps {
   rightAction?: React.ReactNode;
@@ -12,8 +12,7 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ rightAction, children }: AppHeaderProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   // Use the navigation prop from React Navigation
   // This requires the component to receive navigation as a prop, or use the useNavigation hook.
@@ -25,8 +24,8 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
     <View
       className="pt-16 pb-9 px-4 border-b border-gray-200 flex-row items-center"
       style={{
-        backgroundColor: isDark ? '#111' : '#fff',
-        borderBottomColor: isDark ? '#222' : '#e5e7eb',
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border,
       }}
     >
       {/* Left: Optional (spacer if no action) */}
@@ -45,7 +44,7 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
         <Ionicons
           name="settings-outline"
           size={28}
-          color={isDark ? '#e5e5e5' : '#64748b'}
+          color={colors.textSecondary}
         />
       </TouchableOpacity>
     </View>
@@ -60,22 +59,18 @@ interface AppHeaderTitleProps {
 }
 
 export const AppHeaderTitle = ({ title, subtitle }: AppHeaderTitleProps) => {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   return (
     <View className="flex-1 items-center">
-      <Text
-        className="text-2xl font-bold"
-        style={{ color: isDark ? '#fff' : '#111' }}
-      >
+      <Text className="text-2xl font-bold" style={{ color: colors.text }}>
         {title}
       </Text>
       {subtitle && (
         <Text
           className="mt-1"
           style={{
-            color: isDark ? '#e5e5e5' : '#666',
+            color: colors.textSecondary,
             fontSize: 14,
             lineHeight: 18,
           }}

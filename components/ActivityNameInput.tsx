@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   ScrollView,
@@ -17,7 +17,7 @@ import {
 } from '../services/exerciseService';
 import { RootState } from '../redux/store';
 import { getCachedLibrary, LibraryItem } from '../services/libraryService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ActivityNameInputProps {
   value: string;
@@ -43,8 +43,7 @@ export default function ActivityNameInput({
   const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const inputRef = useRef<TextInput>(null);
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   const activities = useSelector((state: RootState) => state.activities.data);
 
@@ -211,7 +210,7 @@ export default function ActivityNameInput({
         value={localValue}
         onChangeText={setLocalValue}
         placeholder={placeholder}
-        placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+        placeholderTextColor={colors.textSecondary}
         style={{
           paddingHorizontal: 16,
           paddingVertical: 12,
@@ -219,9 +218,9 @@ export default function ActivityNameInput({
           borderRadius: 8,
           fontSize: 16,
           textAlignVertical: 'center',
-          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-          borderColor: error ? '#EF4444' : isDark ? '#4B5563' : '#D1D5DB',
-          color: isDark ? '#FFFFFF' : '#111827',
+          backgroundColor: colors.inputBackground,
+          borderColor: error ? colors.error.main : colors.border,
+          color: colors.text,
         }}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -232,15 +231,19 @@ export default function ActivityNameInput({
         onSubmitEditing={() => Keyboard.dismiss()}
       />
 
-      {error && <Text className="text-red-500 text-sm mt-1">{error}</Text>}
+      {error && (
+        <Text className="text-sm mt-1" style={{ color: colors.error.main }}>
+          {error}
+        </Text>
+      )}
 
       {/* Suggestions Dropdown */}
       {showSuggestions && (suggestions.length > 0 || showAddToLibrary) && (
         <View
-          className={`absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border ${
-            isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
-          }`}
+          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border"
           style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
@@ -271,24 +274,19 @@ export default function ActivityNameInput({
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     borderBottomWidth: 1,
-                    borderBottomColor: isDark ? '#374151' : '#F3F4F6',
-                    backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                    borderBottomColor: colors.borderSecondary,
+                    backgroundColor: colors.inputBackground,
                     minHeight: 44, // Ensure minimum touch target size
                   }}
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text
-                      className={`text-base ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
+                    <Text className="text-base" style={{ color: colors.text }}>
                       {suggestion}
                     </Text>
                     {isRecent && (
                       <Text
-                        className={`text-xs ${
-                          isDark ? 'text-blue-400' : 'text-blue-600'
-                        }`}
+                        className="text-xs"
+                        style={{ color: colors.primary.main }}
                       >
                         Recent
                       </Text>
@@ -302,17 +300,22 @@ export default function ActivityNameInput({
           {showAddToLibrary && (
             <TouchableOpacity
               onPress={handleAddToLibrary}
-              className={`p-4 border-t border-gray-200 dark:border-gray-700 ${
-                isDark ? 'bg-gray-800' : 'bg-white'
-              }`}
+              className="p-4 border-t"
+              style={{
+                borderTopColor: colors.border,
+                backgroundColor: colors.surface,
+              }}
             >
               <View className="flex-row items-center">
                 <Ionicons
                   name="add-circle-outline"
                   size={20}
-                  color={isDark ? '#3B82F6' : '#2563EB'}
+                  color={colors.primary.main}
                 />
-                <Text className="ml-2 text-blue-500 font-medium">
+                <Text
+                  className="ml-2 font-medium"
+                  style={{ color: colors.primary.main }}
+                >
                   Add "{localValue.trim()}" to library
                 </Text>
               </View>

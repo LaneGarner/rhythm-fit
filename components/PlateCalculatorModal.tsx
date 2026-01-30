@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import PlateIcon from './PlateIcon';
 import {
@@ -9,7 +9,7 @@ import {
   formatPlateResult,
   getCachedEquipment,
 } from '../services/equipmentService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface PlateCalculatorModalProps {
   visible: boolean;
@@ -24,8 +24,7 @@ export default function PlateCalculatorModal({
   onSelectWeight,
   initialWeight,
 }: PlateCalculatorModalProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
   const [selectedBarbell, setSelectedBarbell] = useState<Barbell | null>(null);
@@ -88,13 +87,15 @@ export default function PlateCalculatorModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+      <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
         {/* Header */}
         <View
-          className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+          className="p-4 border-b"
+          style={{ borderBottomColor: colors.border }}
         >
           <Text
-            className={`text-xl font-bold text-center ${isDark ? 'text-white' : 'text-gray-900'}`}
+            className="text-xl font-bold text-center"
+            style={{ color: colors.text }}
           >
             Plate Calculator
           </Text>
@@ -103,12 +104,12 @@ export default function PlateCalculatorModal({
         <ScrollView className="flex-1 p-4">
           {/* Target Weight Display */}
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#f3f4f6' }}
+            style={{ backgroundColor: colors.surfaceSecondary }}
             className="p-4 rounded-xl mb-4"
           >
             <Text
               className="text-4xl font-bold text-center"
-              style={{ color: isDark ? '#fff' : '#111' }}
+              style={{ color: colors.text }}
             >
               {targetWeight > 0 ? `${targetWeight} lbs` : 'No weight set'}
             </Text>
@@ -116,29 +117,29 @@ export default function PlateCalculatorModal({
 
           {/* Barbell Selector */}
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="p-4 rounded-xl mb-4 shadow-sm"
           >
             <Text
               className="text-sm font-medium mb-2"
-              style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+              style={{ color: colors.textSecondary }}
             >
               Barbell
             </Text>
             <TouchableOpacity
               onPress={() => setShowBarbellPicker(!showBarbellPicker)}
               style={{
-                backgroundColor: isDark ? '#27272a' : '#f3f4f6',
-                borderColor: isDark ? '#3f3f46' : '#d1d5db',
+                backgroundColor: colors.inputBackground,
+                borderColor: colors.border,
               }}
               className="p-3 rounded-lg border flex-row justify-between items-center"
             >
-              <Text style={{ color: isDark ? '#fff' : '#111' }}>
+              <Text style={{ color: colors.text }}>
                 {selectedBarbell
                   ? `${selectedBarbell.name} (${selectedBarbell.weight} lbs)`
                   : 'Select barbell'}
               </Text>
-              <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>
+              <Text style={{ color: colors.textSecondary }}>
                 {showBarbellPicker ? '▲' : '▼'}
               </Text>
             </TouchableOpacity>
@@ -152,12 +153,8 @@ export default function PlateCalculatorModal({
                     style={{
                       backgroundColor:
                         selectedBarbell?.id === barbell.id
-                          ? isDark
-                            ? '#3b82f6'
-                            : '#dbeafe'
-                          : isDark
-                            ? '#27272a'
-                            : '#f9fafb',
+                          ? colors.primary.background
+                          : colors.backgroundSecondary,
                     }}
                     className="p-3 rounded-lg mb-1"
                   >
@@ -165,12 +162,8 @@ export default function PlateCalculatorModal({
                       style={{
                         color:
                           selectedBarbell?.id === barbell.id
-                            ? isDark
-                              ? '#fff'
-                              : '#1d4ed8'
-                            : isDark
-                              ? '#e5e5e5'
-                              : '#374151',
+                            ? colors.primary.main
+                            : colors.text,
                       }}
                     >
                       {barbell.name} ({barbell.weight} lbs)
@@ -184,7 +177,7 @@ export default function PlateCalculatorModal({
           {/* Result */}
           {targetWeight > 0 && result && (
             <View
-              style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+              style={{ backgroundColor: colors.surface }}
               className="p-4 rounded-xl mb-4 shadow-sm"
             >
               {result.perSide.length > 0 ? (
@@ -192,7 +185,7 @@ export default function PlateCalculatorModal({
                   {/* Bar weight */}
                   <Text
                     className="text-base mb-2"
-                    style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                    style={{ color: colors.textSecondary }}
                   >
                     Bar: {selectedBarbell?.weight} lbs
                   </Text>
@@ -200,7 +193,7 @@ export default function PlateCalculatorModal({
                   {/* Plate breakdown text */}
                   <Text
                     className="text-xl font-bold mb-3"
-                    style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+                    style={{ color: colors.primary.main }}
                   >
                     + {formatPlateResult(result)}
                   </Text>
@@ -217,7 +210,7 @@ export default function PlateCalculatorModal({
                   </View>
                   <Text
                     className="text-sm"
-                    style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                    style={{ color: colors.textSecondary }}
                   >
                     Plates shown for one side
                   </Text>
@@ -226,11 +219,11 @@ export default function PlateCalculatorModal({
                   {result.remainder > 0 && (
                     <View
                       style={{
-                        backgroundColor: isDark ? '#422006' : '#fef3c7',
+                        backgroundColor: colors.warning.background,
                       }}
                       className="p-3 rounded-lg mt-4"
                     >
-                      <Text style={{ color: isDark ? '#fbbf24' : '#92400e' }}>
+                      <Text style={{ color: colors.warning.main }}>
                         Closest achievable: {result.achievedWeight} lbs (
                         {result.remainder} lbs short of {targetWeight})
                       </Text>
@@ -238,7 +231,7 @@ export default function PlateCalculatorModal({
                   )}
                 </>
               ) : (
-                <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>
+                <Text style={{ color: colors.textSecondary }}>
                   {targetWeight < (selectedBarbell?.weight || 0)
                     ? `Target weight must be at least ${selectedBarbell?.weight} lbs (barbell weight)`
                     : 'No plates needed - just the bar!'}
@@ -249,12 +242,12 @@ export default function PlateCalculatorModal({
 
           {targetWeight === 0 && (
             <View
-              style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+              style={{ backgroundColor: colors.surface }}
               className="p-4 rounded-xl mb-4 shadow-sm"
             >
               <Text
                 className="text-center"
-                style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                style={{ color: colors.textSecondary }}
               >
                 Enter a weight in the set first, then tap the plate icon to see
                 the breakdown.
@@ -265,13 +258,13 @@ export default function PlateCalculatorModal({
 
         {/* Bottom Button */}
         <View
-          className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
-          style={{ paddingBottom: 34 }}
+          className="p-4 border-t"
+          style={{ borderTopColor: colors.border, paddingBottom: 34 }}
         >
           <TouchableOpacity
             onPress={onClose}
             className="py-4 rounded-xl"
-            style={{ backgroundColor: '#3b82f6' }}
+            style={{ backgroundColor: colors.primary.main }}
           >
             <Text className="text-white text-center text-lg font-semibold">
               Close

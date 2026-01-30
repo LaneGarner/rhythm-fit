@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -23,7 +23,7 @@ import {
 } from '../components/StickyActivityHeader';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Activity, SetData, TrackingField } from '../types/activity';
 import {
   buildSupersetRounds,
@@ -38,7 +38,7 @@ import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
 export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
   const dispatch = useDispatch();
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -298,7 +298,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#F9FAFB' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -307,9 +307,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           paddingTop: 72,
           paddingBottom: 16,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
@@ -324,7 +324,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -402,7 +402,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                     style={{
                       flex: 1,
                       height: 1,
-                      backgroundColor: isDark ? '#374151' : '#D1D5DB',
+                      backgroundColor: colors.border,
                     }}
                   />
                   <Text
@@ -410,7 +410,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       paddingHorizontal: 12,
                       fontSize: 14,
                       fontWeight: '600',
-                      color: isDark ? '#9CA3AF' : '#6B7280',
+                      color: colors.textSecondary,
                     }}
                   >
                     Superset {round.roundNumber}
@@ -419,7 +419,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                     style={{
                       flex: 1,
                       height: 1,
-                      backgroundColor: isDark ? '#374151' : '#D1D5DB',
+                      backgroundColor: colors.border,
                     }}
                   />
                 </View>
@@ -429,7 +429,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   ({ activity, set, setIndex }, activityIndex) => {
                     const isLastActivity =
                       activityIndex === round.sets.length - 1;
-                    const accentColor = set?.completed ? '#22C55E' : '#3B82F6';
+                    const accentColor = set?.completed
+                      ? colors.success.main
+                      : colors.primary.main;
 
                     if (!set) {
                       // No set for this activity in this round - show add set option
@@ -443,7 +445,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             style={{
                               borderWidth: 2,
                               borderStyle: 'dashed',
-                              borderColor: isDark ? '#4B5563' : '#D1D5DB',
+                              borderColor: colors.border,
                             }}
                           >
                             <View className="flex-row items-center justify-between">
@@ -464,11 +466,11 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 <Ionicons
                                   name="add-circle-outline"
                                   size={20}
-                                  color={isDark ? '#60A5FA' : '#3B82F6'}
+                                  color={colors.primary.main}
                                 />
                                 <Text
                                   style={{
-                                    color: isDark ? '#60A5FA' : '#3B82F6',
+                                    color: colors.primary.main,
                                     marginLeft: 4,
                                     fontWeight: '600',
                                   }}
@@ -547,7 +549,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               <Ionicons
                                 name="ellipsis-vertical"
                                 size={20}
-                                color={isDark ? '#9CA3AF' : '#6B7280'}
+                                color={colors.textSecondary}
                               />
                             </TouchableOpacity>
                           </View>
@@ -639,9 +641,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                         : 'bg-white border-gray-300 text-gray-900'
                                     }`}
                                     placeholder={field === 'time' ? '0:00' : ''}
-                                    placeholderTextColor={
-                                      isDark ? '#9CA3AF' : '#6B7280'
-                                    }
+                                    placeholderTextColor={colors.textSecondary}
                                     returnKeyType="done"
                                     onSubmitEditing={() => Keyboard.dismiss()}
                                     onFocus={() => {
@@ -666,23 +666,19 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             }
                             className="mt-4 px-4 py-3 rounded-lg"
                             style={{
-                              backgroundColor: isDark ? '#1f2937' : '#fff',
+                              backgroundColor: colors.surface,
                               borderWidth: 2,
                               borderColor: set.completed
-                                ? '#22C55E'
-                                : isDark
-                                  ? '#4B5563'
-                                  : '#D1D5DB',
+                                ? colors.success.main
+                                : colors.border,
                             }}
                           >
                             <Text
                               className="text-center font-semibold"
                               style={{
                                 color: set.completed
-                                  ? '#22C55E'
-                                  : isDark
-                                    ? '#9CA3AF'
-                                    : '#6B7280',
+                                  ? colors.success.main
+                                  : colors.textSecondary,
                               }}
                             >
                               {set.completed ? 'Completed' : 'Mark Complete'}
@@ -717,15 +713,19 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             {/* Add Round Button */}
             <TouchableOpacity
               onPress={handleAddSupersetRound}
-              className={`p-4 rounded-lg border-2 border-dashed ${
-                isDark ? 'border-gray-600' : 'border-gray-300'
-              }`}
-              style={{ alignItems: 'center' }}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+                borderWidth: 2,
+                borderStyle: 'dashed',
+                borderColor: colors.border,
+                alignItems: 'center',
+              }}
             >
               <Ionicons
                 name="add-circle-outline"
                 size={24}
-                color={isDark ? '#9CA3AF' : '#6B7280'}
+                color={colors.textSecondary}
               />
               <Text
                 className={`mt-2 font-medium ${

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { getMondayOfWeekByOffset } from '../utils/dateUtils';
 import ProgressBar from '../components/ProgressBar';
@@ -27,7 +27,7 @@ import {
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
@@ -40,7 +40,7 @@ import {
 export default function WeeklyScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const dispatch = useDispatch();
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getAccessToken } = useAuth();
@@ -594,15 +594,12 @@ export default function WeeklyScreen({ navigation }: any) {
     });
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
         className="pt-14 pb-4 px-4 border-b border-grey-200"
         style={{
-          backgroundColor: isDark ? '#111' : '#fff',
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
           marginTop: 2,
         }}
       >
@@ -616,7 +613,7 @@ export default function WeeklyScreen({ navigation }: any) {
           <Ionicons
             name="settings-outline"
             size={28}
-            color={isDark ? '#e5e5e5' : '#64748b'}
+            color={colors.textSecondary}
           />
         </TouchableOpacity>
 
@@ -645,7 +642,9 @@ export default function WeeklyScreen({ navigation }: any) {
               <Ionicons
                 name="chevron-back"
                 size={24}
-                color={isScrolling ? '#6366f1' : isDark ? '#e5e5e5' : '#64748b'}
+                color={
+                  isScrolling ? colors.secondary.main : colors.textSecondary
+                }
               />
             </TouchableOpacity>
             {/* Week label - centered in its container */}
@@ -654,7 +653,7 @@ export default function WeeklyScreen({ navigation }: any) {
                 <Text
                   className="text-2xl font-bold"
                   style={{
-                    color: isDark ? '#fff' : '#111',
+                    color: colors.text,
                     textAlign: 'center',
                   }}
                 >
@@ -676,7 +675,9 @@ export default function WeeklyScreen({ navigation }: any) {
               <Ionicons
                 name="chevron-forward"
                 size={24}
-                color={isScrolling ? '#6366f1' : isDark ? '#e5e5e5' : '#64748b'}
+                color={
+                  isScrolling ? colors.secondary.main : colors.textSecondary
+                }
               />
             </TouchableOpacity>
           </View>
@@ -684,7 +685,7 @@ export default function WeeklyScreen({ navigation }: any) {
           <View style={{ width: 240, alignItems: 'center' }}>
             <Text
               style={{
-                color: isDark ? '#e5e5e5' : '#666',
+                color: colors.textSecondary,
                 textAlign: 'center',
                 fontSize: 14,
                 lineHeight: 18,
@@ -717,16 +718,10 @@ export default function WeeklyScreen({ navigation }: any) {
                   className={`mb-4 p-4 rounded-xl shadow-sm`}
                   style={{
                     backgroundColor: day.isToday
-                      ? isDark
-                        ? '#23263a'
-                        : '#e0e7ff'
-                      : isDark
-                        ? '#18181b'
-                        : '#f3f4f6',
+                      ? colors.accent.background
+                      : colors.cardBackground,
                     borderColor: day.isToday
-                      ? isDark
-                        ? '#6366f1'
-                        : '#a5b4fc'
+                      ? colors.accent.main
                       : 'transparent',
                     borderWidth: day.isToday ? 2 : 0,
                   }}
@@ -743,27 +738,15 @@ export default function WeeklyScreen({ navigation }: any) {
                         className="text-sm font-medium"
                         style={{
                           color: day.isToday
-                            ? isDark
-                              ? '#818cf8'
-                              : '#2563eb'
-                            : isDark
-                              ? '#a3a3a3'
-                              : '#6b7280',
+                            ? colors.accent.main
+                            : colors.textSecondary,
                         }}
                       >
                         {day.dayName}
                       </Text>
                       <Text
                         className="text-xl font-bold"
-                        style={{
-                          color: day.isToday
-                            ? isDark
-                              ? '#fff'
-                              : '#1e3a8a'
-                            : isDark
-                              ? '#fff'
-                              : '#111',
-                        }}
+                        style={{ color: colors.text }}
                       >
                         {day.dayNumber}
                       </Text>
@@ -788,6 +771,7 @@ export default function WeeklyScreen({ navigation }: any) {
                                   <Text
                                     key={group.supersetId}
                                     className="text-lg ml-1 mb-1"
+                                    style={{ color: colors.text }}
                                   >
                                     {getSupersetEmojisCompact(group.activities)}
                                   </Text>
@@ -805,7 +789,7 @@ export default function WeeklyScreen({ navigation }: any) {
                             {remainingCount > 0 && (
                               <Text
                                 style={{
-                                  color: isDark ? '#a3a3a3' : '#6b7280',
+                                  color: colors.textSecondary,
                                 }}
                                 className="ml-1 text-sm"
                               >
@@ -820,7 +804,7 @@ export default function WeeklyScreen({ navigation }: any) {
 
                   {dayActivities.length === 0 && (
                     <Text
-                      style={{ color: isDark ? '#a3a3a3' : '#9ca3af' }}
+                      style={{ color: colors.textTertiary }}
                       className="text-sm"
                     >
                       No activities planned
@@ -843,7 +827,7 @@ export default function WeeklyScreen({ navigation }: any) {
                               >
                                 <Text
                                   style={{
-                                    color: isDark ? '#e5e5e5' : '#374151',
+                                    color: colors.text,
                                   }}
                                   className="flex-1"
                                   numberOfLines={1}
@@ -854,13 +838,13 @@ export default function WeeklyScreen({ navigation }: any) {
                                   <Ionicons
                                     name="checkmark-circle"
                                     size={18}
-                                    color="#22C55E"
+                                    color={colors.success.main}
                                   />
                                 ) : (
                                   <Ionicons
                                     name="ellipse-outline"
                                     size={18}
-                                    color="#D1D5DB"
+                                    color={colors.border}
                                   />
                                 )}
                               </View>
@@ -878,7 +862,7 @@ export default function WeeklyScreen({ navigation }: any) {
                               </Text>
                               <Text
                                 style={{
-                                  color: isDark ? '#e5e5e5' : '#374151',
+                                  color: colors.text,
                                 }}
                                 className="flex-1"
                               >
@@ -888,13 +872,13 @@ export default function WeeklyScreen({ navigation }: any) {
                                 <Ionicons
                                   name="checkmark-circle"
                                   size={18}
-                                  color="#22C55E"
+                                  color={colors.success.main}
                                 />
                               ) : (
                                 <Ionicons
                                   name="ellipse-outline"
                                   size={18}
-                                  color="#D1D5DB"
+                                  color={colors.border}
                                 />
                               )}
                             </View>
@@ -917,13 +901,13 @@ export default function WeeklyScreen({ navigation }: any) {
                           <Ionicons
                             name="checkmark-circle"
                             size={14}
-                            color="#22C55E"
+                            color={colors.success.main}
                             style={{ marginRight: 4 }}
                           />
                         )}
                         <Text
                           style={{
-                            color: isDark ? '#a3a3a3' : '#6b7280',
+                            color: colors.textSecondary,
                             fontSize: 12,
                           }}
                         >
@@ -958,7 +942,7 @@ export default function WeeklyScreen({ navigation }: any) {
           position: 'absolute',
           bottom: 35,
           right: 34,
-          backgroundColor: '#2563eb',
+          backgroundColor: colors.primary.main,
           borderRadius: 32,
           width: 56,
           height: 56,
@@ -993,7 +977,7 @@ export default function WeeklyScreen({ navigation }: any) {
         >
           <View
             style={{
-              backgroundColor: isDark ? '#1c1c1e' : '#fff',
+              backgroundColor: colors.modalBackground,
               borderRadius: 16,
               padding: 20,
               width: '85%',
@@ -1004,7 +988,7 @@ export default function WeeklyScreen({ navigation }: any) {
               style={{
                 fontSize: 18,
                 fontWeight: '600',
-                color: isDark ? '#fff' : '#111',
+                color: colors.text,
                 textAlign: 'center',
                 marginBottom: 8,
               }}
@@ -1014,7 +998,7 @@ export default function WeeklyScreen({ navigation }: any) {
             <Text
               style={{
                 fontSize: 14,
-                color: isDark ? '#9CA3AF' : '#6B7280',
+                color: colors.textSecondary,
                 textAlign: 'center',
                 marginBottom: 16,
               }}
@@ -1027,7 +1011,7 @@ export default function WeeklyScreen({ navigation }: any) {
             <Text
               style={{
                 fontSize: 14,
-                color: isDark ? '#9CA3AF' : '#6B7280',
+                color: colors.textSecondary,
                 marginBottom: 8,
               }}
             >
@@ -1035,7 +1019,7 @@ export default function WeeklyScreen({ navigation }: any) {
             </Text>
             <View
               style={{
-                backgroundColor: isDark ? '#2c2c2e' : '#f3f4f6',
+                backgroundColor: colors.surfaceSecondary,
                 borderRadius: 12,
                 padding: 12,
                 marginBottom: 16,
@@ -1045,7 +1029,7 @@ export default function WeeklyScreen({ navigation }: any) {
                 style={{
                   fontSize: 16,
                   fontWeight: '500',
-                  color: isDark ? '#fff' : '#111',
+                  color: colors.text,
                   textAlign: 'center',
                 }}
               >
@@ -1056,7 +1040,7 @@ export default function WeeklyScreen({ navigation }: any) {
             {/* Date Picker */}
             <View
               style={{
-                backgroundColor: isDark ? '#2c2c2e' : '#f3f4f6',
+                backgroundColor: colors.surfaceSecondary,
                 borderRadius: 12,
                 marginBottom: 20,
                 overflow: 'hidden',
@@ -1071,7 +1055,7 @@ export default function WeeklyScreen({ navigation }: any) {
                     setCopyTargetDate(selectedDate);
                   }
                 }}
-                textColor={isDark ? '#fff' : '#000'}
+                textColor={colors.text}
                 themeVariant={isDark ? 'dark' : 'light'}
                 style={{ height: 150 }}
               />
@@ -1086,7 +1070,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   flex: 1,
                   paddingVertical: 12,
                   borderRadius: 10,
-                  backgroundColor: isDark ? '#3a3a3c' : '#e5e7eb',
+                  backgroundColor: colors.backgroundTertiary,
                   opacity: isCopying ? 0.5 : 1,
                 }}
               >
@@ -1094,7 +1078,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   style={{
                     textAlign: 'center',
                     fontWeight: '600',
-                    color: isDark ? '#fff' : '#374151',
+                    color: colors.text,
                   }}
                 >
                   Cancel
@@ -1107,7 +1091,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   flex: 1,
                   paddingVertical: 12,
                   borderRadius: 10,
-                  backgroundColor: '#2563eb',
+                  backgroundColor: colors.primary.main,
                   opacity: isCopying ? 0.8 : 1,
                 }}
               >

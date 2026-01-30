@@ -12,6 +12,7 @@ import {
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
+import { useTheme } from '../theme/ThemeContext';
 import { Activity, RecurringConfig } from '../types/activity';
 
 dayjs.extend(isSameOrAfter);
@@ -20,6 +21,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
   const { activityId, fromDayEdit, date: returnDate } = route.params;
   const dispatch = useDispatch();
   const { getAccessToken } = useAuth();
+  const { colors } = useTheme();
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const activity = activities.find(a => a.id === activityId);
@@ -198,8 +200,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
   if (!activity) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-lg">Activity not found</Text>
+      <View
+        className="flex-1 justify-center items-center"
+        style={{ backgroundColor: colors.background }}
+      >
+        <Text className="text-lg" style={{ color: colors.text }}>
+          Activity not found
+        </Text>
       </View>
     );
   }

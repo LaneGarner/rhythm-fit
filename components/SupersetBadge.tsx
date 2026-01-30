@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View, ViewStyle } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
 
 interface SupersetBadgeProps {
   label: string;
@@ -7,23 +8,22 @@ interface SupersetBadgeProps {
   style?: ViewStyle;
 }
 
-const PURPLE = '#8B5CF6';
-
 /**
- * Reusable purple badge for superset/triset/giant set labels
+ * Reusable badge for superset/triset/giant set labels
  */
 export default function SupersetBadge({
   label,
   size = 'small',
   style,
 }: SupersetBadgeProps) {
+  const { colors } = useTheme();
   const isSmall = size === 'small';
 
   return (
     <View
       style={[
         {
-          backgroundColor: PURPLE,
+          backgroundColor: colors.accent.main,
           paddingHorizontal: isSmall ? 8 : 12,
           paddingVertical: isSmall ? 2 : 4,
           borderRadius: isSmall ? 8 : 12,
@@ -33,7 +33,7 @@ export default function SupersetBadge({
     >
       <Text
         style={{
-          color: '#fff',
+          color: colors.textInverse,
           fontSize: isSmall ? 11 : 12,
           fontWeight: '600',
         }}

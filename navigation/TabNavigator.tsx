@@ -1,19 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React, { useContext } from 'react';
+import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import CalculatorScreen from '../screens/CalculatorScreen';
 import CoachScreen from '../screens/CoachScreen';
 import StatsScreen from '../screens/StatsScreen';
 import WeeklyScreen from '../screens/WeeklyScreen';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
 // Custom tab bar button component
 const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
   const isFocused = accessibilityState?.selected;
 
   return (
@@ -45,7 +44,7 @@ const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
               width: 4,
               height: 4,
               borderRadius: 2,
-              backgroundColor: isDark ? '#3b82f6' : '#007AFF',
+              backgroundColor: colors.primary.main,
             }}
           />
         )}
@@ -55,22 +54,21 @@ const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
 };
 
 export default function TabNavigator() {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: isDark ? '#18181b' : '#e0e0e0',
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: isDark ? '#222' : '#e5e7eb',
+          borderTopColor: colors.border,
           paddingBottom: 34,
           paddingTop: 10,
           height: 80,
         },
-        tabBarActiveTintColor: isDark ? '#3b82f6' : '#007AFF',
-        tabBarInactiveTintColor: isDark ? '#a3a3a3' : '#8E8E93',
+        tabBarActiveTintColor: colors.primary.main,
+        tabBarInactiveTintColor: colors.tabBarInactive,
       }}
     >
       <Tab.Screen

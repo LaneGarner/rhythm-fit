@@ -1,41 +1,52 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext } from 'react';
+import React from 'react';
 import { Text, View } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface NotesCardProps {
   notes: string;
 }
 
 export default function NotesCard({ notes }: NotesCardProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   if (!notes) return null;
 
   return (
     <View
-      className={`p-4 rounded-lg ${
-        isDark ? 'bg-gray-800' : 'bg-white'
-      } shadow-sm`}
+      style={{
+        padding: 16,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+      }}
     >
-      <View className="flex-row items-center mb-2">
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
         <Ionicons
           name="document-text-outline"
           size={18}
-          color={isDark ? '#9CA3AF' : '#6B7280'}
+          color={colors.textSecondary}
           style={{ marginRight: 6 }}
         />
         <Text
-          className={`text-sm font-medium ${
-            isDark ? 'text-gray-400' : 'text-gray-500'
-          }`}
+          style={{
+            fontSize: 14,
+            fontWeight: '500',
+            color: colors.textSecondary,
+          }}
         >
           Notes
         </Text>
       </View>
       <Text
-        className={`text-base ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+        style={{
+          fontSize: 16,
+          color: colors.text,
+        }}
       >
         {notes}
       </Text>

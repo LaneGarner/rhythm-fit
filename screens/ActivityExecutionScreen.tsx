@@ -1,12 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -32,14 +26,14 @@ import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Activity, SetData, TrackingField } from '../types/activity';
 import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
   const dispatch = useDispatch();
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -308,7 +302,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#F9FAFB' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -317,9 +311,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           paddingTop: 72,
           paddingBottom: 16,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
@@ -334,7 +328,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -408,7 +402,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 >
                   <Text
                     style={{
-                      color: isDark ? '#60A5FA' : '#2563EB',
+                      color: colors.primary.main,
                       fontSize: 16,
                       fontWeight: '600',
                     }}
@@ -457,7 +451,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                         <Ionicons
                           name="ellipsis-vertical"
                           size={20}
-                          color={isDark ? '#9CA3AF' : '#6B7280'}
+                          color={colors.textSecondary}
                         />
                       </TouchableOpacity>
                     </View>
@@ -537,9 +531,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                                   : 'bg-white border-gray-300 text-gray-900'
                               }`}
                               placeholder={field === 'time' ? '0:00' : ''}
-                              placeholderTextColor={
-                                isDark ? '#9CA3AF' : '#6B7280'
-                              }
+                              placeholderTextColor={colors.textSecondary}
                               returnKeyType="done"
                               onSubmitEditing={() => Keyboard.dismiss()}
                               onFocus={() => {
@@ -558,23 +550,19 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       }
                       className="mt-5 px-4 py-4 rounded-lg"
                       style={{
-                        backgroundColor: isDark ? '#1f2937' : '#fff',
+                        backgroundColor: colors.surface,
                         borderWidth: 2,
                         borderColor: set.completed
-                          ? '#22C55E'
-                          : isDark
-                            ? '#4B5563'
-                            : '#D1D5DB',
+                          ? colors.success.main
+                          : colors.border,
                       }}
                     >
                       <Text
                         className={`text-center font-semibold text-lg`}
                         style={{
                           color: set.completed
-                            ? '#22C55E'
-                            : isDark
-                              ? '#9CA3AF'
-                              : '#6B7280',
+                            ? colors.success.main
+                            : colors.textSecondary,
                         }}
                       >
                         {set.completed ? 'Completed  ✅' : 'Mark Complete'}

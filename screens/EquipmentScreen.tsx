@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -26,10 +26,10 @@ import {
   setSelectedBarbell,
   updatePlateCount,
 } from '../services/equipmentService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function EquipmentScreen({ navigation }: any) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
 
@@ -173,10 +173,7 @@ export default function EquipmentScreen({ navigation }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#fff' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -185,9 +182,9 @@ export default function EquipmentScreen({ navigation }: any) {
           paddingTop: 60,
           paddingBottom: 16,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <HeaderButton label="Back" onPress={() => navigation.goBack()} />
@@ -198,7 +195,7 @@ export default function EquipmentScreen({ navigation }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -223,7 +220,7 @@ export default function EquipmentScreen({ navigation }: any) {
               <View className="flex-row justify-between items-center mb-4">
                 <Text
                   className="text-lg font-semibold"
-                  style={{ color: isDark ? '#fff' : '#111' }}
+                  style={{ color: colors.text }}
                 >
                   Barbells
                 </Text>
@@ -231,8 +228,14 @@ export default function EquipmentScreen({ navigation }: any) {
                   onPress={() => setShowAddBarbell(true)}
                   className="flex-row items-center"
                 >
-                  <Ionicons name="add-circle" size={24} color="#3b82f6" />
-                  <Text className="text-blue-500 ml-1">Add</Text>
+                  <Ionicons
+                    name="add-circle"
+                    size={24}
+                    color={colors.primary.main}
+                  />
+                  <Text style={{ color: colors.primary.main, marginLeft: 4 }}>
+                    Add
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -241,13 +244,11 @@ export default function EquipmentScreen({ navigation }: any) {
                   key={barbell.id}
                   onPress={() => handleSelectBarbell(barbell)}
                   style={{
-                    backgroundColor: isDark ? '#18181b' : '#fff',
+                    backgroundColor: colors.surface,
                     borderColor:
                       equipment.selectedBarbellId === barbell.id
-                        ? '#3b82f6'
-                        : isDark
-                          ? '#27272a'
-                          : '#e5e7eb',
+                        ? colors.primary.main
+                        : colors.border,
                     borderWidth:
                       equipment.selectedBarbellId === barbell.id ? 2 : 1,
                   }}
@@ -258,17 +259,15 @@ export default function EquipmentScreen({ navigation }: any) {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color="#3b82f6"
+                        color={colors.primary.main}
                         style={{ marginRight: 8 }}
                       />
                     )}
                     <View>
-                      <Text style={{ color: isDark ? '#fff' : '#111' }}>
-                        {barbell.name}
-                      </Text>
+                      <Text style={{ color: colors.text }}>{barbell.name}</Text>
                       <Text
                         className="text-sm"
-                        style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                        style={{ color: colors.textSecondary }}
                       >
                         {barbell.weight} lbs
                       </Text>
@@ -282,7 +281,7 @@ export default function EquipmentScreen({ navigation }: any) {
                       <Ionicons
                         name="close-circle"
                         size={22}
-                        color={isDark ? '#6b7280' : '#9ca3af'}
+                        color={colors.textSecondary}
                       />
                     </TouchableOpacity>
                   )}
@@ -295,7 +294,7 @@ export default function EquipmentScreen({ navigation }: any) {
               <View className="flex-row justify-between items-center mb-4">
                 <Text
                   className="text-lg font-semibold"
-                  style={{ color: isDark ? '#fff' : '#111' }}
+                  style={{ color: colors.text }}
                 >
                   Plates
                 </Text>
@@ -303,15 +302,21 @@ export default function EquipmentScreen({ navigation }: any) {
                   onPress={() => setShowAddPlate(true)}
                   className="flex-row items-center"
                 >
-                  <Ionicons name="add-circle" size={24} color="#3b82f6" />
-                  <Text className="text-blue-500 ml-1">Add</Text>
+                  <Ionicons
+                    name="add-circle"
+                    size={24}
+                    color={colors.primary.main}
+                  />
+                  <Text style={{ color: colors.primary.main, marginLeft: 4 }}>
+                    Add
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               {equipment?.plates.length === 0 ? (
                 <View className="items-center py-8">
                   <Text
-                    style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                    style={{ color: colors.textSecondary }}
                     className="text-center"
                   >
                     No plates configured. Add some plates to get started.
@@ -325,7 +330,7 @@ export default function EquipmentScreen({ navigation }: any) {
                       onLongPress={() => openEditPlate(plate)}
                       delayLongPress={300}
                       style={{
-                        backgroundColor: isDark ? '#18181b' : '#fff',
+                        backgroundColor: colors.surface,
                         shadowColor: '#000',
                         shadowOffset: { width: 0, height: 1 },
                         shadowOpacity: 0.1,
@@ -341,7 +346,7 @@ export default function EquipmentScreen({ navigation }: any) {
                             position: 'absolute',
                             top: -4,
                             right: -4,
-                            backgroundColor: '#3b82f6',
+                            backgroundColor: colors.primary.main,
                             borderRadius: 10,
                             minWidth: 20,
                             height: 20,
@@ -352,7 +357,7 @@ export default function EquipmentScreen({ navigation }: any) {
                         >
                           <Text
                             style={{
-                              color: 'white',
+                              color: colors.textInverse,
                               fontSize: 12,
                               fontWeight: 'bold',
                             }}
@@ -366,7 +371,7 @@ export default function EquipmentScreen({ navigation }: any) {
                             position: 'absolute',
                             top: -8,
                             left: -8,
-                            backgroundColor: isDark ? '#4B5563' : '#E5E7EB',
+                            backgroundColor: colors.border,
                             borderRadius: 10,
                             width: 20,
                             height: 20,
@@ -377,7 +382,7 @@ export default function EquipmentScreen({ navigation }: any) {
                           <Ionicons
                             name="close"
                             size={14}
-                            color={isDark ? '#9CA3AF' : '#6B7280'}
+                            color={colors.textSecondary}
                           />
                         </TouchableOpacity>
                       </View>
@@ -388,7 +393,7 @@ export default function EquipmentScreen({ navigation }: any) {
 
               <Text
                 className="text-sm mt-2"
-                style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                style={{ color: colors.textSecondary }}
               >
                 Hold to edit count
               </Text>
@@ -403,7 +408,7 @@ export default function EquipmentScreen({ navigation }: any) {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
           >
@@ -441,7 +446,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 value={newBarbellName}
                 onChangeText={setNewBarbellName}
                 placeholder="e.g., EZ Curl Bar"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 autoFocus
                 returnKeyType="done"
                 className={`px-3 border rounded-lg ${
@@ -463,7 +468,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 value={newBarbellWeight}
                 onChangeText={setNewBarbellWeight}
                 placeholder="e.g., 25"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
                 className={`px-3 border rounded-lg ${
                   isDark
@@ -488,7 +493,7 @@ export default function EquipmentScreen({ navigation }: any) {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
           >
@@ -526,7 +531,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 value={newPlateWeight}
                 onChangeText={setNewPlateWeight}
                 placeholder="e.g., 45"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
                 autoFocus
                 returnKeyType="done"
@@ -608,7 +613,7 @@ export default function EquipmentScreen({ navigation }: any) {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
           >
@@ -642,7 +647,7 @@ export default function EquipmentScreen({ navigation }: any) {
                   <PlateIcon weight={showEditPlate.weight} size={100} />
                   <Text
                     className="text-lg font-semibold mt-4"
-                    style={{ color: isDark ? '#fff' : '#111' }}
+                    style={{ color: colors.text }}
                   >
                     {showEditPlate.weight} lb plate
                   </Text>
@@ -658,7 +663,7 @@ export default function EquipmentScreen({ navigation }: any) {
                     value={editPlateCount}
                     onChangeText={setEditPlateCount}
                     placeholder="Number of plates"
-                    placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                    placeholderTextColor={colors.textSecondary}
                     keyboardType="numeric"
                     autoFocus
                     className={`px-3 border rounded-lg ${

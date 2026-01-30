@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Text, TouchableOpacity, ViewStyle } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface HeaderButtonProps {
   label: string;
@@ -17,8 +17,7 @@ export default function HeaderButton({
   onPress,
   style,
 }: HeaderButtonProps) {
-  const { colorScheme } = useContext(ThemeContext);
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   return (
     <TouchableOpacity
@@ -28,7 +27,7 @@ export default function HeaderButton({
     >
       <Text
         style={{
-          color: isDark ? '#60A5FA' : '#2563EB',
+          color: colors.primary.main,
           fontSize: 17,
           fontWeight: '600',
         }}

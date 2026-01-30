@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   ScrollView,
@@ -17,10 +17,10 @@ import {
   formatPlateResult,
   getCachedEquipment,
 } from '../services/equipmentService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function CalculatorScreen({ navigation }: any) {
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
@@ -79,10 +79,7 @@ export default function CalculatorScreen({ navigation }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <AppHeader>
         <AppHeaderTitle title="Weight Calculator" subtitle="Plate Breakdown" />
       </AppHeader>
@@ -98,29 +95,29 @@ export default function CalculatorScreen({ navigation }: any) {
 
         {/* Barbell Selector */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-4 shadow-sm"
         >
           <Text
             className="text-sm font-medium mb-2"
-            style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+            style={{ color: colors.textSecondary }}
           >
             Barbell
           </Text>
           <TouchableOpacity
             onPress={() => setShowBarbellPicker(!showBarbellPicker)}
             style={{
-              backgroundColor: isDark ? '#27272a' : '#f3f4f6',
-              borderColor: isDark ? '#3f3f46' : '#d1d5db',
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.border,
             }}
             className="p-3 rounded-lg border flex-row justify-between items-center"
           >
-            <Text style={{ color: isDark ? '#fff' : '#111' }}>
+            <Text style={{ color: colors.text }}>
               {selectedBarbell
                 ? `${selectedBarbell.name} (${selectedBarbell.weight} lbs)`
                 : 'Select barbell'}
             </Text>
-            <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>
+            <Text style={{ color: colors.textSecondary }}>
               {showBarbellPicker ? '▲' : '▼'}
             </Text>
           </TouchableOpacity>
@@ -165,12 +162,12 @@ export default function CalculatorScreen({ navigation }: any) {
 
         {/* Target Weight Input */}
         <View
-          style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+          style={{ backgroundColor: colors.surface }}
           className="p-4 rounded-xl mb-4 shadow-sm"
         >
           <Text
             className="text-sm font-medium mb-2"
-            style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+            style={{ color: colors.textSecondary }}
           >
             Target Weight (lbs)
           </Text>
@@ -180,12 +177,12 @@ export default function CalculatorScreen({ navigation }: any) {
               onChangeText={setTargetWeight}
               keyboardType="numeric"
               placeholder="Enter weight"
-              placeholderTextColor={isDark ? '#71717a' : '#9ca3af'}
+              placeholderTextColor={colors.textSecondary}
               returnKeyType="done"
               style={{
-                backgroundColor: isDark ? '#27272a' : '#f3f4f6',
-                borderColor: isDark ? '#3f3f46' : '#d1d5db',
-                color: isDark ? '#fff' : '#111',
+                backgroundColor: colors.inputBackground,
+                borderColor: colors.border,
+                color: colors.text,
                 height: 44,
                 fontSize: 16,
                 width: 120,
@@ -313,12 +310,12 @@ export default function CalculatorScreen({ navigation }: any) {
         {/* Result */}
         {result && (
           <View
-            style={{ backgroundColor: isDark ? '#18181b' : '#fff' }}
+            style={{ backgroundColor: colors.surface }}
             className="p-4 rounded-xl mb-4 shadow-sm"
           >
             <Text
               className="text-lg font-semibold mb-3"
-              style={{ color: isDark ? '#fff' : '#111' }}
+              style={{ color: colors.text }}
             >
               Result
             </Text>
@@ -328,7 +325,7 @@ export default function CalculatorScreen({ navigation }: any) {
                 {/* Plate breakdown text */}
                 <Text
                   className="text-xl font-bold mb-2"
-                  style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+                  style={{ color: colors.primary.main }}
                 >
                   {formatPlateResult(result)}
                 </Text>
@@ -336,7 +333,7 @@ export default function CalculatorScreen({ navigation }: any) {
                 {/* Total weight */}
                 <Text
                   className="text-2xl font-bold mb-4"
-                  style={{ color: isDark ? '#34d399' : '#22c55e' }}
+                  style={{ color: colors.success.main }}
                 >
                   = {result.achievedWeight} lbs
                 </Text>
@@ -344,10 +341,10 @@ export default function CalculatorScreen({ navigation }: any) {
                 {/* Warning if not exact */}
                 {result.remainder > 0 && (
                   <View
-                    style={{ backgroundColor: isDark ? '#422006' : '#fef3c7' }}
+                    style={{ backgroundColor: colors.warning.background }}
                     className="p-3 rounded-lg mb-4"
                   >
-                    <Text style={{ color: isDark ? '#fbbf24' : '#92400e' }}>
+                    <Text style={{ color: colors.warning.main }}>
                       Target: {targetWeight} lbs ({result.remainder} lbs short)
                     </Text>
                   </View>
@@ -365,13 +362,13 @@ export default function CalculatorScreen({ navigation }: any) {
                 </View>
                 <Text
                   className="text-sm mt-2"
-                  style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}
+                  style={{ color: colors.textSecondary }}
                 >
                   Plates shown for one side
                 </Text>
               </>
             ) : (
-              <Text style={{ color: isDark ? '#a3a3a3' : '#6b7280' }}>
+              <Text style={{ color: colors.textSecondary }}>
                 {parseFloat(targetWeight) < (selectedBarbell?.weight || 0)
                   ? `Target weight must be at least ${selectedBarbell?.weight} lbs (barbell weight)`
                   : 'No plates needed - just the bar!'}

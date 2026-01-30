@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
-import React, { useContext, useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -27,7 +27,7 @@ import {
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
@@ -127,7 +127,7 @@ export default function DayScreen({ navigation, route }: any) {
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
-  const { colorScheme } = useContext(ThemeContext);
+  const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
@@ -574,7 +574,7 @@ export default function DayScreen({ navigation, route }: any) {
               top: supersetInfo.isFirstInSuperset ? 8 : 0,
               bottom: supersetInfo.isLastInSuperset ? 8 : 0,
               width: 4,
-              backgroundColor: '#8B5CF6',
+              backgroundColor: colors.primary.main,
               borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 4 : 0,
               borderBottomLeftRadius: supersetInfo.isLastInSuperset ? 4 : 0,
               zIndex: 1,
@@ -589,7 +589,7 @@ export default function DayScreen({ navigation, route }: any) {
             ...borderRadius,
             marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
-            borderColor: supersetInfo.isInSuperset ? '#8B5CF6' : '#3B82F6',
+            borderColor: supersetInfo.isInSuperset ? colors.primary.main : '#3B82F6',
             borderTopWidth:
               supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
                 ? 1
@@ -602,7 +602,7 @@ export default function DayScreen({ navigation, route }: any) {
                   ? '#374151'
                   : '#E5E7EB'
                 : supersetInfo.isInSuperset
-                  ? '#8B5CF6'
+                  ? colors.primary.main
                   : '#3B82F6',
           }}
         >
@@ -691,7 +691,7 @@ export default function DayScreen({ navigation, route }: any) {
               >
                 <Text
                   style={{
-                    color: isDark ? '#60A5FA' : '#2563EB',
+                    color: colors.primary.main,
                     fontSize: 14,
                     fontWeight: '600',
                   }}
@@ -779,9 +779,9 @@ export default function DayScreen({ navigation, route }: any) {
         className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
         style={{
           borderWidth: hasSelectedActivity ? 2 : 0,
-          borderColor: '#8B5CF6',
+          borderColor: colors.primary.main,
           borderLeftWidth: 4,
-          borderLeftColor: '#8B5CF6',
+          borderLeftColor: colors.primary.main,
         }}
       >
         {/* Superset badge */}
@@ -796,7 +796,7 @@ export default function DayScreen({ navigation, route }: any) {
           <Text
             style={{
               marginLeft: 8,
-              color: isDark ? '#9CA3AF' : '#6B7280',
+              color: colors.textSecondary,
               fontSize: 12,
             }}
           >
@@ -836,7 +836,7 @@ export default function DayScreen({ navigation, route }: any) {
           className="flex-row items-center py-2"
           style={{
             borderTopWidth: 1,
-            borderTopColor: isDark ? '#374151' : '#E5E7EB',
+            borderTopColor: colors.border,
           }}
         >
           <TouchableOpacity
@@ -871,7 +871,7 @@ export default function DayScreen({ navigation, route }: any) {
           >
             <Text
               style={{
-                color: isDark ? '#60A5FA' : '#2563EB',
+                color: colors.primary.main,
                 fontSize: 14,
                 fontWeight: '600',
               }}
@@ -911,7 +911,7 @@ export default function DayScreen({ navigation, route }: any) {
               borderColor: isActive
                 ? '#10B981'
                 : isSuperset
-                  ? '#8B5CF6'
+                  ? colors.primary.main
                   : '#3B82F6',
               borderLeftWidth: isSuperset
                 ? 4
@@ -919,7 +919,7 @@ export default function DayScreen({ navigation, route }: any) {
                   ? 2
                   : 0,
               borderLeftColor: isSuperset
-                ? '#8B5CF6'
+                ? colors.primary.main
                 : isActive
                   ? '#10B981'
                   : '#3B82F6',
@@ -951,7 +951,7 @@ export default function DayScreen({ navigation, route }: any) {
                 <Ionicons
                   name="reorder-three"
                   size={24}
-                  color={isDark ? '#9CA3AF' : '#6B7280'}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
 
@@ -1003,7 +1003,7 @@ export default function DayScreen({ navigation, route }: any) {
                   >
                     <Text
                       style={{
-                        color: isDark ? '#60A5FA' : '#2563EB',
+                        color: colors.primary.main,
                         fontSize: 14,
                         fontWeight: '600',
                       }}
@@ -1086,7 +1086,7 @@ export default function DayScreen({ navigation, route }: any) {
             value={targetDate}
             onChangeText={setTargetDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+            placeholderTextColor={colors.textSecondary}
             className={`px-4 py-3 border rounded-lg mb-4 ${
               isDark
                 ? 'bg-gray-700 border-gray-600 text-white'
@@ -1235,10 +1235,7 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#000' : '#F9FAFB' }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -1248,9 +1245,9 @@ export default function DayScreen({ navigation, route }: any) {
           paddingTop: 120,
           paddingBottom: 0,
           paddingHorizontal: 16,
-          backgroundColor: isDark ? '#111' : '#fff',
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#222' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         {/* Left: Back/Cancel button */}
@@ -1290,7 +1287,7 @@ export default function DayScreen({ navigation, route }: any) {
             style={{
               fontSize: 17,
               fontWeight: '600',
-              color: isDark ? '#fff' : '#111',
+              color: colors.text,
               textAlign: 'center',
             }}
           >
@@ -1336,9 +1333,6 @@ export default function DayScreen({ navigation, route }: any) {
             }`}
           >
             {selectedActivities.size} selected
-            {isExpoGo || !DraggableFlatList
-              ? ' (use arrows to reorder)'
-              : ' (hold ≡ to drag)'}
           </Text>
 
           {/* Select/Deselect toggle */}
@@ -1389,7 +1383,8 @@ export default function DayScreen({ navigation, route }: any) {
           {selectedActivities.size >= 2 && (
             <TouchableOpacity
               onPress={handleCreateSuperset}
-              className="bg-purple-500 py-2 rounded-lg mb-2"
+              className="py-2 rounded-lg mb-2"
+              style={{ backgroundColor: colors.primary.main }}
             >
               <Text className="text-white text-center font-semibold">
                 Link as Superset
@@ -1405,9 +1400,9 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             paddingHorizontal: 16,
             paddingVertical: 12,
-            backgroundColor: isDark ? '#000' : '#F9FAFB',
+            backgroundColor: colors.background,
             borderBottomWidth: 1,
-            borderBottomColor: isDark ? '#222' : '#e5e7eb',
+            borderBottomColor: colors.border,
           }}
         >
           <View
@@ -1427,7 +1422,7 @@ export default function DayScreen({ navigation, route }: any) {
             )}
             <Text
               style={{
-                color: isDark ? '#a3a3a3' : '#6b7280',
+                color: colors.textSecondary,
                 fontSize: 14,
               }}
             >
@@ -1452,7 +1447,7 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'absolute',
           bottom: 50,
           right: 34,
-          backgroundColor: '#2563eb',
+          backgroundColor: colors.primary.main,
           borderRadius: 32,
           width: 56,
           height: 56,
