@@ -857,7 +857,7 @@ Use Markdown formatting. ${activityContext}`;
         <AppHeader>
           <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
         </AppHeader>
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 px-6 pt-4">
           <View
             className="items-center p-8 rounded-2xl"
             style={{
@@ -889,10 +889,10 @@ Use Markdown formatting. ${activityContext}`;
             <TouchableOpacity
               className="px-8 py-3 rounded-full"
               style={{ backgroundColor: colors.primary.main }}
-              onPress={() => navigation.navigate('Settings')}
+              onPress={() => navigation.navigate('Auth')}
             >
               <Text className="text-white font-semibold text-base">
-                Go to Settings
+                Sign In
               </Text>
             </TouchableOpacity>
           </View>
