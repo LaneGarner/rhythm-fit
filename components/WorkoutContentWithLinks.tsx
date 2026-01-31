@@ -26,17 +26,20 @@ export const WorkoutContentWithLinks = (
 
   // Custom link handler for YouTube links
   const handleLinkPress = (url: string) => {
+    // Decode URL-encoded exercise names
+    const decodedUrl = decodeURIComponent(url);
+
     // Check if this is an exercise name
     const isExercise = exerciseNames.some(
-      name => name.toLowerCase() === url.toLowerCase()
+      name => name.toLowerCase() === decodedUrl.toLowerCase()
     );
     const isActivityType = activityTypeLabels.some(
-      label => label.toLowerCase() === url.toLowerCase()
+      label => label.toLowerCase() === decodedUrl.toLowerCase()
     );
 
     if (isExercise || isActivityType) {
       const searchQuery = generateYouTubeSearchQuery({
-        searchTerm: url,
+        searchTerm: decodedUrl,
         searchType: isActivityType ? 'routine' : 'exercise',
       });
       openYouTubeSearch(searchQuery);
@@ -76,7 +79,7 @@ export const WorkoutContentWithLinks = (
         processedText = processedText.replace(backtickRegex, match => {
           const exerciseName = match.slice(1, -1);
           hasMatches = true;
-          return `[${exerciseName}](${exerciseName})`;
+          return `[${exerciseName}](${encodeURIComponent(exerciseName)})`;
         });
       }
 
@@ -88,7 +91,7 @@ export const WorkoutContentWithLinks = (
           processedText = processedText.replace(boldRegex, match => {
             const exerciseName = match.slice(2, -2);
             hasMatches = true;
-            return `**[${exerciseName}](${exerciseName})**`;
+            return `**[${exerciseName}](${encodeURIComponent(exerciseName)})**`;
           });
         }
       }
@@ -101,7 +104,7 @@ export const WorkoutContentWithLinks = (
           processedText = processedText.replace(bracketRegex, match => {
             const exerciseName = match.slice(1, -1);
             hasMatches = true;
-            return `[${exerciseName}](${exerciseName})`;
+            return `[${exerciseName}](${encodeURIComponent(exerciseName)})`;
           });
         }
       }
@@ -126,7 +129,7 @@ export const WorkoutContentWithLinks = (
             }
 
             hasMatches = true;
-            return `[${match}](${match})`;
+            return `[${match}](${encodeURIComponent(match)})`;
           });
         }
       }
