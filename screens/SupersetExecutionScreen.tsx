@@ -123,37 +123,29 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     // Update local state
     setLocalSets(prev => new Map(prev).set(activityId, updatedSets));
 
-    // Save to Redux
+    // Check if this activity's sets are all complete
+    const thisActivityAllComplete =
+      updatedSets.length > 0 && updatedSets.every(s => s.completed);
+
+    // Save to Redux (mark activity complete if all its sets are done)
     dispatch(
       updateActivity({
         ...activity,
         sets: updatedSets,
+        completed: thisActivityAllComplete || activity.completed,
       })
     );
 
-    // Check if all activities are complete
+    // Check if all activities in the superset are now complete
     const allComplete =
       supersetActivities.every(a => {
         if (a.id === activityId) {
-          return updatedSets.every(s => s.completed);
+          return thisActivityAllComplete;
         }
-        return a.completed || (a.sets?.every(s => s.completed) ?? true);
+        return a.completed || (a.sets?.every(s => s.completed) ?? false);
       }) && supersetActivities.length > 0;
 
     if (allComplete) {
-      // Mark all activities as complete
-      supersetActivities.forEach(a => {
-        if (!a.completed) {
-          dispatch(
-            updateActivity({
-              ...a,
-              completed: true,
-              sets: a.id === activityId ? updatedSets : a.sets,
-            })
-          );
-        }
-      });
-
       Alert.alert('Nice Work!', 'Superset complete!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

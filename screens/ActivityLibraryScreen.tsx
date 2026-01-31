@@ -37,6 +37,9 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showAllLibrary, setShowAllLibrary] = useState(false);
+
+  const LIBRARY_PREVIEW_COUNT = 10;
 
   const activityTypes = getActivityTypes();
 
@@ -219,7 +222,10 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 {libraryItems.length} custom{' '}
                 {libraryItems.length === 1 ? 'activity' : 'activities'}
               </Text>
-              {libraryItems.map(item => (
+              {(showAllLibrary
+                ? libraryItems
+                : libraryItems.slice(0, LIBRARY_PREVIEW_COUNT)
+              ).map(item => (
                 <View
                   key={item.id}
                   className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
@@ -336,6 +342,39 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                   </View>
                 </View>
               ))}
+
+              {/* Show More / Show Less Button */}
+              {libraryItems.length > LIBRARY_PREVIEW_COUNT && (
+                <TouchableOpacity
+                  onPress={() => setShowAllLibrary(!showAllLibrary)}
+                  hitSlop={14}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                    marginTop: 4,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showAllLibrary
+                      ? 'Show fewer activities'
+                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} more activities`
+                  }
+                >
+                  <Ionicons
+                    name={showAllLibrary ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.primary.main}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                    {showAllLibrary
+                      ? 'Show Less'
+                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} More`}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </ScrollView>

@@ -25,6 +25,7 @@ import DayScreen from './screens/DayScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
+import ExerciseStatsScreen from './screens/ExerciseStatsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SupersetExecutionScreen from './screens/SupersetExecutionScreen';
 
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   ActivityLibrary: undefined;
   EmojiLibrary: undefined;
   Equipment: undefined;
+  ExerciseStats: { exerciseName: string };
 };
 
 function AppContent() {
@@ -90,6 +92,7 @@ function AppContent() {
           />
           <Stack.Screen name="EmojiLibrary" component={EmojiLibraryScreen} />
           <Stack.Screen name="Equipment" component={EquipmentScreen} />
+          <Stack.Screen name="ExerciseStats" component={ExerciseStatsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
 

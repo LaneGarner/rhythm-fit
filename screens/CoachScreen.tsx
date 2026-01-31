@@ -78,6 +78,9 @@ export default function CoachScreen({ navigation }: any) {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+
+  const HISTORY_PREVIEW_COUNT = 5;
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
   // Add ref for ScrollView, last bot message, and last user message
@@ -798,52 +801,90 @@ Use Markdown formatting. ${activityContext}`;
               </Text>
             </View>
           ) : (
-            chatHistory.map(session => (
-              <TouchableOpacity
-                hitSlop={14}
-                key={session.id}
-                className={`p-4 rounded-lg mb-3 border ${
-                  isDark
-                    ? 'bg-[#18181b] border-[#222]'
-                    : 'bg-white border-gray-200'
-                }`}
-                onPress={() => loadSession(session)}
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text
-                      className="font-semibold"
-                      style={{ color: colors.text }}
+            <>
+              {(showAllHistory
+                ? chatHistory
+                : chatHistory.slice(0, HISTORY_PREVIEW_COUNT)
+              ).map(session => (
+                <TouchableOpacity
+                  hitSlop={14}
+                  key={session.id}
+                  className={`p-4 rounded-lg mb-3 border ${
+                    isDark
+                      ? 'bg-[#18181b] border-[#222]'
+                      : 'bg-white border-gray-200'
+                  }`}
+                  onPress={() => loadSession(session)}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text
+                        className="font-semibold"
+                        style={{ color: colors.text }}
+                      >
+                        {session.title}
+                      </Text>
+                      <Text
+                        style={{ color: colors.textSecondary }}
+                        className="text-sm mt-1"
+                      >
+                        {dayjs(session.timestamp).format('MMM D, YYYY h:mm A')}
+                      </Text>
+                      <Text
+                        style={{ color: colors.textSecondary }}
+                        className="text-sm"
+                      >
+                        {session.messages.length} messages
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      hitSlop={14}
+                      onPress={() => deleteSession(session.id)}
+                      className="p-2"
                     >
-                      {session.title}
-                    </Text>
-                    <Text
-                      style={{ color: colors.textSecondary }}
-                      className="text-sm mt-1"
-                    >
-                      {dayjs(session.timestamp).format('MMM D, YYYY h:mm A')}
-                    </Text>
-                    <Text
-                      style={{ color: colors.textSecondary }}
-                      className="text-sm"
-                    >
-                      {session.messages.length} messages
-                    </Text>
+                      <Ionicons
+                        name="trash"
+                        size={16}
+                        color={colors.error.main}
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    hitSlop={14}
-                    onPress={() => deleteSession(session.id)}
-                    className="p-2"
-                  >
-                    <Ionicons
-                      name="trash"
-                      size={16}
-                      color={colors.error.main}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              ))}
+
+              {/* Show More / Show Less Button */}
+              {chatHistory.length > HISTORY_PREVIEW_COUNT && (
+                <TouchableOpacity
+                  onPress={() => setShowAllHistory(!showAllHistory)}
+                  hitSlop={14}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                    marginTop: 4,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showAllHistory
+                      ? 'Show fewer sessions'
+                      : `Show ${chatHistory.length - HISTORY_PREVIEW_COUNT} more sessions`
+                  }
+                >
+                  <Ionicons
+                    name={showAllHistory ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.primary.main}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                    {showAllHistory
+                      ? 'Show Less'
+                      : `Show ${chatHistory.length - HISTORY_PREVIEW_COUNT} More`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </ScrollView>
       </View>

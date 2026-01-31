@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Keyboard,
   Modal,
@@ -39,6 +40,7 @@ import {
   getSupersetEmojis,
   getSupersetLabel,
   isSupersetComplete,
+  isActivityComplete,
   getSupersetCompletedCount,
 } from '../utils/supersetUtils';
 
@@ -72,6 +74,7 @@ export default function DayScreen({ navigation, route }: any) {
   );
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetDate, setTargetDate] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pending order state - only saved when user clicks Save
   const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
@@ -133,9 +136,30 @@ export default function DayScreen({ navigation, route }: any) {
 
   // Check if all activities for the day are completed
   const allCompleted =
-    dayActivities.length > 0 && dayActivities.every(a => a.completed);
-  const completedCount = dayActivities.filter(a => a.completed).length;
+    dayActivities.length > 0 && dayActivities.every(isActivityComplete);
+  const completedCount = dayActivities.filter(isActivityComplete).length;
   const totalCount = dayActivities.length;
+
+  // Check if only a single superset is selected (for unlink option)
+  const getSelectedSupersetId = (): string | null => {
+    if (selectedActivities.size < 2) return null;
+    const selectedActivityList = dayActivities.filter(a =>
+      selectedActivities.has(a.id)
+    );
+    // All selected must have a supersetId
+    if (!selectedActivityList.every(a => a.supersetId)) return null;
+    // All must have the same supersetId
+    const supersetIds = new Set(selectedActivityList.map(a => a.supersetId));
+    if (supersetIds.size !== 1) return null;
+    const supersetId = selectedActivityList[0].supersetId!;
+    // All activities in that superset must be selected
+    const allInSuperset = dayActivities.filter(
+      a => a.supersetId === supersetId
+    );
+    if (allInSuperset.length !== selectedActivityList.length) return null;
+    return supersetId;
+  };
+  const selectedSupersetId = getSelectedSupersetId();
 
   // Save pending order changes
   const saveChanges = useCallback(() => {
@@ -161,11 +185,27 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   const toggleActivitySelection = (activityId: string) => {
+    const activity = dayActivities.find(a => a.id === activityId);
     const newSelected = new Set(selectedActivities);
-    if (newSelected.has(activityId)) {
-      newSelected.delete(activityId);
+
+    // If activity is part of a superset, toggle all activities in the superset
+    if (activity?.supersetId) {
+      const supersetActivities = dayActivities.filter(
+        a => a.supersetId === activity.supersetId
+      );
+      const allSelected = supersetActivities.every(a => newSelected.has(a.id));
+      if (allSelected) {
+        supersetActivities.forEach(a => newSelected.delete(a.id));
+      } else {
+        supersetActivities.forEach(a => newSelected.add(a.id));
+      }
     } else {
-      newSelected.add(activityId);
+      // Single activity - toggle normally
+      if (newSelected.has(activityId)) {
+        newSelected.delete(activityId);
+      } else {
+        newSelected.add(activityId);
+      }
     }
     setSelectedActivities(newSelected);
   };
@@ -279,6 +319,7 @@ export default function DayScreen({ navigation, route }: any) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            setIsDeleting(true);
             for (const activityId of selectedActivities) {
               const activity = activities.find(a => a.id === activityId);
               dispatch(deleteActivity(activityId));
@@ -296,6 +337,7 @@ export default function DayScreen({ navigation, route }: any) {
             }
             setSelectedActivities(new Set());
             setIsBulkMode(false);
+            setIsDeleting(false);
           },
         },
       ]
@@ -539,10 +581,8 @@ export default function DayScreen({ navigation, route }: any) {
     const handlePress = () => {
       if (isBulkMode) {
         toggleActivitySelection(activity.id);
-      } else if (!activity.completed) {
-        navigation.navigate('ActivityExecution', { activityId: activity.id });
       } else {
-        showActivityOptions(activity);
+        navigation.navigate('ActivityExecution', { activityId: activity.id });
       }
     };
 
@@ -585,6 +625,7 @@ export default function DayScreen({ navigation, route }: any) {
         <TouchableOpacity
           onPress={handlePress}
           onLongPress={handleLongPress}
+          delayLongPress={400}
           className={`p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
           style={{
             ...borderRadius,
@@ -702,7 +743,7 @@ export default function DayScreen({ navigation, route }: any) {
                   Edit
                 </Text>
               </TouchableOpacity>
-            ) : activity.completed ? (
+            ) : isActivityComplete(activity) ? (
               <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
             ) : (
               <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
@@ -725,14 +766,150 @@ export default function DayScreen({ navigation, route }: any) {
     const supersetComplete = isSupersetComplete(activities);
     const completedCount = getSupersetCompletedCount(activities);
 
+    const showSupersetOptions = () => {
+      if (Platform.OS === 'ios') {
+        const options = ['Cancel'];
+        let markCompleteIndex = -1;
+        let breakSupersetIndex = -1;
+        let deleteIndex = -1;
+
+        if (supersetComplete) {
+          options.push('Mark Incomplete');
+          markCompleteIndex = 1;
+        } else {
+          options.push('Mark Complete');
+          markCompleteIndex = 1;
+        }
+        options.push('Break Superset');
+        breakSupersetIndex = options.length - 1;
+        options.push('Delete Superset');
+        deleteIndex = options.length - 1;
+
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options,
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: deleteIndex,
+            userInterfaceStyle: isDark ? 'dark' : 'light',
+          },
+          buttonIndex => {
+            if (buttonIndex === markCompleteIndex) {
+              // Toggle completion for all activities in superset
+              const newCompleted = !supersetComplete;
+              activities.forEach(a => {
+                const updatedSets = newCompleted
+                  ? a.sets
+                  : a.sets?.map(s => ({ ...s, completed: false }));
+                dispatch(
+                  updateActivity({
+                    ...a,
+                    completed: newCompleted,
+                    sets: updatedSets,
+                  })
+                );
+              });
+            } else if (buttonIndex === breakSupersetIndex) {
+              handleBreakSuperset(group.supersetId!);
+            } else if (buttonIndex === deleteIndex) {
+              Alert.alert(
+                'Delete Superset',
+                `Are you sure you want to delete all ${activities.length} activities in this superset?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      for (const a of activities) {
+                        dispatch(deleteActivity(a.id));
+                        try {
+                          const token = await getAccessToken();
+                          if (token) {
+                            await pushActivityChange(token, a, true);
+                          }
+                        } catch (err) {
+                          console.error('Failed to sync deletion:', err);
+                        }
+                      }
+                    },
+                  },
+                ]
+              );
+            }
+          }
+        );
+      } else {
+        Alert.alert('Superset Options', 'What would you like to do?', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: supersetComplete ? 'Mark Incomplete' : 'Mark Complete',
+            onPress: () => {
+              const newCompleted = !supersetComplete;
+              activities.forEach(a => {
+                const updatedSets = newCompleted
+                  ? a.sets
+                  : a.sets?.map(s => ({ ...s, completed: false }));
+                dispatch(
+                  updateActivity({
+                    ...a,
+                    completed: newCompleted,
+                    sets: updatedSets,
+                  })
+                );
+              });
+            },
+          },
+          {
+            text: 'Break Superset',
+            onPress: () => handleBreakSuperset(group.supersetId!),
+          },
+          {
+            text: 'Delete Superset',
+            style: 'destructive',
+            onPress: () => {
+              Alert.alert(
+                'Delete Superset',
+                `Are you sure you want to delete all ${activities.length} activities in this superset?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      for (const a of activities) {
+                        dispatch(deleteActivity(a.id));
+                        try {
+                          const token = await getAccessToken();
+                          if (token) {
+                            await pushActivityChange(token, a, true);
+                          }
+                        } catch (err) {
+                          console.error('Failed to sync deletion:', err);
+                        }
+                      }
+                    },
+                  },
+                ]
+              );
+            },
+          },
+        ]);
+      }
+    };
+
     const handlePress = () => {
       if (isBulkMode) {
-        // In bulk mode, select all activities in the superset
-        activities.forEach(a => {
-          if (!selectedActivities.has(a.id)) {
-            toggleActivitySelection(a.id);
-          }
-        });
+        // In bulk mode, toggle all activities in the superset
+        const allSelected = activities.every(a => selectedActivities.has(a.id));
+        const newSelected = new Set(selectedActivities);
+        if (allSelected) {
+          // Deselect all
+          activities.forEach(a => newSelected.delete(a.id));
+        } else {
+          // Select all
+          activities.forEach(a => newSelected.add(a.id));
+        }
+        setSelectedActivities(newSelected);
       } else {
         // Navigate to superset execution
         navigation.navigate('SupersetExecution', {
@@ -743,30 +920,7 @@ export default function DayScreen({ navigation, route }: any) {
 
     const handleLongPress = () => {
       if (!isBulkMode && group.supersetId) {
-        if (Platform.OS === 'ios') {
-          ActionSheetIOS.showActionSheetWithOptions(
-            {
-              options: ['Cancel', 'Break Superset'],
-              cancelButtonIndex: 0,
-              destructiveButtonIndex: 1,
-              userInterfaceStyle: isDark ? 'dark' : 'light',
-            },
-            buttonIndex => {
-              if (buttonIndex === 1) {
-                handleBreakSuperset(group.supersetId!);
-              }
-            }
-          );
-        } else {
-          Alert.alert('Superset Options', 'What would you like to do?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Break Superset',
-              style: 'destructive',
-              onPress: () => handleBreakSuperset(group.supersetId!),
-            },
-          ]);
-        }
+        showSupersetOptions();
       }
     };
 
@@ -779,6 +933,7 @@ export default function DayScreen({ navigation, route }: any) {
       <TouchableOpacity
         onPress={handlePress}
         onLongPress={handleLongPress}
+        delayLongPress={400}
         className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
         style={{
           borderWidth: hasSelectedActivity ? 2 : 0,
@@ -1385,12 +1540,30 @@ export default function DayScreen({ navigation, route }: any) {
           {/* Superset button - show when 2+ activities selected */}
           {selectedActivities.size >= 2 && (
             <TouchableOpacity
-              onPress={handleCreateSuperset}
+              onPress={() => {
+                if (selectedSupersetId) {
+                  dispatch(breakSuperset(selectedSupersetId));
+                  setSelectedActivities(new Set());
+                } else {
+                  handleCreateSuperset();
+                }
+              }}
               className="py-2 rounded-lg mb-2"
-              style={{ backgroundColor: colors.primary.main }}
+              style={{
+                backgroundColor: selectedSupersetId
+                  ? 'transparent'
+                  : colors.primary.main,
+                borderWidth: selectedSupersetId ? 2 : 0,
+                borderColor: colors.error.main,
+              }}
             >
-              <Text className="text-white text-center font-semibold">
-                Link as Superset
+              <Text
+                className="text-center font-semibold"
+                style={{
+                  color: selectedSupersetId ? colors.error.main : '#fff',
+                }}
+              >
+                {selectedSupersetId ? 'Unlink Superset' : 'Link as Superset'}
               </Text>
             </TouchableOpacity>
           )}
@@ -1449,6 +1622,28 @@ export default function DayScreen({ navigation, route }: any) {
       />
 
       <MoveToDateModal />
+
+      {/* Deleting overlay */}
+      {isDeleting && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 100,
+          }}
+        >
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={{ color: '#fff', marginTop: 12, fontSize: 16 }}>
+            Deleting...
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

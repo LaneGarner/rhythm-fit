@@ -43,10 +43,22 @@ export function getSupersetEmojisCompact(activities: Activity[]): string {
 }
 
 /**
+ * Check if an activity is complete (either marked complete or all sets done)
+ */
+export function isActivityComplete(activity: Activity): boolean {
+  if (activity.completed) return true;
+  // If activity has sets, check if all are complete
+  if (activity.sets && activity.sets.length > 0) {
+    return activity.sets.every(s => s.completed);
+  }
+  return false;
+}
+
+/**
  * Check if all activities in a superset are complete
  */
 export function isSupersetComplete(activities: Activity[]): boolean {
-  return activities.length > 0 && activities.every(a => a.completed);
+  return activities.length > 0 && activities.every(isActivityComplete);
 }
 
 /**
@@ -143,7 +155,7 @@ export function groupActivitiesWithSupersets(
  * Count completed activities in a superset
  */
 export function getSupersetCompletedCount(activities: Activity[]): number {
-  return activities.filter(a => a.completed).length;
+  return activities.filter(isActivityComplete).length;
 }
 
 /**

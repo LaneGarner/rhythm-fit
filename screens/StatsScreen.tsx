@@ -1,94 +1,230 @@
+import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
-import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { useSelector } from 'react-redux';
+import React, { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { loadActivitiesFromStorage } from '../redux/activitySlice';
+import { AppDispatch } from '../redux/store';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
+import { ActivityTypeChart } from '../components/charts/ActivityTypeChart';
+import { MuscleGroupChart } from '../components/charts/MuscleGroupChart';
+import { VolumeBarChart } from '../components/charts/VolumeBarChart';
 import { RootState } from '../redux/store';
+import {
+  calculateMuscleGroupStats,
+  calculateOverallStats,
+  calculatePersonalRecords,
+  calculateConsistencyStats,
+  calculateActivityTypeBreakdown,
+  getUniqueExercises,
+  calculateExerciseStats,
+  formatTime,
+} from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
 
+type TimeRange = 7 | 30 | 90 | 365;
+
 export default function StatsScreen({ navigation }: any) {
+  const dispatch = useDispatch<AppDispatch>();
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
-  // Calculate stats for the last 30 days (today and earlier only)
-  const thirtyDaysAgo = dayjs().subtract(30, 'days');
-  const today = dayjs().endOf('day');
-  const recentActivities = activities.filter(activity => {
-    const activityDate = dayjs(activity.date);
-    return (
-      (activityDate.isAfter(thirtyDaysAgo) && activityDate.isBefore(today)) ||
-      activityDate.isSame(today, 'day')
-    );
-  });
+  const [timeRange, setTimeRange] = useState<TimeRange>(30);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAllExercises, setShowAllExercises] = useState(false);
 
-  const completedActivities = recentActivities.filter(a => a.completed);
-  const completionRate =
-    recentActivities.length > 0
-      ? Math.round((completedActivities.length / recentActivities.length) * 100)
-      : 0;
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await dispatch(loadActivitiesFromStorage());
+    setRefreshing(false);
+  }, [dispatch]);
 
-  // Activity type breakdown
-  const typeCounts = recentActivities.reduce(
-    (acc, activity) => {
-      acc[activity.type] = (acc[activity.type] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
+  // Filter activities by time range (only completed activities for stats)
+  const filteredActivities = useMemo(() => {
+    const startDate = dayjs().subtract(timeRange, 'day');
+    const today = dayjs().endOf('day');
+    return activities.filter(activity => {
+      const activityDate = dayjs(activity.date);
+      return (
+        activity.completed &&
+        activityDate.isAfter(startDate) &&
+        (activityDate.isBefore(today) || activityDate.isSame(today, 'day'))
+      );
+    });
+  }, [activities, timeRange]);
+
+  // Calculate stats
+  const overallStats = useMemo(
+    () => calculateOverallStats(activities, timeRange),
+    [activities, timeRange]
   );
 
-  const mostCommonType =
-    Object.entries(typeCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'None';
+  const muscleStats = useMemo(
+    () => calculateMuscleGroupStats(filteredActivities),
+    [filteredActivities]
+  );
 
-  // Exercise breakdown - analyze exercises from activity sets
-  const exerciseCounts: Record<string, number> = {};
+  const uniqueExercises = useMemo(
+    () => getUniqueExercises(filteredActivities),
+    [filteredActivities]
+  );
 
-  recentActivities.forEach(activity => {
-    if (activity.sets) {
-      activity.sets.forEach(set => {
-        if (set.notes && set.notes.trim()) {
-          const exerciseName = set.notes.trim();
-          exerciseCounts[exerciseName] =
-            (exerciseCounts[exerciseName] || 0) + 1;
+  // Get top exercises by sessions
+  const topExercises = useMemo(() => {
+    return uniqueExercises
+      .map(name => {
+        const stats = calculateExerciseStats(filteredActivities, name);
+        return { name, sessions: stats?.sessions || 0, stats };
+      })
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 5);
+  }, [uniqueExercises, filteredActivities]);
+
+  // Personal records
+  const personalRecords = useMemo(
+    () => calculatePersonalRecords(activities, timeRange),
+    [activities, timeRange]
+  );
+
+  // Consistency stats
+  const consistencyStats = useMemo(
+    () => calculateConsistencyStats(activities, timeRange),
+    [activities, timeRange]
+  );
+
+  // Activity type breakdown
+  const activityTypeBreakdown = useMemo(
+    () => calculateActivityTypeBreakdown(filteredActivities),
+    [filteredActivities]
+  );
+
+  // Volume data (daily for 7D, weekly for longer ranges)
+  const volumeData = useMemo(() => {
+    const data: { label: string; value: number }[] = [];
+
+    if (timeRange === 7) {
+      // Daily data for 7D view
+      for (let i = 6; i >= 0; i--) {
+        const date = dayjs().subtract(i, 'day');
+        const label = date.format('M/D');
+
+        let volume = 0;
+        for (const activity of activities) {
+          const activityDate = dayjs(activity.date);
+          if (
+            activityDate.isSame(date, 'day') &&
+            activity.completed &&
+            activity.sets
+          ) {
+            for (const set of activity.sets) {
+              if (set.completed && set.weight && set.reps) {
+                volume += set.weight * set.reps;
+              }
+            }
+          }
         }
-      });
-    }
-  });
+        data.push({ label, value: volume });
+      }
+    } else {
+      // Weekly data for longer ranges
+      const weeksToShow = Math.min(Math.floor(timeRange / 7), 12);
 
-  // Get top 3 most common exercises
-  const topExercises = Object.entries(exerciseCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
+      for (let i = weeksToShow - 1; i >= 0; i--) {
+        const weekStart = dayjs().subtract(i * 7 + 6, 'day');
+        const weekEnd = dayjs().subtract(i * 7, 'day');
+        const label = weekStart.format('M/D');
+
+        let volume = 0;
+        for (const activity of activities) {
+          const activityDate = dayjs(activity.date);
+          if (
+            activityDate.isAfter(weekStart.subtract(1, 'day')) &&
+            activityDate.isBefore(weekEnd.add(1, 'day')) &&
+            activity.completed &&
+            activity.sets
+          ) {
+            for (const set of activity.sets) {
+              if (set.completed && set.weight && set.reps) {
+                volume += set.weight * set.reps;
+              }
+            }
+          }
+        }
+        data.push({ label, value: volume });
+      }
+    }
+
+    return data;
+  }, [activities, timeRange]);
+
+  const timeRangeOptions: { value: TimeRange; label: string }[] = [
+    { value: 7, label: '7D' },
+    { value: 30, label: '30D' },
+    { value: 90, label: '90D' },
+    { value: 365, label: '1Y' },
+  ];
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <AppHeader>
-        <AppHeaderTitle title="Your Stats" subtitle="Last 30 Days" />
+        <AppHeaderTitle
+          title="Your Stats"
+          subtitle={`Last ${timeRange} Days`}
+        />
       </AppHeader>
 
-      {/* Development Notice - Sticky */}
+      {/* Time Range Selector */}
       <View
         style={{
-          backgroundColor: colors.warning.background,
-          borderColor: colors.warning.light,
-          borderWidth: 1,
+          flexDirection: 'row',
+          backgroundColor: colors.surface,
           marginHorizontal: 16,
           marginTop: 16,
-          marginBottom: 0,
+          borderRadius: 12,
+          padding: 4,
         }}
-        className="p-3 rounded-lg"
       >
-        <Text
-          style={{ color: colors.warning.main }}
-          className="text-sm text-center"
-        >
-          Stats page is still under development
-        </Text>
+        {timeRangeOptions.map(option => (
+          <TouchableOpacity
+            key={option.value}
+            onPress={() => setTimeRange(option.value)}
+            style={{
+              flex: 1,
+              paddingVertical: 10,
+              borderRadius: 8,
+              backgroundColor:
+                timeRange === option.value
+                  ? colors.primary.main
+                  : 'transparent',
+            }}
+          >
+            <Text
+              style={{
+                textAlign: 'center',
+                color:
+                  timeRange === option.value ? '#fff' : colors.textSecondary,
+                fontWeight: timeRange === option.value ? '600' : '400',
+              }}
+            >
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4">
+      <ScrollView
+        className="flex-1 px-4 pt-4"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? '#fff' : colors.textSecondary}
+          />
+        }
+      >
         {/* Summary Cards */}
-        <View className="flex-row justify-between mb-6">
+        <View className="flex-row justify-between mb-4">
           <View
             style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
@@ -97,10 +233,10 @@ export default function StatsScreen({ navigation }: any) {
               className="text-2xl font-bold"
               style={{ color: colors.primary.main }}
             >
-              {recentActivities.length}
+              {overallStats.totalActivities}
             </Text>
             <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Total Activities
+              Activities
             </Text>
           </View>
           <View
@@ -111,27 +247,27 @@ export default function StatsScreen({ navigation }: any) {
               className="text-2xl font-bold"
               style={{ color: colors.success.main }}
             >
-              {completionRate}%
+              {overallStats.completionRate}%
             </Text>
             <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Completion Rate
+              Completion
             </Text>
           </View>
         </View>
 
-        <View className="flex-row justify-between mb-6">
+        <View className="flex-row justify-between mb-4">
           <View
             style={{ backgroundColor: colors.surface }}
             className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: colors.secondary.main }}
+              style={{ color: colors.warning.main }}
             >
-              {completedActivities.length}
+              {overallStats.currentStreak}
             </Text>
             <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Completed
+              Current Streak
             </Text>
           </View>
           <View
@@ -140,55 +276,312 @@ export default function StatsScreen({ navigation }: any) {
           >
             <Text
               className="text-2xl font-bold"
-              style={{ color: colors.warning.main }}
+              style={{ color: colors.secondary.main }}
             >
-              {Math.round((recentActivities.length / 30) * 7)}/week
+              {overallStats.averagePerWeek}/wk
             </Text>
             <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Avg. Per Week
+              Avg Activities
             </Text>
           </View>
         </View>
 
-        {/* Top 3 Most Common Exercises */}
+        {/* Recent PRs */}
+        {personalRecords.recentPRs.length > 0 && (
+          <View
+            style={{ backgroundColor: colors.surface }}
+            className="p-4 rounded-xl mb-4 shadow-sm"
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Ionicons name="trophy" size={20} color={colors.warning.main} />
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 16,
+                  fontWeight: '600',
+                  marginLeft: 8,
+                }}
+              >
+                Recent PRs
+              </Text>
+            </View>
+            {personalRecords.recentPRs.slice(0, 3).map((pr, index) => (
+              <TouchableOpacity
+                key={pr.exerciseName}
+                onPress={() =>
+                  navigation.navigate('ExerciseStats', {
+                    exerciseName: pr.exerciseName,
+                  })
+                }
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingVertical: 8,
+                  borderTopWidth: index > 0 ? 1 : 0,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '500' }}>
+                    {pr.exerciseName}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text
+                    style={{
+                      color: colors.warning.main,
+                      fontWeight: '600',
+                      marginRight: 8,
+                    }}
+                  >
+                    {pr.isNewWeightPR && `${pr.maxWeight} lbs`}
+                    {pr.isNewWeightPR && pr.isNewRepsPR && ' / '}
+                    {pr.isNewRepsPR && `${pr.maxReps} reps`}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Volume & Reps Stats */}
         <View
           style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-6 shadow-sm"
+          className="p-4 rounded-xl mb-4 shadow-sm"
         >
           <Text
             className="text-lg font-semibold mb-3"
             style={{ color: colors.text }}
           >
-            Top 3 Most Common Exercises
+            Training Summary
+          </Text>
+          <View className="flex-row flex-wrap">
+            <View style={{ width: '50%', marginBottom: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Total Sets
+              </Text>
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
+              >
+                {overallStats.totalSets}
+              </Text>
+            </View>
+            <View style={{ width: '50%', marginBottom: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Total Reps
+              </Text>
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
+              >
+                {overallStats.totalReps.toLocaleString()}
+              </Text>
+            </View>
+            <View style={{ width: '50%' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Total Volume
+              </Text>
+              <Text
+                style={{
+                  color: colors.primary.main,
+                  fontSize: 18,
+                  fontWeight: '600',
+                }}
+              >
+                {overallStats.totalVolume.toLocaleString()} lbs
+              </Text>
+            </View>
+            {overallStats.totalTime > 0 && (
+              <View style={{ width: '50%' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Total Time
+                </Text>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}
+                >
+                  {formatTime(overallStats.totalTime)}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Consistency Stats */}
+        <View
+          style={{ backgroundColor: colors.surface }}
+          className="p-4 rounded-xl mb-4 shadow-sm"
+        >
+          <Text
+            className="text-lg font-semibold mb-3"
+            style={{ color: colors.text }}
+          >
+            Consistency
+          </Text>
+          <View className="flex-row flex-wrap">
+            <View style={{ width: '50%', marginBottom: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Days/Week
+              </Text>
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
+              >
+                {consistencyStats.daysPerWeek}
+              </Text>
+            </View>
+            <View style={{ width: '50%', marginBottom: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Longest Gap
+              </Text>
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
+              >
+                {consistencyStats.longestGapDays} days
+              </Text>
+            </View>
+            {consistencyStats.bestWeek.sessions > 0 && (
+              <>
+                <View style={{ width: '50%' }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Best Week
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.success.main,
+                      fontSize: 18,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {consistencyStats.bestWeek.sessions} sessions
+                  </Text>
+                </View>
+                <View style={{ width: '50%' }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Week Of
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 14,
+                      fontWeight: '500',
+                    }}
+                  >
+                    {dayjs(consistencyStats.bestWeek.weekStart).format(
+                      'MMM D, YYYY'
+                    )}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Volume Chart */}
+        {volumeData.some(d => d.value > 0) && (
+          <VolumeBarChart
+            data={volumeData}
+            title={timeRange === 7 ? 'Daily Volume' : 'Weekly Volume'}
+            suffix=" lbs"
+          />
+        )}
+
+        {/* Activity Type Breakdown */}
+        {activityTypeBreakdown.length > 0 && (
+          <ActivityTypeChart
+            data={activityTypeBreakdown}
+            title="Activity Type Breakdown"
+          />
+        )}
+
+        {/* Muscle Group Distribution */}
+        {muscleStats.length > 0 && (
+          <MuscleGroupChart
+            data={muscleStats}
+            title="Muscle Group Distribution"
+          />
+        )}
+
+        {/* Top Exercises */}
+        <View
+          style={{ backgroundColor: colors.surface }}
+          className="p-4 rounded-xl mb-4 shadow-sm"
+        >
+          <Text
+            className="text-lg font-semibold mb-3"
+            style={{ color: colors.text }}
+          >
+            Top Exercises
           </Text>
           {topExercises.length > 0 ? (
-            topExercises.map(([exercise, count], index) => (
-              <View
-                key={exercise}
-                className="flex-row justify-between items-center py-2"
+            topExercises.map((exercise, index) => (
+              <TouchableOpacity
+                key={exercise.name}
+                onPress={() =>
+                  navigation.navigate('ExerciseStats', {
+                    exerciseName: exercise.name,
+                  })
+                }
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  borderBottomWidth: index < topExercises.length - 1 ? 1 : 0,
+                  borderBottomColor: colors.border,
+                }}
               >
-                <View className="flex-row items-center flex-1">
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flex: 1,
+                  }}
+                >
                   <Text
-                    className="text-lg mr-3"
-                    style={{ color: colors.primary.main }}
+                    style={{
+                      color: colors.primary.main,
+                      fontSize: 16,
+                      fontWeight: '600',
+                      marginRight: 12,
+                      width: 24,
+                    }}
                   >
                     #{index + 1}
                   </Text>
                   <Text
-                    style={{ color: colors.text }}
-                    className="capitalize flex-1"
-                    numberOfLines={2}
+                    style={{ color: colors.text, flex: 1 }}
+                    numberOfLines={1}
                   >
-                    {exercise}
+                    {exercise.name}
                   </Text>
                 </View>
-                <Text
-                  className="font-semibold ml-2"
-                  style={{ color: colors.text }}
-                >
-                  {count}
-                </Text>
-              </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ color: colors.textSecondary, marginRight: 8 }}>
+                    {exercise.sessions} sessions
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </TouchableOpacity>
             ))
           ) : (
             <Text
@@ -200,104 +593,83 @@ export default function StatsScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Activity Type Breakdown */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-6 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold"
-            style={{ color: colors.text }}
+        {/* All Exercises List */}
+        {uniqueExercises.length > 5 && (
+          <View
+            style={{ backgroundColor: colors.surface }}
+            className="p-4 rounded-xl mb-6 shadow-sm"
           >
-            Activity Types
-          </Text>
-          {Object.entries(typeCounts).length > 0 ? (
-            Object.entries(typeCounts)
-              .sort(([, a], [, b]) => b - a)
-              .map(([type, count]) => (
-                <View
-                  key={type}
-                  className="flex-row justify-between items-center py-2"
-                >
-                  <Text style={{ color: colors.text }} className="capitalize">
-                    {type.replace('-', ' ')}
-                  </Text>
-                  <Text
-                    className="font-semibold"
-                    style={{ color: colors.text }}
-                  >
-                    {count}
-                  </Text>
-                </View>
-              ))
-          ) : (
             <Text
-              style={{ color: colors.textSecondary }}
-              className="text-center py-4"
+              className="text-lg font-semibold mb-3"
+              style={{ color: colors.text }}
             >
-              No activities yet
+              All Exercises ({uniqueExercises.length})
             </Text>
-          )}
-        </View>
-
-        {/* Most Common Type */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-6 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold"
-            style={{ color: colors.text }}
-          >
-            Most Common Activity Type
-          </Text>
-          <Text style={{ color: colors.text }} className="capitalize">
-            {mostCommonType.replace('-', ' ')}
-          </Text>
-        </View>
-
-        {/* Recent Activity */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-6 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold"
-            style={{ color: colors.text }}
-          >
-            Recent Activity
-          </Text>
-          {recentActivities.slice(0, 5).map(activity => (
-            <View
-              key={activity.id}
-              className="flex-row items-center py-2 border-b border-gray-100"
-            >
-              <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
-              <View className="flex-1">
-                <Text className="font-medium" style={{ color: colors.text }}>
-                  {activity.name || activity.type}
-                </Text>
-                <Text
-                  style={{ color: colors.textSecondary }}
-                  className="text-sm"
+            {(showAllExercises ? uniqueExercises : uniqueExercises.slice(0, 5)).map(
+              (exercise, index, arr) => (
+                <TouchableOpacity
+                  key={exercise}
+                  onPress={() =>
+                    navigation.navigate('ExerciseStats', {
+                      exerciseName: exercise,
+                    })
+                  }
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingVertical: 10,
+                    borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
                 >
-                  {dayjs(activity.date).format('MMM D')}
-                </Text>
-              </View>
-              <View
-                className={`w-3 h-3 rounded-full ${activity.completed ? 'bg-green-500' : 'bg-gray-300'}`}
+                  <Text style={{ color: colors.text }} numberOfLines={1}>
+                    {exercise}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )
+            )}
+
+            {/* Show More / Show Less Button */}
+            <TouchableOpacity
+              onPress={() => setShowAllExercises(!showAllExercises)}
+              hitSlop={14}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 12,
+                marginTop: 8,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showAllExercises
+                  ? 'Show fewer exercises'
+                  : `Show ${uniqueExercises.length - 5} more exercises`
+              }
+            >
+              <Ionicons
+                name={showAllExercises ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.primary.main}
+                style={{ marginRight: 6 }}
               />
-            </View>
-          ))}
-          {recentActivities.length === 0 && (
-            <Text
-              style={{ color: colors.textSecondary }}
-              className="text-center py-4"
-            >
-              No recent activities
-            </Text>
-          )}
-        </View>
+              <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                {showAllExercises
+                  ? 'Show Less'
+                  : `Show ${uniqueExercises.length - 5} More`}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Spacer for bottom nav */}
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
