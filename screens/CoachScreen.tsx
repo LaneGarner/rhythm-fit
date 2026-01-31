@@ -293,7 +293,11 @@ export default function CoachScreen({ navigation }: any) {
       );
     });
 
-    let context = `Current activity context:\n`;
+    // Add today's date at the start for explicit date calculations
+    const today = dayjs();
+    const formattedToday = today.format('dddd, MMMM D, YYYY');
+
+    let context = `Today's date: ${formattedToday}\n\nCurrent activity context:\n`;
     context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
     context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
     context += `- This week's activities: ${thisWeekActivities.length}\n`;
