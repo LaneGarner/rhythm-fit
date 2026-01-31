@@ -41,6 +41,10 @@ import {
   deleteChatSession,
 } from '../services/chatApi';
 import { getEmojiForType } from '../services/activityTypeService';
+import {
+  buildCoachAnalytics,
+  formatAnalyticsForPrompt,
+} from '../services/coachAnalyticsService';
 import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
@@ -297,7 +301,17 @@ export default function CoachScreen({ navigation }: any) {
     const today = dayjs();
     const formattedToday = today.format('dddd, MMMM D, YYYY');
 
-    let context = `Today's date: ${formattedToday}\n\nCurrent activity context:\n`;
+    // Build analytics from activity data
+    const analytics = buildCoachAnalytics(activities);
+    const analyticsContext = formatAnalyticsForPrompt(analytics);
+
+    let context = `Today's date: ${formattedToday}\n\n`;
+
+    // Add user analytics section
+    context += `User analytics (last 30 days):\n${analyticsContext}\n\n`;
+
+    // Add activity context
+    context += `Current activity context:\n`;
     context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
     context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
     context += `- This week's activities: ${thisWeekActivities.length}\n`;
@@ -679,7 +693,7 @@ Use Markdown formatting. ${activityContext}`;
               ...conversationHistory,
               { role: 'user', content: currentInput },
             ],
-            max_tokens: 500,
+            max_tokens: 1000,
             temperature: 0.7,
           })
           .catch(error => {
