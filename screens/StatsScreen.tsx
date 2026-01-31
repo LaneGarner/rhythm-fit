@@ -174,47 +174,9 @@ export default function StatsScreen({ navigation }: any) {
         />
       </AppHeader>
 
-      {/* Time Range Selector */}
-      <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: colors.surface,
-          marginHorizontal: 16,
-          marginTop: 16,
-          borderRadius: 12,
-          padding: 4,
-        }}
-      >
-        {timeRangeOptions.map(option => (
-          <TouchableOpacity
-            key={option.value}
-            onPress={() => setTimeRange(option.value)}
-            style={{
-              flex: 1,
-              paddingVertical: 10,
-              borderRadius: 8,
-              backgroundColor:
-                timeRange === option.value
-                  ? colors.primary.main
-                  : 'transparent',
-            }}
-          >
-            <Text
-              style={{
-                textAlign: 'center',
-                color:
-                  timeRange === option.value ? '#fff' : colors.textSecondary,
-                fontWeight: timeRange === option.value ? '600' : '400',
-              }}
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <ScrollView
-        className="flex-1 px-4 pt-4"
+        className="flex-1"
+        stickyHeaderIndices={[personalRecords.recentPRs.length > 0 ? 1 : 0]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -223,6 +185,159 @@ export default function StatsScreen({ navigation }: any) {
           />
         }
       >
+        {/* Recent PRs - Scrolls with page */}
+        {personalRecords.recentPRs.length > 0 && (
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              marginHorizontal: 16,
+              marginTop: 16,
+              padding: 16,
+              borderRadius: 12,
+              borderLeftWidth: 3,
+              borderLeftColor: colors.warning.main,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="trophy" size={20} color={colors.warning.main} />
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: '600',
+                    marginLeft: 8,
+                  }}
+                >
+                  Recent PRs
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('PersonalRecords')}
+                hitSlop={14}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                accessibilityRole="button"
+                accessibilityLabel="View all personal records"
+              >
+                <Text
+                  style={{
+                    color: colors.primary.main,
+                    fontSize: 14,
+                    fontWeight: '500',
+                    marginRight: 4,
+                  }}
+                >
+                  View All
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.primary.main}
+                />
+              </TouchableOpacity>
+            </View>
+            {personalRecords.recentPRs.slice(0, 3).map((pr, index) => (
+              <TouchableOpacity
+                key={pr.exerciseName}
+                onPress={() =>
+                  navigation.navigate('ExerciseStats', {
+                    exerciseName: pr.exerciseName,
+                  })
+                }
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingVertical: 8,
+                  borderTopWidth: index > 0 ? 1 : 0,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '500' }}>
+                    {pr.exerciseName}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text
+                    style={{
+                      color: colors.warning.main,
+                      fontWeight: '600',
+                      marginRight: 8,
+                    }}
+                  >
+                    {pr.isNewWeightPR && `${pr.maxWeight} lbs`}
+                    {pr.isNewWeightPR && pr.isNewRepsPR && ' / '}
+                    {pr.isNewRepsPR && `${pr.maxReps} reps`}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Time Range Selector - Sticky header */}
+        <View
+          style={{
+            backgroundColor: colors.background,
+            paddingTop: 16,
+            paddingBottom: 8,
+            paddingHorizontal: 16,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              padding: 4,
+            }}
+          >
+            {timeRangeOptions.map(option => (
+              <TouchableOpacity
+                key={option.value}
+                onPress={() => setTimeRange(option.value)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor:
+                    timeRange === option.value
+                      ? colors.primary.main
+                      : 'transparent',
+                }}
+              >
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    color:
+                      timeRange === option.value ? '#fff' : colors.textSecondary,
+                    fontWeight: timeRange === option.value ? '600' : '400',
+                  }}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Stats Content */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
         {/* Summary Cards */}
         <View className="flex-row justify-between mb-4">
           <View
@@ -285,78 +400,6 @@ export default function StatsScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
-
-        {/* Recent PRs */}
-        {personalRecords.recentPRs.length > 0 && (
-          <View
-            style={{ backgroundColor: colors.surface }}
-            className="p-4 rounded-xl mb-4 shadow-sm"
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
-            >
-              <Ionicons name="trophy" size={20} color={colors.warning.main} />
-              <Text
-                style={{
-                  color: colors.text,
-                  fontSize: 16,
-                  fontWeight: '600',
-                  marginLeft: 8,
-                }}
-              >
-                Recent PRs
-              </Text>
-            </View>
-            {personalRecords.recentPRs.slice(0, 3).map((pr, index) => (
-              <TouchableOpacity
-                key={pr.exerciseName}
-                onPress={() =>
-                  navigation.navigate('ExerciseStats', {
-                    exerciseName: pr.exerciseName,
-                  })
-                }
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingVertical: 8,
-                  borderTopWidth: index > 0 ? 1 : 0,
-                  borderTopColor: colors.border,
-                }}
-              >
-                <View
-                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                >
-                  <Text style={{ color: colors.text, fontWeight: '500' }}>
-                    {pr.exerciseName}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text
-                    style={{
-                      color: colors.warning.main,
-                      fontWeight: '600',
-                      marginRight: 8,
-                    }}
-                  >
-                    {pr.isNewWeightPR && `${pr.maxWeight} lbs`}
-                    {pr.isNewWeightPR && pr.isNewRepsPR && ' / '}
-                    {pr.isNewRepsPR && `${pr.maxReps} reps`}
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
 
         {/* Volume & Reps Stats */}
         <View
@@ -668,8 +711,9 @@ export default function StatsScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Spacer for bottom nav */}
-        <View style={{ height: 100 }} />
+          {/* Spacer for bottom nav */}
+          <View style={{ height: 100 }} />
+        </View>
       </ScrollView>
     </View>
   );
