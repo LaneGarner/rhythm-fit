@@ -7,11 +7,16 @@ import { RootStackParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
 
 interface AppHeaderProps {
+  leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export default function AppHeader({ rightAction, children }: AppHeaderProps) {
+export default function AppHeader({
+  leftAction,
+  rightAction,
+  children,
+}: AppHeaderProps) {
   const { colors } = useTheme();
 
   // Use the navigation prop from React Navigation
@@ -29,7 +34,7 @@ export default function AppHeader({ rightAction, children }: AppHeaderProps) {
       }}
     >
       {/* Left: Optional (spacer if no action) */}
-      {rightAction ? rightAction : <View style={{ width: 40 }} />}
+      {leftAction ? leftAction : <View style={{ width: 40 }} />}
 
       {/* Center: Children */}
       <View className="flex-1 items-center justify-center">{children}</View>

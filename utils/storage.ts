@@ -165,6 +165,30 @@ export const clearUserData = async (): Promise<void> => {
   }
 };
 
+// Suggestions collapsed state storage
+const SUGGESTIONS_COLLAPSED_KEY = 'suggestions_collapsed';
+
+export const saveSuggestionsCollapsed = async (collapsed: boolean) => {
+  try {
+    await AsyncStorage.setItem(
+      SUGGESTIONS_COLLAPSED_KEY,
+      JSON.stringify(collapsed)
+    );
+  } catch (error) {
+    console.error('Error saving suggestions collapsed:', error);
+  }
+};
+
+export const loadSuggestionsCollapsed = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem(SUGGESTIONS_COLLAPSED_KEY);
+    return data ? JSON.parse(data) : false;
+  } catch (error) {
+    console.error('Error loading suggestions collapsed:', error);
+    return false;
+  }
+};
+
 // Generate random activities for a specific week (dev mode)
 // Uses cached exercises and activity types from backend
 export const generateRandomWeekActivities = (

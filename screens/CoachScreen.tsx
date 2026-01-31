@@ -14,6 +14,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Easing,
@@ -788,16 +789,6 @@ Use Markdown formatting. ${activityContext}`;
     return (
       <View className="flex-1">
         <ScrollView className="flex-1 px-4 pt-4">
-          <TouchableOpacity
-            hitSlop={14}
-            style={{ backgroundColor: colors.primary.main }}
-            className="px-4 py-3 rounded-lg mb-4 flex-row items-center justify-center"
-            onPress={startNewChat}
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text className="text-white font-medium ml-2">Start New Chat</Text>
-          </TouchableOpacity>
-
           {chatHistory.length === 0 ? (
             <View className="items-center py-8">
               <Ionicons
@@ -969,7 +960,28 @@ Use Markdown formatting. ${activityContext}`;
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <AppHeader>
+      <AppHeader
+        leftAction={
+          <TouchableOpacity
+            onPress={startNewChat}
+            hitSlop={14}
+            className="p-2 items-center"
+            accessibilityLabel="Start new chat"
+            accessibilityRole="button"
+          >
+            <Ionicons
+              name="create-outline"
+              size={24}
+              color={colors.textSecondary}
+            />
+            <Text
+              style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}
+            >
+              New Chat
+            </Text>
+          </TouchableOpacity>
+        }
+      >
         <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
       </AppHeader>
 
@@ -1049,50 +1061,57 @@ Use Markdown formatting. ${activityContext}`;
                 }
                 className={`mb-4 ${message.type === 'user' ? 'items-end' : 'items-start'}`}
               >
-                <TouchableOpacity
-                  onLongPress={() =>
-                    handleMessageLongPress(message.text, message.id)
-                  }
-                  delayLongPress={300}
-                  activeOpacity={0.8}
-                  className={`max-w-[80%] p-3 rounded-2xl ${
-                    message.type === 'user'
-                      ? isDark
-                        ? 'bg-blue-700'
-                        : 'bg-blue-500'
-                      : isDark
-                        ? 'bg-[#18181b] border border-[#222]'
-                        : 'bg-white border border-gray-200'
-                  }`}
-                >
-                  {copiedMessageId === message.id && (
-                    <View
-                      className="absolute -top-8 left-1/2 px-2 py-1 rounded"
-                      style={{
-                        backgroundColor: colors.success.main,
-                        transform: [{ translateX: -24 }],
-                      }}
-                    >
-                      <Text className="text-white text-xs font-medium">
-                        Copied!
-                      </Text>
-                    </View>
-                  )}
-                  {message.type === 'user' ? (
-                    <Text
-                      style={{
-                        color: '#fff',
-                      }}
-                    >
-                      {message.text}
-                    </Text>
-                  ) : (
+                {message.type === 'user' ? (
+                  <TouchableOpacity
+                    onLongPress={() =>
+                      handleMessageLongPress(message.text, message.id)
+                    }
+                    delayLongPress={300}
+                    activeOpacity={0.8}
+                    className={`max-w-[80%] p-3 rounded-2xl ${
+                      isDark ? 'bg-blue-700' : 'bg-blue-500'
+                    }`}
+                  >
+                    {copiedMessageId === message.id && (
+                      <View
+                        className="absolute -top-8 left-1/2 px-2 py-1 rounded"
+                        style={{
+                          backgroundColor: colors.success.main,
+                          transform: [{ translateX: -24 }],
+                        }}
+                      >
+                        <Text className="text-white text-xs font-medium">
+                          Copied!
+                        </Text>
+                      </View>
+                    )}
+                    <Text style={{ color: '#fff' }}>{message.text}</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onLongPress={() =>
+                      handleMessageLongPress(message.text, message.id)
+                    }
+                    delayLongPress={300}
+                    activeOpacity={0.8}
+                    className="w-full"
+                  >
+                    {copiedMessageId === message.id && (
+                      <View
+                        className="absolute -top-8 left-0 px-2 py-1 rounded"
+                        style={{ backgroundColor: colors.success.main }}
+                      >
+                        <Text className="text-white text-xs font-medium">
+                          Copied!
+                        </Text>
+                      </View>
+                    )}
                     <WorkoutContentWithLinks
                       text={message.text}
                       isDark={isDark}
                     />
-                  )}
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
             {isProcessing && (
@@ -1103,20 +1122,24 @@ Use Markdown formatting. ${activityContext}`;
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: glowAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.2, 0.8],
+                    outputRange: [0.3, 1],
                   }),
                   shadowRadius: glowAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [8, 18],
+                    outputRange: [8, 20],
                   }),
                   elevation: glowAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [2, 8],
+                    outputRange: [2, 10],
                   }),
                 }}
               >
                 <View
-                  className={`max-w-[80%] p-3 rounded-2xl ${isDark ? 'bg-[#18181b] border border-[#222]' : 'bg-white border border-gray-200'}`}
+                  className={`px-4 py-3 rounded-2xl ${
+                    isDark
+                      ? 'bg-[#18181b] border border-[#333]'
+                      : 'bg-white border border-gray-200'
+                  }`}
                 >
                   <Text style={{ color: colors.textSecondary }}>
                     Thinking...
@@ -1129,6 +1152,7 @@ Use Markdown formatting. ${activityContext}`;
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
             visible={!isProcessing}
+            chatSessionId={currentSessionId}
           />
 
           <View
@@ -1140,7 +1164,7 @@ Use Markdown formatting. ${activityContext}`;
           >
             <View className="flex-row items-center">
               <TextInput
-                className="flex-1 bg-gray-100 p-3 rounded-full mr-3"
+                className="flex-1 bg-gray-100 p-3 rounded-2xl mr-3"
                 placeholder="Ask your AI coach anything..."
                 placeholderTextColor={colors.textSecondary}
                 value={inputText}
@@ -1153,22 +1177,33 @@ Use Markdown formatting. ${activityContext}`;
                 style={{
                   color: colors.text,
                   backgroundColor: colors.inputBackground,
+                  maxHeight: 120,
                 }}
               />
               <TouchableOpacity
                 hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                 style={{
-                  backgroundColor: colors.primary.main,
-                  opacity: isProcessing ? 0.5 : 1,
+                  backgroundColor: isProcessing
+                    ? colors.textSecondary
+                    : colors.primary.main,
                 }}
-                className="w-10 h-10 rounded-full items-center justify-center"
+                className="w-11 h-11 rounded-full items-center justify-center"
                 onPress={handleSend}
                 disabled={isProcessing}
                 accessibilityRole="button"
-                accessibilityLabel="Send message"
+                accessibilityLabel={
+                  isProcessing ? 'Processing message' : 'Send message'
+                }
                 accessibilityState={{ disabled: isProcessing }}
+                accessibilityHint={
+                  isProcessing ? 'Please wait for response' : undefined
+                }
               >
-                <Text className="text-white text-lg">→</Text>
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-white text-lg">→</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

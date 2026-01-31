@@ -151,7 +151,7 @@ export default function TabNavigator() {
           tabBarLabel: 'Calculator',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'calculator' : 'calculator-outline'}
+              name={focused ? 'barbell' : 'barbell-outline'}
               size={24}
               color={color}
             />
