@@ -228,7 +228,7 @@ export const WorkoutContentWithLinks = (
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Markdown style={markdownStyles} onLinkPress={handleLinkPress}>
         {preprocessText(text)}
       </Markdown>
