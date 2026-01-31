@@ -667,7 +667,7 @@ export default function DayScreen({ navigation, route }: any) {
                       onPress={() => moveActivity(activity.id, 'up')}
                       disabled={isFirst}
                       className="p-1"
-                      hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                      hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                     >
                       <Ionicons
                         name="chevron-up"
@@ -681,7 +681,7 @@ export default function DayScreen({ navigation, route }: any) {
                       onPress={() => moveActivity(activity.id, 'down')}
                       disabled={isLast}
                       className="p-1"
-                      hitSlop={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                      hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                     >
                       <Ionicons
                         name="chevron-down"

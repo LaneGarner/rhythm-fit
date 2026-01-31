@@ -227,6 +227,8 @@ export default function EquipmentScreen({ navigation }: any) {
                 <TouchableOpacity
                   onPress={() => setShowAddBarbell(true)}
                   className="flex-row items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel="Add new barbell"
                 >
                   <Ionicons
                     name="add-circle"
@@ -253,6 +255,9 @@ export default function EquipmentScreen({ navigation }: any) {
                       equipment.selectedBarbellId === barbell.id ? 2 : 1,
                   }}
                   className="p-4 rounded-lg mb-2 flex-row justify-between items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${barbell.name}, ${barbell.weight} pounds${equipment.selectedBarbellId === barbell.id ? ', selected' : ''}`}
+                  accessibilityState={{ selected: equipment.selectedBarbellId === barbell.id }}
                 >
                   <View className="flex-row items-center">
                     {equipment.selectedBarbellId === barbell.id && (
@@ -276,7 +281,9 @@ export default function EquipmentScreen({ navigation }: any) {
                   {!barbell.isDefault && (
                     <TouchableOpacity
                       onPress={() => handleDeleteBarbell(barbell)}
-                      hitSlop={10}
+                      hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete ${barbell.name} barbell`}
                     >
                       <Ionicons
                         name="close-circle"
@@ -301,6 +308,8 @@ export default function EquipmentScreen({ navigation }: any) {
                 <TouchableOpacity
                   onPress={() => setShowAddPlate(true)}
                   className="flex-row items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel="Add new plate"
                 >
                   <Ionicons
                     name="add-circle"
@@ -338,6 +347,9 @@ export default function EquipmentScreen({ navigation }: any) {
                         elevation: 2,
                       }}
                       className="p-3 rounded-lg mr-3 mb-3 items-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={`${plate.weight} pound plate, ${plate.count} total`}
+                      accessibilityHint="Hold to edit count"
                     >
                       <View style={{ position: 'relative' }}>
                         <PlateIcon weight={plate.weight} size={60} />
@@ -378,6 +390,8 @@ export default function EquipmentScreen({ navigation }: any) {
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${plate.weight} pound plates`}
                         >
                           <Ionicons
                             name="close"
@@ -586,6 +600,9 @@ export default function EquipmentScreen({ navigation }: any) {
                             : '#e5e7eb',
                     }}
                     className="px-4 py-2 rounded-full mr-2 mb-2"
+                    accessibilityRole="button"
+                    accessibilityLabel={`${weight} pounds${newPlateWeight === weight.toString() ? ', selected' : ''}`}
+                    accessibilityState={{ selected: newPlateWeight === weight.toString() }}
                   >
                     <Text
                       style={{
@@ -700,6 +717,9 @@ export default function EquipmentScreen({ navigation }: any) {
                               : '#e5e7eb',
                       }}
                       className="px-4 py-2 rounded-full mr-2 mb-2"
+                      accessibilityRole="button"
+                      accessibilityLabel={`${count} plates${editPlateCount === count.toString() ? ', selected' : ''}`}
+                      accessibilityState={{ selected: editPlateCount === count.toString() }}
                     >
                       <Text
                         style={{

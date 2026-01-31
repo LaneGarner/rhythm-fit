@@ -1013,6 +1013,7 @@ Use Markdown formatting. ${activityContext}`;
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
             ref={scrollViewRef}
+            accessibilityLiveRegion="polite"
           >
             {messages.map((message, index) => (
               <View
@@ -1135,7 +1136,7 @@ Use Markdown formatting. ${activityContext}`;
                 }}
               />
               <TouchableOpacity
-                hitSlop={14}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                 style={{
                   backgroundColor: colors.primary.main,
                   opacity: isProcessing ? 0.5 : 1,
@@ -1143,6 +1144,9 @@ Use Markdown formatting. ${activityContext}`;
                 className="w-10 h-10 rounded-full items-center justify-center"
                 onPress={handleSend}
                 disabled={isProcessing}
+                accessibilityRole="button"
+                accessibilityLabel="Send message"
+                accessibilityState={{ disabled: isProcessing }}
               >
                 <Text className="text-white text-lg">→</Text>
               </TouchableOpacity>

@@ -719,6 +719,7 @@ export default function WeeklyScreen({ navigation }: any) {
               const allCompleted =
                 dayActivities.length > 0 &&
                 dayActivities.every(a => a.completed);
+              const completedCount = dayActivities.filter(a => a.completed).length;
               return (
                 <TouchableOpacity
                   key={day.date}
@@ -739,6 +740,9 @@ export default function WeeklyScreen({ navigation }: any) {
                   }
                   delayLongPress={500}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${day.dayName} ${day.dayNumber}${day.isToday ? ', today' : ''}, ${dayActivities.length === 0 ? 'no activities' : `${completedCount} of ${dayActivities.length} activities completed`}`}
+                  accessibilityHint="Tap to view day, hold for options"
                 >
                   <View className="mb-2">
                     <Text

@@ -97,7 +97,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                       marginLeft: 8,
                     }}
                   >
-                    Recently Broken
+                    Recently Broken PRs
                   </Text>
                 </View>
                 {personalRecords.recentPRs.map((pr) => (

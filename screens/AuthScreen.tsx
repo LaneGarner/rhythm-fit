@@ -200,14 +200,22 @@ export default function AuthScreen() {
 
             {/* Error Message */}
             {error && (
-              <View className="mt-4 p-3 rounded-lg bg-red-500/10">
+              <View
+                className="mt-4 p-3 rounded-lg bg-red-500/10"
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+              >
                 <Text className="text-red-500 text-center">{error}</Text>
               </View>
             )}
 
             {/* Success Message */}
             {successMessage && (
-              <View className="mt-4 p-3 rounded-lg bg-green-500/10">
+              <View
+                className="mt-4 p-3 rounded-lg bg-green-500/10"
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+              >
                 <Text className="text-green-500 text-center">
                   {successMessage}
                 </Text>
@@ -220,6 +228,9 @@ export default function AuthScreen() {
               style={{ backgroundColor: colors.primary.main }}
               onPress={handleSubmit}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={isLogin ? 'Sign In' : 'Create Account'}
+              accessibilityState={{ disabled: isLoading }}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />

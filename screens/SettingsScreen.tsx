@@ -326,6 +326,9 @@ export default function SettingsScreen({ navigation }: any) {
                       ? colors.primary.main
                       : colors.backgroundTertiary,
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Sunday${firstDayOfWeek === 0 ? ', selected' : ''}`}
+                accessibilityState={{ selected: firstDayOfWeek === 0 }}
               >
                 <Text
                   className="text-center font-medium"
@@ -349,6 +352,9 @@ export default function SettingsScreen({ navigation }: any) {
                       ? colors.primary.main
                       : colors.backgroundTertiary,
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Monday${firstDayOfWeek === 1 ? ', selected' : ''}`}
+                accessibilityState={{ selected: firstDayOfWeek === 1 }}
               >
                 <Text
                   className="text-center font-medium"

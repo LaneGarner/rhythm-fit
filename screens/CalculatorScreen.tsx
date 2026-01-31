@@ -89,6 +89,8 @@ export default function CalculatorScreen({ navigation }: any) {
         <TouchableOpacity
           onPress={() => navigation.navigate('Equipment')}
           className="mb-4"
+          accessibilityRole="button"
+          accessibilityLabel="Configure Equipment"
         >
           <Text style={{ color: '#3b82f6' }}>Configure Equipment</Text>
         </TouchableOpacity>
@@ -111,6 +113,13 @@ export default function CalculatorScreen({ navigation }: any) {
               borderColor: colors.border,
             }}
             className="p-3 rounded-lg border flex-row justify-between items-center"
+            accessibilityRole="button"
+            accessibilityLabel={
+              selectedBarbell
+                ? `Barbell: ${selectedBarbell.name}, ${selectedBarbell.weight} pounds. Tap to change`
+                : 'Select barbell'
+            }
+            accessibilityState={{ expanded: showBarbellPicker }}
           >
             <Text style={{ color: colors.text }}>
               {selectedBarbell
@@ -139,6 +148,9 @@ export default function CalculatorScreen({ navigation }: any) {
                           : '#f9fafb',
                   }}
                   className="p-3 rounded-lg mb-1"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${barbell.name}, ${barbell.weight} pounds${selectedBarbell?.id === barbell.id ? ', selected' : ''}`}
+                  accessibilityState={{ selected: selectedBarbell?.id === barbell.id }}
                 >
                   <Text
                     style={{
@@ -193,6 +205,8 @@ export default function CalculatorScreen({ navigation }: any) {
               onPress={handleCalculate}
               style={{ backgroundColor: '#3b82f6', height: 44 }}
               className="ml-3 px-6 rounded-lg justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Calculate plate breakdown"
             >
               <Text className="text-white font-semibold">Calculate</Text>
             </TouchableOpacity>
@@ -280,6 +294,9 @@ export default function CalculatorScreen({ navigation }: any) {
                                   : '#e5e7eb',
                           }}
                           className="px-3 py-1.5 rounded-full mr-2"
+                          accessibilityRole="button"
+                          accessibilityLabel={`${weight} pounds${targetWeight === weight.toString() ? ', selected' : ''}`}
+                          accessibilityState={{ selected: targetWeight === weight.toString() }}
                         >
                           <Text
                             className="text-sm"
@@ -302,6 +319,8 @@ export default function CalculatorScreen({ navigation }: any) {
                     <TouchableOpacity
                       onPress={() => setShowAllWeights(!showAllWeights)}
                       className="py-1"
+                      accessibilityRole="button"
+                      accessibilityLabel={showAllWeights ? 'Show fewer weight options' : 'Show more weight options'}
                     >
                       <Text style={{ color: '#3b82f6' }}>
                         {showAllWeights ? 'Show less' : 'Show more'}

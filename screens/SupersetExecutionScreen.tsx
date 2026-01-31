@@ -439,6 +439,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               borderStyle: 'dashed',
                               borderColor: colors.border,
                             }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Add set to ${activity.name}`}
                           >
                             <View className="flex-row items-center justify-between">
                               <View className="flex-row items-center flex-1">
@@ -531,12 +533,14 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             <TouchableOpacity
                               onPress={() => showSetOptions(activity.id, set)}
                               hitSlop={{
-                                top: 12,
-                                bottom: 12,
-                                left: 12,
-                                right: 12,
+                                top: 14,
+                                bottom: 14,
+                                left: 14,
+                                right: 14,
                               }}
                               className="p-1"
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set options for ${activity.name}`}
                             >
                               <Ionicons
                                 name="ellipsis-vertical"
@@ -594,6 +598,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                           right: 16,
                                         }}
                                         style={{ marginLeft: 8 }}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Open plate calculator"
                                       >
                                         <PlateIcon variant="tooltip" />
                                       </TouchableOpacity>
@@ -664,6 +670,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 ? colors.success.main
                                 : colors.border,
                             }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${activity.name} set ${set.completed ? 'completed' : 'incomplete'}. Tap to ${set.completed ? 'mark incomplete' : 'mark complete'}`}
+                            accessibilityState={{ checked: set.completed }}
                           >
                             <Text
                               className="text-center font-semibold"
@@ -713,6 +722,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                 borderColor: colors.border,
                 alignItems: 'center',
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Add another superset round"
             >
               <Ionicons
                 name="add-circle-outline"
@@ -745,6 +756,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         <TouchableOpacity
           onPress={handleCompleteAll}
           className="bg-green-500 py-3 px-6 rounded-lg"
+          accessibilityRole="button"
+          accessibilityLabel="Complete all sets in superset"
         >
           <Text className="text-white text-center font-semibold text-lg">
             Complete All

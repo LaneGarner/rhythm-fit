@@ -22,6 +22,9 @@ export default function ProgressBar({ completed, total }: ProgressBarProps) {
         overflow: 'hidden',
         position: 'relative',
       }}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: total, now: completed }}
+      accessibilityLabel={`${completed} of ${total} completed`}
     >
       {/* Background track with gray border */}
       <View

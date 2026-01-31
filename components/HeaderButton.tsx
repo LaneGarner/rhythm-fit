@@ -24,6 +24,8 @@ export default function HeaderButton({
       hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
       onPress={onPress}
       style={[{ paddingVertical: 4, paddingHorizontal: 8 }, style]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <Text
         style={{

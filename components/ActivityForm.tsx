@@ -335,7 +335,7 @@ export default function ActivityForm({
       >
         {/* Left: Cancel button */}
         <TouchableOpacity
-          hitSlop={14}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           onPress={onCancel}
           style={{
             position: 'absolute',
@@ -382,7 +382,7 @@ export default function ActivityForm({
         </View>
         {/* Right: Save button */}
         <TouchableOpacity
-          hitSlop={14}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           onPress={handleSave}
           style={{
             position: 'absolute',
@@ -710,7 +710,7 @@ export default function ActivityForm({
                   }}
                 />
                 <TouchableOpacity
-                  hitSlop={8}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                   onPress={async () => {
                     if (customEmojiText) {
                       setSelectedEmoji(customEmojiText);
@@ -739,7 +739,7 @@ export default function ActivityForm({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  hitSlop={8}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                   onPress={() => {
                     setShowCustomEmojiInput(false);
                     setCustomEmojiText('');

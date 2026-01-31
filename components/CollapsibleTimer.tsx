@@ -101,6 +101,9 @@ export default function CollapsibleTimer({
       <TouchableOpacity
         onPress={() => setIsExpanded(!isExpanded)}
         className="flex-row items-center justify-between p-4"
+        accessibilityRole="button"
+        accessibilityLabel={`Timer${isPaused ? ', paused' : ''}. ${isExpanded ? 'Collapse' : 'Expand'}`}
+        accessibilityState={{ expanded: isExpanded }}
       >
         <View className="flex-row items-center">
           <Ionicons
@@ -145,6 +148,9 @@ export default function CollapsibleTimer({
                     ? colors.primary.main
                     : colors.backgroundTertiary,
               }}
+              accessibilityRole="button"
+              accessibilityLabel={`Count up timer${timer.mode === 'countUp' ? ', selected' : ''}`}
+              accessibilityState={{ selected: timer.mode === 'countUp', disabled: timer.isRunning }}
             >
               <Text
                 className="font-semibold"
@@ -168,6 +174,9 @@ export default function CollapsibleTimer({
                     ? colors.primary.main
                     : colors.backgroundTertiary,
               }}
+              accessibilityRole="button"
+              accessibilityLabel={`Count down timer${timer.mode === 'countDown' ? ', selected' : ''}`}
+              accessibilityState={{ selected: timer.mode === 'countDown', disabled: timer.isRunning }}
             >
               <Text
                 className="font-semibold"
@@ -282,6 +291,8 @@ export default function CollapsibleTimer({
                 }
                 className="bg-green-500 px-6 py-2 rounded-lg"
                 style={{ minWidth: 102, alignItems: 'center' }}
+                accessibilityRole="button"
+                accessibilityLabel={showResumeButton ? 'Resume timer' : 'Start timer'}
               >
                 <Text className="text-white font-semibold">
                   {showResumeButton ? 'Resume' : 'Start'}
@@ -292,6 +303,8 @@ export default function CollapsibleTimer({
                 onPress={handlePauseTimer}
                 className="bg-yellow-500 px-6 py-2 rounded-lg"
                 style={{ minWidth: 102, alignItems: 'center' }}
+                accessibilityRole="button"
+                accessibilityLabel="Pause timer"
               >
                 <Text className="text-white font-semibold">Pause</Text>
               </TouchableOpacity>
@@ -301,6 +314,9 @@ export default function CollapsibleTimer({
               disabled={!isTimerOwner}
               className={`px-6 py-2 rounded-lg ${isTimerOwner ? 'bg-red-500' : 'bg-gray-400'}`}
               style={{ minWidth: 80, alignItems: 'center' }}
+              accessibilityRole="button"
+              accessibilityLabel="Reset timer"
+              accessibilityState={{ disabled: !isTimerOwner }}
             >
               <Text className="text-white font-semibold">Reset</Text>
             </TouchableOpacity>

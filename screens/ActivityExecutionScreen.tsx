@@ -398,7 +398,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </Text>
                 <TouchableOpacity
                   onPress={handleAddSet}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add new set"
                 >
                   <Text
                     style={{
@@ -445,8 +447,10 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                       </Text>
                       <TouchableOpacity
                         onPress={() => showSetOptions(set)}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                         className="p-1"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Set ${index + 1} options`}
                       >
                         <Ionicons
                           name="ellipsis-vertical"
@@ -493,6 +497,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                                     right: 16,
                                   }}
                                   style={{ marginLeft: 8 }}
+                                  accessibilityRole="button"
+                                  accessibilityLabel="Open plate calculator"
                                 >
                                   <PlateIcon variant="tooltip" />
                                 </TouchableOpacity>
@@ -556,6 +562,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                           ? colors.success.main
                           : colors.border,
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set ${index + 1} ${set.completed ? 'completed' : 'incomplete'}. Tap to ${set.completed ? 'mark incomplete' : 'mark complete'}`}
+                      accessibilityState={{ checked: set.completed }}
                     >
                       <Text
                         className={`text-center font-semibold text-lg`}
@@ -600,6 +609,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         <TouchableOpacity
           onPress={handleCompleteActivity}
           className="bg-green-500 py-3 px-6 rounded-lg"
+          accessibilityRole="button"
+          accessibilityLabel="Complete activity"
         >
           <Text className="text-white text-center font-semibold text-lg">
             Complete Activity
