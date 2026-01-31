@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   ScrollView,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import PlateIcon from '../components/PlateIcon';
+import { useTutorial } from '../components/tutorial';
 import {
   Barbell,
   EquipmentConfig,
@@ -29,6 +30,41 @@ export default function CalculatorScreen({ navigation }: any) {
   const [result, setResult] = useState<PlateResult | null>(null);
   const [showBarbellPicker, setShowBarbellPicker] = useState(false);
   const [showAllWeights, setShowAllWeights] = useState(false);
+
+  // Tutorial target registration
+  const {
+    registerTarget,
+    unregisterTarget,
+    isActive: tutorialActive,
+  } = useTutorial();
+  const configureEquipmentRef = useRef<View>(null);
+
+  const registerConfigureEquipment = useCallback(() => {
+    if (configureEquipmentRef.current) {
+      configureEquipmentRef.current.measure(
+        (x, y, width, height, pageX, pageY) => {
+          registerTarget('configure-equipment-link', {
+            x,
+            y,
+            width,
+            height,
+            pageX,
+            pageY,
+          });
+        }
+      );
+    }
+  }, [registerTarget]);
+
+  useEffect(() => {
+    if (tutorialActive) {
+      const timer = setTimeout(registerConfigureEquipment, 100);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      unregisterTarget('configure-equipment-link');
+    };
+  }, [tutorialActive, registerConfigureEquipment, unregisterTarget]);
 
   useFocusEffect(
     useCallback(() => {
@@ -87,6 +123,8 @@ export default function CalculatorScreen({ navigation }: any) {
       <ScrollView className="flex-1 px-4 pt-4">
         {/* Equipment link */}
         <TouchableOpacity
+          ref={configureEquipmentRef}
+          onLayout={registerConfigureEquipment}
           onPress={() => navigation.navigate('Equipment')}
           className="mb-4"
           accessibilityRole="button"
@@ -150,7 +188,9 @@ export default function CalculatorScreen({ navigation }: any) {
                   className="p-3 rounded-lg mb-1"
                   accessibilityRole="button"
                   accessibilityLabel={`${barbell.name}, ${barbell.weight} pounds${selectedBarbell?.id === barbell.id ? ', selected' : ''}`}
-                  accessibilityState={{ selected: selectedBarbell?.id === barbell.id }}
+                  accessibilityState={{
+                    selected: selectedBarbell?.id === barbell.id,
+                  }}
                 >
                   <Text
                     style={{
@@ -296,7 +336,9 @@ export default function CalculatorScreen({ navigation }: any) {
                           className="px-3 py-1.5 rounded-full mr-2"
                           accessibilityRole="button"
                           accessibilityLabel={`${weight} pounds${targetWeight === weight.toString() ? ', selected' : ''}`}
-                          accessibilityState={{ selected: targetWeight === weight.toString() }}
+                          accessibilityState={{
+                            selected: targetWeight === weight.toString(),
+                          }}
                         >
                           <Text
                             className="text-sm"
@@ -320,7 +362,11 @@ export default function CalculatorScreen({ navigation }: any) {
                       onPress={() => setShowAllWeights(!showAllWeights)}
                       className="py-1"
                       accessibilityRole="button"
-                      accessibilityLabel={showAllWeights ? 'Show fewer weight options' : 'Show more weight options'}
+                      accessibilityLabel={
+                        showAllWeights
+                          ? 'Show fewer weight options'
+                          : 'Show more weight options'
+                      }
                     >
                       <Text style={{ color: '#3b82f6' }}>
                         {showAllWeights ? 'Show less' : 'Show more'}

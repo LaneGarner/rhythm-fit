@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Alert,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
+import { useTutorial } from '../components/tutorial';
 import { HEADER_STYLES } from '../constants';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,9 +24,49 @@ export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
   const { firstDayOfWeek, setFirstDayOfWeek } = usePreferences();
+  const {
+    startTutorial,
+    registerTarget,
+    unregisterTarget,
+    isActive: tutorialActive,
+  } = useTutorial();
   const dispatch = useDispatch();
+  const equipmentRef = useRef<View>(null);
+
+  const registerEquipment = useCallback(() => {
+    if (equipmentRef.current) {
+      equipmentRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget('equipment-setting', {
+          x,
+          y,
+          width,
+          height,
+          pageX,
+          pageY,
+        });
+      });
+    }
+  }, [registerTarget]);
+
+  useEffect(() => {
+    if (tutorialActive) {
+      const timer = setTimeout(registerEquipment, 100);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      unregisterTarget('equipment-setting');
+    };
+  }, [tutorialActive, registerEquipment, unregisterTarget]);
   const isDark = colorScheme === 'dark';
   const showAccountSection = isConfigured && isBackendConfigured();
+
+  const handleStartTutorial = () => {
+    navigation.navigate('Main', { screen: 'Weekly' });
+    // Small delay to ensure navigation completes
+    setTimeout(() => {
+      startTutorial();
+    }, 100);
+  };
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -196,6 +237,8 @@ export default function SettingsScreen({ navigation }: any) {
           }}
         >
           <TouchableOpacity
+            ref={equipmentRef}
+            onLayout={registerEquipment}
             hitSlop={14}
             className="p-4 flex-row items-center justify-between"
             onPress={() => navigation.navigate('Equipment')}
@@ -392,6 +435,41 @@ export default function SettingsScreen({ navigation }: any) {
                 true: colors.primary.main,
               }}
               thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* App Tutorial */}
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={handleStartTutorial}
+            accessibilityRole="button"
+            accessibilityLabel="Start app tutorial"
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                App Tutorial
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Learn how to use Rhythm
+              </Text>
+            </View>
+            <Ionicons
+              name="play-circle-outline"
+              size={22}
+              color={colors.primary.main}
             />
           </TouchableOpacity>
         </View>

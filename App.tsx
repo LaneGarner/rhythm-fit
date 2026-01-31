@@ -1,12 +1,16 @@
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
+import { TutorialProvider } from './components/tutorial';
 import TabNavigator from './navigation/TabNavigator';
 import { store } from './redux/store';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
@@ -22,6 +26,7 @@ import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
 import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
 import DayScreen from './screens/DayScreen';
+import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
@@ -41,6 +46,7 @@ export type RootStackParamList = {
   Day: { date: string };
   Activity: { date: string };
   ActivityExecution: { activityId: string };
+  DemoActivityExecution: undefined;
   SupersetExecution: { supersetId: string };
   EditActivity: { activityId: string };
   Settings: undefined;
@@ -51,7 +57,12 @@ export type RootStackParamList = {
   PersonalRecords: undefined;
 };
 
-function AppContent() {
+interface AppContentProps {
+  navigationRef: React.RefObject<NavigationContainerRef<RootStackParamList> | null>;
+  shouldShowTutorial: boolean;
+}
+
+function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
   const { colorScheme } = useTheme();
 
   // Lock orientation to portrait
@@ -65,9 +76,12 @@ function AppContent() {
   }, []);
 
   return (
-    <>
+    <TutorialProvider
+      navigationRef={navigationRef}
+      shouldAutoStart={shouldShowTutorial}
+    >
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           initialRouteName="Main"
           screenOptions={{
@@ -81,6 +95,10 @@ function AppContent() {
           <Stack.Screen
             name="ActivityExecution"
             component={ActivityExecutionScreen}
+          />
+          <Stack.Screen
+            name="DemoActivityExecution"
+            component={DemoActivityExecutionScreen}
           />
           <Stack.Screen
             name="SupersetExecution"
@@ -104,18 +122,25 @@ function AppContent() {
 
       {/* Dev mode button */}
       <DevModeButton visible={DEV_MODE_ENABLED} />
-    </>
+    </TutorialProvider>
   );
 }
 
 function AppInitializer() {
-  const { isReady } = useAppInitialization();
+  const { isReady, shouldShowTutorial } = useAppInitialization();
+  const navigationRef =
+    useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   if (!isReady) {
     return <SplashScreen />;
   }
 
-  return <AppContent />;
+  return (
+    <AppContent
+      navigationRef={navigationRef}
+      shouldShowTutorial={shouldShowTutorial}
+    />
+  );
 }
 
 export default function App() {

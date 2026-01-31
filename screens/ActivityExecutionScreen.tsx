@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,7 +16,7 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
-import PlateIcon from '../components/PlateIcon';
+import SetCard from '../components/SetCard';
 import {
   ContentHeader,
   StickyCompactHeader,
@@ -28,7 +27,6 @@ import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, SetData, TrackingField } from '../types/activity';
-import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
@@ -414,172 +412,23 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </TouchableOpacity>
               </View>
 
-              {/* Add refs for set inputs */}
-              {sets.map((set, index) => {
-                const fields: TrackingField[] = activity.trackingFields || [
-                  'weight',
-                  'reps',
-                ];
-                const fieldConfig: Record<
-                  TrackingField,
-                  { label: string; unit?: string }
-                > = {
-                  weight: { label: 'Weight', unit: 'lbs' },
-                  reps: { label: 'Reps' },
-                  time: { label: 'Time', unit: 'm:ss' },
-                  distance: { label: 'Distance', unit: 'mi' },
-                };
-
-                return (
-                  <View
-                    key={set.id}
-                    className={`p-4 rounded-lg mb-3 ${
-                      isDark ? 'bg-gray-800' : 'bg-white'
-                    } shadow-sm`}
-                  >
-                    <View className="flex-row justify-between items-center mb-3">
-                      <Text
-                        className={`text-lg font-semibold ${
-                          isDark ? 'text-white' : 'text-gray-900'
-                        }`}
-                      >
-                        Set {index + 1}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => showSetOptions(set)}
-                        hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                        className="p-1"
-                        accessibilityRole="button"
-                        accessibilityLabel={`Set ${index + 1} options`}
-                      >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={20}
-                          color={colors.textSecondary}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <View className="flex-row flex-wrap" style={{ gap: 12 }}>
-                      {fields.map(field => {
-                        const config = fieldConfig[field];
-                        const value = set[field];
-                        const showPlateIcon =
-                          field === 'weight' &&
-                          activity.type === 'weight-training';
-
-                        return (
-                          <View
-                            key={field}
-                            style={{
-                              flex: 1,
-                              minWidth: fields.length > 2 ? '45%' : undefined,
-                            }}
-                          >
-                            <View className="flex-row items-center mb-1">
-                              <Text
-                                className={`text-sm ${
-                                  isDark ? 'text-gray-300' : 'text-gray-600'
-                                }`}
-                              >
-                                {config.label}
-                                {config.unit ? ` (${config.unit})` : ''}
-                              </Text>
-                              {showPlateIcon && (
-                                <TouchableOpacity
-                                  onPress={() => {
-                                    setActiveSetId(set.id);
-                                    setShowPlateCalculator(true);
-                                  }}
-                                  hitSlop={{
-                                    top: 16,
-                                    bottom: 16,
-                                    left: 16,
-                                    right: 16,
-                                  }}
-                                  style={{ marginLeft: 8 }}
-                                  accessibilityRole="button"
-                                  accessibilityLabel="Open plate calculator"
-                                >
-                                  <PlateIcon variant="tooltip" />
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                            <TextInput
-                              ref={ref => {
-                                setInputRefs.current[`${set.id}-${field}`] =
-                                  ref;
-                              }}
-                              value={
-                                field === 'time'
-                                  ? secondsToTimeString(value)
-                                  : value != null
-                                    ? value.toString()
-                                    : ''
-                              }
-                              onChangeText={text =>
-                                handleUpdateSet(set.id, {
-                                  [field]:
-                                    field === 'time'
-                                      ? timeStringToSeconds(text)
-                                      : text
-                                        ? parseFloat(text)
-                                        : undefined,
-                                })
-                              }
-                              keyboardType={
-                                field === 'time'
-                                  ? 'numbers-and-punctuation'
-                                  : 'numeric'
-                              }
-                              className={`px-3 py-2 border rounded-lg ${
-                                isDark
-                                  ? 'bg-gray-700 border-gray-600 text-white'
-                                  : 'bg-white border-gray-300 text-gray-900'
-                              }`}
-                              placeholder={field === 'time' ? '0:00' : ''}
-                              placeholderTextColor={colors.textSecondary}
-                              returnKeyType="done"
-                              onSubmitEditing={() => Keyboard.dismiss()}
-                              onFocus={() => {
-                                setTimeout(() => {
-                                  scrollToSetInput(`${set.id}-${field}`);
-                                }, 100);
-                              }}
-                            />
-                          </View>
-                        );
-                      })}
-                    </View>
-                    <TouchableOpacity
-                      onPress={() =>
-                        handleUpdateSet(set.id, { completed: !set.completed })
-                      }
-                      className="mt-5 px-4 py-4 rounded-lg"
-                      style={{
-                        backgroundColor: colors.surface,
-                        borderWidth: 2,
-                        borderColor: set.completed
-                          ? colors.success.main
-                          : colors.border,
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set ${index + 1} ${set.completed ? 'completed' : 'incomplete'}. Tap to ${set.completed ? 'mark incomplete' : 'mark complete'}`}
-                      accessibilityState={{ checked: set.completed }}
-                    >
-                      <Text
-                        className={`text-center font-semibold text-lg`}
-                        style={{
-                          color: set.completed
-                            ? colors.success.main
-                            : colors.textSecondary,
-                        }}
-                      >
-                        {set.completed ? 'Completed  ✅' : 'Mark Complete'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
+              {sets.map((set, index) => (
+                <SetCard
+                  key={set.id}
+                  set={set}
+                  index={index}
+                  trackingFields={activity.trackingFields || ['weight', 'reps']}
+                  activityType={activity.type}
+                  onUpdateSet={handleUpdateSet}
+                  onShowOptions={showSetOptions}
+                  onOpenPlateCalculator={setId => {
+                    setActiveSetId(setId);
+                    setShowPlateCalculator(true);
+                  }}
+                  inputRefs={setInputRefs}
+                  onInputFocus={scrollToSetInput}
+                />
+              ))}
 
               {sets.length === 0 && (
                 <Text

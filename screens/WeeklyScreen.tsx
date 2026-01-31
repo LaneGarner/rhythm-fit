@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
+import { useTutorial } from '../components/tutorial';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -45,6 +46,17 @@ export default function WeeklyScreen({ navigation }: any) {
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getAccessToken } = useAuth();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
+  const {
+    registerTarget,
+    unregisterTarget,
+    isActive: tutorialActive,
+    currentStep,
+  } = useTutorial();
+
+  // Refs for tutorial targets
+  const weekHeaderRef = useRef<View>(null);
+  const addButtonRef = useRef<View>(null);
+  const settingsButtonRef = useRef<View>(null);
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -207,6 +219,106 @@ export default function WeeklyScreen({ navigation }: any) {
     });
     return unsubscribe;
   }, [navigation]);
+
+  // Tutorial target registration
+  const registerWeekHeader = useCallback(() => {
+    if (weekHeaderRef.current) {
+      weekHeaderRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget('week-header', { x, y, width, height, pageX, pageY });
+      });
+    }
+  }, [registerTarget]);
+
+  const registerAddButton = useCallback(() => {
+    if (addButtonRef.current) {
+      addButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget('floating-add-button', {
+          x,
+          y,
+          width,
+          height,
+          pageX,
+          pageY,
+        });
+      });
+    }
+  }, [registerTarget]);
+
+  const registerTodayCard = useCallback(() => {
+    if (currentDayRef.current) {
+      currentDayRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget('today-card', { x, y, width, height, pageX, pageY });
+      });
+    }
+  }, [registerTarget]);
+
+  const registerSettingsButton = useCallback(() => {
+    if (settingsButtonRef.current) {
+      settingsButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget('settings-button', { x, y, width, height, pageX, pageY });
+      });
+    }
+  }, [registerTarget]);
+
+  // Register targets when tutorial becomes active
+  useEffect(() => {
+    if (tutorialActive) {
+      const timer = setTimeout(() => {
+        registerWeekHeader();
+        registerAddButton();
+        registerTodayCard();
+        registerSettingsButton();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      unregisterTarget('week-header');
+      unregisterTarget('floating-add-button');
+      unregisterTarget('today-card');
+      unregisterTarget('settings-button');
+    };
+  }, [
+    tutorialActive,
+    registerWeekHeader,
+    registerAddButton,
+    registerTodayCard,
+    registerSettingsButton,
+    unregisterTarget,
+  ]);
+
+  // Scroll to today and re-measure when day-view step is active
+  useEffect(() => {
+    if (
+      currentStep?.id === 'day-view' &&
+      currentDayRef.current &&
+      scrollViewRef.current
+    ) {
+      // Scroll to today's card first
+      currentDayRef.current.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({
+            y: Math.max(0, y - 20),
+            animated: false,
+          });
+          // Re-measure after scroll completes
+          setTimeout(registerTodayCard, 150);
+        },
+        () => {}
+      );
+    }
+  }, [currentStep, registerTodayCard]);
+
+  // Re-register tutorial targets after week navigation
+  useEffect(() => {
+    if (tutorialActive) {
+      const timer = setTimeout(() => {
+        registerWeekHeader();
+        registerTodayCard();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [weekOffset, tutorialActive, registerWeekHeader, registerTodayCard]);
 
   const handleSinglePress = (direction: 'prev' | 'next') => {
     navigateWeek(direction);
@@ -614,6 +726,8 @@ export default function WeeklyScreen({ navigation }: any) {
       >
         {/* Settings Button - right positioned */}
         <TouchableOpacity
+          ref={settingsButtonRef}
+          nativeID="settings-button"
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
           accessibilityLabel="Settings"
@@ -627,7 +741,11 @@ export default function WeeklyScreen({ navigation }: any) {
         </TouchableOpacity>
 
         {/* Centered week navigation container */}
-        <View style={{ alignItems: 'center' }}>
+        <View
+          ref={weekHeaderRef}
+          onLayout={registerWeekHeader}
+          style={{ alignItems: 'center' }}
+        >
           {/* Top container: carets + week label with space-between */}
           <View
             style={{
@@ -714,16 +832,19 @@ export default function WeeklyScreen({ navigation }: any) {
             className="flex-1 px-4 pt-4"
             contentContainerStyle={{ paddingBottom: 100 }}
           >
-            {weekDays.map(day => {
+            {weekDays.map((day, index) => {
               const dayActivities = getActivitiesForDate(day.date);
               const allCompleted =
                 dayActivities.length > 0 &&
                 dayActivities.every(a => a.completed);
-              const completedCount = dayActivities.filter(a => a.completed).length;
+              const completedCount = dayActivities.filter(
+                a => a.completed
+              ).length;
               return (
                 <TouchableOpacity
                   key={day.date}
                   ref={day.isToday ? currentDayRef : undefined}
+                  onLayout={day.isToday ? registerTodayCard : undefined}
                   className={`mb-4 p-4 rounded-xl shadow-sm`}
                   style={{
                     backgroundColor: day.isToday
@@ -893,6 +1014,8 @@ export default function WeeklyScreen({ navigation }: any) {
       </GestureDetector>
 
       <FloatingAddButton
+        ref={addButtonRef}
+        onLayout={registerAddButton}
         onPress={() =>
           navigation.navigate('Activity', {
             date: dayjs().format('YYYY-MM-DD'),

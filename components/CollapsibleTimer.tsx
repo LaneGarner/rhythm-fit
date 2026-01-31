@@ -150,7 +150,10 @@ export default function CollapsibleTimer({
               }}
               accessibilityRole="button"
               accessibilityLabel={`Count up timer${timer.mode === 'countUp' ? ', selected' : ''}`}
-              accessibilityState={{ selected: timer.mode === 'countUp', disabled: timer.isRunning }}
+              accessibilityState={{
+                selected: timer.mode === 'countUp',
+                disabled: timer.isRunning,
+              }}
             >
               <Text
                 className="font-semibold"
@@ -176,7 +179,10 @@ export default function CollapsibleTimer({
               }}
               accessibilityRole="button"
               accessibilityLabel={`Count down timer${timer.mode === 'countDown' ? ', selected' : ''}`}
-              accessibilityState={{ selected: timer.mode === 'countDown', disabled: timer.isRunning }}
+              accessibilityState={{
+                selected: timer.mode === 'countDown',
+                disabled: timer.isRunning,
+              }}
             >
               <Text
                 className="font-semibold"
@@ -292,7 +298,9 @@ export default function CollapsibleTimer({
                 className="bg-green-500 px-6 py-2 rounded-lg"
                 style={{ minWidth: 102, alignItems: 'center' }}
                 accessibilityRole="button"
-                accessibilityLabel={showResumeButton ? 'Resume timer' : 'Start timer'}
+                accessibilityLabel={
+                  showResumeButton ? 'Resume timer' : 'Start timer'
+                }
               >
                 <Text className="text-white font-semibold">
                   {showResumeButton ? 'Resume' : 'Start'}

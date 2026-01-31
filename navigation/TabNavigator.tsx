@@ -1,19 +1,53 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import CalculatorScreen from '../screens/CalculatorScreen';
 import CoachScreen from '../screens/CoachScreen';
 import StatsScreen from '../screens/StatsScreen';
 import WeeklyScreen from '../screens/WeeklyScreen';
 import { useTheme } from '../theme/ThemeContext';
+import { useTutorial } from '../components/tutorial';
 
 const Tab = createBottomTabNavigator();
 
-// Custom tab bar button component
-const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
+// Custom tab bar button component with tutorial target registration
+const CustomTabBarButton = ({
+  children,
+  onPress,
+  accessibilityState,
+  targetId,
+}: any) => {
   const { colors } = useTheme();
+  const {
+    registerTarget,
+    unregisterTarget,
+    isActive: tutorialActive,
+  } = useTutorial();
   const isFocused = accessibilityState?.selected;
+  const viewRef = useRef<View>(null);
+
+  const handleLayout = useCallback(() => {
+    if (targetId && viewRef.current) {
+      viewRef.current.measure((x, y, width, height, pageX, pageY) => {
+        registerTarget(targetId, { x, y, width, height, pageX, pageY });
+      });
+    }
+  }, [targetId, registerTarget]);
+
+  // Re-register when tutorial becomes active or tab focus changes
+  React.useEffect(() => {
+    if (tutorialActive && targetId) {
+      // Small delay to ensure layout is stable
+      const timer = setTimeout(handleLayout, 100);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      if (targetId) {
+        unregisterTarget(targetId);
+      }
+    };
+  }, [tutorialActive, targetId, handleLayout, unregisterTarget, isFocused]);
 
   return (
     <TouchableOpacity
@@ -28,6 +62,8 @@ const CustomTabBarButton = ({ children, onPress, accessibilityState }: any) => {
       accessibilityState={accessibilityState}
     >
       <View
+        ref={viewRef}
+        onLayout={handleLayout}
         style={{
           marginTop: 5,
           alignItems: 'center',
@@ -86,7 +122,9 @@ export default function TabNavigator() {
               color={color}
             />
           ),
-          tabBarButton: props => <CustomTabBarButton {...props} />,
+          tabBarButton: props => (
+            <CustomTabBarButton {...props} targetId="weekly-tab-button" />
+          ),
         }}
       />
       <Tab.Screen
@@ -101,7 +139,9 @@ export default function TabNavigator() {
               color={color}
             />
           ),
-          tabBarButton: props => <CustomTabBarButton {...props} />,
+          tabBarButton: props => (
+            <CustomTabBarButton {...props} targetId="stats-tab-button" />
+          ),
         }}
       />
       <Tab.Screen
@@ -116,7 +156,9 @@ export default function TabNavigator() {
               color={color}
             />
           ),
-          tabBarButton: props => <CustomTabBarButton {...props} />,
+          tabBarButton: props => (
+            <CustomTabBarButton {...props} targetId="calculator-tab-button" />
+          ),
         }}
       />
       <Tab.Screen
@@ -131,7 +173,9 @@ export default function TabNavigator() {
               color={color}
             />
           ),
-          tabBarButton: props => <CustomTabBarButton {...props} />,
+          tabBarButton: props => (
+            <CustomTabBarButton {...props} targetId="coach-tab-button" />
+          ),
         }}
       />
     </Tab.Navigator>

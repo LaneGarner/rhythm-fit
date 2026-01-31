@@ -257,7 +257,9 @@ export default function EquipmentScreen({ navigation }: any) {
                   className="p-4 rounded-lg mb-2 flex-row justify-between items-center"
                   accessibilityRole="button"
                   accessibilityLabel={`${barbell.name}, ${barbell.weight} pounds${equipment.selectedBarbellId === barbell.id ? ', selected' : ''}`}
-                  accessibilityState={{ selected: equipment.selectedBarbellId === barbell.id }}
+                  accessibilityState={{
+                    selected: equipment.selectedBarbellId === barbell.id,
+                  }}
                 >
                   <View className="flex-row items-center">
                     {equipment.selectedBarbellId === barbell.id && (
@@ -602,7 +604,9 @@ export default function EquipmentScreen({ navigation }: any) {
                     className="px-4 py-2 rounded-full mr-2 mb-2"
                     accessibilityRole="button"
                     accessibilityLabel={`${weight} pounds${newPlateWeight === weight.toString() ? ', selected' : ''}`}
-                    accessibilityState={{ selected: newPlateWeight === weight.toString() }}
+                    accessibilityState={{
+                      selected: newPlateWeight === weight.toString(),
+                    }}
                   >
                     <Text
                       style={{
@@ -719,7 +723,9 @@ export default function EquipmentScreen({ navigation }: any) {
                       className="px-4 py-2 rounded-full mr-2 mb-2"
                       accessibilityRole="button"
                       accessibilityLabel={`${count} plates${editPlateCount === count.toString() ? ', selected' : ''}`}
-                      accessibilityState={{ selected: editPlateCount === count.toString() }}
+                      accessibilityState={{
+                        selected: editPlateCount === count.toString(),
+                      }}
                     >
                       <Text
                         style={{

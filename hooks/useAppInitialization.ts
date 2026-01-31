@@ -14,6 +14,7 @@ import { fetchLibrary } from '../services/libraryService';
 import { fetchEmojiLibrary } from '../services/emojiLibraryService';
 import { AppDispatch, RootState } from '../redux/store';
 import { Activity } from '../types/activity';
+import { loadTutorialCompleted } from '../utils/storage';
 
 const MIN_SPLASH_TIME_MS = 1000;
 
@@ -33,6 +34,8 @@ export function useAppInitialization() {
   const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [syncComplete, setSyncComplete] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [tutorialReady, setTutorialReady] = useState(false);
+  const [shouldShowTutorial, setShouldShowTutorial] = useState(false);
 
   // Use ref to avoid re-triggering sync when activities change
   const activitiesRef = useRef<Activity[]>([]);
@@ -53,7 +56,7 @@ export function useAppInitialization() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Load activities from storage
+  // Load activities from storage and check tutorial status
   useEffect(() => {
     dispatch(loadActivitiesFromStorage()).then(() => {
       setActivitiesLoaded(true);
@@ -61,6 +64,11 @@ export function useAppInitialization() {
     // Initialize exercise database and activity types from backend
     initializeExercises();
     initializeActivityTypes();
+    // Check if tutorial has been completed
+    loadTutorialCompleted().then(completed => {
+      setShouldShowTutorial(!completed);
+      setTutorialReady(true);
+    });
   }, [dispatch]);
 
   // Track when activities finish loading (from thunk state)
@@ -130,7 +138,11 @@ export function useAppInitialization() {
   }, [isConfigured]);
 
   const isReady =
-    activitiesLoaded && authReady && syncComplete && minTimeElapsed;
+    activitiesLoaded &&
+    authReady &&
+    syncComplete &&
+    minTimeElapsed &&
+    tutorialReady;
 
-  return { isReady };
+  return { isReady, shouldShowTutorial };
 }

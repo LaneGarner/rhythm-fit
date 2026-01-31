@@ -100,7 +100,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                     Recently Broken PRs
                   </Text>
                 </View>
-                {personalRecords.recentPRs.map((pr) => (
+                {personalRecords.recentPRs.map(pr => (
                   <TouchableOpacity
                     key={`recent-${pr.exerciseName}`}
                     onPress={() =>
@@ -168,7 +168,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
               >
                 All-Time Records ({personalRecords.records.length})
               </Text>
-              {personalRecords.records.map((pr) => (
+              {personalRecords.records.map(pr => (
                 <TouchableOpacity
                   key={`all-${pr.exerciseName}`}
                   onPress={() =>

@@ -877,7 +877,9 @@ Use Markdown formatting. ${activityContext}`;
                     color={colors.primary.main}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                  <Text
+                    style={{ color: colors.primary.main, fontWeight: '500' }}
+                  >
                     {showAllHistory
                       ? 'Show Less'
                       : `Show ${chatHistory.length - HISTORY_PREVIEW_COUNT} More`}

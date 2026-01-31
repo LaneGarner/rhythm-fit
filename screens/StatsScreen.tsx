@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadActivitiesFromStorage } from '../redux/activitySlice';
 import { AppDispatch } from '../redux/store';
@@ -261,7 +267,11 @@ export default function StatsScreen({ navigation }: any) {
                 }}
               >
                 <View
-                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flex: 1,
+                  }}
                 >
                   <Text style={{ color: colors.text, fontWeight: '500' }}>
                     {pr.exerciseName}
@@ -325,7 +335,9 @@ export default function StatsScreen({ navigation }: any) {
                   style={{
                     textAlign: 'center',
                     color:
-                      timeRange === option.value ? '#fff' : colors.textSecondary,
+                      timeRange === option.value
+                        ? '#fff'
+                        : colors.textSecondary,
                     fontWeight: timeRange === option.value ? '600' : '400',
                   }}
                 >
@@ -338,119 +350,84 @@ export default function StatsScreen({ navigation }: any) {
 
         {/* Stats Content */}
         <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-        {/* Summary Cards */}
-        <View className="flex-row justify-between mb-4">
-          <View
-            style={{ backgroundColor: colors.surface }}
-            className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
-          >
-            <Text
-              className="text-2xl font-bold"
-              style={{ color: colors.primary.main }}
+          {/* Summary Cards */}
+          <View className="flex-row justify-between mb-4">
+            <View
+              style={{ backgroundColor: colors.surface }}
+              className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
             >
-              {overallStats.totalActivities}
-            </Text>
-            <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Activities
-            </Text>
-          </View>
-          <View
-            style={{ backgroundColor: colors.surface }}
-            className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
-          >
-            <Text
-              className="text-2xl font-bold"
-              style={{ color: colors.success.main }}
+              <Text
+                className="text-2xl font-bold"
+                style={{ color: colors.primary.main }}
+              >
+                {overallStats.totalActivities}
+              </Text>
+              <Text style={{ color: colors.textSecondary }} className="text-sm">
+                Activities
+              </Text>
+            </View>
+            <View
+              style={{ backgroundColor: colors.surface }}
+              className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
             >
-              {overallStats.completionRate}%
-            </Text>
-            <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Completion
-            </Text>
+              <Text
+                className="text-2xl font-bold"
+                style={{ color: colors.success.main }}
+              >
+                {overallStats.completionRate}%
+              </Text>
+              <Text style={{ color: colors.textSecondary }} className="text-sm">
+                Completion
+              </Text>
+            </View>
           </View>
-        </View>
 
-        <View className="flex-row justify-between mb-4">
-          <View
-            style={{ backgroundColor: colors.surface }}
-            className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
-          >
-            <Text
-              className="text-2xl font-bold"
-              style={{ color: colors.warning.main }}
+          <View className="flex-row justify-between mb-4">
+            <View
+              style={{ backgroundColor: colors.surface }}
+              className="flex-1 p-4 rounded-xl mr-2 shadow-sm"
             >
-              {overallStats.currentStreak}
-            </Text>
-            <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Current Streak
-            </Text>
-          </View>
-          <View
-            style={{ backgroundColor: colors.surface }}
-            className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
-          >
-            <Text
-              className="text-2xl font-bold"
-              style={{ color: colors.secondary.main }}
+              <Text
+                className="text-2xl font-bold"
+                style={{ color: colors.warning.main }}
+              >
+                {overallStats.currentStreak}
+              </Text>
+              <Text style={{ color: colors.textSecondary }} className="text-sm">
+                Current Streak
+              </Text>
+            </View>
+            <View
+              style={{ backgroundColor: colors.surface }}
+              className="flex-1 p-4 rounded-xl ml-2 shadow-sm"
             >
-              {overallStats.averagePerWeek}/wk
-            </Text>
-            <Text style={{ color: colors.textSecondary }} className="text-sm">
-              Avg Activities
-            </Text>
+              <Text
+                className="text-2xl font-bold"
+                style={{ color: colors.secondary.main }}
+              >
+                {overallStats.averagePerWeek}/wk
+              </Text>
+              <Text style={{ color: colors.textSecondary }} className="text-sm">
+                Avg Activities
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {/* Volume & Reps Stats */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-4 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold mb-3"
-            style={{ color: colors.text }}
+          {/* Volume & Reps Stats */}
+          <View
+            style={{ backgroundColor: colors.surface }}
+            className="p-4 rounded-xl mb-4 shadow-sm"
           >
-            Training Summary
-          </Text>
-          <View className="flex-row flex-wrap">
-            <View style={{ width: '50%', marginBottom: 12 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Total Sets
-              </Text>
-              <Text
-                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
-              >
-                {overallStats.totalSets}
-              </Text>
-            </View>
-            <View style={{ width: '50%', marginBottom: 12 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Total Reps
-              </Text>
-              <Text
-                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
-              >
-                {overallStats.totalReps.toLocaleString()}
-              </Text>
-            </View>
-            <View style={{ width: '50%' }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Total Volume
-              </Text>
-              <Text
-                style={{
-                  color: colors.primary.main,
-                  fontSize: 18,
-                  fontWeight: '600',
-                }}
-              >
-                {overallStats.totalVolume.toLocaleString()} lbs
-              </Text>
-            </View>
-            {overallStats.totalTime > 0 && (
-              <View style={{ width: '50%' }}>
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: colors.text }}
+            >
+              Training Summary
+            </Text>
+            <View className="flex-row flex-wrap">
+              <View style={{ width: '50%', marginBottom: 12 }}>
                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                  Total Time
+                  Total Sets
                 </Text>
                 <Text
                   style={{
@@ -459,197 +436,252 @@ export default function StatsScreen({ navigation }: any) {
                     fontWeight: '600',
                   }}
                 >
-                  {formatTime(overallStats.totalTime)}
+                  {overallStats.totalSets}
                 </Text>
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Consistency Stats */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-4 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold mb-3"
-            style={{ color: colors.text }}
-          >
-            Consistency
-          </Text>
-          <View className="flex-row flex-wrap">
-            <View style={{ width: '50%', marginBottom: 12 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Days/Week
-              </Text>
-              <Text
-                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
-              >
-                {consistencyStats.daysPerWeek}
-              </Text>
-            </View>
-            <View style={{ width: '50%', marginBottom: 12 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Longest Gap
-              </Text>
-              <Text
-                style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}
-              >
-                {consistencyStats.longestGapDays} days
-              </Text>
-            </View>
-            {consistencyStats.bestWeek.sessions > 0 && (
-              <>
+              <View style={{ width: '50%', marginBottom: 12 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Total Reps
+                </Text>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}
+                >
+                  {overallStats.totalReps.toLocaleString()}
+                </Text>
+              </View>
+              <View style={{ width: '50%' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Total Volume
+                </Text>
+                <Text
+                  style={{
+                    color: colors.primary.main,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}
+                >
+                  {overallStats.totalVolume.toLocaleString()} lbs
+                </Text>
+              </View>
+              {overallStats.totalTime > 0 && (
                 <View style={{ width: '50%' }}>
                   <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                    Best Week
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.success.main,
-                      fontSize: 18,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {consistencyStats.bestWeek.sessions} sessions
-                  </Text>
-                </View>
-                <View style={{ width: '50%' }}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                    Week Of
+                    Total Time
                   </Text>
                   <Text
                     style={{
                       color: colors.text,
-                      fontSize: 14,
-                      fontWeight: '500',
-                    }}
-                  >
-                    {dayjs(consistencyStats.bestWeek.weekStart).format(
-                      'MMM D, YYYY'
-                    )}
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Volume Chart */}
-        {volumeData.some(d => d.value > 0) && (
-          <VolumeBarChart
-            data={volumeData}
-            title={timeRange === 7 ? 'Daily Volume' : 'Weekly Volume'}
-            suffix=" lbs"
-          />
-        )}
-
-        {/* Activity Type Breakdown */}
-        {activityTypeBreakdown.length > 0 && (
-          <ActivityTypeChart
-            data={activityTypeBreakdown}
-            title="Activity Type Breakdown"
-          />
-        )}
-
-        {/* Muscle Group Distribution */}
-        {muscleStats.length > 0 && (
-          <MuscleGroupChart
-            data={muscleStats}
-            title="Muscle Group Distribution"
-          />
-        )}
-
-        {/* Top Exercises */}
-        <View
-          style={{ backgroundColor: colors.surface }}
-          className="p-4 rounded-xl mb-4 shadow-sm"
-        >
-          <Text
-            className="text-lg font-semibold mb-3"
-            style={{ color: colors.text }}
-          >
-            Top Exercises
-          </Text>
-          {topExercises.length > 0 ? (
-            topExercises.map((exercise, index) => (
-              <TouchableOpacity
-                key={exercise.name}
-                onPress={() =>
-                  navigation.navigate('ExerciseStats', {
-                    exerciseName: exercise.name,
-                  })
-                }
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingVertical: 12,
-                  borderBottomWidth: index < topExercises.length - 1 ? 1 : 0,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    flex: 1,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: '600',
-                      marginRight: 12,
-                      width: 24,
                     }}
                   >
-                    #{index + 1}
-                  </Text>
-                  <Text
-                    style={{ color: colors.text, flex: 1 }}
-                    numberOfLines={1}
-                  >
-                    {exercise.name}
+                    {formatTime(overallStats.totalTime)}
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ color: colors.textSecondary, marginRight: 8 }}>
-                    {exercise.sessions} sessions
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text
-              style={{ color: colors.textSecondary }}
-              className="text-center py-4"
-            >
-              No exercises recorded yet
-            </Text>
-          )}
-        </View>
+              )}
+            </View>
+          </View>
 
-        {/* All Exercises List */}
-        {uniqueExercises.length > 5 && (
+          {/* Consistency Stats */}
           <View
             style={{ backgroundColor: colors.surface }}
-            className="p-4 rounded-xl mb-6 shadow-sm"
+            className="p-4 rounded-xl mb-4 shadow-sm"
           >
             <Text
               className="text-lg font-semibold mb-3"
               style={{ color: colors.text }}
             >
-              All Exercises ({uniqueExercises.length})
+              Consistency
             </Text>
-            {(showAllExercises ? uniqueExercises : uniqueExercises.slice(0, 5)).map(
-              (exercise, index, arr) => (
+            <View className="flex-row flex-wrap">
+              <View style={{ width: '50%', marginBottom: 12 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Days/Week
+                </Text>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}
+                >
+                  {consistencyStats.daysPerWeek}
+                </Text>
+              </View>
+              <View style={{ width: '50%', marginBottom: 12 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Longest Gap
+                </Text>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}
+                >
+                  {consistencyStats.longestGapDays} days
+                </Text>
+              </View>
+              {consistencyStats.bestWeek.sessions > 0 && (
+                <>
+                  <View style={{ width: '50%' }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                      Best Week
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.success.main,
+                        fontSize: 18,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {consistencyStats.bestWeek.sessions} sessions
+                    </Text>
+                  </View>
+                  <View style={{ width: '50%' }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                      Week Of
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 14,
+                        fontWeight: '500',
+                      }}
+                    >
+                      {dayjs(consistencyStats.bestWeek.weekStart).format(
+                        'MMM D, YYYY'
+                      )}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* Volume Chart */}
+          {volumeData.some(d => d.value > 0) && (
+            <VolumeBarChart
+              data={volumeData}
+              title={timeRange === 7 ? 'Daily Volume' : 'Weekly Volume'}
+              suffix=" lbs"
+            />
+          )}
+
+          {/* Activity Type Breakdown */}
+          {activityTypeBreakdown.length > 0 && (
+            <ActivityTypeChart
+              data={activityTypeBreakdown}
+              title="Activity Type Breakdown"
+            />
+          )}
+
+          {/* Muscle Group Distribution */}
+          {muscleStats.length > 0 && (
+            <MuscleGroupChart
+              data={muscleStats}
+              title="Muscle Group Distribution"
+            />
+          )}
+
+          {/* Top Exercises */}
+          <View
+            style={{ backgroundColor: colors.surface }}
+            className="p-4 rounded-xl mb-4 shadow-sm"
+          >
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: colors.text }}
+            >
+              Top Exercises
+            </Text>
+            {topExercises.length > 0 ? (
+              topExercises.map((exercise, index) => (
+                <TouchableOpacity
+                  key={exercise.name}
+                  onPress={() =>
+                    navigation.navigate('ExerciseStats', {
+                      exerciseName: exercise.name,
+                    })
+                  }
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    borderBottomWidth: index < topExercises.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flex: 1,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.primary.main,
+                        fontSize: 16,
+                        fontWeight: '600',
+                        marginRight: 12,
+                        width: 24,
+                      }}
+                    >
+                      #{index + 1}
+                    </Text>
+                    <Text
+                      style={{ color: colors.text, flex: 1 }}
+                      numberOfLines={1}
+                    >
+                      {exercise.name}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{ color: colors.textSecondary, marginRight: 8 }}
+                    >
+                      {exercise.sessions} sessions
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-center py-4"
+              >
+                No exercises recorded yet
+              </Text>
+            )}
+          </View>
+
+          {/* All Exercises List */}
+          {uniqueExercises.length > 5 && (
+            <View
+              style={{ backgroundColor: colors.surface }}
+              className="p-4 rounded-xl mb-6 shadow-sm"
+            >
+              <Text
+                className="text-lg font-semibold mb-3"
+                style={{ color: colors.text }}
+              >
+                All Exercises ({uniqueExercises.length})
+              </Text>
+              {(showAllExercises
+                ? uniqueExercises
+                : uniqueExercises.slice(0, 5)
+              ).map((exercise, index, arr) => (
                 <TouchableOpacity
                   key={exercise}
                   onPress={() =>
@@ -675,41 +707,40 @@ export default function StatsScreen({ navigation }: any) {
                     color={colors.textSecondary}
                   />
                 </TouchableOpacity>
-              )
-            )}
+              ))}
 
-            {/* Show More / Show Less Button */}
-            <TouchableOpacity
-              onPress={() => setShowAllExercises(!showAllExercises)}
-              hitSlop={14}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 12,
-                marginTop: 8,
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={
-                showAllExercises
-                  ? 'Show fewer exercises'
-                  : `Show ${uniqueExercises.length - 5} more exercises`
-              }
-            >
-              <Ionicons
-                name={showAllExercises ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={colors.primary.main}
-                style={{ marginRight: 6 }}
-              />
-              <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
-                {showAllExercises
-                  ? 'Show Less'
-                  : `Show ${uniqueExercises.length - 5} More`}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              {/* Show More / Show Less Button */}
+              <TouchableOpacity
+                onPress={() => setShowAllExercises(!showAllExercises)}
+                hitSlop={14}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 12,
+                  marginTop: 8,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showAllExercises
+                    ? 'Show fewer exercises'
+                    : `Show ${uniqueExercises.length - 5} more exercises`
+                }
+              >
+                <Ionicons
+                  name={showAllExercises ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={colors.primary.main}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                  {showAllExercises
+                    ? 'Show Less'
+                    : `Show ${uniqueExercises.length - 5} More`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Spacer for bottom nav */}
           <View style={{ height: 100 }} />

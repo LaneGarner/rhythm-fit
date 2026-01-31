@@ -116,6 +116,33 @@ export const clearAllAppData = async (): Promise<void> => {
   }
 };
 
+// Tutorial completion storage
+export const saveTutorialCompleted = async (completed: boolean) => {
+  try {
+    await AsyncStorage.setItem('tutorial_completed', JSON.stringify(completed));
+  } catch (error) {
+    console.error('Error saving tutorial completed:', error);
+  }
+};
+
+export const loadTutorialCompleted = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('tutorial_completed');
+    return data ? JSON.parse(data) : false;
+  } catch (error) {
+    console.error('Error loading tutorial completed:', error);
+    return false;
+  }
+};
+
+export const clearTutorialCompleted = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem('tutorial_completed');
+  } catch (error) {
+    console.error('Error clearing tutorial completed:', error);
+  }
+};
+
 // Clear user-specific data on sign out
 // Preserves: exercises cache, activity types cache, theme (not user-specific)
 export const clearUserData = async (): Promise<void> => {
