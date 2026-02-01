@@ -230,43 +230,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     }
   };
 
-  const handleCompleteActivity = () => {
-    if (!activity) return;
-
-    // Mark all sets as completed first for visual feedback
-    const completedSets = sets.map(set => ({ ...set, completed: true }));
-    setSets(completedSets);
-
-    const updatedActivity: Activity = {
-      ...activity,
-      completed: true,
-      sets: completedSets,
-    };
-
-    dispatch(updateActivity(updatedActivity));
-
-    // Delay alert so user can see all sets turn green
-    setTimeout(() => {
-      Alert.alert('🎉 Nice Work!', 'Activity complete!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    }, 300);
-  };
-
-  const handleSaveProgress = () => {
-    if (!activity) return;
-
-    const updatedActivity: Activity = {
-      ...activity,
-      sets: sets,
-    };
-
-    dispatch(updateActivity(updatedActivity));
-    Alert.alert('Progress Saved', 'Your progress has been saved.', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
-  };
-
   if (!activity) {
     return (
       <View
@@ -442,29 +405,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             </View>
           </View>
         </Animated.ScrollView>
-      </View>
-
-      {/* Sticky Action Buttons */}
-      <View
-        className={`absolute left-0 right-0 p-4 border-t ${
-          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-        }`}
-        style={{
-          bottom: isKeyboardVisible ? keyboardHeight : 0,
-          paddingBottom: isKeyboardVisible ? 16 : 34,
-          zIndex: 1000,
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleCompleteActivity}
-          className="bg-green-500 py-3 px-6 rounded-lg"
-          accessibilityRole="button"
-          accessibilityLabel="Complete activity"
-        >
-          <Text className="text-white text-center font-semibold text-lg">
-            Complete Activity
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Plate Calculator Modal */}
