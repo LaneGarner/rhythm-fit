@@ -34,8 +34,9 @@ import {
   TrackingField,
 } from '../types/activity';
 import ActivityNameInput from './ActivityNameInput';
+import DurationPickerModal from './DurationPickerModal';
 import RecurringActivityModal from './RecurringActivityModal';
-import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
+import { secondsToTimeString } from '../utils/timeFormat';
 
 interface ActivityFormProps {
   mode: 'create' | 'edit';
@@ -85,6 +86,9 @@ export default function ActivityForm({
   const [customEmojis, setCustomEmojis] = useState<EmojiItem[]>([]);
   const [showCustomEmojiInput, setShowCustomEmojiInput] = useState(false);
   const [customEmojiText, setCustomEmojiText] = useState('');
+  const [durationPickerSetId, setDurationPickerSetId] = useState<string | null>(
+    null
+  );
 
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -894,47 +898,54 @@ export default function ActivityForm({
                           {config.label}
                           {config.unit ? ` (${config.unit})` : ''}
                         </Text>
-                        <TextInput
-                          ref={ref => {
-                            setInputRefs.current[`${set.id}-${field}`] = ref;
-                          }}
-                          value={
-                            field === 'time'
-                              ? secondsToTimeString(value)
-                              : value != null
-                                ? value.toString()
-                                : ''
-                          }
-                          onChangeText={text =>
-                            handleUpdateSet(set.id, {
-                              [field]:
-                                field === 'time'
-                                  ? timeStringToSeconds(text)
-                                  : text
-                                    ? parseFloat(text)
-                                    : undefined,
-                            })
-                          }
-                          keyboardType={
-                            field === 'time'
-                              ? 'numbers-and-punctuation'
-                              : 'numeric'
-                          }
-                          className={`px-3 py-2 border rounded-lg ${
-                            isDark
-                              ? 'bg-gray-700 border-gray-600 text-white'
-                              : 'bg-white border-gray-300 text-gray-900'
-                          }`}
-                          placeholder={field === 'time' ? '0:00' : ''}
-                          placeholderTextColor={colors.textSecondary}
-                          returnKeyType="done"
-                          onSubmitEditing={() => Keyboard.dismiss()}
-                          onFocus={() => {
-                            setTimeout(() => {
-                              scrollToSetInput(`${set.id}-${field}`);
-                            }, 100);
-                          }}
-                        />
+                        {field === 'time' ? (
+                          <TouchableOpacity
+                            onPress={() => setDurationPickerSetId(set.id)}
+                            className={`px-3 py-2 border rounded-lg ${
+                              isDark
+                                ? 'bg-gray-700 border-gray-600'
+                                : 'bg-white border-gray-300'
+                            }`}
+                            style={{ minHeight: 42 }}
+                          >
+                            <Text
+                              style={{
+                                color: value
+                                  ? colors.text
+                                  : colors.textSecondary,
+                                fontSize: 16,
+                              }}
+                            >
+                              {value ? secondsToTimeString(value) : '0:00'}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TextInput
+                            ref={ref => {
+                              setInputRefs.current[`${set.id}-${field}`] = ref;
+                            }}
+                            value={value != null ? value.toString() : ''}
+                            onChangeText={text =>
+                              handleUpdateSet(set.id, {
+                                [field]: text ? parseFloat(text) : undefined,
+                              })
+                            }
+                            keyboardType="numeric"
+                            className={`px-3 py-2 border rounded-lg ${
+                              isDark
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                            placeholderTextColor={colors.textSecondary}
+                            returnKeyType="done"
+                            onSubmitEditing={() => Keyboard.dismiss()}
+                            onFocus={() => {
+                              setTimeout(() => {
+                                scrollToSetInput(`${set.id}-${field}`);
+                              }, 100);
+                            }}
+                          />
+                        )}
                       </View>
                     );
                   })}
@@ -1122,6 +1133,23 @@ export default function ActivityForm({
         onSave={setRecurringConfig}
         startDate={dayjs(selectedDate).format('YYYY-MM-DD')}
         initialConfig={recurringConfig}
+      />
+
+      {/* Duration Picker Modal */}
+      <DurationPickerModal
+        visible={durationPickerSetId !== null}
+        value={
+          durationPickerSetId
+            ? sets.find(s => s.id === durationPickerSetId)?.time
+            : undefined
+        }
+        onConfirm={seconds => {
+          if (durationPickerSetId) {
+            handleUpdateSet(durationPickerSetId, { time: seconds });
+          }
+          setDurationPickerSetId(null);
+        }}
+        onCancel={() => setDurationPickerSetId(null)}
       />
     </View>
   );

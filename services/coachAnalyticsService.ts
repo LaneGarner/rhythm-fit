@@ -16,7 +16,11 @@ import {
 
 export interface CoachAnalytics {
   muscleImbalances: { undertrained: string[]; overtrained: string[] };
-  stalledExercises: { name: string; daysSinceProgress: number; currentMax: number }[];
+  stalledExercises: {
+    name: string;
+    daysSinceProgress: number;
+    currentMax: number;
+  }[];
   consistency: {
     currentStreak: number;
     daysPerWeek: number;
@@ -41,16 +45,18 @@ const DAYS_OF_WEEK = [
 /**
  * Find muscles that are undertrained (<30% of average) or overtrained (>250% of average)
  */
-function calculateMuscleImbalances(
-  muscleStats: MuscleGroupStats[]
-): { undertrained: string[]; overtrained: string[] } {
+function calculateMuscleImbalances(muscleStats: MuscleGroupStats[]): {
+  undertrained: string[];
+  overtrained: string[];
+} {
   if (muscleStats.length === 0) {
     return { undertrained: [], overtrained: [] };
   }
 
   // Filter out 'none', 'cardio', and 'full-body' from muscle analysis
   const relevantMuscles = muscleStats.filter(
-    m => m.muscle !== 'none' && m.muscle !== 'cardio' && m.muscle !== 'full-body'
+    m =>
+      m.muscle !== 'none' && m.muscle !== 'cardio' && m.muscle !== 'full-body'
   );
 
   if (relevantMuscles.length === 0) {
@@ -96,7 +102,9 @@ function findStalledExercises(
     if (!stats || stats.history.length < 2 || stats.maxWeight === 0) continue;
 
     // Find when the max weight was achieved
-    const maxWeightEntry = stats.history.find(h => h.maxWeight === stats.maxWeight);
+    const maxWeightEntry = stats.history.find(
+      h => h.maxWeight === stats.maxWeight
+    );
     if (!maxWeightEntry) continue;
 
     const maxWeightDate = dayjs(maxWeightEntry.date);
@@ -137,7 +145,11 @@ function calculateConsistencyTrend(
   const recentStart = now.subtract(14, 'day');
   const recentActivities = activities.filter(a => {
     const date = dayjs(a.date);
-    return a.completed && date.isAfter(recentStart) && date.isBefore(now.add(1, 'day'));
+    return (
+      a.completed &&
+      date.isAfter(recentStart) &&
+      date.isBefore(now.add(1, 'day'))
+    );
   });
 
   // Prior 2 weeks (days 15-28 ago)
@@ -145,7 +157,9 @@ function calculateConsistencyTrend(
   const priorEnd = now.subtract(14, 'day');
   const priorActivities = activities.filter(a => {
     const date = dayjs(a.date);
-    return a.completed && date.isAfter(priorStart) && date.isSameOrBefore(priorEnd);
+    return (
+      a.completed && date.isAfter(priorStart) && date.isSameOrBefore(priorEnd)
+    );
   });
 
   const recentCount = new Set(recentActivities.map(a => a.date)).size;
@@ -168,9 +182,10 @@ function calculateConsistencyTrend(
 /**
  * Find the most and least active days of the week
  */
-function calculateDayDistribution(
-  activities: Activity[]
-): { mostActive: string; leastActive: string } {
+function calculateDayDistribution(activities: Activity[]): {
+  mostActive: string;
+  leastActive: string;
+} {
   const dayCounts: Record<number, number> = {};
   for (let i = 0; i < 7; i++) {
     dayCounts[i] = 0;
@@ -279,14 +294,18 @@ export function formatAnalyticsForPrompt(analytics: CoachAnalytics): string {
   // Recent PRs
   if (analytics.recentPRs.length > 0) {
     const prStrings = analytics.recentPRs.map(pr =>
-      pr.type === 'weight' ? `${pr.exercise} (${pr.value}lbs)` : `${pr.exercise} (${pr.value} reps)`
+      pr.type === 'weight'
+        ? `${pr.exercise} (${pr.value}lbs)`
+        : `${pr.exercise} (${pr.value} reps)`
     );
     lines.push(`Recent PRs: ${prStrings.join(', ')}`);
   }
 
   // Undertrained muscles
   if (analytics.muscleImbalances.undertrained.length > 0) {
-    lines.push(`Undertrained: ${analytics.muscleImbalances.undertrained.join(', ')}`);
+    lines.push(
+      `Undertrained: ${analytics.muscleImbalances.undertrained.join(', ')}`
+    );
   }
 
   // Stalled exercises

@@ -975,7 +975,11 @@ Use Markdown formatting. ${activityContext}`;
               color={colors.textSecondary}
             />
             <Text
-              style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}
+              style={{
+                color: colors.textSecondary,
+                fontSize: 10,
+                marginTop: 2,
+              }}
             >
               New Chat
             </Text>

@@ -91,7 +91,6 @@ export default function SpotlightOverlay({
     }
   }, []);
 
-
   // Animate spotlight when targetLayout changes
   useEffect(() => {
     // Skip animations for full-screen mode (no spotlight needed)
@@ -224,7 +223,14 @@ export default function SpotlightOverlay({
         <View style={styles.container}>
           {isFullScreen ? (
             /* Full screen dim overlay (no spotlight cutout) */
-            <View style={[StyleSheet.absoluteFill, styles.fullScreenOverlay(step.overlayOpacity ?? DEFAULT_OVERLAY_OPACITY)]} />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                styles.fullScreenOverlay(
+                  step.overlayOpacity ?? DEFAULT_OVERLAY_OPACITY
+                ),
+              ]}
+            />
           ) : (
             /* SVG Mask for spotlight cutout */
             <Svg

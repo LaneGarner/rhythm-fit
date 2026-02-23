@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Keyboard,
   Text,
@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DurationPickerModal from './DurationPickerModal';
 import PlateIcon from './PlateIcon';
 import { useTheme } from '../theme/ThemeContext';
 import { ActivityType, SetData, TrackingField } from '../types/activity';
-import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
+import { secondsToTimeString } from '../utils/timeFormat';
 
 export interface SetCardProps {
   set: SetData;
@@ -44,6 +45,7 @@ export default function SetCard({
 }: SetCardProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
 
   return (
     <View
@@ -114,51 +116,58 @@ export default function SetCard({
                   </TouchableOpacity>
                 )}
               </View>
-              <TextInput
-                ref={
-                  inputRefs
-                    ? ref => {
-                        inputRefs.current[`${set.id}-${field}`] = ref;
-                      }
-                    : undefined
-                }
-                value={
-                  field === 'time'
-                    ? secondsToTimeString(value)
-                    : value != null
-                      ? value.toString()
-                      : ''
-                }
-                onChangeText={text =>
-                  onUpdateSet(set.id, {
-                    [field]:
-                      field === 'time'
-                        ? timeStringToSeconds(text)
-                        : text
-                          ? parseFloat(text)
-                          : undefined,
-                  })
-                }
-                keyboardType={
-                  field === 'time' ? 'numbers-and-punctuation' : 'numeric'
-                }
-                className={`px-3 py-2 border rounded-lg ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                placeholder={field === 'time' ? '0:00' : ''}
-                placeholderTextColor={colors.textSecondary}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-                onFocus={() => {
-                  if (onInputFocus) {
-                    setTimeout(() => {
-                      onInputFocus(`${set.id}-${field}`);
-                    }, 100);
+              {field === 'time' ? (
+                <TouchableOpacity
+                  onPress={() => setShowDurationPicker(true)}
+                  className={`px-3 py-2 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-white border-gray-300'
+                  }`}
+                  style={{ minHeight: 42 }}
+                >
+                  <Text
+                    style={{
+                      color: value ? colors.text : colors.textSecondary,
+                      fontSize: 16,
+                    }}
+                  >
+                    {value ? secondsToTimeString(value) : '0:00'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TextInput
+                  ref={
+                    inputRefs
+                      ? ref => {
+                          inputRefs.current[`${set.id}-${field}`] = ref;
+                        }
+                      : undefined
                   }
-                }}
-              />
+                  value={value != null ? value.toString() : ''}
+                  onChangeText={text =>
+                    onUpdateSet(set.id, {
+                      [field]: text ? parseFloat(text) : undefined,
+                    })
+                  }
+                  keyboardType="numeric"
+                  className={`px-3 py-2 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  onFocus={() => {
+                    if (onInputFocus) {
+                      setTimeout(() => {
+                        onInputFocus(`${set.id}-${field}`);
+                      }, 100);
+                    }
+                  }}
+                />
+              )}
             </View>
           );
         })}
@@ -184,6 +193,16 @@ export default function SetCard({
           {set.completed ? 'Completed  ✅' : 'Mark Complete'}
         </Text>
       </TouchableOpacity>
+
+      <DurationPickerModal
+        visible={showDurationPicker}
+        value={set.time}
+        onConfirm={seconds => {
+          onUpdateSet(set.id, { time: seconds });
+          setShowDurationPicker(false);
+        }}
+        onCancel={() => setShowDurationPicker(false)}
+      />
     </View>
   );
 }

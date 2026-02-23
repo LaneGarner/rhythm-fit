@@ -255,7 +255,14 @@ export default function WeeklyScreen({ navigation }: any) {
   const registerSettingsButton = useCallback(() => {
     if (settingsButtonRef.current) {
       settingsButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
-        registerTarget('settings-button', { x, y, width, height, pageX, pageY });
+        registerTarget('settings-button', {
+          x,
+          y,
+          width,
+          height,
+          pageX,
+          pageY,
+        });
       });
     }
   }, [registerTarget]);

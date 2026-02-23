@@ -59,7 +59,10 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
               ? 2 * progress * progress
               : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
-          scrollViewRef.current?.scrollTo({ y: eased * targetY, animated: false });
+          scrollViewRef.current?.scrollTo({
+            y: eased * targetY,
+            animated: false,
+          });
 
           if (progress < 1) {
             requestAnimationFrame(animate);

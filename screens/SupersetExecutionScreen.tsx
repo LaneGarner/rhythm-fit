@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
+import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
@@ -33,7 +34,7 @@ import {
   getSupersetLabel,
   isSupersetComplete,
 } from '../utils/supersetUtils';
-import { secondsToTimeString, timeStringToSeconds } from '../utils/timeFormat';
+import { secondsToTimeString } from '../utils/timeFormat';
 
 export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
@@ -58,6 +59,10 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [activeSetInfo, setActiveSetInfo] = useState<{
+    activityId: string;
+    setId: string;
+  } | null>(null);
+  const [durationPickerInfo, setDurationPickerInfo] = useState<{
     activityId: string;
     setId: string;
   } | null>(null);
@@ -605,51 +610,71 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       </TouchableOpacity>
                                     )}
                                   </View>
-                                  <TextInput
-                                    ref={ref => {
-                                      setInputRefs.current[
-                                        `${activity.id}-${set.id}-${field}`
-                                      ] = ref;
-                                    }}
-                                    value={
-                                      field === 'time'
-                                        ? secondsToTimeString(value)
-                                        : value != null
-                                          ? value.toString()
-                                          : ''
-                                    }
-                                    onChangeText={text =>
-                                      handleUpdateSet(activity.id, set.id, {
-                                        [field]:
-                                          field === 'time'
-                                            ? timeStringToSeconds(text)
-                                            : text
-                                              ? parseFloat(text)
-                                              : undefined,
-                                      })
-                                    }
-                                    keyboardType={
-                                      field === 'time'
-                                        ? 'numbers-and-punctuation'
-                                        : 'numeric'
-                                    }
-                                    className={`px-3 py-2 border rounded-lg ${
-                                      isDark
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                    }`}
-                                    placeholder={field === 'time' ? '0:00' : ''}
-                                    placeholderTextColor={colors.textSecondary}
-                                    returnKeyType="done"
-                                    onSubmitEditing={() => Keyboard.dismiss()}
-                                    onFocus={() => {
-                                      setTimeout(() => {
-                                        scrollToSetInput(
+                                  {field === 'time' ? (
+                                    <TouchableOpacity
+                                      onPress={() =>
+                                        setDurationPickerInfo({
+                                          activityId: activity.id,
+                                          setId: set.id,
+                                        })
+                                      }
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600'
+                                          : 'bg-white border-gray-300'
+                                      }`}
+                                      style={{ minHeight: 42 }}
+                                    >
+                                      <Text
+                                        style={{
+                                          color: value
+                                            ? colors.text
+                                            : colors.textSecondary,
+                                          fontSize: 16,
+                                        }}
+                                      >
+                                        {value
+                                          ? secondsToTimeString(value)
+                                          : '0:00'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <TextInput
+                                      ref={ref => {
+                                        setInputRefs.current[
                                           `${activity.id}-${set.id}-${field}`
-                                        );
-                                      }, 100);
-                                    }}
-                                  />
+                                        ] = ref;
+                                      }}
+                                      value={
+                                        value != null ? value.toString() : ''
+                                      }
+                                      onChangeText={text =>
+                                        handleUpdateSet(activity.id, set.id, {
+                                          [field]: text
+                                            ? parseFloat(text)
+                                            : undefined,
+                                        })
+                                      }
+                                      keyboardType="numeric"
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600 text-white'
+                                          : 'bg-white border-gray-300 text-gray-900'
+                                      }`}
+                                      placeholderTextColor={
+                                        colors.textSecondary
+                                      }
+                                      returnKeyType="done"
+                                      onSubmitEditing={() => Keyboard.dismiss()}
+                                      onFocus={() => {
+                                        setTimeout(() => {
+                                          scrollToSetInput(
+                                            `${activity.id}-${set.id}-${field}`
+                                          );
+                                        }, 100);
+                                      }}
+                                    />
+                                  )}
                                 </View>
                               );
                             })}
@@ -780,6 +805,29 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                 ?.sets?.find(s => s.id === activeSetInfo.setId)?.weight
             : undefined
         }
+      />
+
+      {/* Duration Picker Modal */}
+      <DurationPickerModal
+        visible={durationPickerInfo !== null}
+        value={
+          durationPickerInfo
+            ? localSets
+                .get(durationPickerInfo.activityId)
+                ?.find(s => s.id === durationPickerInfo.setId)?.time
+            : undefined
+        }
+        onConfirm={seconds => {
+          if (durationPickerInfo) {
+            handleUpdateSet(
+              durationPickerInfo.activityId,
+              durationPickerInfo.setId,
+              { time: seconds }
+            );
+          }
+          setDurationPickerInfo(null);
+        }}
+        onCancel={() => setDurationPickerInfo(null)}
       />
     </View>
   );
