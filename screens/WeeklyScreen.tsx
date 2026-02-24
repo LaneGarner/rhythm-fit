@@ -34,6 +34,7 @@ import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
   getSupersetEmojis,
+  isActivityComplete,
   isSupersetComplete,
   ActivityGroup,
 } from '../utils/supersetUtils';
@@ -843,10 +844,8 @@ export default function WeeklyScreen({ navigation }: any) {
               const dayActivities = getActivitiesForDate(day.date);
               const allCompleted =
                 dayActivities.length > 0 &&
-                dayActivities.every(a => a.completed);
-              const completedCount = dayActivities.filter(
-                a => a.completed
-              ).length;
+                dayActivities.every(isActivityComplete);
+              const completedCount = dayActivities.filter(isActivityComplete).length;
               return (
                 <TouchableOpacity
                   key={day.date}
@@ -957,7 +956,7 @@ export default function WeeklyScreen({ navigation }: any) {
                               >
                                 {activity.name || activity.type}
                               </Text>
-                              {activity.completed ? (
+                              {isActivityComplete(activity) ? (
                                 <Ionicons
                                   name="checkmark-circle"
                                   size={18}
@@ -1000,14 +999,11 @@ export default function WeeklyScreen({ navigation }: any) {
                             fontSize: 12,
                           }}
                         >
-                          {dayActivities.filter(a => a.completed).length}/
-                          {dayActivities.length} complete
+                          {completedCount}/{dayActivities.length} complete
                         </Text>
                       </View>
                       <ProgressBar
-                        completed={
-                          dayActivities.filter(a => a.completed).length
-                        }
+                        completed={completedCount}
                         total={dayActivities.length}
                         isDark={isDark}
                       />
