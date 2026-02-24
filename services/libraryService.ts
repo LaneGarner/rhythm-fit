@@ -170,6 +170,8 @@ export async function updateLibraryItem(
     }
   }
 
+  // Store original item for potential rollback
+  const originalItem = { ...cached[itemIndex] };
   const updatedItem = { ...cached[itemIndex], ...updates };
   cached[itemIndex] = updatedItem;
   await cacheLibrary(cached);
@@ -177,7 +179,7 @@ export async function updateLibraryItem(
   // Sync to server if possible
   if (accessToken && API_URL && !itemId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/library?id=${itemId}`, {
+      const response = await fetch(`${API_URL}/api/library?id=${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -185,8 +187,21 @@ export async function updateLibraryItem(
         },
         body: JSON.stringify(updates),
       });
+
+      if (!response.ok) {
+        // Revert cache on failure
+        cached[itemIndex] = originalItem;
+        await cacheLibrary(cached);
+
+        const data = await response.json().catch(() => ({}));
+        return { success: false, error: data.error || 'Failed to update item' };
+      }
     } catch (err) {
       console.error('Failed to update library item:', err);
+      // Revert cache on network error
+      cached[itemIndex] = originalItem;
+      await cacheLibrary(cached);
+      return { success: false, error: 'Network error - please try again' };
     }
   }
 
