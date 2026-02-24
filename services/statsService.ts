@@ -283,8 +283,7 @@ export function calculateExerciseStats(
   const matchingActivities = activities.filter(
     a =>
       a.completed &&
-      (a.name.toLowerCase().includes(exerciseName.toLowerCase()) ||
-        exerciseName.toLowerCase().includes(a.name.toLowerCase()))
+      a.name.toLowerCase() === exerciseName.toLowerCase()
   );
 
   if (matchingActivities.length === 0) return null;
