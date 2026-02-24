@@ -70,6 +70,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const [copyTargetDate, setCopyTargetDate] = useState(new Date());
   const [isCopying, setIsCopying] = useState(false);
   const isScrollingRef = useRef(false);
+  const isSwipingRef = useRef(false);
   const currentWeekOffsetRef = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const currentDayRef = useRef<View>(null);
@@ -694,6 +695,9 @@ export default function WeeklyScreen({ navigation }: any) {
   const swipeGesture = Gesture.Pan()
     .runOnJS(true)
     .activeOffsetX([-20, 20]) // Only activate for horizontal movement
+    .onStart(() => {
+      isSwipingRef.current = true;
+    })
     .onUpdate(event => {
       // Track finger movement for visual feedback (capped at 100px)
       const clampedX = Math.max(-100, Math.min(100, event.translationX));
@@ -720,6 +724,10 @@ export default function WeeklyScreen({ navigation }: any) {
           useNativeDriver: true,
         }).start();
       }
+      // Clear swiping flag after a short delay so the touch-up doesn't trigger onPress
+      setTimeout(() => {
+        isSwipingRef.current = false;
+      }, 100);
     });
 
   return (
@@ -861,12 +869,16 @@ export default function WeeklyScreen({ navigation }: any) {
                       : 'transparent',
                     borderWidth: day.isToday ? 2 : 0,
                   }}
-                  onPress={() => navigation.navigate('Day', { date: day.date })}
+                  onPress={() => {
+                    if (isSwipingRef.current) return;
+                    navigation.navigate('Day', { date: day.date });
+                  }}
                   onLongPress={() =>
                     handleDayLongPress(day.date, day.dayName, day.dayNumber)
                   }
                   delayLongPress={500}
                   activeOpacity={0.7}
+                  hitSlop={{ left: -24, right: -24 }}
                   accessibilityRole="button"
                   accessibilityLabel={`${day.dayName} ${day.dayNumber}${day.isToday ? ', today' : ''}, ${dayActivities.length === 0 ? 'no activities' : `${completedCount} of ${dayActivities.length} activities completed`}`}
                   accessibilityHint="Tap to view day, hold for options"
