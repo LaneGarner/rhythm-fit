@@ -485,10 +485,10 @@ export default function WeeklyScreen({ navigation }: any) {
 
     // Count incomplete and complete activities for this specific day
     const incompleteActivities = dayActivities.filter(
-      activity => !activity.completed
+      activity => !isActivityComplete(activity)
     );
     const completeActivities = dayActivities.filter(
-      activity => activity.completed
+      activity => isActivityComplete(activity)
     );
 
     if (Platform.OS === 'ios') {

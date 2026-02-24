@@ -27,6 +27,7 @@ import {
   formatTime,
 } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
+import { isActivityComplete } from '../utils/supersetUtils';
 
 type TimeRange = 7 | 30 | 90 | 365;
 
@@ -53,7 +54,7 @@ export default function StatsScreen({ navigation }: any) {
     return activities.filter(activity => {
       const activityDate = dayjs(activity.date);
       return (
-        activity.completed &&
+        isActivityComplete(activity) &&
         activityDate.isAfter(startDate) &&
         (activityDate.isBefore(today) || activityDate.isSame(today, 'day'))
       );
@@ -120,7 +121,7 @@ export default function StatsScreen({ navigation }: any) {
           const activityDate = dayjs(activity.date);
           if (
             activityDate.isSame(date, 'day') &&
-            activity.completed &&
+            isActivityComplete(activity) &&
             activity.sets
           ) {
             for (const set of activity.sets) {
@@ -147,7 +148,7 @@ export default function StatsScreen({ navigation }: any) {
           if (
             activityDate.isAfter(weekStart.subtract(1, 'day')) &&
             activityDate.isBefore(weekEnd.add(1, 'day')) &&
-            activity.completed &&
+            isActivityComplete(activity) &&
             activity.sets
           ) {
             for (const set of activity.sets) {
