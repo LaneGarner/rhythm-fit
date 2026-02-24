@@ -46,6 +46,7 @@ export default function SetCard({
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [distanceText, setDistanceText] = useState<Record<string, string>>({});
 
   return (
     <View
@@ -144,13 +145,44 @@ export default function SetCard({
                         }
                       : undefined
                   }
-                  value={value != null ? value.toString() : ''}
-                  onChangeText={text =>
+                  value={
+                    field === 'distance' && distanceText[set.id] != null
+                      ? distanceText[set.id]
+                      : value != null
+                        ? value.toString()
+                        : ''
+                  }
+                  onChangeText={text => {
+                    if (field === 'distance') {
+                      if (text && !/^\d*\.?\d{0,2}$/.test(text)) return;
+                      setDistanceText(prev => ({
+                        ...prev,
+                        [set.id]: text,
+                      }));
+                      return;
+                    }
                     onUpdateSet(set.id, {
                       [field]: text ? parseFloat(text) : undefined,
-                    })
+                    });
+                  }}
+                  onBlur={() => {
+                    if (field === 'distance') {
+                      const text = distanceText[set.id];
+                      if (text != null) {
+                        onUpdateSet(set.id, {
+                          distance: text ? parseFloat(text) : undefined,
+                        });
+                        setDistanceText(prev => {
+                          const next = { ...prev };
+                          delete next[set.id];
+                          return next;
+                        });
+                      }
+                    }
+                  }}
+                  keyboardType={
+                    field === 'distance' ? 'decimal-pad' : 'numeric'
                   }
-                  keyboardType="numeric"
                   className={`px-3 py-2 border rounded-lg ${
                     isDark
                       ? 'bg-gray-700 border-gray-600 text-white'
@@ -160,6 +192,12 @@ export default function SetCard({
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
                   onFocus={() => {
+                    if (field === 'distance') {
+                      setDistanceText(prev => ({
+                        ...prev,
+                        [set.id]: value != null ? value.toString() : '',
+                      }));
+                    }
                     if (onInputFocus) {
                       setTimeout(() => {
                         onInputFocus(`${set.id}-${field}`);
