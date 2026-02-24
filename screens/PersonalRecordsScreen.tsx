@@ -100,7 +100,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                     Recently Broken PRs
                   </Text>
                 </View>
-                {personalRecords.recentPRs.map(pr => (
+                {personalRecords.recentPRs.slice(0, 5).map(pr => (
                   <TouchableOpacity
                     key={`recent-${pr.exerciseName}`}
                     onPress={() =>
