@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: 'Rhythm - AI Fitness Coach',
+    name: 'Rhythm Fit',
     slug: 'rhythm',
     version: '1.0.0',
     orientation: 'portrait',
