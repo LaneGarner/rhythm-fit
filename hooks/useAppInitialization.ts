@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../context/AuthContext';
 import { isBackendConfigured } from '../config/api';
@@ -129,6 +130,38 @@ export function useAppInitialization() {
     getAccessToken,
     handleActivitiesUpdated,
   ]);
+
+  // Re-sync when app returns to foreground
+  useEffect(() => {
+    const appStateRef = { current: AppState.currentState };
+
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        if (
+          appStateRef.current.match(/inactive|background/) &&
+          nextAppState === 'active' &&
+          user &&
+          isConfigured &&
+          isBackendConfigured()
+        ) {
+          const token = getAccessToken();
+          if (token) {
+            syncActivities(
+              token,
+              activitiesRef.current,
+              handleActivitiesUpdated
+            ).catch(err =>
+              console.error('Foreground sync failed:', err)
+            );
+          }
+        }
+        appStateRef.current = nextAppState;
+      }
+    );
+
+    return () => subscription.remove();
+  }, [user, isConfigured, getAccessToken, handleActivitiesUpdated]);
 
   // Mark sync complete immediately if no backend/user
   useEffect(() => {
