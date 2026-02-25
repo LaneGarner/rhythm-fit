@@ -583,7 +583,8 @@ export function getUniqueExercises(activities: Activity[]): string[] {
 export function getExerciseProgressionData(
   stats: ExerciseStats,
   metric: 'weight' | 'reps' | 'volume' | 'time' | 'distance'
-): { label: string; value: number }[] {
+): { label: string; value: number; date?: string }[] {
+  let lastYear: number | null = null;
   return stats.history.map(h => {
     let value = 0;
     switch (metric) {
@@ -603,9 +604,14 @@ export function getExerciseProgressionData(
         value = h.totalDistance;
         break;
     }
+    const d = dayjs(h.date);
+    const year = d.year();
+    const showYear = lastYear === null || year !== lastYear;
+    lastYear = year;
     return {
-      label: dayjs(h.date).format('M/D'),
+      label: showYear ? d.format('M/D/YY') : d.format('M/D'),
       value,
+      date: h.date,
     };
   });
 }
