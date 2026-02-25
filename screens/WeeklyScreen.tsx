@@ -406,8 +406,8 @@ export default function WeeklyScreen({ navigation }: any) {
 
   const handleCopyToDate = (sourceDate: string) => {
     setCopySourceDate(sourceDate);
-    // Default to the same date (user will pick the target)
-    setCopyTargetDate(dayjs(sourceDate).toDate());
+    // Default to today (user will pick the target)
+    setCopyTargetDate(new Date());
     setShowCopyModal(true);
   };
 
