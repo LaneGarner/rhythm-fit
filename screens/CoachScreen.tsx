@@ -37,6 +37,7 @@ import { OPENAI_CONFIG, isBackendConfigured } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import {
   sendChatMessage,
+  streamChatMessage,
   getChatSessions,
   getChatSession,
   deleteChatSession,
@@ -92,6 +93,19 @@ export default function CoachScreen({ navigation }: any) {
   const scrollViewRef = useRef<ScrollView>(null);
   const lastBotMessageRef = useRef<View>(null);
   const lastUserMessageRef = useRef<View>(null);
+
+  // Streaming state
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null
+  );
+  const streamAbortRef = useRef<{ abort: () => void } | null>(null);
+  const streamContentRef = useRef('');
+  const streamFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const streamScrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -652,85 +666,162 @@ export default function CoachScreen({ navigation }: any) {
           }
         });
 
-      let botResponse: string;
-      let activityRequests: any[] = [];
-
-      // Use backend API if authenticated, otherwise use direct OpenAI
+      // Use backend API if authenticated (streaming), otherwise use direct OpenAI
       if (isAuthenticated) {
         const token = getAccessToken();
         if (!token) {
           throw new Error('No access token available');
         }
-        // Send user/assistant messages only - backend handles system prompt, temperature, and activity parsing
         const allMessages = [
           ...conversationHistory,
           { role: 'user' as const, content: currentInput },
         ];
-        // Use current input for title if this is the first user message, otherwise use first user message
-        const isFirstUserMessage = messages.length === 1; // Only welcome message exists
+        const isFirstUserMessage = messages.length === 1;
         const sessionTitle = isFirstUserMessage
           ? currentInput.substring(0, 50)
           : messages[1]?.text?.substring(0, 50) || 'Chat Session';
 
-        const response = await sendChatMessage(token, allMessages, {
-          activityContext,
-          sessionId: currentSessionId,
-          sessionTitle,
-        });
-        botResponse =
-          response.message.content || "Sorry, I couldn't process that request.";
-        // Activities are parsed by the backend
-        activityRequests = response.activities || [];
-      } else {
-        // Fallback for unauthenticated users - minimal system prompt, no activity parsing
-        const fallbackSystemPrompt = `You are an AI fitness coach. Help with workouts, nutrition, sleep, recovery, motivation, and any health/wellness topics. Only redirect if asked about something completely unrelated (like coding or math).
+        // Create empty bot message immediately
+        const botMessageId = (Date.now() + 1).toString();
+        const botMessage = {
+          id: botMessageId,
+          type: 'bot' as const,
+          text: '',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        setStreamingMessageId(botMessageId);
+        streamContentRef.current = '';
+
+        // Start periodic scroll during streaming
+        streamScrollTimerRef.current = setInterval(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }, 200);
+
+        const streamHandle = streamChatMessage(
+          token,
+          allMessages,
+          {
+            onToken: (text: string) => {
+              streamContentRef.current += text;
+
+              // Throttled flush to state (~50ms)
+              if (!streamFlushTimerRef.current) {
+                streamFlushTimerRef.current = setTimeout(() => {
+                  const content = streamContentRef.current;
+                  setMessages(prev =>
+                    prev.map(m =>
+                      m.id === botMessageId ? { ...m, text: content } : m
+                    )
+                  );
+                  streamFlushTimerRef.current = null;
+                }, 50);
+              }
+            },
+            onDone: (content: string, activities: any[]) => {
+              // Clear flush timer and do final update
+              if (streamFlushTimerRef.current) {
+                clearTimeout(streamFlushTimerRef.current);
+                streamFlushTimerRef.current = null;
+              }
+              if (streamScrollTimerRef.current) {
+                clearInterval(streamScrollTimerRef.current);
+                streamScrollTimerRef.current = null;
+              }
+
+              let finalContent = content;
+
+              // Create activities if any were parsed
+              if (activities.length > 0) {
+                const createdActivities =
+                  createActivitiesFromRequest(activities);
+                if (createdActivities.length === 0) {
+                  finalContent =
+                    "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
+                }
+              }
+
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === botMessageId ? { ...m, text: finalContent } : m
+                )
+              );
+              setStreamingMessageId(null);
+              streamAbortRef.current = null;
+              setIsProcessing(false);
+
+              // Save session after each message and refresh history
+              setTimeout(() => {
+                saveCurrentSession();
+                loadChatHistory();
+              }, 100);
+            },
+            onError: (message: string) => {
+              if (streamFlushTimerRef.current) {
+                clearTimeout(streamFlushTimerRef.current);
+                streamFlushTimerRef.current = null;
+              }
+              if (streamScrollTimerRef.current) {
+                clearInterval(streamScrollTimerRef.current);
+                streamScrollTimerRef.current = null;
+              }
+
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === botMessageId
+                    ? {
+                        ...m,
+                        text:
+                          message ||
+                          "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
+                      }
+                    : m
+                )
+              );
+              setStreamingMessageId(null);
+              streamAbortRef.current = null;
+              setIsProcessing(false);
+            },
+          },
+          {
+            activityContext,
+            sessionId: currentSessionId,
+            sessionTitle,
+          }
+        );
+
+        streamAbortRef.current = streamHandle;
+        // Don't set isProcessing to false here - callbacks handle it
+        return;
+      }
+
+      // Fallback for unauthenticated users - minimal system prompt, no activity parsing
+      const fallbackSystemPrompt = `You are an AI fitness coach. Help with workouts, nutrition, sleep, recovery, motivation, and any health/wellness topics. Only redirect if asked about something completely unrelated (like coding or math).
 
 Use Markdown formatting. ${activityContext}`;
-        const response = await openai.chat.completions
-          .create({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: fallbackSystemPrompt },
-              ...conversationHistory,
-              { role: 'user', content: currentInput },
-            ],
-            max_tokens: 1000,
-            temperature: 0.7,
-          })
-          .catch(error => {
-            console.error('OpenAI API Error:', error);
-            throw new Error('Failed to get AI response');
-          });
-        botResponse =
-          response.choices[0]?.message?.content ||
-          "Sorry, I couldn't process that request.";
-        // No activity parsing for unauthenticated users
-      }
-
-      let finalResponse = botResponse;
-
-      // Create activities if any were requested
-      let createdActivities: Activity[] = [];
-      if (activityRequests.length > 0) {
-        createdActivities = createActivitiesFromRequest(activityRequests);
-
-        // Check if activities were actually created and provide honest feedback
-        if (createdActivities.length === 0) {
-          finalResponse =
-            "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
-        } else {
-          // Success! Don't show confusing messages about "formatting issues"
-          // The system correctly splits workout requests into individual exercises
-        }
-      }
-
-      // Remove the checkmark summary block
-      // if (activityRequests.length > 0) { ... finalResponse += `\n\n${summary}`; }
+      const response = await openai.chat.completions
+        .create({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: fallbackSystemPrompt },
+            ...conversationHistory,
+            { role: 'user', content: currentInput },
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+        })
+        .catch(error => {
+          console.error('OpenAI API Error:', error);
+          throw new Error('Failed to get AI response');
+        });
+      const botResponse =
+        response.choices[0]?.message?.content ||
+        "Sorry, I couldn't process that request.";
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
         type: 'bot' as const,
-        text: finalResponse,
+        text: botResponse,
         timestamp: new Date(),
       };
 
@@ -739,7 +830,7 @@ Use Markdown formatting. ${activityContext}`;
       // Save session after each message and refresh history
       setTimeout(() => {
         saveCurrentSession();
-        loadChatHistory(); // Refresh history to show new/updated session
+        loadChatHistory();
       }, 100);
     } catch (error) {
       console.error('OpenAI API Error:', error);
@@ -753,13 +844,47 @@ Use Markdown formatting. ${activityContext}`;
 
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsProcessing(false);
-      // Ensure input is cleared even if there was an error
+      // Only clear processing for non-streaming (streaming callbacks handle it)
+      if (!streamAbortRef.current) {
+        setIsProcessing(false);
+      }
       setInputText('');
     }
   };
 
+  // Cleanup streaming on unmount
+  useEffect(() => {
+    return () => {
+      if (streamAbortRef.current) {
+        streamAbortRef.current.abort();
+        streamAbortRef.current = null;
+      }
+      if (streamFlushTimerRef.current) {
+        clearTimeout(streamFlushTimerRef.current);
+      }
+      if (streamScrollTimerRef.current) {
+        clearInterval(streamScrollTimerRef.current);
+      }
+    };
+  }, []);
+
   const startNewChat = () => {
+    // Abort any in-flight stream
+    if (streamAbortRef.current) {
+      streamAbortRef.current.abort();
+      streamAbortRef.current = null;
+    }
+    if (streamFlushTimerRef.current) {
+      clearTimeout(streamFlushTimerRef.current);
+      streamFlushTimerRef.current = null;
+    }
+    if (streamScrollTimerRef.current) {
+      clearInterval(streamScrollTimerRef.current);
+      streamScrollTimerRef.current = null;
+    }
+    setStreamingMessageId(null);
+    setIsProcessing(false);
+
     setMessages([
       {
         id: '1',
@@ -1118,7 +1243,7 @@ Use Markdown formatting. ${activityContext}`;
                 )}
               </View>
             ))}
-            {isProcessing && (
+            {isProcessing && !streamingMessageId && (
               <Animated.View
                 className="mb-4 items-start"
                 style={{

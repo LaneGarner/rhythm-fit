@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { Activity, ActivityType, SetData } from '../types/activity';
+import { isActivityComplete } from '../utils/supersetUtils';
 
 // Mirror the BodyPart type from backend
 export type BodyPart =
@@ -283,8 +284,7 @@ export function calculateExerciseStats(
   const matchingActivities = activities.filter(
     a =>
       a.completed &&
-      (a.name.toLowerCase().includes(exerciseName.toLowerCase()) ||
-        exerciseName.toLowerCase().includes(a.name.toLowerCase()))
+      a.name.toLowerCase() === exerciseName.toLowerCase()
   );
 
   if (matchingActivities.length === 0) return null;
@@ -396,7 +396,7 @@ export function calculateMuscleGroupStats(
   const exerciseSessions: Record<string, Set<string>> = {};
 
   for (const activity of activities) {
-    if (!activity.completed || !activity.sets) continue;
+    if (!isActivityComplete(activity) || !activity.sets) continue;
 
     const muscleGroups = getMuscleGroupsForExercise(activity.name);
 
@@ -460,7 +460,7 @@ export function calculateOverallStats(
     return date.isAfter(startDate) && date.isBefore(now.add(1, 'day'));
   });
 
-  const completedActivities = recentActivities.filter(a => a.completed);
+  const completedActivities = recentActivities.filter(a => isActivityComplete(a));
 
   let totalSets = 0;
   let totalReps = 0;
@@ -512,7 +512,7 @@ function calculateStreaks(activities: Activity[]): {
 } {
   const completedDates = new Set<string>();
   for (const activity of activities) {
-    if (activity.completed) {
+    if (isActivityComplete(activity)) {
       completedDates.add(activity.date);
     }
   }
@@ -570,7 +570,7 @@ function calculateStreaks(activities: Activity[]): {
 export function getUniqueExercises(activities: Activity[]): string[] {
   const exercises = new Set<string>();
   for (const activity of activities) {
-    if (activity.completed && activity.name) {
+    if (isActivityComplete(activity) && activity.name) {
       exercises.add(activity.name);
     }
   }
@@ -583,7 +583,8 @@ export function getUniqueExercises(activities: Activity[]): string[] {
 export function getExerciseProgressionData(
   stats: ExerciseStats,
   metric: 'weight' | 'reps' | 'volume' | 'time' | 'distance'
-): { label: string; value: number }[] {
+): { label: string; value: number; date?: string }[] {
+  let lastYear: number | null = null;
   return stats.history.map(h => {
     let value = 0;
     switch (metric) {
@@ -603,9 +604,14 @@ export function getExerciseProgressionData(
         value = h.totalDistance;
         break;
     }
+    const d = dayjs(h.date);
+    const year = d.year();
+    const showYear = lastYear === null || year !== lastYear;
+    lastYear = year;
     return {
-      label: dayjs(h.date).format('M/D'),
+      label: showYear ? d.format('M/D/YY') : d.format('M/D'),
       value,
+      date: h.date,
     };
   });
 }
@@ -662,7 +668,7 @@ export function calculatePersonalRecords(
   const recentCutoff = now.subtract(timeRangeDays, 'day');
 
   for (const activity of activities) {
-    if (!activity.completed || !activity.sets) continue;
+    if (!isActivityComplete(activity) || !activity.sets) continue;
 
     const activityDate = dayjs(activity.date);
     const isRecent = activityDate.isAfter(recentCutoff);
@@ -769,7 +775,7 @@ export function calculateConsistencyStats(
 
   const completedDates = new Set<string>();
   for (const activity of activities) {
-    if (activity.completed) {
+    if (isActivityComplete(activity)) {
       const activityDate = dayjs(activity.date);
       if (
         activityDate.isAfter(startDate) &&
@@ -805,7 +811,7 @@ export function calculateConsistencyStats(
   const weeklyStats: Record<string, { sessions: number; volume: number }> = {};
 
   for (const activity of activities) {
-    if (!activity.completed) continue;
+    if (!isActivityComplete(activity)) continue;
 
     const activityDate = dayjs(activity.date);
     if (
@@ -874,7 +880,7 @@ export function calculateActivityTypeBreakdown(
   };
 
   for (const activity of activities) {
-    if (activity.completed && activity.type) {
+    if (isActivityComplete(activity) && activity.type) {
       typeCounts[activity.type]++;
     }
   }

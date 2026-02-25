@@ -140,6 +140,7 @@ export async function syncActivities(
 
     // 1. Fetch server activities updated since last sync
     let serverActivities: SyncableActivity[] = [];
+    let fetchSyncTime: string | null = null;
     try {
       const url = lastSyncTime
         ? `${API_URL}/api/activities?since=${encodeURIComponent(lastSyncTime)}`
@@ -155,6 +156,7 @@ export async function syncActivities(
       if (response.ok) {
         const data: FetchResponse = await response.json();
         serverActivities = data.activities;
+        fetchSyncTime = data.syncTime;
       }
     } catch (err) {
       console.error('Failed to fetch server activities:', err);
@@ -198,9 +200,9 @@ export async function syncActivities(
         console.error('Failed to push activities to server:', err);
         // Keep pending queue for next sync
       }
-    } else if (serverActivities.length > 0) {
-      // No pending changes, just update sync time
-      await setLastSyncTime(new Date().toISOString());
+    } else if (fetchSyncTime) {
+      // Use server-provided sync time to avoid client/server clock drift
+      await setLastSyncTime(fetchSyncTime);
     }
   } catch (err) {
     console.error('Sync failed:', err);

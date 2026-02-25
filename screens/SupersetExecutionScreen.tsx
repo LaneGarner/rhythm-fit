@@ -62,6 +62,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     activityId: string;
     setId: string;
   } | null>(null);
+  const [distanceText, setDistanceText] = useState<Record<string, string>>({});
   const [durationPickerInfo, setDurationPickerInfo] = useState<{
     activityId: string;
     setId: string;
@@ -646,16 +647,68 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                         ] = ref;
                                       }}
                                       value={
-                                        value != null ? value.toString() : ''
+                                        field === 'distance' &&
+                                        distanceText[
+                                          `${activity.id}-${set.id}`
+                                        ] != null
+                                          ? distanceText[
+                                              `${activity.id}-${set.id}`
+                                            ]
+                                          : value != null
+                                            ? value.toString()
+                                            : ''
                                       }
-                                      onChangeText={text =>
-                                        handleUpdateSet(activity.id, set.id, {
-                                          [field]: text
-                                            ? parseFloat(text)
-                                            : undefined,
-                                        })
+                                      onChangeText={text => {
+                                        if (field === 'distance') {
+                                          if (
+                                            text &&
+                                            !/^\d*\.?\d{0,2}$/.test(text)
+                                          )
+                                            return;
+                                          const key = `${activity.id}-${set.id}`;
+                                          setDistanceText(prev => ({
+                                            ...prev,
+                                            [key]: text,
+                                          }));
+                                          return;
+                                        }
+                                        handleUpdateSet(
+                                          activity.id,
+                                          set.id,
+                                          {
+                                            [field]: text
+                                              ? parseFloat(text)
+                                              : undefined,
+                                          }
+                                        );
+                                      }}
+                                      onBlur={() => {
+                                        if (field === 'distance') {
+                                          const key = `${activity.id}-${set.id}`;
+                                          const text = distanceText[key];
+                                          if (text != null) {
+                                            handleUpdateSet(
+                                              activity.id,
+                                              set.id,
+                                              {
+                                                distance: text
+                                                  ? parseFloat(text)
+                                                  : undefined,
+                                              }
+                                            );
+                                            setDistanceText(prev => {
+                                              const next = { ...prev };
+                                              delete next[key];
+                                              return next;
+                                            });
+                                          }
+                                        }
+                                      }}
+                                      keyboardType={
+                                        field === 'distance'
+                                          ? 'decimal-pad'
+                                          : 'numeric'
                                       }
-                                      keyboardType="numeric"
                                       className={`px-3 py-2 border rounded-lg ${
                                         isDark
                                           ? 'bg-gray-700 border-gray-600 text-white'
@@ -667,6 +720,16 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       returnKeyType="done"
                                       onSubmitEditing={() => Keyboard.dismiss()}
                                       onFocus={() => {
+                                        if (field === 'distance') {
+                                          const key = `${activity.id}-${set.id}`;
+                                          setDistanceText(prev => ({
+                                            ...prev,
+                                            [key]:
+                                              value != null
+                                                ? value.toString()
+                                                : '',
+                                          }));
+                                        }
                                         setTimeout(() => {
                                           scrollToSetInput(
                                             `${activity.id}-${set.id}-${field}`

@@ -86,6 +86,7 @@ export default function ActivityForm({
   const [customEmojis, setCustomEmojis] = useState<EmojiItem[]>([]);
   const [showCustomEmojiInput, setShowCustomEmojiInput] = useState(false);
   const [customEmojiText, setCustomEmojiText] = useState('');
+  const [distanceText, setDistanceText] = useState<Record<string, string>>({});
   const [durationPickerSetId, setDurationPickerSetId] = useState<string | null>(
     null
   );
@@ -924,13 +925,55 @@ export default function ActivityForm({
                             ref={ref => {
                               setInputRefs.current[`${set.id}-${field}`] = ref;
                             }}
-                            value={value != null ? value.toString() : ''}
-                            onChangeText={text =>
-                              handleUpdateSet(set.id, {
-                                [field]: text ? parseFloat(text) : undefined,
-                              })
+                            value={
+                              field === 'distance' &&
+                              distanceText[set.id] != null
+                                ? distanceText[set.id]
+                                : value != null
+                                  ? value.toString()
+                                  : ''
                             }
-                            keyboardType="numeric"
+                            onChangeText={text => {
+                              if (field === 'distance') {
+                                if (
+                                  text &&
+                                  !/^\d*\.?\d{0,2}$/.test(text)
+                                )
+                                  return;
+                                setDistanceText(prev => ({
+                                  ...prev,
+                                  [set.id]: text,
+                                }));
+                                return;
+                              }
+                              handleUpdateSet(set.id, {
+                                [field]: text
+                                  ? parseFloat(text)
+                                  : undefined,
+                              });
+                            }}
+                            onBlur={() => {
+                              if (field === 'distance') {
+                                const text = distanceText[set.id];
+                                if (text != null) {
+                                  handleUpdateSet(set.id, {
+                                    distance: text
+                                      ? parseFloat(text)
+                                      : undefined,
+                                  });
+                                  setDistanceText(prev => {
+                                    const next = { ...prev };
+                                    delete next[set.id];
+                                    return next;
+                                  });
+                                }
+                              }
+                            }}
+                            keyboardType={
+                              field === 'distance'
+                                ? 'decimal-pad'
+                                : 'numeric'
+                            }
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
                                 ? 'bg-gray-700 border-gray-600 text-white'
@@ -940,6 +983,13 @@ export default function ActivityForm({
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
                             onFocus={() => {
+                              if (field === 'distance') {
+                                setDistanceText(prev => ({
+                                  ...prev,
+                                  [set.id]:
+                                    value != null ? value.toString() : '',
+                                }));
+                              }
                               setTimeout(() => {
                                 scrollToSetInput(`${set.id}-${field}`);
                               }, 100);

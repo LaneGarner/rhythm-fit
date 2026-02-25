@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
+import { isActivityComplete } from '../utils/supersetUtils';
 import {
   calculateMuscleGroupStats,
   calculateOverallStats,
@@ -195,7 +196,7 @@ function calculateDayDistribution(activities: Activity[]): {
   const thirtyDaysAgo = now.subtract(30, 'day');
 
   for (const activity of activities) {
-    if (!activity.completed) continue;
+    if (!isActivityComplete(activity)) continue;
     const date = dayjs(activity.date);
     if (date.isAfter(thirtyDaysAgo) && date.isBefore(now.add(1, 'day'))) {
       const dayOfWeek = date.day();

@@ -54,6 +54,80 @@ interface ChatHistoryResponse {
   messages?: ChatMessage[];
 }
 
+export type StreamEvent =
+  | { type: 'token'; content: string }
+  | { type: 'done'; content: string; activities: ParsedActivity[] }
+  | { type: 'error'; message: string };
+
+export function streamChatMessage(
+  accessToken: string,
+  messages: ChatMessage[],
+  callbacks: {
+    onToken: (text: string) => void;
+    onDone: (content: string, activities: ParsedActivity[]) => void;
+    onError: (message: string) => void;
+  },
+  options?: {
+    activityContext?: string;
+    sessionId?: string;
+    sessionTitle?: string;
+  }
+): { abort: () => void } {
+  const xhr = new XMLHttpRequest();
+  let lastProcessedIndex = 0;
+
+  xhr.open('POST', `${API_URL}/api/chat`);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState >= 3 && xhr.responseText) {
+      const newText = xhr.responseText.substring(lastProcessedIndex);
+      lastProcessedIndex = xhr.responseText.length;
+
+      const lines = newText.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        try {
+          const event: StreamEvent = JSON.parse(line);
+          if (event.type === 'token') {
+            callbacks.onToken(event.content);
+          } else if (event.type === 'done') {
+            callbacks.onDone(event.content, event.activities);
+          } else if (event.type === 'error') {
+            callbacks.onError(event.message);
+          }
+        } catch {
+          // Partial JSON line, will be completed in next chunk
+        }
+      }
+    }
+  };
+
+  xhr.onerror = () => {
+    callbacks.onError('Network error');
+  };
+
+  xhr.send(
+    JSON.stringify({
+      messages,
+      stream: true,
+      activityContext: options?.activityContext,
+      sessionId: options?.sessionId,
+      sessionTitle: options?.sessionTitle,
+    })
+  );
+
+  return {
+    abort: () => {
+      try {
+        xhr.abort();
+      } catch {
+        // Already aborted or completed
+      }
+    },
+  };
+}
+
 export async function sendChatMessage(
   accessToken: string,
   messages: ChatMessage[],
