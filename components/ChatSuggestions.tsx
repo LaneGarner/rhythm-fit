@@ -1,26 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import {
   getChatSuggestions,
   ChatSuggestions as SuggestionsType,
 } from '../services/chatApi';
 import { useTheme } from '../theme/ThemeContext';
-import {
-  loadSuggestionsCollapsed,
-  saveSuggestionsCollapsed,
-} from '../utils/storage';
 
 interface ChatSuggestionsProps {
   onSuggestionPress: (suggestion: string) => void;
   visible?: boolean;
-  chatSessionId?: string;
 }
 
 // Fallback suggestions in case API fails
@@ -38,47 +27,14 @@ const FALLBACK_SUGGESTIONS = [
 // Cache for suggestions from API
 let cachedSuggestions: string[] | null = null;
 
-const EXPANDED_HEIGHT = 52;
-const COLLAPSED_HEIGHT = 44;
-const ANIMATION_DURATION = 200;
-
 export const ChatSuggestions = (props: ChatSuggestionsProps) => {
-  const { onSuggestionPress, visible = true, chatSessionId } = props;
+  const { onSuggestionPress, visible = true } = props;
   const { colors } = useTheme();
   const [refreshKey, setRefreshKey] = useState(0);
   const [allSuggestions, setAllSuggestions] = useState<string[]>(
     cachedSuggestions || FALLBACK_SUGGESTIONS
   );
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const collapseAnim = useRef(new Animated.Value(1)).current;
-  const prevSessionIdRef = useRef<string | undefined>(chatSessionId);
-
-  // Load collapsed state from storage on mount
-  useEffect(() => {
-    loadSuggestionsCollapsed().then(collapsed => {
-      setIsCollapsed(collapsed);
-      collapseAnim.setValue(collapsed ? 0 : 1);
-      setIsLoaded(true);
-    });
-  }, []);
-
-  // Auto-expand when chat session changes (new chat started)
-  useEffect(() => {
-    if (
-      isLoaded &&
-      chatSessionId &&
-      prevSessionIdRef.current &&
-      chatSessionId !== prevSessionIdRef.current
-    ) {
-      // New chat session started, expand suggestions
-      if (isCollapsed) {
-        handleExpand();
-      }
-    }
-    prevSessionIdRef.current = chatSessionId;
-  }, [chatSessionId, isLoaded]);
 
   // Fetch suggestions from API on mount
   useEffect(() => {
@@ -110,134 +66,28 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
     }, 50);
   };
 
-  const handleCollapse = () => {
-    Animated.timing(collapseAnim, {
-      toValue: 0,
-      duration: ANIMATION_DURATION,
-      useNativeDriver: false,
-    }).start(() => {
-      setIsCollapsed(true);
-      saveSuggestionsCollapsed(true);
-    });
-  };
-
-  const handleExpand = () => {
-    setIsCollapsed(false);
-    saveSuggestionsCollapsed(false);
-    Animated.timing(collapseAnim, {
-      toValue: 1,
-      duration: ANIMATION_DURATION,
-      useNativeDriver: false,
-    }).start();
-  };
-
   if (!visible) {
     return null;
   }
 
-  const animatedHeight = collapseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [COLLAPSED_HEIGHT, EXPANDED_HEIGHT],
-  });
-
-  const expandedOpacity = collapseAnim;
-  const collapsedOpacity = collapseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
-
   return (
-    <Animated.View
+    <View
       style={{
         backgroundColor: colors.surface,
         borderTopColor: colors.border,
-        height: animatedHeight,
-        overflow: 'hidden',
+        height: 52,
       }}
       className="border-t"
     >
-      {/* Collapsed state - hint bar */}
-      <Animated.View
+      <View
         style={{
-          opacity: collapsedOpacity,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        pointerEvents={isCollapsed ? 'auto' : 'none'}
-      >
-        <TouchableOpacity
-          onPress={handleExpand}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            minHeight: 44,
-            minWidth: 44,
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Show suggestions"
-          accessibilityHint="Double tap to show chat suggestions"
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="bulb-outline"
-            size={16}
-            color={colors.textSecondary}
-            style={{ marginRight: 6 }}
-          />
-          <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-            Show chat suggestions
-          </Text>
-          <Ionicons
-            name="chevron-up"
-            size={16}
-            color={colors.textSecondary}
-            style={{ marginLeft: 6 }}
-          />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Expanded state - suggestions */}
-      <Animated.View
-        style={{
-          opacity: expandedOpacity,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: 16,
           flex: 1,
         }}
-        pointerEvents={isCollapsed ? 'none' : 'auto'}
       >
-        {/* Collapse button */}
-        <TouchableOpacity
-          onPress={handleCollapse}
-          style={{
-            width: 44,
-            height: 44,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginRight: 4,
-            marginLeft: -8,
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Hide suggestions"
-          accessibilityHint="Double tap to hide chat suggestions"
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="chevron-down"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
         <ScrollView
           ref={scrollViewRef}
           horizontal
@@ -307,7 +157,7 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </Animated.View>
-    </Animated.View>
+      </View>
+    </View>
   );
 };

@@ -1315,8 +1315,7 @@ Use Markdown formatting. ${activityContext}`;
 
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
-            visible={!isProcessing}
-            chatSessionId={currentSessionId}
+            visible={!isProcessing && messages.length <= 1}
           />
 
           <View
