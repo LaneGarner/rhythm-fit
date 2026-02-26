@@ -96,7 +96,10 @@ export default function DayScreen({ navigation, route }: any) {
   // Use pending order if available, otherwise use saved order
   const dayActivities = pendingOrderIds
     ? pendingOrderIds
-        .map(id => savedActivities.find(a => a.id === id))
+        .map((id, index) => {
+          const activity = savedActivities.find(a => a.id === id);
+          return activity ? { ...activity, order: index } : undefined;
+        })
         .filter((a): a is Activity => a !== undefined)
     : savedActivities;
 
