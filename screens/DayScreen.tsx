@@ -24,6 +24,7 @@ import {
   addToSuperset,
   removeFromSuperset,
   breakSuperset,
+  swapSupersetOrder,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
@@ -96,7 +97,10 @@ export default function DayScreen({ navigation, route }: any) {
   // Use pending order if available, otherwise use saved order
   const dayActivities = pendingOrderIds
     ? pendingOrderIds
-        .map(id => savedActivities.find(a => a.id === id))
+        .map((id, index) => {
+          const activity = savedActivities.find(a => a.id === id);
+          return activity ? { ...activity, order: index } : undefined;
+        })
         .filter((a): a is Activity => a !== undefined)
     : savedActivities;
 
@@ -292,12 +296,17 @@ export default function DayScreen({ navigation, route }: any) {
 
         // Create new order
         const reordered = [...dayActivities];
-        const [movedActivity] = reordered.splice(currentIndex, 1);
 
-        // Adjust target index after removal if needed
-        const adjustedTarget =
-          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
-        reordered.splice(adjustedTarget, 0, movedActivity);
+        if (targetActivity.supersetId) {
+          // Moving past a superset group - use splice with adjusted index
+          const [movedActivity] = reordered.splice(currentIndex, 1);
+          const adjustedTarget =
+            targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+          reordered.splice(adjustedTarget, 0, movedActivity);
+        } else {
+          // Simple swap with adjacent non-superset activity
+          [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+        }
 
         const orderedIds = reordered.map(a => a.id);
         setPendingOrderIds(orderedIds);
@@ -692,6 +701,90 @@ export default function DayScreen({ navigation, route }: any) {
                       />
                     </TouchableOpacity>
                   </View>
+                  {supersetInfo.isInSuperset && (
+                    <View className="mr-2">
+                      {!supersetInfo.isFirstInSuperset && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const supersetMembers = dayActivities
+                              .filter(a => a.supersetId === activity.supersetId)
+                              .sort(
+                                (a, b) =>
+                                  (a.supersetPosition || 0) -
+                                  (b.supersetPosition || 0)
+                              );
+                            const pos = supersetMembers.findIndex(
+                              a => a.id === activity.id
+                            );
+                            if (pos > 0) {
+                              dispatch(
+                                swapSupersetOrder({
+                                  supersetId: activity.supersetId!,
+                                  id1: activity.id,
+                                  id2: supersetMembers[pos - 1].id,
+                                })
+                              );
+                            }
+                          }}
+                          hitSlop={{
+                            top: 14,
+                            bottom: 14,
+                            left: 14,
+                            right: 14,
+                          }}
+                          className="p-1"
+                          accessibilityRole="button"
+                          accessibilityLabel={`Move ${activity.name} up in superset`}
+                        >
+                          <Ionicons
+                            name="arrow-up"
+                            size={14}
+                            color={colors.primary.main}
+                          />
+                        </TouchableOpacity>
+                      )}
+                      {!supersetInfo.isLastInSuperset && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const supersetMembers = dayActivities
+                              .filter(a => a.supersetId === activity.supersetId)
+                              .sort(
+                                (a, b) =>
+                                  (a.supersetPosition || 0) -
+                                  (b.supersetPosition || 0)
+                              );
+                            const pos = supersetMembers.findIndex(
+                              a => a.id === activity.id
+                            );
+                            if (pos < supersetMembers.length - 1) {
+                              dispatch(
+                                swapSupersetOrder({
+                                  supersetId: activity.supersetId!,
+                                  id1: activity.id,
+                                  id2: supersetMembers[pos + 1].id,
+                                })
+                              );
+                            }
+                          }}
+                          hitSlop={{
+                            top: 14,
+                            bottom: 14,
+                            left: 14,
+                            right: 14,
+                          }}
+                          className="p-1"
+                          accessibilityRole="button"
+                          accessibilityLabel={`Move ${activity.name} down in superset`}
+                        >
+                          <Ionicons
+                            name="arrow-down"
+                            size={14}
+                            color={colors.primary.main}
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
                   <TouchableOpacity
                     onPress={() => toggleActivitySelection(activity.id)}
                     className="mr-2"
@@ -985,8 +1078,19 @@ export default function DayScreen({ navigation, route }: any) {
   // Build version: Drag handle reordering with DraggableFlatList
   // Render a single activity row for bulk mode (used inside groups)
   const renderBulkActivityRow = useCallback(
-    (activity: Activity, isActive: boolean) => {
+    (
+      activity: Activity,
+      isActive: boolean,
+      supersetMembers?: Activity[]
+    ) => {
       const isSelected = selectedActivities.has(activity.id);
+      const memberIndex = supersetMembers
+        ? supersetMembers.findIndex(a => a.id === activity.id)
+        : -1;
+      const isFirstInSuperset = memberIndex === 0;
+      const isLastInSuperset =
+        supersetMembers != null &&
+        memberIndex === supersetMembers.length - 1;
 
       return (
         <View
@@ -997,6 +1101,66 @@ export default function DayScreen({ navigation, route }: any) {
             borderTopColor: colors.border,
           }}
         >
+          {supersetMembers && supersetMembers.length > 1 && (
+            <View style={{ marginRight: 4 }}>
+              {!isFirstInSuperset && (
+                <TouchableOpacity
+                  onPress={() =>
+                    dispatch(
+                      swapSupersetOrder({
+                        supersetId: activity.supersetId!,
+                        id1: activity.id,
+                        id2: supersetMembers[memberIndex - 1].id,
+                      })
+                    )
+                  }
+                  hitSlop={{
+                    top: 14,
+                    bottom: 14,
+                    left: 14,
+                    right: 14,
+                  }}
+                  className="p-1"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Move ${activity.name} up in superset`}
+                >
+                  <Ionicons
+                    name="arrow-up"
+                    size={14}
+                    color={colors.primary.main}
+                  />
+                </TouchableOpacity>
+              )}
+              {!isLastInSuperset && (
+                <TouchableOpacity
+                  onPress={() =>
+                    dispatch(
+                      swapSupersetOrder({
+                        supersetId: activity.supersetId!,
+                        id1: activity.id,
+                        id2: supersetMembers[memberIndex + 1].id,
+                      })
+                    )
+                  }
+                  hitSlop={{
+                    top: 14,
+                    bottom: 14,
+                    left: 14,
+                    right: 14,
+                  }}
+                  className="p-1"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Move ${activity.name} down in superset`}
+                >
+                  <Ionicons
+                    name="arrow-down"
+                    size={14}
+                    color={colors.primary.main}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
           <TouchableOpacity
             onPress={() => toggleActivitySelection(activity.id)}
             className="mr-2"
@@ -1040,7 +1204,7 @@ export default function DayScreen({ navigation, route }: any) {
         </View>
       );
     },
-    [selectedActivities, isDark, navigation, toggleActivitySelection, date]
+    [selectedActivities, isDark, navigation, toggleActivitySelection, date, dispatch, colors]
   );
 
   // Render a draggable group (single activity or superset)
@@ -1177,7 +1341,7 @@ export default function DayScreen({ navigation, route }: any) {
             {isSuperset && (
               <View style={{ marginTop: 8 }}>
                 {activities.map(activity =>
-                  renderBulkActivityRow(activity, isActive)
+                  renderBulkActivityRow(activity, isActive, activities)
                 )}
               </View>
             )}
@@ -1417,7 +1581,7 @@ export default function DayScreen({ navigation, route }: any) {
               setIsBulkMode(false);
               setSelectedActivities(new Set());
             }
-            navigation.navigate('Main');
+            navigation.popToTop();
           }}
           style={{
             position: 'absolute',

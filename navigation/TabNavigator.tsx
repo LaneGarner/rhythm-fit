@@ -5,7 +5,7 @@ import { TouchableOpacity, View } from 'react-native';
 import CalculatorScreen from '../screens/CalculatorScreen';
 import CoachScreen from '../screens/CoachScreen';
 import StatsScreen from '../screens/StatsScreen';
-import WeeklyScreen from '../screens/WeeklyScreen';
+import WeeklyStackNavigator from './WeeklyStackNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useTutorial } from '../components/tutorial';
 
@@ -112,7 +112,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen
         name="Weekly"
-        component={WeeklyScreen}
+        component={WeeklyStackNavigator}
         options={{
           tabBarLabel: 'Activities',
           tabBarIcon: ({ color, size, focused }) => (

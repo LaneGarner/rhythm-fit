@@ -32,6 +32,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { ChatSuggestions } from '../components/ChatSuggestions';
+import { StreamingText } from '../components/StreamingText';
 import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
 import { OPENAI_CONFIG, isBackendConfigured } from '../config/api';
 import { useAuth } from '../context/AuthContext';
@@ -106,6 +107,7 @@ export default function CoachScreen({ navigation }: any) {
   const streamScrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
+  const userScrolledRef = useRef(false);
 
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -160,41 +162,15 @@ export default function CoachScreen({ navigation }: any) {
     loadChatHistory();
   }, [user?.id]);
 
-  // Auto-scroll when messages change or processing state changes
+  // Scroll to end when user sends a message
   useEffect(() => {
-    if (scrollViewRef.current && (messages.length > 0 || isProcessing)) {
-      setTimeout(
-        () => {
-          if (isProcessing) {
-            // When processing (showing "Thinking..."), scroll to end
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          } else {
-            // When new bot message is received, scroll to show top of the message
-            const lastMessage = messages[messages.length - 1];
-            if (lastMessage?.type === 'bot' && lastBotMessageRef.current) {
-              lastBotMessageRef.current.measureLayout(
-                scrollViewRef.current as any,
-                (x, y) => {
-                  scrollViewRef.current?.scrollTo({
-                    y: Math.max(0, y - 20), // Add small padding from top
-                    animated: true,
-                  });
-                },
-                () => {
-                  // Fallback to scroll to end if measurement fails
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }
-              );
-            } else {
-              // For user messages or when ref not available, scroll to end
-              scrollViewRef.current?.scrollToEnd({ animated: true });
-            }
-          }
-        },
-        isProcessing ? 100 : 350
-      );
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.type === 'user' && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     }
-  }, [messages, isProcessing]);
+  }, [messages.length]);
 
   // Immediate scroll when processing starts
   useEffect(() => {
@@ -205,12 +181,16 @@ export default function CoachScreen({ navigation }: any) {
     }
   }, [isProcessing]);
 
-  // Scroll to bottom when keyboard dismisses
+  // Scroll to bottom when keyboard dismisses (only if not streaming)
   useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
-        if (scrollViewRef.current && messages.length > 0) {
+        if (
+          scrollViewRef.current &&
+          messages.length > 0 &&
+          !streamingMessageId
+        ) {
           setTimeout(() => {
             scrollViewRef.current?.scrollToEnd({ animated: true });
           }, 100);
@@ -221,7 +201,7 @@ export default function CoachScreen({ navigation }: any) {
     return () => {
       keyboardDidHideListener?.remove();
     };
-  }, [messages]);
+  }, [messages, streamingMessageId]);
 
   const loadChatHistory = async () => {
     try {
@@ -631,6 +611,7 @@ export default function CoachScreen({ navigation }: any) {
     if (!inputText.trim() || isProcessing) return;
 
     setIsProcessing(true);
+    userScrolledRef.current = false;
 
     // Store the input text and clear immediately
     const currentInput = inputText.trim();
@@ -681,28 +662,49 @@ export default function CoachScreen({ navigation }: any) {
           ? currentInput.substring(0, 50)
           : messages[1]?.text?.substring(0, 50) || 'Chat Session';
 
-        // Create empty bot message immediately
+        // Create bot message ID but don't add to messages yet — show "Thinking..." first
         const botMessageId = (Date.now() + 1).toString();
-        const botMessage = {
-          id: botMessageId,
-          type: 'bot' as const,
-          text: '',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, botMessage]);
-        setStreamingMessageId(botMessageId);
         streamContentRef.current = '';
-
-        // Start periodic scroll during streaming
-        streamScrollTimerRef.current = setInterval(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false });
-        }, 200);
 
         const streamHandle = streamChatMessage(
           token,
           allMessages,
           {
             onToken: (text: string) => {
+              // On first token, add the bot message and start streaming scroll
+              if (!streamContentRef.current) {
+                const botMessage = {
+                  id: botMessageId,
+                  type: 'bot' as const,
+                  text: '',
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, botMessage]);
+                setStreamingMessageId(botMessageId);
+
+                // Start periodic scroll to pin user's message at the top
+                const targetY = { value: -1 };
+                streamScrollTimerRef.current = setInterval(() => {
+                  if (!scrollViewRef.current) return;
+                  if (lastUserMessageRef.current) {
+                    lastUserMessageRef.current.measureLayout(
+                      scrollViewRef.current as any,
+                      (x, y) => {
+                        const scrollTarget = Math.max(0, y - 12);
+                        if (targetY.value === -1) {
+                          targetY.value = scrollTarget;
+                        }
+                        scrollViewRef.current?.scrollTo({
+                          y: scrollTarget,
+                          animated: false,
+                        });
+                      },
+                      () => {}
+                    );
+                  }
+                }, 200);
+              }
+
               streamContentRef.current += text;
 
               // Throttled flush to state (~50ms)
@@ -719,7 +721,7 @@ export default function CoachScreen({ navigation }: any) {
               }
             },
             onDone: (content: string, activities: any[]) => {
-              // Clear flush timer and do final update
+              // Clear timers and do final update
               if (streamFlushTimerRef.current) {
                 clearTimeout(streamFlushTimerRef.current);
                 streamFlushTimerRef.current = null;
@@ -728,7 +730,6 @@ export default function CoachScreen({ navigation }: any) {
                 clearInterval(streamScrollTimerRef.current);
                 streamScrollTimerRef.current = null;
               }
-
               let finalContent = content;
 
               // Create activities if any were parsed
@@ -741,11 +742,24 @@ export default function CoachScreen({ navigation }: any) {
                 }
               }
 
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === botMessageId ? { ...m, text: finalContent } : m
-                )
-              );
+              // If no tokens arrived, add the message; otherwise update it
+              if (!streamContentRef.current) {
+                setMessages(prev => [
+                  ...prev,
+                  {
+                    id: botMessageId,
+                    type: 'bot' as const,
+                    text: finalContent,
+                    timestamp: new Date(),
+                  },
+                ]);
+              } else {
+                setMessages(prev =>
+                  prev.map(m =>
+                    m.id === botMessageId ? { ...m, text: finalContent } : m
+                  )
+                );
+              }
               setStreamingMessageId(null);
               streamAbortRef.current = null;
               setIsProcessing(false);
@@ -765,19 +779,26 @@ export default function CoachScreen({ navigation }: any) {
                 clearInterval(streamScrollTimerRef.current);
                 streamScrollTimerRef.current = null;
               }
-
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === botMessageId
-                    ? {
-                        ...m,
-                        text:
-                          message ||
-                          "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
-                      }
-                    : m
-                )
-              );
+              const errorText =
+                message ||
+                "Sorry, I'm having trouble connecting right now. Please try again in a moment.";
+              if (!streamContentRef.current) {
+                setMessages(prev => [
+                  ...prev,
+                  {
+                    id: botMessageId,
+                    type: 'bot' as const,
+                    text: errorText,
+                    timestamp: new Date(),
+                  },
+                ]);
+              } else {
+                setMessages(prev =>
+                  prev.map(m =>
+                    m.id === botMessageId ? { ...m, text: errorText } : m
+                  )
+                );
+              }
               setStreamingMessageId(null);
               streamAbortRef.current = null;
               setIsProcessing(false);
@@ -1175,6 +1196,16 @@ Use Markdown formatting. ${activityContext}`;
             contentContainerStyle={{ paddingBottom: 20 }}
             ref={scrollViewRef}
             accessibilityLiveRegion="polite"
+            onScrollBeginDrag={() => {
+              if (streamingMessageId) {
+                userScrolledRef.current = true;
+                // Stop the auto-scroll timer when user takes over
+                if (streamScrollTimerRef.current) {
+                  clearInterval(streamScrollTimerRef.current);
+                  streamScrollTimerRef.current = null;
+                }
+              }
+            }}
           >
             {messages.map((message, index) => (
               <View
@@ -1235,10 +1266,14 @@ Use Markdown formatting. ${activityContext}`;
                         </Text>
                       </View>
                     )}
-                    <WorkoutContentWithLinks
-                      text={message.text}
-                      isDark={isDark}
-                    />
+                    {message.id === streamingMessageId ? (
+                      <StreamingText text={message.text} isDark={isDark} />
+                    ) : (
+                      <WorkoutContentWithLinks
+                        text={message.text}
+                        isDark={isDark}
+                      />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
@@ -1280,8 +1315,7 @@ Use Markdown formatting. ${activityContext}`;
 
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
-            visible={!isProcessing}
-            chatSessionId={currentSessionId}
+            visible={!isProcessing && messages.length <= 1}
           />
 
           <View
