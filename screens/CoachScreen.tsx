@@ -32,6 +32,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { ChatSuggestions } from '../components/ChatSuggestions';
+import { StreamingText } from '../components/StreamingText';
 import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
 import { OPENAI_CONFIG, isBackendConfigured } from '../config/api';
 import { useAuth } from '../context/AuthContext';
@@ -161,7 +162,9 @@ export default function CoachScreen({ navigation }: any) {
   }, [user?.id]);
 
   // Auto-scroll when messages change or processing state changes
+  // Skip scrolling during streaming — let user read from the top
   useEffect(() => {
+    if (streamingMessageId) return; // Don't auto-scroll while streaming
     if (scrollViewRef.current && (messages.length > 0 || isProcessing)) {
       setTimeout(
         () => {
@@ -194,7 +197,7 @@ export default function CoachScreen({ navigation }: any) {
         isProcessing ? 100 : 350
       );
     }
-  }, [messages, isProcessing]);
+  }, [messages, isProcessing, streamingMessageId]);
 
   // Immediate scroll when processing starts
   useEffect(() => {
@@ -693,9 +696,27 @@ export default function CoachScreen({ navigation }: any) {
         setStreamingMessageId(botMessageId);
         streamContentRef.current = '';
 
-        // Start periodic scroll during streaming
+        // Periodically scroll to pin the user's message at the top as the response grows
+        const targetY = { value: -1, reached: false };
         streamScrollTimerRef.current = setInterval(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false });
+          if (targetY.reached || !scrollViewRef.current) return;
+          if (lastUserMessageRef.current) {
+            lastUserMessageRef.current.measureLayout(
+              scrollViewRef.current as any,
+              (x, y) => {
+                const scrollTarget = Math.max(0, y - 12);
+                if (targetY.value === -1) {
+                  targetY.value = scrollTarget;
+                }
+                // Keep scrolling until the scroll view can reach the target
+                scrollViewRef.current?.scrollTo({
+                  y: scrollTarget,
+                  animated: false,
+                });
+              },
+              () => {}
+            );
+          }
         }, 200);
 
         const streamHandle = streamChatMessage(
@@ -719,7 +740,7 @@ export default function CoachScreen({ navigation }: any) {
               }
             },
             onDone: (content: string, activities: any[]) => {
-              // Clear flush timer and do final update
+              // Clear timers and do final update
               if (streamFlushTimerRef.current) {
                 clearTimeout(streamFlushTimerRef.current);
                 streamFlushTimerRef.current = null;
@@ -728,7 +749,6 @@ export default function CoachScreen({ navigation }: any) {
                 clearInterval(streamScrollTimerRef.current);
                 streamScrollTimerRef.current = null;
               }
-
               let finalContent = content;
 
               // Create activities if any were parsed
@@ -765,7 +785,6 @@ export default function CoachScreen({ navigation }: any) {
                 clearInterval(streamScrollTimerRef.current);
                 streamScrollTimerRef.current = null;
               }
-
               setMessages(prev =>
                 prev.map(m =>
                   m.id === botMessageId
@@ -1235,10 +1254,14 @@ Use Markdown formatting. ${activityContext}`;
                         </Text>
                       </View>
                     )}
-                    <WorkoutContentWithLinks
-                      text={message.text}
-                      isDark={isDark}
-                    />
+                    {message.id === streamingMessageId ? (
+                      <StreamingText text={message.text} />
+                    ) : (
+                      <WorkoutContentWithLinks
+                        text={message.text}
+                        isDark={isDark}
+                      />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
