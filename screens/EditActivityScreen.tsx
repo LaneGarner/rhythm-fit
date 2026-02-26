@@ -18,7 +18,7 @@ import { Activity, RecurringConfig } from '../types/activity';
 dayjs.extend(isSameOrAfter);
 
 export default function EditActivityScreen({ navigation, route }: any) {
-  const { activityId, fromDayEdit, date: returnDate } = route.params;
+  const { activityId } = route.params;
   const dispatch = useDispatch();
   const { getAccessToken } = useAuth();
   const { colors } = useTheme();
@@ -108,7 +108,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
           style: 'destructive',
           onPress: async () => {
             // Navigate to Day view first to avoid crash from rendering deleted activity
-            navigation.navigate('Day', { date: activity.date });
+            navigation.navigate('Main', {
+              screen: 'Weekly',
+              params: {
+                screen: 'Day',
+                params: { date: activity.date },
+              },
+            });
             dispatch(deleteActivity(activityId));
             // Sync deletion to backend
             try {
@@ -167,10 +173,24 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
       // Reset navigation stack to avoid "activity not found" on stale screens
       navigation.reset({
-        index: 1,
+        index: 0,
         routes: [
-          { name: 'Main' },
-          { name: 'Day', params: { date: targetDate } },
+          {
+            name: 'Main',
+            state: {
+              routes: [
+                {
+                  name: 'Weekly',
+                  state: {
+                    routes: [
+                      { name: 'WeeklyHome' },
+                      { name: 'Day', params: { date: targetDate } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
         ],
       });
     } else {
@@ -182,20 +202,12 @@ export default function EditActivityScreen({ navigation, route }: any) {
         recurring: recurringConfig || undefined,
       };
       dispatch(updateActivity(finalActivity));
-      if (fromDayEdit && returnDate) {
-        navigation.replace('Day', { date: returnDate });
-      } else {
-        navigation.goBack();
-      }
+      navigation.goBack();
     }
   };
 
   const handleCancel = () => {
-    if (fromDayEdit && returnDate) {
-      navigation.replace('Day', { date: returnDate });
-    } else {
-      navigation.goBack();
-    }
+    navigation.goBack();
   };
 
   if (!activity) {

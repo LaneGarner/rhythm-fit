@@ -21,11 +21,9 @@ import { PreferencesProvider } from './context/PreferencesContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
 
 // Import screens
-import ActivityExecutionScreen from './screens/ActivityExecutionScreen';
 import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
 import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
-import DayScreen from './screens/DayScreen';
 import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
@@ -33,7 +31,6 @@ import EquipmentScreen from './screens/EquipmentScreen';
 import ExerciseStatsScreen from './screens/ExerciseStatsScreen';
 import PersonalRecordsScreen from './screens/PersonalRecordsScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import SupersetExecutionScreen from './screens/SupersetExecutionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,11 +40,8 @@ const DEV_MODE_ENABLED = __DEV__;
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
-  Day: { date: string };
   Activity: { date: string };
-  ActivityExecution: { activityId: string };
   DemoActivityExecution: undefined;
-  SupersetExecution: { supersetId: string };
   EditActivity: { activityId: string };
   Settings: undefined;
   ActivityLibrary: undefined;
@@ -90,19 +84,10 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
         >
           <Stack.Screen name="Auth" component={AuthScreen} />
           <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="Day" component={DayScreen} />
           <Stack.Screen name="Activity" component={ActivityScreen} />
-          <Stack.Screen
-            name="ActivityExecution"
-            component={ActivityExecutionScreen}
-          />
           <Stack.Screen
             name="DemoActivityExecution"
             component={DemoActivityExecutionScreen}
-          />
-          <Stack.Screen
-            name="SupersetExecution"
-            component={SupersetExecutionScreen}
           />
           <Stack.Screen name="EditActivity" component={EditActivityScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />

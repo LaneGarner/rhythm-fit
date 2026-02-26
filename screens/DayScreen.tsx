@@ -1581,7 +1581,7 @@ export default function DayScreen({ navigation, route }: any) {
               setIsBulkMode(false);
               setSelectedActivities(new Set());
             }
-            navigation.navigate('Main');
+            navigation.popToTop();
           }}
           style={{
             position: 'absolute',
