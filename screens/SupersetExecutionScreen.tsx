@@ -214,27 +214,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     );
   };
 
-  const handleCompleteAll = () => {
-    supersetActivities.forEach(activity => {
-      const completedSets = (activity.sets || []).map(set => ({
-        ...set,
-        completed: true,
-      }));
-
-      dispatch(
-        updateActivity({
-          ...activity,
-          completed: true,
-          sets: completedSets,
-        })
-      );
-    });
-
-    Alert.alert('Nice Work!', 'Superset complete!', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
-  };
-
   const handlePlateWeightSelect = (weight: number) => {
     if (activeSetInfo) {
       handleUpdateSet(activeSetInfo.activityId, activeSetInfo.setId, {
@@ -828,29 +807,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             </TouchableOpacity>
           </View>
         </Animated.ScrollView>
-      </View>
-
-      {/* Sticky Action Button */}
-      <View
-        className={`absolute left-0 right-0 p-4 border-t ${
-          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-        }`}
-        style={{
-          bottom: isKeyboardVisible ? keyboardHeight : 0,
-          paddingBottom: isKeyboardVisible ? 16 : 34,
-          zIndex: 1000,
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleCompleteAll}
-          className="bg-green-500 py-3 px-6 rounded-lg"
-          accessibilityRole="button"
-          accessibilityLabel="Complete all sets in superset"
-        >
-          <Text className="text-white text-center font-semibold text-lg">
-            Complete All
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Plate Calculator Modal */}
