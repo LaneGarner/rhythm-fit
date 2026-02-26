@@ -295,12 +295,17 @@ export default function DayScreen({ navigation, route }: any) {
 
         // Create new order
         const reordered = [...dayActivities];
-        const [movedActivity] = reordered.splice(currentIndex, 1);
 
-        // Adjust target index after removal if needed
-        const adjustedTarget =
-          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
-        reordered.splice(adjustedTarget, 0, movedActivity);
+        if (targetActivity.supersetId) {
+          // Moving past a superset group - use splice with adjusted index
+          const [movedActivity] = reordered.splice(currentIndex, 1);
+          const adjustedTarget =
+            targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+          reordered.splice(adjustedTarget, 0, movedActivity);
+        } else {
+          // Simple swap with adjacent non-superset activity
+          [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+        }
 
         const orderedIds = reordered.map(a => a.id);
         setPendingOrderIds(orderedIds);
