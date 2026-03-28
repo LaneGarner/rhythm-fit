@@ -44,6 +44,13 @@ interface ActivityFormProps {
   onSave: (activity: Activity, recurringConfig?: RecurringConfig) => void;
   onCancel: () => void;
   onDelete?: () => void;
+  supersetMode?: boolean;
+  onToggleSupersetMode?: (enabled: boolean) => void;
+  supersetDrafts?: Activity[];
+  onRemoveDraft?: (index: number) => void;
+  saveButtonLabel?: string;
+  headerTitle?: string;
+  onSaveSuperset?: () => void;
 }
 
 export default function ActivityForm({
@@ -52,6 +59,13 @@ export default function ActivityForm({
   onSave,
   onCancel,
   onDelete,
+  supersetMode,
+  onToggleSupersetMode,
+  supersetDrafts,
+  onRemoveDraft,
+  saveButtonLabel,
+  headerTitle,
+  onSaveSuperset,
 }: ActivityFormProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -382,7 +396,7 @@ export default function ActivityForm({
               textAlign: 'center',
             }}
           >
-            {mode === 'create' ? 'New Activity' : 'Edit Activity'}
+            {headerTitle || (mode === 'create' ? 'New Activity' : 'Edit Activity')}
           </Text>
         </View>
         {/* Right: Save button */}
@@ -405,7 +419,7 @@ export default function ActivityForm({
               fontWeight: '600',
             }}
           >
-            Save
+            {saveButtonLabel || 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -420,6 +434,160 @@ export default function ActivityForm({
         ref={scrollViewRef}
       >
         <View className="p-4 space-y-8">
+          {/* Superset Toggle (create mode only) */}
+          {mode === 'create' && onToggleSupersetMode && (
+            <TouchableOpacity
+              onPress={() => onToggleSupersetMode(!supersetMode)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: supersetMode ? colors.primary.main : colors.border,
+                backgroundColor: supersetMode
+                  ? isDark
+                    ? '#23263a'
+                    : '#e0e7ff'
+                  : colors.surface,
+              }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: supersetMode }}
+              accessibilityLabel="Make it a superset"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons
+                  name="link-outline"
+                  size={20}
+                  color={supersetMode ? colors.primary.main : colors.textSecondary}
+                />
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '500',
+                    color: supersetMode ? colors.primary.main : colors.text,
+                  }}
+                >
+                  Make it a Superset
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: supersetMode ? colors.primary.main : isDark ? '#555' : '#ccc',
+                  justifyContent: 'center',
+                  paddingHorizontal: 2,
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: '#fff',
+                    alignSelf: supersetMode ? 'flex-end' : 'flex-start',
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Superset Exercise Strip */}
+          {supersetMode && supersetDrafts && supersetDrafts.length > 0 && (
+            <View>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: colors.textSecondary,
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Exercises ({supersetDrafts.length})
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {supersetDrafts.map((draft, index) => (
+                  <View
+                    key={`draft-${index}`}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      backgroundColor: isDark ? '#23263a' : '#e0e7ff',
+                      borderWidth: 1,
+                      borderColor: isDark ? colors.primary.main + '40' : '#a5b4fc',
+                      gap: 6,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{draft.emoji || '💪'}</Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: colors.text,
+                        maxWidth: 120,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {draft.name}
+                    </Text>
+                    {onRemoveDraft && (
+                      <TouchableOpacity
+                        onPress={() => onRemoveDraft(index)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel={`Remove ${draft.name}`}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={colors.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Save Superset Button */}
+              {supersetDrafts.length >= 2 && onSaveSuperset && (
+                <TouchableOpacity
+                  onPress={onSaveSuperset}
+                  style={{
+                    marginTop: 12,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    backgroundColor: colors.primary.main,
+                    alignItems: 'center',
+                  }}
+                  accessibilityLabel="Save superset"
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={{
+                      color: '#fff',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    Save Superset
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Activity Name */}
           <View>
             <Text
