@@ -1855,7 +1855,7 @@ export default function DayScreen({ navigation, route }: any) {
             position: 'absolute',
             left: 0,
             right: 0,
-            top: 44,
+            top: insets.top + 4,
             height: 88,
             alignItems: 'center',
             justifyContent: 'center',
@@ -1889,7 +1889,7 @@ export default function DayScreen({ navigation, route }: any) {
             style={{
               position: 'absolute',
               right: 16,
-              top: 44,
+              top: insets.top + 4,
               height: 88,
               justifyContent: 'center',
               zIndex: 2,
