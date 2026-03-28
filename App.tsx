@@ -3,10 +3,10 @@ import {
   NavigationContainerRef,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
 import SplashScreen from './components/SplashScreen';
@@ -58,16 +58,6 @@ interface AppContentProps {
 
 function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
   const { colorScheme } = useTheme();
-
-  // Lock orientation to portrait
-  useEffect(() => {
-    const lockOrientation = async () => {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP
-      );
-    };
-    lockOrientation();
-  }, []);
 
   return (
     <TutorialProvider
@@ -131,19 +121,21 @@ function AppInitializer() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Provider store={store}>
-        <ThemeProvider>
-          <AuthProvider>
-            <PreferencesProvider>
-              <TimerProvider>
-                <WeekProvider>
-                  <AppInitializer />
-                </WeekProvider>
-              </TimerProvider>
-            </PreferencesProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </Provider>
+      <SafeAreaProvider>
+        <Provider store={store}>
+          <ThemeProvider>
+            <AuthProvider>
+              <PreferencesProvider>
+                <TimerProvider>
+                  <WeekProvider>
+                    <AppInitializer />
+                  </WeekProvider>
+                </TimerProvider>
+              </PreferencesProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </Provider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

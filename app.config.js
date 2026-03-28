@@ -5,7 +5,7 @@ export default {
     name: 'Rhythm Fit',
     slug: 'rhythm',
     version: '1.0.0',
-    orientation: 'portrait',
+    orientation: 'default',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
@@ -17,7 +17,7 @@ export default {
     ios: {
       bundleIdentifier: 'com.yourname.rhythm',
       supportsTablet: true,
-      requireFullScreen: true,
+      requireFullScreen: false,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
@@ -29,7 +29,6 @@ export default {
         backgroundColor: '#000000',
       },
       edgeToEdgeEnabled: true,
-      screenOrientation: 'portrait',
     },
     web: {
       favicon: './assets/favicon.png',

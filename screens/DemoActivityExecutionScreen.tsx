@@ -11,6 +11,7 @@ import {
 } from '../components/StickyActivityHeader';
 import { useTutorial } from '../components/tutorial/TutorialProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Activity, SetData } from '../types/activity';
 
 const DEMO_ACTIVITY: Activity = {
@@ -30,6 +31,7 @@ const DEMO_ACTIVITY: Activity = {
 
 export default function DemoActivityExecutionScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
   const { isActive, currentStep } = useTutorial();
 
@@ -102,9 +104,10 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 72,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,

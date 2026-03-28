@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   addActivity,
   clearAllActivities as clearReduxActivities,
@@ -23,6 +24,7 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [isPressed, setIsPressed] = useState(false);
   const { weekOffset } = useWeekContext();
+  const { insets } = useResponsiveLayout();
 
   if (!visible) return null;
 
@@ -201,8 +203,8 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
     <View
       style={{
         position: 'absolute',
-        top: 50, // Below status bar
-        left: 16,
+        top: insets.top + 4,
+        left: Math.max(16, insets.left),
         zIndex: 1000,
       }}
     >

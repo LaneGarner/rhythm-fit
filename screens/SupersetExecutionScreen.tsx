@@ -25,6 +25,7 @@ import {
 import { updateActivity, swapSupersetOrder } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Activity, SetData, TrackingField } from '../types/activity';
 import {
   buildSupersetRounds,
@@ -40,6 +41,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
   const dispatch = useDispatch();
   const { colorScheme, colors } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -312,9 +314,10 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 72,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,

@@ -8,6 +8,7 @@ import StatsScreen from '../screens/StatsScreen';
 import WeeklyStackNavigator from './WeeklyStackNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useTutorial } from '../components/tutorial';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 const Tab = createBottomTabNavigator();
 
@@ -91,6 +92,7 @@ const CustomTabBarButton = ({
 
 export default function TabNavigator() {
   const { colors } = useTheme();
+  const { isLandscape, insets } = useResponsiveLayout();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -99,9 +101,11 @@ export default function TabNavigator() {
           backgroundColor: colors.surface,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: 34,
-          paddingTop: 10,
-          height: 80,
+          paddingBottom: insets.bottom,
+          paddingTop: isLandscape ? 4 : 10,
+          height: (isLandscape ? 50 : 56) + insets.bottom,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
         },
         tabBarActiveTintColor: colors.primary.main,
         tabBarInactiveTintColor: colors.tabBarInactive,

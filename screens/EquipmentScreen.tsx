@@ -27,11 +27,13 @@ import {
   updatePlateCount,
 } from '../services/equipmentService';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function EquipmentScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
+  const { insets } = useResponsiveLayout();
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,9 +181,9 @@ export default function EquipmentScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 60,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,

@@ -44,6 +44,7 @@ import {
   isActivityComplete,
   getSupersetCompletedCount,
 } from '../utils/supersetUtils';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -136,6 +137,7 @@ export default function DayScreen({ navigation, route }: any) {
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
@@ -1570,9 +1572,9 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'relative',
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 120,
+          paddingTop: insets.top + 16,
           paddingBottom: 0,
-          paddingHorizontal: 16,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -1592,7 +1594,7 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             position: 'absolute',
             left: 16,
-            top: 44,
+            top: insets.top + 4,
             height: 88,
             justifyContent: 'center',
             zIndex: 2,

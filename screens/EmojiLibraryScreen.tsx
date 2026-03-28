@@ -20,11 +20,13 @@ import {
   removeFromEmojiLibrary,
 } from '../services/emojiLibraryService';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function EmojiLibraryScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
+  const { insets } = useResponsiveLayout();
 
   const [customEmojis, setCustomEmojis] = useState<EmojiItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,9 +104,9 @@ export default function EmojiLibraryScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 60,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,

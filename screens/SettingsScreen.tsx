@@ -11,7 +11,6 @@ import {
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { useTutorial } from '../components/tutorial';
-import { HEADER_STYLES } from '../constants';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
@@ -19,6 +18,7 @@ import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
@@ -31,6 +31,7 @@ export default function SettingsScreen({ navigation }: any) {
     isActive: tutorialActive,
   } = useTutorial();
   const dispatch = useDispatch();
+  const { insets, isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
 
   const registerEquipment = useCallback(() => {
@@ -91,8 +92,11 @@ export default function SettingsScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
-        className={HEADER_STYLES}
+        className="pb-4 px-4 bg-white border-b border-gray-200 flex-row items-center"
         style={{
+          paddingTop: insets.top + 8,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomColor: colors.border,
         }}

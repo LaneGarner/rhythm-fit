@@ -5,6 +5,7 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 interface AppHeaderProps {
   leftAction?: React.ReactNode;
@@ -18,6 +19,7 @@ export default function AppHeader({
   children,
 }: AppHeaderProps) {
   const { colors } = useTheme();
+  const { insets, isLandscape } = useResponsiveLayout();
 
   // Use the navigation prop from React Navigation
   // This requires the component to receive navigation as a prop, or use the useNavigation hook.
@@ -27,8 +29,12 @@ export default function AppHeader({
 
   return (
     <View
-      className="pt-16 pb-9 px-4 border-b border-gray-200 flex-row items-center"
+      className="border-b border-gray-200 flex-row items-center"
       style={{
+        paddingTop: insets.top + 8,
+        paddingBottom: isLandscape ? 8 : 20,
+        paddingLeft: Math.max(16, insets.left),
+        paddingRight: Math.max(16, insets.right),
         backgroundColor: colors.surface,
         borderBottomColor: colors.border,
       }}

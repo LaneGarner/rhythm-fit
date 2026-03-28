@@ -6,10 +6,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { calculatePersonalRecords } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function PersonalRecordsScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colors } = useTheme();
+  const { insets } = useResponsiveLayout();
 
   const personalRecords = useMemo(
     () => calculatePersonalRecords(activities, 365),
@@ -23,9 +25,9 @@ export default function PersonalRecordsScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 60,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
