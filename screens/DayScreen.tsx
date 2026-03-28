@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  addActivity,
   deleteActivity,
   updateActivity,
   reorderActivities,
@@ -26,6 +27,7 @@ import {
   breakSuperset,
   swapSupersetOrder,
 } from '../redux/activitySlice';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
@@ -77,6 +79,10 @@ export default function DayScreen({ navigation, route }: any) {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetDate, setTargetDate] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCopyToDateModal, setShowCopyToDateModal] = useState(false);
+  const [copyActivity, setCopyActivity] = useState<Activity | null>(null);
+  const [copyTargetDate, setCopyTargetDate] = useState(new Date());
+  const [isCopying, setIsCopying] = useState(false);
 
   // Pending order state - only saved when user clicks Save
   const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
@@ -417,6 +423,84 @@ export default function DayScreen({ navigation, route }: any) {
     navigation.navigate('EditActivity', { activityId: activity.id });
   };
 
+  const handleDuplicateActivity = async (activity: Activity) => {
+    const newActivity: Activity = {
+      ...activity,
+      id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
+      completed: false,
+      sets: activity.sets?.map(set => ({ ...set, completed: false })),
+      supersetId: undefined,
+      supersetPosition: undefined,
+      recurring: undefined,
+      order: undefined,
+      updated_at: new Date().toISOString(),
+    };
+
+    dispatch(addActivity(newActivity));
+
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        await pushActivityChange(token, newActivity);
+      }
+    } catch (err) {
+      console.error('Failed to sync duplicated activity:', err);
+    }
+
+    Alert.alert(
+      'Duplicated',
+      `${activity.name || activity.type} has been duplicated.`
+    );
+  };
+
+  const handleCopyToDate = (activity: Activity) => {
+    setCopyActivity(activity);
+    setCopyTargetDate(new Date());
+    setShowCopyToDateModal(true);
+  };
+
+  const confirmCopyToDate = async () => {
+    if (!copyActivity || isCopying) return;
+
+    setIsCopying(true);
+
+    const targetDateStr = dayjs(copyTargetDate).format('YYYY-MM-DD');
+    const targetDateFormatted = dayjs(copyTargetDate).format('dddd, MMMM D');
+
+    const newActivity: Activity = {
+      ...copyActivity,
+      id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
+      date: targetDateStr,
+      completed: false,
+      sets: copyActivity.sets?.map(set => ({ ...set, completed: false })),
+      supersetId: undefined,
+      supersetPosition: undefined,
+      recurring: undefined,
+      order: undefined,
+      updated_at: new Date().toISOString(),
+    };
+
+    dispatch(addActivity(newActivity));
+
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        await pushActivityChange(token, newActivity);
+      }
+    } catch (err) {
+      console.error('Failed to sync copied activity:', err);
+    }
+
+    setIsCopying(false);
+    setShowCopyToDateModal(false);
+    setCopyActivity(null);
+
+    Alert.alert(
+      'Copied',
+      `${copyActivity.name || copyActivity.type} copied to ${targetDateFormatted}`
+    );
+  };
+
   // Superset handlers
   const handleCreateSuperset = () => {
     if (selectedActivities.size < 2) {
@@ -497,20 +581,21 @@ export default function DayScreen({ navigation, route }: any) {
     if (Platform.OS === 'ios') {
       const options = ['Cancel'];
       const cancelButtonIndex = 0;
-      let destructiveButtonIndex = -1;
-      let editButtonIndex = -1;
 
-      if (activity.completed) {
-        options.push('Mark Incomplete');
-        editButtonIndex = 1;
-      } else {
-        options.push('Mark Complete');
-        editButtonIndex = 1;
-      }
+      options.push(activity.completed ? 'Mark Incomplete' : 'Mark Complete');
+      const toggleIndex = options.length - 1;
 
       options.push('Edit Activity');
+      const editIndex = options.length - 1;
+
+      options.push('Duplicate');
+      const duplicateIndex = options.length - 1;
+
+      options.push('Copy to Date');
+      const copyToDateIndex = options.length - 1;
+
       options.push('Delete Activity');
-      destructiveButtonIndex = options.length - 1;
+      const destructiveButtonIndex = options.length - 1;
 
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -520,10 +605,14 @@ export default function DayScreen({ navigation, route }: any) {
           userInterfaceStyle: isDark ? 'dark' : 'light',
         },
         buttonIndex => {
-          if (buttonIndex === editButtonIndex) {
+          if (buttonIndex === toggleIndex) {
             handleToggleCompletion(activity);
-          } else if (buttonIndex === options.length - 2) {
+          } else if (buttonIndex === editIndex) {
             handleEditActivity(activity);
+          } else if (buttonIndex === duplicateIndex) {
+            handleDuplicateActivity(activity);
+          } else if (buttonIndex === copyToDateIndex) {
+            handleCopyToDate(activity);
           } else if (buttonIndex === destructiveButtonIndex) {
             handleDeleteActivity(activity.id);
           }
@@ -542,6 +631,14 @@ export default function DayScreen({ navigation, route }: any) {
           {
             text: 'Edit Activity',
             onPress: () => handleEditActivity(activity),
+          },
+          {
+            text: 'Duplicate',
+            onPress: () => handleDuplicateActivity(activity),
+          },
+          {
+            text: 'Copy to Date',
+            onPress: () => handleCopyToDate(activity),
           },
           {
             text: 'Delete',
@@ -1446,6 +1543,158 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
+  const CopyToDateModal = () => (
+    <Modal
+      visible={showCopyToDateModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowCopyToDateModal(false)}
+    >
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.modalBackground,
+            borderRadius: 16,
+            padding: 20,
+            width: '85%',
+            maxWidth: 340,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.text,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
+            Copy Activity
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginBottom: 16,
+            }}
+          >
+            {copyActivity &&
+              `${copyActivity.emoji || ''} ${copyActivity.name || copyActivity.type}`.trim()}
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.textSecondary,
+              marginBottom: 8,
+            }}
+          >
+            Copy to:
+          </Text>
+          <View
+            style={{
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '500',
+                color: colors.text,
+                textAlign: 'center',
+              }}
+            >
+              {dayjs(copyTargetDate).format('dddd, MMMM D, YYYY')}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: 12,
+              marginBottom: 20,
+              overflow: 'hidden',
+            }}
+          >
+            <DateTimePicker
+              value={copyTargetDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedDate) => {
+                if (selectedDate) {
+                  setCopyTargetDate(selectedDate);
+                }
+              }}
+              textColor={colors.text}
+              themeVariant={isDark ? 'dark' : 'light'}
+              style={{ height: 150 }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => setShowCopyToDateModal(false)}
+              disabled={isCopying}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: colors.backgroundTertiary,
+                opacity: isCopying ? 0.5 : 1,
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontWeight: '600',
+                  color: colors.text,
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={confirmCopyToDate}
+              disabled={isCopying}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: colors.primary.main,
+                opacity: isCopying ? 0.8 : 1,
+              }}
+            >
+              {isCopying ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    color: '#fff',
+                  }}
+                >
+                  Copy
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Render the appropriate list based on environment
   const renderActivitiesList = () => {
     if (dayActivities.length === 0) {
@@ -1794,6 +2043,7 @@ export default function DayScreen({ navigation, route }: any) {
       />
 
       <MoveToDateModal />
+      <CopyToDateModal />
 
       {/* Deleting overlay */}
       {isDeleting && (
