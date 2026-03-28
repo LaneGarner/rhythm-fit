@@ -155,24 +155,20 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     );
     setSets(updatedSets);
 
-    // Auto-save progress when sets are updated
     if (activity) {
-      const updatedActivity: Activity = {
-        ...activity,
-        sets: updatedSets,
-      };
-      dispatch(updateActivity(updatedActivity));
-
-      // Check if all sets are now complete - auto-complete activity
       const allSetsComplete =
         updatedSets.length > 0 && updatedSets.every(s => s.completed);
-      if (allSetsComplete && !activity.completed) {
-        const completedActivity: Activity = {
+      const shouldAutoComplete = allSetsComplete && !activity.completed;
+
+      dispatch(
+        updateActivity({
           ...activity,
-          completed: true,
           sets: updatedSets,
-        };
-        dispatch(updateActivity(completedActivity));
+          completed: shouldAutoComplete ? true : activity.completed,
+        })
+      );
+
+      if (shouldAutoComplete) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
@@ -327,7 +323,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           ref={scrollViewRef}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
+            { useNativeDriver: false }
           )}
           scrollEventThrottle={16}
         >

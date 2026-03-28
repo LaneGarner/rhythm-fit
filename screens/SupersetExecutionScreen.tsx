@@ -22,7 +22,11 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
-import { updateActivity, swapSupersetOrder } from '../redux/activitySlice';
+import {
+  updateActivity,
+  batchUpdateActivities,
+  swapSupersetOrder,
+} from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -148,7 +152,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     const allComplete = roundSets.every(s => s.set!.completed);
     const newCompleted = !allComplete;
 
-    roundSets.forEach(({ activity, set, setIndex }) => {
+    // Build all updated activities in one pass
+    const updatedActivities: Activity[] = [];
+    roundSets.forEach(({ activity, set }) => {
       if (!set) return;
       const updatedSets = (activity.sets || []).map(s =>
         s.id === set.id ? { ...s, completed: newCompleted } : s
@@ -159,16 +165,17 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
       setLocalSets(prev => new Map(prev).set(activity.id, updatedSets));
 
-      dispatch(
-        updateActivity({
-          ...activity,
-          sets: updatedSets,
-          completed: newCompleted
-            ? thisActivityAllComplete || activity.completed
-            : false,
-        })
-      );
+      updatedActivities.push({
+        ...activity,
+        sets: updatedSets,
+        completed: newCompleted
+          ? thisActivityAllComplete || activity.completed
+          : false,
+      });
     });
+
+    // Single dispatch for all activities
+    dispatch(batchUpdateActivities(updatedActivities));
 
     // Check if entire superset is now complete after this round
     if (newCompleted) {
@@ -193,7 +200,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const handleAddSupersetRound = () => {
     // Add a new set to each activity in the superset
-    supersetActivities.forEach(activity => {
+    const updatedActivities = supersetActivities.map(activity => {
       const newSet: SetData = {
         id: `${activity.id}-${Date.now()}`,
         reps: 0,
@@ -201,15 +208,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         completed: false,
       };
 
-      const updatedSets = [...(activity.sets || []), newSet];
-
-      dispatch(
-        updateActivity({
-          ...activity,
-          sets: updatedSets,
-        })
-      );
+      return {
+        ...activity,
+        sets: [...(activity.sets || []), newSet],
+      };
     });
+
+    dispatch(batchUpdateActivities(updatedActivities));
   };
 
   const handleAddSetToActivity = (activityId: string) => {
@@ -369,7 +374,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           keyboardShouldPersistTaps="handled"
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
+            { useNativeDriver: false }
           )}
           scrollEventThrottle={16}
         >

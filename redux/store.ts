@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import activityReducer from './activitySlice';
+import { persistMiddleware } from './persistMiddleware';
 import { syncMiddleware } from './syncMiddleware';
 
 export const store = configureStore({
@@ -7,7 +8,7 @@ export const store = configureStore({
     activities: activityReducer,
   },
   middleware: getDefaultMiddleware =>
-    getDefaultMiddleware().concat(syncMiddleware),
+    getDefaultMiddleware().concat(persistMiddleware, syncMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
