@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
 import { isActivityComplete } from '../utils/supersetUtils';
+import { SetData } from '../types/activity';
 import {
   calculateMuscleGroupStats,
   calculateOverallStats,
@@ -9,6 +10,8 @@ import {
   calculateActivityTypeBreakdown,
   calculateExerciseStats,
   getUniqueExercises,
+  formatTime,
+  formatDistance,
   MuscleGroupStats,
   BodyPart,
   BODY_PART_LABELS,
@@ -331,4 +334,328 @@ export function formatAnalyticsForPrompt(analytics: CoachAnalytics): string {
   );
 
   return lines.join('\n');
+}
+
+/**
+ * Compress completed sets into a readable shorthand like "3x8 @185lbs, 1x6 @195lbs"
+ */
+function compressSets(sets: SetData[]): string {
+  const completed = sets.filter(s => s.completed);
+  if (completed.length === 0) return '';
+
+  // Check if these are weight-based, time-based, or reps-only sets
+  const hasWeight = completed.some(s => s.weight && s.weight > 0);
+  const hasTime = completed.some(s => s.time && s.time > 0);
+  const hasDistance = completed.some(s => s.distance && s.distance > 0);
+  const hasReps = completed.some(s => s.reps && s.reps > 0);
+
+  // Time/distance-based (cardio): sum totals
+  if (hasTime && !hasWeight) {
+    const totalTime = completed.reduce((sum, s) => sum + (s.time || 0), 0);
+    const totalDist = completed.reduce((sum, s) => sum + (s.distance || 0), 0);
+    const parts: string[] = [];
+    if (totalTime > 0) parts.push(formatTime(totalTime));
+    if (totalDist > 0) parts.push(formatDistance(totalDist));
+    return parts.join(', ');
+  }
+
+  // Weight-based or reps-only: run-length encode by (weight, reps) tuple
+  const groups: { weight: number; reps: number; count: number }[] = [];
+  for (const set of completed) {
+    const w = set.weight || 0;
+    const r = set.reps || 0;
+    const last = groups[groups.length - 1];
+    if (last && last.weight === w && last.reps === r) {
+      last.count++;
+    } else {
+      groups.push({ weight: w, reps: r, count: 1 });
+    }
+  }
+
+  return groups
+    .map(g => {
+      if (hasWeight && g.weight > 0) {
+        return `${g.count}x${g.reps} @${g.weight}lbs`;
+      }
+      return `${g.count}x${g.reps}`;
+    })
+    .join(', ');
+}
+
+/**
+ * Build detailed workout log for the last N days
+ */
+export function buildRecentWorkoutDetails(
+  activities: Activity[],
+  days: number = 7
+): string {
+  const now = dayjs();
+  const cutoff = now.subtract(days, 'day');
+
+  const recent = activities
+    .filter(a => {
+      const date = dayjs(a.date);
+      return (
+        isActivityComplete(a) &&
+        date.isAfter(cutoff, 'day') &&
+        date.isSameOrBefore(now, 'day')
+      );
+    })
+    .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
+
+  if (recent.length === 0) return '';
+
+  // Group by date
+  const grouped: Record<string, Activity[]> = {};
+  for (const activity of recent) {
+    if (!grouped[activity.date]) grouped[activity.date] = [];
+    grouped[activity.date].push(activity);
+  }
+
+  const lines: string[] = ['Recent workouts (last 7 days):'];
+
+  for (const date of Object.keys(grouped).sort(
+    (a, b) => dayjs(b).unix() - dayjs(a).unix()
+  )) {
+    const dayActivities = grouped[date];
+    const formattedDate = dayjs(date).format('ddd, MMM D');
+    const exercises = dayActivities.map(a => {
+      const setInfo =
+        a.sets && a.sets.length > 0 ? compressSets(a.sets) : '';
+      return setInfo ? `${a.name} (${setInfo})` : a.name;
+    });
+    lines.push(`- ${formattedDate}: ${exercises.join(', ')}`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Build condensed weekly summaries for the past N weeks (excluding last 7 days)
+ */
+export function buildWeeklySummaries(
+  activities: Activity[],
+  weeks: number = 12
+): string {
+  const now = dayjs();
+  const recentCutoff = now.subtract(7, 'day');
+  const historyCutoff = now.subtract(weeks * 7, 'day');
+
+  const historical = activities.filter(a => {
+    const date = dayjs(a.date);
+    return (
+      isActivityComplete(a) &&
+      date.isAfter(historyCutoff, 'day') &&
+      date.isSameOrBefore(recentCutoff, 'day')
+    );
+  });
+
+  if (historical.length === 0) return '';
+
+  // Group by week start (Sunday)
+  const weekGroups: Record<
+    string,
+    { count: number; types: Record<string, number>; volume: number }
+  > = {};
+
+  for (const activity of historical) {
+    const weekStart = dayjs(activity.date).startOf('week').format('YYYY-MM-DD');
+    if (!weekGroups[weekStart]) {
+      weekGroups[weekStart] = { count: 0, types: {}, volume: 0 };
+    }
+    const week = weekGroups[weekStart];
+    week.count++;
+
+    const typeLabel = ACTIVITY_TYPE_LABELS[activity.type] || 'Other';
+    week.types[typeLabel] = (week.types[typeLabel] || 0) + 1;
+
+    if (activity.sets) {
+      for (const set of activity.sets) {
+        if (set.completed && set.weight && set.reps) {
+          week.volume += set.weight * set.reps;
+        }
+      }
+    }
+  }
+
+  const sortedWeeks = Object.keys(weekGroups).sort(
+    (a, b) => dayjs(b).unix() - dayjs(a).unix()
+  );
+
+  if (sortedWeeks.length === 0) return '';
+
+  const lines: string[] = ['Weekly history:'];
+
+  for (const weekStart of sortedWeeks) {
+    const week = weekGroups[weekStart];
+    const dateLabel = dayjs(weekStart).format('MMM D');
+    const typeSummary = Object.entries(week.types)
+      .sort((a, b) => b[1] - a[1])
+      .map(([type, count]) => (count > 1 ? `${type} x${count}` : type))
+      .join(', ');
+    const volumeStr =
+      week.volume > 0
+        ? `, volume: ${Math.round(week.volume).toLocaleString()} lbs`
+        : '';
+    lines.push(
+      `- Week of ${dateLabel}: ${week.count} workouts (${typeSummary})${volumeStr}`
+    );
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Build per-exercise progression summaries for top exercises
+ */
+export function buildExerciseProgression(
+  activities: Activity[],
+  topN: number = 8
+): string {
+  const uniqueExercises = getUniqueExercises(activities);
+
+  // Calculate stats for each exercise and sort by session count
+  const exerciseData = uniqueExercises
+    .map(name => calculateExerciseStats(activities, name))
+    .filter(
+      (stats): stats is NonNullable<typeof stats> =>
+        stats !== null && stats.sessions >= 2
+    )
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, topN);
+
+  if (exerciseData.length === 0) return '';
+
+  const lines: string[] = ['Exercise progression (top lifts):'];
+
+  for (const stats of exerciseData) {
+    const firstDate = dayjs(stats.history[0].date);
+    const lastDate = dayjs(stats.history[stats.history.length - 1].date);
+    const monthSpan = Math.max(1, lastDate.diff(firstDate, 'month'));
+    const timeStr =
+      monthSpan >= 2
+        ? `${monthSpan} months`
+        : `${lastDate.diff(firstDate, 'week') || 1} weeks`;
+
+    if (stats.maxWeight > 0) {
+      // Weight-based: sample progression milestones
+      const milestones = sampleWeightProgression(stats.history);
+      const chain = milestones.join(' → ');
+      lines.push(
+        `- ${stats.exerciseName}: ${chain} lbs (${timeStr}, ${stats.sessions} sessions, PR: ${stats.maxWeight} lbs)`
+      );
+    } else if (stats.totalDistance > 0 || stats.totalTime > 0) {
+      // Cardio/time-distance
+      const parts: string[] = [];
+      if (stats.totalDistance > 0) {
+        const avgDist = stats.totalDistance / stats.sessions;
+        let bestDist = 0;
+        for (const h of stats.history) {
+          if (h.totalDistance > bestDist) bestDist = h.totalDistance;
+        }
+        parts.push(
+          `avg ${formatDistance(avgDist)}/session, best ${formatDistance(bestDist)}`
+        );
+      }
+      if (stats.totalTime > 0) {
+        const avgTime = Math.round(stats.totalTime / stats.sessions);
+        parts.push(`avg ${formatTime(avgTime)}`);
+      }
+      parts.push(`${stats.sessions} sessions`);
+      lines.push(`- ${stats.exerciseName}: ${parts.join(', ')}`);
+    } else if (stats.maxReps > 0) {
+      // Reps-only
+      const milestones = sampleRepsProgression(stats.history);
+      const chain = milestones.join(' → ');
+      lines.push(
+        `- ${stats.exerciseName}: max ${chain} reps (${timeStr}, ${stats.sessions} sessions)`
+      );
+    }
+  }
+
+  return lines.length > 1 ? lines.join('\n') : '';
+}
+
+/**
+ * Sample weight progression milestones from exercise history.
+ * Emits a value when max weight increases by 5+ lbs or 5%+ from last milestone.
+ */
+function sampleWeightProgression(
+  history: { maxWeight: number }[]
+): number[] {
+  if (history.length === 0) return [];
+
+  const milestones: number[] = [history[0].maxWeight];
+  let lastMilestone = history[0].maxWeight;
+  let runningMax = lastMilestone;
+
+  for (let i = 1; i < history.length; i++) {
+    if (history[i].maxWeight > runningMax) {
+      runningMax = history[i].maxWeight;
+      const increase = runningMax - lastMilestone;
+      const pctIncrease =
+        lastMilestone > 0 ? increase / lastMilestone : 1;
+      if (increase >= 5 || pctIncrease >= 0.05) {
+        milestones.push(runningMax);
+        lastMilestone = runningMax;
+      }
+    }
+  }
+
+  // Always include the final max if different from last milestone
+  if (milestones[milestones.length - 1] !== runningMax) {
+    milestones.push(runningMax);
+  }
+
+  // Cap at 8 milestones for brevity
+  if (milestones.length > 8) {
+    const step = (milestones.length - 1) / 7;
+    const sampled = [milestones[0]];
+    for (let i = 1; i < 7; i++) {
+      sampled.push(milestones[Math.round(i * step)]);
+    }
+    sampled.push(milestones[milestones.length - 1]);
+    return [...new Set(sampled)];
+  }
+
+  return milestones;
+}
+
+/**
+ * Sample reps progression milestones from exercise history.
+ */
+function sampleRepsProgression(
+  history: { maxReps: number }[]
+): number[] {
+  if (history.length === 0) return [];
+
+  const milestones: number[] = [history[0].maxReps];
+  let lastMilestone = history[0].maxReps;
+  let runningMax = lastMilestone;
+
+  for (let i = 1; i < history.length; i++) {
+    if (history[i].maxReps > runningMax) {
+      runningMax = history[i].maxReps;
+      if (runningMax - lastMilestone >= 2) {
+        milestones.push(runningMax);
+        lastMilestone = runningMax;
+      }
+    }
+  }
+
+  if (milestones[milestones.length - 1] !== runningMax) {
+    milestones.push(runningMax);
+  }
+
+  if (milestones.length > 8) {
+    const step = (milestones.length - 1) / 7;
+    const sampled = [milestones[0]];
+    for (let i = 1; i < 7; i++) {
+      sampled.push(milestones[Math.round(i * step)]);
+    }
+    sampled.push(milestones[milestones.length - 1]);
+    return [...new Set(sampled)];
+  }
+
+  return milestones;
 }

@@ -47,6 +47,9 @@ import { getEmojiForType } from '../services/activityTypeService';
 import {
   buildCoachAnalytics,
   formatAnalyticsForPrompt,
+  buildRecentWorkoutDetails,
+  buildWeeklySummaries,
+  buildExerciseProgression,
 } from '../services/coachAnalyticsService';
 import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
@@ -300,6 +303,11 @@ export default function CoachScreen({ navigation }: any) {
     const analytics = buildCoachAnalytics(activities);
     const analyticsContext = formatAnalyticsForPrompt(analytics);
 
+    // Build workout history sections
+    const recentDetails = buildRecentWorkoutDetails(activities, 7);
+    const weeklySummaries = buildWeeklySummaries(activities, 12);
+    const exerciseProgression = buildExerciseProgression(activities, 8);
+
     let context = `Today's date: ${formattedToday}\n\n`;
 
     // Add user analytics section
@@ -337,6 +345,18 @@ export default function CoachScreen({ navigation }: any) {
         const date = dayjs(activity.date).format('MMM D');
         context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
       });
+    }
+
+    if (recentDetails) {
+      context += `\n${recentDetails}\n`;
+    }
+
+    if (weeklySummaries) {
+      context += `\n${weeklySummaries}\n`;
+    }
+
+    if (exerciseProgression) {
+      context += `\n${exerciseProgression}\n`;
     }
 
     return context;
