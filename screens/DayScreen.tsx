@@ -305,7 +305,10 @@ export default function DayScreen({ navigation, route }: any) {
           reordered.splice(adjustedTarget, 0, movedActivity);
         } else {
           // Simple swap with adjacent non-superset activity
-          [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+          [reordered[currentIndex], reordered[targetIndex]] = [
+            reordered[targetIndex],
+            reordered[currentIndex],
+          ];
         }
 
         const orderedIds = reordered.map(a => a.id);
@@ -1078,19 +1081,14 @@ export default function DayScreen({ navigation, route }: any) {
   // Build version: Drag handle reordering with DraggableFlatList
   // Render a single activity row for bulk mode (used inside groups)
   const renderBulkActivityRow = useCallback(
-    (
-      activity: Activity,
-      isActive: boolean,
-      supersetMembers?: Activity[]
-    ) => {
+    (activity: Activity, isActive: boolean, supersetMembers?: Activity[]) => {
       const isSelected = selectedActivities.has(activity.id);
       const memberIndex = supersetMembers
         ? supersetMembers.findIndex(a => a.id === activity.id)
         : -1;
       const isFirstInSuperset = memberIndex === 0;
       const isLastInSuperset =
-        supersetMembers != null &&
-        memberIndex === supersetMembers.length - 1;
+        supersetMembers != null && memberIndex === supersetMembers.length - 1;
 
       return (
         <View
@@ -1204,7 +1202,15 @@ export default function DayScreen({ navigation, route }: any) {
         </View>
       );
     },
-    [selectedActivities, isDark, navigation, toggleActivitySelection, date, dispatch, colors]
+    [
+      selectedActivities,
+      isDark,
+      navigation,
+      toggleActivitySelection,
+      date,
+      dispatch,
+      colors,
+    ]
   );
 
   // Render a draggable group (single activity or superset)

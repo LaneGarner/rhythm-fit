@@ -103,11 +103,8 @@ export const ProgressionChart = ({
 
   const updatePointer = useCallback(
     (gestureX: number) => {
-      const adjustedX =
-        gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
-      const index = Math.round(
-        (adjustedX - INITIAL_SPACING) / spacing
-      );
+      const adjustedX = gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
+      const index = Math.round((adjustedX - INITIAL_SPACING) / spacing);
       const clamped = Math.max(0, Math.min(index, chartData.length - 1));
       const item = chartData[clamped];
       const x =

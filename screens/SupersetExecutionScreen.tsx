@@ -130,32 +130,62 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     // Update local state
     setLocalSets(prev => new Map(prev).set(activityId, updatedSets));
 
-    // Check if this activity's sets are all complete
-    const thisActivityAllComplete =
-      updatedSets.length > 0 && updatedSets.every(s => s.completed);
-
-    // Save to Redux (mark activity complete if all its sets are done)
+    // Save to Redux
     dispatch(
       updateActivity({
         ...activity,
         sets: updatedSets,
-        completed: thisActivityAllComplete || activity.completed,
       })
     );
+  };
 
-    // Check if all activities in the superset are now complete
-    const allComplete =
-      supersetActivities.every(a => {
-        if (a.id === activityId) {
-          return thisActivityAllComplete;
+  const handleCompleteRound = (
+    round: ReturnType<typeof buildSupersetRounds>[0]
+  ) => {
+    const roundSets = round.sets.filter(s => s.set !== null);
+    const allComplete = roundSets.every(s => s.set!.completed);
+    const newCompleted = !allComplete;
+
+    roundSets.forEach(({ activity, set, setIndex }) => {
+      if (!set) return;
+      const updatedSets = (activity.sets || []).map(s =>
+        s.id === set.id ? { ...s, completed: newCompleted } : s
+      );
+
+      const thisActivityAllComplete =
+        updatedSets.length > 0 && updatedSets.every(s => s.completed);
+
+      setLocalSets(prev => new Map(prev).set(activity.id, updatedSets));
+
+      dispatch(
+        updateActivity({
+          ...activity,
+          sets: updatedSets,
+          completed: newCompleted
+            ? thisActivityAllComplete || activity.completed
+            : false,
+        })
+      );
+    });
+
+    // Check if entire superset is now complete after this round
+    if (newCompleted) {
+      const allSupersetComplete = supersetActivities.every(a => {
+        const roundActivity = roundSets.find(s => s.activity.id === a.id);
+        if (roundActivity) {
+          const updatedSets = (a.sets || []).map(s =>
+            s.id === roundActivity.set!.id ? { ...s, completed: true } : s
+          );
+          return updatedSets.every(s => s.completed);
         }
         return a.completed || (a.sets?.every(s => s.completed) ?? false);
-      }) && supersetActivities.length > 0;
+      });
 
-    if (allComplete) {
-      Alert.alert('Nice Work!', 'Superset complete!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      if (allSupersetComplete) {
+        Alert.alert('Nice Work!', 'Superset complete!', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
     }
   };
 
@@ -533,9 +563,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                     <Ionicons
                                       name="chevron-up"
                                       size={18}
-                                      color={
-                                        isDark ? '#9CA3AF' : '#6B7280'
-                                      }
+                                      color={isDark ? '#9CA3AF' : '#6B7280'}
                                     />
                                   </TouchableOpacity>
                                 )}
@@ -565,9 +593,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                     <Ionicons
                                       name="chevron-down"
                                       size={18}
-                                      color={
-                                        isDark ? '#9CA3AF' : '#6B7280'
-                                      }
+                                      color={isDark ? '#9CA3AF' : '#6B7280'}
                                     />
                                   </TouchableOpacity>
                                 )}
@@ -748,15 +774,11 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                           }));
                                           return;
                                         }
-                                        handleUpdateSet(
-                                          activity.id,
-                                          set.id,
-                                          {
-                                            [field]: text
-                                              ? parseFloat(text)
-                                              : undefined,
-                                          }
-                                        );
+                                        handleUpdateSet(activity.id, set.id, {
+                                          [field]: text
+                                            ? parseFloat(text)
+                                            : undefined,
+                                        });
                                       }}
                                       onBlur={() => {
                                         if (field === 'distance') {
@@ -818,37 +840,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               );
                             })}
                           </View>
-
-                          {/* Complete button */}
-                          <TouchableOpacity
-                            onPress={() =>
-                              handleUpdateSet(activity.id, set.id, {
-                                completed: !set.completed,
-                              })
-                            }
-                            className="mt-4 px-4 py-3 rounded-lg"
-                            style={{
-                              backgroundColor: colors.surface,
-                              borderWidth: 2,
-                              borderColor: set.completed
-                                ? colors.success.main
-                                : colors.border,
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`${activity.name} set ${set.completed ? 'completed' : 'incomplete'}. Tap to ${set.completed ? 'mark incomplete' : 'mark complete'}`}
-                            accessibilityState={{ checked: set.completed }}
-                          >
-                            <Text
-                              className="text-center font-semibold"
-                              style={{
-                                color: set.completed
-                                  ? colors.success.main
-                                  : colors.textSecondary,
-                              }}
-                            >
-                              {set.completed ? 'Completed' : 'Mark Complete'}
-                            </Text>
-                          </TouchableOpacity>
                         </View>
                         {/* Connecting line */}
                         {!isLastActivity && (
@@ -872,6 +863,41 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                     );
                   }
                 )}
+
+                {/* Single complete button for the entire round */}
+                {(() => {
+                  const roundSets = round.sets.filter(s => s.set !== null);
+                  const allRoundComplete =
+                    roundSets.length > 0 &&
+                    roundSets.every(s => s.set!.completed);
+                  return (
+                    <TouchableOpacity
+                      onPress={() => handleCompleteRound(round)}
+                      className="mt-3 px-4 py-3 rounded-lg"
+                      style={{
+                        backgroundColor: colors.surface,
+                        borderWidth: 2,
+                        borderColor: allRoundComplete
+                          ? colors.success.main
+                          : colors.border,
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Superset ${round.roundNumber} ${allRoundComplete ? 'completed' : 'incomplete'}. Tap to ${allRoundComplete ? 'mark incomplete' : 'mark complete'}`}
+                      accessibilityState={{ checked: allRoundComplete }}
+                    >
+                      <Text
+                        className="text-center font-semibold"
+                        style={{
+                          color: allRoundComplete
+                            ? colors.success.main
+                            : colors.textSecondary,
+                        }}
+                      >
+                        {allRoundComplete ? 'Completed' : 'Mark Complete'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })()}
               </View>
             ))}
 

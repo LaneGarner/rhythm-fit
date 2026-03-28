@@ -151,9 +151,7 @@ export function useAppInitialization() {
               token,
               activitiesRef.current,
               handleActivitiesUpdated
-            ).catch(err =>
-              console.error('Foreground sync failed:', err)
-            );
+            ).catch(err => console.error('Foreground sync failed:', err));
           }
         }
         appStateRef.current = nextAppState;

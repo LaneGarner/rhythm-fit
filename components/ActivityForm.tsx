@@ -935,10 +935,7 @@ export default function ActivityForm({
                             }
                             onChangeText={text => {
                               if (field === 'distance') {
-                                if (
-                                  text &&
-                                  !/^\d*\.?\d{0,2}$/.test(text)
-                                )
+                                if (text && !/^\d*\.?\d{0,2}$/.test(text))
                                   return;
                                 setDistanceText(prev => ({
                                   ...prev,
@@ -947,9 +944,7 @@ export default function ActivityForm({
                                 return;
                               }
                               handleUpdateSet(set.id, {
-                                [field]: text
-                                  ? parseFloat(text)
-                                  : undefined,
+                                [field]: text ? parseFloat(text) : undefined,
                               });
                             }}
                             onBlur={() => {
@@ -970,9 +965,7 @@ export default function ActivityForm({
                               }
                             }}
                             keyboardType={
-                              field === 'distance'
-                                ? 'decimal-pad'
-                                : 'numeric'
+                              field === 'distance' ? 'decimal-pad' : 'numeric'
                             }
                             className={`px-3 py-2 border rounded-lg ${
                               isDark

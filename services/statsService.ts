@@ -282,9 +282,7 @@ export function calculateExerciseStats(
   exerciseName: string
 ): ExerciseStats | null {
   const matchingActivities = activities.filter(
-    a =>
-      a.completed &&
-      a.name.toLowerCase() === exerciseName.toLowerCase()
+    a => a.completed && a.name.toLowerCase() === exerciseName.toLowerCase()
   );
 
   if (matchingActivities.length === 0) return null;
@@ -460,7 +458,9 @@ export function calculateOverallStats(
     return date.isAfter(startDate) && date.isBefore(now.add(1, 'day'));
   });
 
-  const completedActivities = recentActivities.filter(a => isActivityComplete(a));
+  const completedActivities = recentActivities.filter(a =>
+    isActivityComplete(a)
+  );
 
   let totalSets = 0;
   let totalReps = 0;

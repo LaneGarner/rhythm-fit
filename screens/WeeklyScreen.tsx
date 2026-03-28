@@ -488,8 +488,8 @@ export default function WeeklyScreen({ navigation }: any) {
     const incompleteActivities = dayActivities.filter(
       activity => !isActivityComplete(activity)
     );
-    const completeActivities = dayActivities.filter(
-      activity => isActivityComplete(activity)
+    const completeActivities = dayActivities.filter(activity =>
+      isActivityComplete(activity)
     );
 
     if (Platform.OS === 'ios') {
@@ -853,7 +853,8 @@ export default function WeeklyScreen({ navigation }: any) {
               const allCompleted =
                 dayActivities.length > 0 &&
                 dayActivities.every(isActivityComplete);
-              const completedCount = dayActivities.filter(isActivityComplete).length;
+              const completedCount =
+                dayActivities.filter(isActivityComplete).length;
               return (
                 <TouchableOpacity
                   key={day.date}
