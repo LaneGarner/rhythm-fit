@@ -218,6 +218,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
                   activityType={DEMO_ACTIVITY.type}
                   onUpdateSet={handleUpdateSet}
                   onShowOptions={handleShowOptions}
+                  readOnly
                 />
               ))}
             </View>
