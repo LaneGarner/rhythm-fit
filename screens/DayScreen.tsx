@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Animated,
   Keyboard,
   Modal,
   Platform,
@@ -17,6 +18,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  addActivity,
   deleteActivity,
   updateActivity,
   reorderActivities,
@@ -26,6 +28,7 @@ import {
   breakSuperset,
   swapSupersetOrder,
 } from '../redux/activitySlice';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
@@ -38,12 +41,15 @@ import SupersetBadge from '../components/SupersetBadge';
 import {
   ActivityGroup,
   groupActivitiesWithSupersets,
-  getSupersetEmojis,
+  getSupersetEmojisCompact,
   getSupersetLabel,
   isSupersetComplete,
   isActivityComplete,
   getSupersetCompletedCount,
 } from '../utils/supersetUtils';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import ShareWorkoutModal from '../components/ShareWorkoutModal';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -76,9 +82,19 @@ export default function DayScreen({ navigation, route }: any) {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetDate, setTargetDate] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCopyToDateModal, setShowCopyToDateModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copyActivity, setCopyActivity] = useState<Activity | null>(null);
+  const [copyTargetDate, setCopyTargetDate] = useState(new Date());
+  const [isCopying, setIsCopying] = useState(false);
 
   // Pending order state - only saved when user clicks Save
   const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
+
+  // Swipe navigation state
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isSwipingRef = useRef(false);
+  const isAnimatingRef = useRef(false);
 
   // Sort activities: by custom order if available, then by id (preserve order regardless of completion)
   const savedActivities = activities
@@ -131,11 +147,24 @@ export default function DayScreen({ navigation, route }: any) {
     }
   }, [savedActivities, pendingOrderIds]);
 
+  // Reset local state when date changes (swipe navigation)
+  useEffect(() => {
+    setIsBulkMode(false);
+    setSelectedActivities(new Set());
+    setPendingOrderIds(null);
+    setShowMoveModal(false);
+    setShowCopyToDateModal(false);
+    setShowShareModal(false);
+    setCopyActivity(null);
+    setIsDeleting(false);
+  }, [date]);
+
   const hasUnsavedChanges = pendingOrderIds !== null;
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
+  const { insets, width: screenWidth } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
@@ -177,6 +206,76 @@ export default function DayScreen({ navigation, route }: any) {
   const discardChanges = useCallback(() => {
     setPendingOrderIds(null);
   }, []);
+
+  // Swipe day navigation
+  const navigateDay = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (isAnimatingRef.current) return;
+      isAnimatingRef.current = true;
+
+      const newDate =
+        direction === 'next'
+          ? dayjs(date).add(1, 'day').format('YYYY-MM-DD')
+          : dayjs(date).subtract(1, 'day').format('YYYY-MM-DD');
+
+      const slideDistance = screenWidth * 1.2;
+      const slideOutTo = direction === 'next' ? -slideDistance : slideDistance;
+
+      Animated.timing(slideAnim, {
+        toValue: slideOutTo,
+        duration: 65,
+        useNativeDriver: true,
+      }).start(() => {
+        navigation.setParams({ date: newDate });
+        slideAnim.setValue(
+          direction === 'next' ? slideDistance : -slideDistance
+        );
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 65,
+          useNativeDriver: true,
+        }).start(() => {
+          isAnimatingRef.current = false;
+          isSwipingRef.current = false;
+        });
+      });
+    },
+    [date, screenWidth, slideAnim, navigation]
+  );
+
+  const swipeGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-20, 20])
+    .onStart(() => {
+      isSwipingRef.current = true;
+    })
+    .onUpdate(event => {
+      const clampedX = Math.max(-100, Math.min(100, event.translationX));
+      slideAnim.setValue(clampedX);
+    })
+    .onEnd(event => {
+      const threshold = 50;
+      if (
+        event.translationX < -threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        navigateDay('next');
+      } else if (
+        event.translationX > threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        navigateDay('prev');
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+        setTimeout(() => {
+          isSwipingRef.current = false;
+        }, 100);
+      }
+    })
+    .enabled(!isBulkMode);
 
   // Bulk selection helpers
   const toggleBulkMode = () => {
@@ -305,7 +404,10 @@ export default function DayScreen({ navigation, route }: any) {
           reordered.splice(adjustedTarget, 0, movedActivity);
         } else {
           // Simple swap with adjacent non-superset activity
-          [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+          [reordered[currentIndex], reordered[targetIndex]] = [
+            reordered[targetIndex],
+            reordered[currentIndex],
+          ];
         }
 
         const orderedIds = reordered.map(a => a.id);
@@ -412,6 +514,84 @@ export default function DayScreen({ navigation, route }: any) {
     navigation.navigate('EditActivity', { activityId: activity.id });
   };
 
+  const handleDuplicateActivity = async (activity: Activity) => {
+    const newActivity: Activity = {
+      ...activity,
+      id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
+      completed: false,
+      sets: activity.sets?.map(set => ({ ...set, completed: false })),
+      supersetId: undefined,
+      supersetPosition: undefined,
+      recurring: undefined,
+      order: undefined,
+      updated_at: new Date().toISOString(),
+    };
+
+    dispatch(addActivity(newActivity));
+
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        await pushActivityChange(token, newActivity);
+      }
+    } catch (err) {
+      console.error('Failed to sync duplicated activity:', err);
+    }
+
+    Alert.alert(
+      'Duplicated',
+      `${activity.name || activity.type} has been duplicated.`
+    );
+  };
+
+  const handleCopyToDate = (activity: Activity) => {
+    setCopyActivity(activity);
+    setCopyTargetDate(new Date());
+    setShowCopyToDateModal(true);
+  };
+
+  const confirmCopyToDate = async () => {
+    if (!copyActivity || isCopying) return;
+
+    setIsCopying(true);
+
+    const targetDateStr = dayjs(copyTargetDate).format('YYYY-MM-DD');
+    const targetDateFormatted = dayjs(copyTargetDate).format('dddd, MMMM D');
+
+    const newActivity: Activity = {
+      ...copyActivity,
+      id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
+      date: targetDateStr,
+      completed: false,
+      sets: copyActivity.sets?.map(set => ({ ...set, completed: false })),
+      supersetId: undefined,
+      supersetPosition: undefined,
+      recurring: undefined,
+      order: undefined,
+      updated_at: new Date().toISOString(),
+    };
+
+    dispatch(addActivity(newActivity));
+
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        await pushActivityChange(token, newActivity);
+      }
+    } catch (err) {
+      console.error('Failed to sync copied activity:', err);
+    }
+
+    setIsCopying(false);
+    setShowCopyToDateModal(false);
+    setCopyActivity(null);
+
+    Alert.alert(
+      'Copied',
+      `${copyActivity.name || copyActivity.type} copied to ${targetDateFormatted}`
+    );
+  };
+
   // Superset handlers
   const handleCreateSuperset = () => {
     if (selectedActivities.size < 2) {
@@ -492,20 +672,21 @@ export default function DayScreen({ navigation, route }: any) {
     if (Platform.OS === 'ios') {
       const options = ['Cancel'];
       const cancelButtonIndex = 0;
-      let destructiveButtonIndex = -1;
-      let editButtonIndex = -1;
 
-      if (activity.completed) {
-        options.push('Mark Incomplete');
-        editButtonIndex = 1;
-      } else {
-        options.push('Mark Complete');
-        editButtonIndex = 1;
-      }
+      options.push(activity.completed ? 'Mark Incomplete' : 'Mark Complete');
+      const toggleIndex = options.length - 1;
 
       options.push('Edit Activity');
+      const editIndex = options.length - 1;
+
+      options.push('Duplicate');
+      const duplicateIndex = options.length - 1;
+
+      options.push('Copy to Date');
+      const copyToDateIndex = options.length - 1;
+
       options.push('Delete Activity');
-      destructiveButtonIndex = options.length - 1;
+      const destructiveButtonIndex = options.length - 1;
 
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -515,10 +696,14 @@ export default function DayScreen({ navigation, route }: any) {
           userInterfaceStyle: isDark ? 'dark' : 'light',
         },
         buttonIndex => {
-          if (buttonIndex === editButtonIndex) {
+          if (buttonIndex === toggleIndex) {
             handleToggleCompletion(activity);
-          } else if (buttonIndex === options.length - 2) {
+          } else if (buttonIndex === editIndex) {
             handleEditActivity(activity);
+          } else if (buttonIndex === duplicateIndex) {
+            handleDuplicateActivity(activity);
+          } else if (buttonIndex === copyToDateIndex) {
+            handleCopyToDate(activity);
           } else if (buttonIndex === destructiveButtonIndex) {
             handleDeleteActivity(activity.id);
           }
@@ -537,6 +722,14 @@ export default function DayScreen({ navigation, route }: any) {
           {
             text: 'Edit Activity',
             onPress: () => handleEditActivity(activity),
+          },
+          {
+            text: 'Duplicate',
+            onPress: () => handleDuplicateActivity(activity),
+          },
+          {
+            text: 'Copy to Date',
+            onPress: () => handleCopyToDate(activity),
           },
           {
             text: 'Delete',
@@ -798,6 +991,20 @@ export default function DayScreen({ navigation, route }: any) {
                 </>
               )}
               <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
+              {isBulkMode && (
+                <Ionicons
+                  name={
+                    isActivityComplete(activity)
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
+                  size={20}
+                  color={
+                    isActivityComplete(activity) ? '#22C55E' : colors.border
+                  }
+                  style={{ marginRight: 6 }}
+                />
+              )}
               <View className="flex-1">
                 <Text
                   className={`text-lg font-semibold ${
@@ -862,16 +1069,20 @@ export default function DayScreen({ navigation, route }: any) {
     const showSupersetOptions = () => {
       if (Platform.OS === 'ios') {
         const options = ['Cancel'];
+        let editSupersetIndex = -1;
         let markCompleteIndex = -1;
         let breakSupersetIndex = -1;
         let deleteIndex = -1;
 
+        options.push('Edit Superset');
+        editSupersetIndex = options.length - 1;
+
         if (supersetComplete) {
           options.push('Mark Incomplete');
-          markCompleteIndex = 1;
+          markCompleteIndex = options.length - 1;
         } else {
           options.push('Mark Complete');
-          markCompleteIndex = 1;
+          markCompleteIndex = options.length - 1;
         }
         options.push('Break Superset');
         breakSupersetIndex = options.length - 1;
@@ -886,7 +1097,12 @@ export default function DayScreen({ navigation, route }: any) {
             userInterfaceStyle: isDark ? 'dark' : 'light',
           },
           buttonIndex => {
-            if (buttonIndex === markCompleteIndex) {
+            if (buttonIndex === editSupersetIndex) {
+              navigation.navigate('EditActivity', {
+                activityId: activities[0].id,
+                supersetId: group.supersetId,
+              });
+            } else if (buttonIndex === markCompleteIndex) {
               // Toggle completion for all activities in superset
               const newCompleted = !supersetComplete;
               activities.forEach(a => {
@@ -934,6 +1150,15 @@ export default function DayScreen({ navigation, route }: any) {
       } else {
         Alert.alert('Superset Options', 'What would you like to do?', [
           { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Edit Superset',
+            onPress: () => {
+              navigation.navigate('EditActivity', {
+                activityId: activities[0].id,
+                supersetId: group.supersetId,
+              });
+            },
+          },
           {
             text: supersetComplete ? 'Mark Incomplete' : 'Mark Complete',
             onPress: () => {
@@ -1057,12 +1282,15 @@ export default function DayScreen({ navigation, route }: any) {
 
         {/* Combined emoji + name display */}
         <View className="flex-row items-center justify-between">
-          <View className="flex-1 mr-2">
+          <View className="flex-row items-center flex-1 mr-2">
+            <Text className="text-2xl mr-3">
+              {getSupersetEmojisCompact(activities)}
+            </Text>
             <Text
-              className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`text-lg font-semibold flex-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
               numberOfLines={2}
             >
-              {getSupersetEmojis(activities)}
+              {activities.map(a => a.name || a.type).join(' → ')}
             </Text>
           </View>
           {supersetComplete ? (
@@ -1078,19 +1306,14 @@ export default function DayScreen({ navigation, route }: any) {
   // Build version: Drag handle reordering with DraggableFlatList
   // Render a single activity row for bulk mode (used inside groups)
   const renderBulkActivityRow = useCallback(
-    (
-      activity: Activity,
-      isActive: boolean,
-      supersetMembers?: Activity[]
-    ) => {
+    (activity: Activity, isActive: boolean, supersetMembers?: Activity[]) => {
       const isSelected = selectedActivities.has(activity.id);
       const memberIndex = supersetMembers
         ? supersetMembers.findIndex(a => a.id === activity.id)
         : -1;
       const isFirstInSuperset = memberIndex === 0;
       const isLastInSuperset =
-        supersetMembers != null &&
-        memberIndex === supersetMembers.length - 1;
+        supersetMembers != null && memberIndex === supersetMembers.length - 1;
 
       return (
         <View
@@ -1172,6 +1395,16 @@ export default function DayScreen({ navigation, route }: any) {
             />
           </TouchableOpacity>
           <Text className="text-xl mr-2">{activity.emoji || '💪'}</Text>
+          <Ionicons
+            name={
+              isActivityComplete(activity)
+                ? 'checkmark-circle'
+                : 'ellipse-outline'
+            }
+            size={18}
+            color={isActivityComplete(activity) ? '#22C55E' : colors.border}
+            style={{ marginRight: 4 }}
+          />
           <View className="flex-1">
             <Text
               className={`text-base font-medium ${
@@ -1204,7 +1437,15 @@ export default function DayScreen({ navigation, route }: any) {
         </View>
       );
     },
-    [selectedActivities, isDark, navigation, toggleActivitySelection, date, dispatch, colors]
+    [
+      selectedActivities,
+      isDark,
+      navigation,
+      toggleActivitySelection,
+      date,
+      dispatch,
+      colors,
+    ]
   );
 
   // Render a draggable group (single activity or superset)
@@ -1278,8 +1519,18 @@ export default function DayScreen({ navigation, route }: any) {
               </TouchableOpacity>
 
               {isSuperset ? (
-                <View className="flex-1">
+                <View className="flex-1 flex-row items-center">
                   <SupersetBadge label={getSupersetLabel(activities.length)} />
+                  <Text
+                    style={{
+                      marginLeft: 8,
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                    }}
+                  >
+                    {activities.filter(isActivityComplete).length}/
+                    {activities.length} complete
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -1304,6 +1555,20 @@ export default function DayScreen({ navigation, route }: any) {
                   <Text className="text-2xl mr-3">
                     {activities[0].emoji || '💪'}
                   </Text>
+                  <Ionicons
+                    name={
+                      isActivityComplete(activities[0])
+                        ? 'checkmark-circle'
+                        : 'ellipse-outline'
+                    }
+                    size={20}
+                    color={
+                      isActivityComplete(activities[0])
+                        ? '#22C55E'
+                        : colors.border
+                    }
+                    style={{ marginRight: 6 }}
+                  />
                   <View className="flex-1">
                     <Text
                       className={`text-lg font-semibold ${
@@ -1438,6 +1703,158 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
+  const CopyToDateModal = () => (
+    <Modal
+      visible={showCopyToDateModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowCopyToDateModal(false)}
+    >
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.modalBackground,
+            borderRadius: 16,
+            padding: 20,
+            width: '85%',
+            maxWidth: 340,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.text,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
+            Copy Activity
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginBottom: 16,
+            }}
+          >
+            {copyActivity &&
+              `${copyActivity.emoji || ''} ${copyActivity.name || copyActivity.type}`.trim()}
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.textSecondary,
+              marginBottom: 8,
+            }}
+          >
+            Copy to:
+          </Text>
+          <View
+            style={{
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '500',
+                color: colors.text,
+                textAlign: 'center',
+              }}
+            >
+              {dayjs(copyTargetDate).format('dddd, MMMM D, YYYY')}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: 12,
+              marginBottom: 20,
+              overflow: 'hidden',
+            }}
+          >
+            <DateTimePicker
+              value={copyTargetDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedDate) => {
+                if (selectedDate) {
+                  setCopyTargetDate(selectedDate);
+                }
+              }}
+              textColor={colors.text}
+              themeVariant={isDark ? 'dark' : 'light'}
+              style={{ height: 150 }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => setShowCopyToDateModal(false)}
+              disabled={isCopying}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: colors.backgroundTertiary,
+                opacity: isCopying ? 0.5 : 1,
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontWeight: '600',
+                  color: colors.text,
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={confirmCopyToDate}
+              disabled={isCopying}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: colors.primary.main,
+                opacity: isCopying ? 0.8 : 1,
+              }}
+            >
+              {isCopying ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    color: '#fff',
+                  }}
+                >
+                  Copy
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Render the appropriate list based on environment
   const renderActivitiesList = () => {
     if (dayActivities.length === 0) {
@@ -1564,9 +1981,8 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'relative',
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 120,
-          paddingBottom: 0,
-          paddingHorizontal: 16,
+          height: insets.top + 52,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -1586,8 +2002,8 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             position: 'absolute',
             left: 16,
-            top: 44,
-            height: 88,
+            top: insets.top + 4,
+            height: 44,
             justifyContent: 'center',
             zIndex: 2,
           }}
@@ -1598,8 +2014,8 @@ export default function DayScreen({ navigation, route }: any) {
             position: 'absolute',
             left: 0,
             right: 0,
-            top: 44,
-            height: 88,
+            top: insets.top + 4,
+            height: 44,
             alignItems: 'center',
             justifyContent: 'center',
             pointerEvents: 'none',
@@ -1616,169 +2032,200 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </View>
-        {/* Right: Edit/Save button - only show if there are activities */}
+        {/* Right: Share + Edit/Save buttons */}
         {(dayActivities.length > 0 || isBulkMode) && (
-          <HeaderButton
-            label={isBulkMode ? 'Save' : 'Edit'}
-            onPress={() => {
-              if (isBulkMode) {
-                saveChanges();
-                setIsBulkMode(false);
-                setSelectedActivities(new Set());
-              } else {
-                setIsBulkMode(true);
-              }
-            }}
+          <View
             style={{
               position: 'absolute',
               right: 16,
-              top: 44,
-              height: 88,
-              justifyContent: 'center',
+              top: insets.top + 4,
+              height: 44,
+              flexDirection: 'row',
+              alignItems: 'center',
               zIndex: 2,
+              gap: 16,
             }}
-          />
+          >
+            {!isBulkMode && dayActivities.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowShareModal(true)}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                accessibilityRole="button"
+                accessibilityLabel="Share workout"
+                style={{ padding: 4 }}
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={22}
+                  color={colors.primary.main}
+                />
+              </TouchableOpacity>
+            )}
+            <HeaderButton
+              label={isBulkMode ? 'Save' : 'Edit'}
+              onPress={() => {
+                if (isBulkMode) {
+                  saveChanges();
+                  setIsBulkMode(false);
+                  setSelectedActivities(new Set());
+                } else {
+                  setIsBulkMode(true);
+                }
+              }}
+            />
+          </View>
         )}
       </View>
 
-      {/* Bulk Actions */}
-      {isBulkMode && (
-        <View
-          className={`p-4 border-b ${
-            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          }`}
+      {/* Swipeable content area */}
+      <GestureDetector gesture={swipeGesture}>
+        <Animated.View
+          style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
         >
-          {/* Selected count and reorder hint */}
-          <Text
-            className={`font-semibold mb-2 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            {selectedActivities.size} selected
-          </Text>
-
-          {/* Select/Deselect toggle */}
-          <View className="flex-row mb-3">
-            <TouchableOpacity
-              onPress={
-                selectedActivities.size === dayActivities.length &&
-                dayActivities.length > 0
-                  ? deselectAll
-                  : selectAll
-              }
-              className="px-3 py-1 rounded bg-blue-500"
+          {/* Bulk Actions */}
+          {isBulkMode && (
+            <View
+              className={`p-4 border-b ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}
             >
-              <Text className="text-white text-sm">
-                {selectedActivities.size === dayActivities.length &&
-                dayActivities.length > 0
-                  ? 'Deselect All'
-                  : 'Select All'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Action buttons */}
-          <View className="flex-row space-x-2 mb-2">
-            <TouchableOpacity
-              onPress={handleBulkDelete}
-              className="flex-1 bg-red-500 py-2 rounded-lg"
-              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
-              disabled={selectedActivities.size === 0}
-            >
-              <Text className="text-white text-center font-semibold">
-                Delete
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBulkMove}
-              className="flex-1 bg-blue-500 py-2 rounded-lg"
-              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
-              disabled={selectedActivities.size === 0}
-            >
-              <Text className="text-white text-center font-semibold">
-                Change Date
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Superset button - show when 2+ activities selected */}
-          {selectedActivities.size >= 2 && (
-            <TouchableOpacity
-              onPress={() => {
-                if (selectedSupersetId) {
-                  dispatch(breakSuperset(selectedSupersetId));
-                  setSelectedActivities(new Set());
-                } else {
-                  handleCreateSuperset();
-                }
-              }}
-              className="py-2 rounded-lg mb-2"
-              style={{
-                backgroundColor: selectedSupersetId
-                  ? 'transparent'
-                  : colors.primary.main,
-                borderWidth: selectedSupersetId ? 2 : 0,
-                borderColor: colors.error.main,
-              }}
-            >
+              {/* Selected count and reorder hint */}
               <Text
-                className="text-center font-semibold"
+                className={`font-semibold mb-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                {selectedActivities.size} selected
+              </Text>
+
+              {/* Select/Deselect toggle */}
+              <View className="flex-row mb-3">
+                <TouchableOpacity
+                  onPress={
+                    selectedActivities.size === dayActivities.length &&
+                    dayActivities.length > 0
+                      ? deselectAll
+                      : selectAll
+                  }
+                  className="px-3 py-1 rounded bg-blue-500"
+                >
+                  <Text className="text-white text-sm">
+                    {selectedActivities.size === dayActivities.length &&
+                    dayActivities.length > 0
+                      ? 'Deselect All'
+                      : 'Select All'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Action buttons */}
+              <View className="flex-row space-x-2 mb-2">
+                <TouchableOpacity
+                  onPress={handleBulkDelete}
+                  className="flex-1 bg-red-500 py-2 rounded-lg"
+                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  disabled={selectedActivities.size === 0}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleBulkMove}
+                  className="flex-1 bg-blue-500 py-2 rounded-lg"
+                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  disabled={selectedActivities.size === 0}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Change Date
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Superset button - show when 2+ activities selected */}
+              {selectedActivities.size >= 2 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedSupersetId) {
+                      dispatch(breakSuperset(selectedSupersetId));
+                      setSelectedActivities(new Set());
+                    } else {
+                      handleCreateSuperset();
+                    }
+                  }}
+                  className="py-2 rounded-lg mb-2"
+                  style={{
+                    backgroundColor: selectedSupersetId
+                      ? 'transparent'
+                      : colors.primary.main,
+                    borderWidth: selectedSupersetId ? 2 : 0,
+                    borderColor: colors.error.main,
+                  }}
+                >
+                  <Text
+                    className="text-center font-semibold"
+                    style={{
+                      color: selectedSupersetId ? colors.error.main : '#fff',
+                    }}
+                  >
+                    {selectedSupersetId
+                      ? 'Unlink Superset'
+                      : 'Link as Superset'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Sticky Progress Bar */}
+          {totalCount > 0 && !isBulkMode && (
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: colors.background,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <View
                 style={{
-                  color: selectedSupersetId ? colors.error.main : '#fff',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 6,
                 }}
               >
-                {selectedSupersetId ? 'Unlink Superset' : 'Link as Superset'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Sticky Progress Bar */}
-      {totalCount > 0 && !isBulkMode && (
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            backgroundColor: colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 6,
-            }}
-          >
-            {allCompleted && (
-              <Ionicons
-                name="checkmark-circle"
-                size={16}
-                color="#22C55E"
-                style={{ marginRight: 6 }}
+                {allCompleted && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                  }}
+                >
+                  {completedCount}/{totalCount} complete
+                </Text>
+              </View>
+              <ProgressBar
+                completed={completedCount}
+                total={totalCount}
+                isDark={isDark}
               />
-            )}
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 14,
-              }}
-            >
-              {completedCount}/{totalCount} complete
-            </Text>
-          </View>
-          <ProgressBar
-            completed={completedCount}
-            total={totalCount}
-            isDark={isDark}
-          />
-        </View>
-      )}
+            </View>
+          )}
 
-      {/* Activities List */}
-      {renderActivitiesList()}
+          {/* Activities List */}
+          {renderActivitiesList()}
+        </Animated.View>
+      </GestureDetector>
 
       <FloatingAddButton
         onPress={() => navigation.navigate('Activity', { date })}
@@ -1786,6 +2233,13 @@ export default function DayScreen({ navigation, route }: any) {
       />
 
       <MoveToDateModal />
+      <CopyToDateModal />
+      <ShareWorkoutModal
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        activities={dayActivities}
+        date={date}
+      />
 
       {/* Deleting overlay */}
       {isDeleting && (

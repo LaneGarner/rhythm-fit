@@ -7,7 +7,7 @@ export type ActivityType =
   | 'sports'
   | 'other';
 
-export type TrackingField = 'weight' | 'reps' | 'time' | 'distance';
+export type TrackingField = 'weight' | 'reps' | 'time' | 'distance' | 'band';
 
 export const DEFAULT_TRACKING_FIELDS: Record<ActivityType, TrackingField[]> = {
   'weight-training': ['weight', 'reps'],
@@ -54,6 +54,7 @@ export interface SetData {
   weight?: number;
   time?: number; // in seconds
   distance?: number; // in miles/km
+  band?: string;
   notes?: string; // optional set-level notes
   completed: boolean;
 }

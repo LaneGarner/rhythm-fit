@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../theme/ThemeContext';
 import { ActivityTypeStats } from '../../services/statsService';
 
@@ -14,6 +15,9 @@ export const ActivityTypeChart = ({
   title = 'Activity Type Breakdown',
 }: ActivityTypeChartProps) => {
   const { colors } = useTheme();
+  const { isTablet } = useResponsiveLayout();
+  const radius = isTablet ? 140 : 100;
+  const innerRadius = isTablet ? 84 : 60;
 
   if (data.length === 0) {
     return (
@@ -74,8 +78,8 @@ export const ActivityTypeChart = ({
         <PieChart
           data={pieData}
           donut
-          radius={100}
-          innerRadius={60}
+          radius={radius}
+          innerRadius={innerRadius}
           innerCircleColor={colors.surface}
           centerLabelComponent={() => (
             <View style={{ alignItems: 'center' }}>

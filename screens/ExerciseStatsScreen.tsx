@@ -15,6 +15,7 @@ import {
   BODY_PART_COLORS,
 } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type MetricType = 'weight' | 'reps' | 'volume' | 'time' | 'distance';
 
@@ -22,6 +23,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
   const { exerciseName } = route.params;
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colors, colorScheme } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('weight');
@@ -71,9 +73,10 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            paddingTop: 72,
+            paddingTop: insets.top + 16,
             paddingBottom: 16,
-            paddingHorizontal: 16,
+            paddingLeft: Math.max(16, insets.left),
+            paddingRight: Math.max(16, insets.right),
             backgroundColor: colors.surface,
             borderBottomWidth: 1,
             borderBottomColor: colors.border,
@@ -116,9 +119,10 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 72,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,

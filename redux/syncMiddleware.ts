@@ -51,6 +51,7 @@ async function pushToServer(
 const SYNC_ACTIONS = [
   'activities/addActivity',
   'activities/updateActivity',
+  'activities/batchUpdateActivities',
   'activities/deleteActivity',
   'activities/markAllActivitiesCompleteForWeek',
   'activities/markAllActivitiesIncompleteForWeek',
@@ -79,6 +80,11 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
         } else if (action.type === 'activities/updateActivity') {
           const activity = action.payload as Activity;
           await pushToServer(authToken!, activity);
+        } else if (action.type === 'activities/batchUpdateActivities') {
+          const updatedActivities = action.payload as Activity[];
+          for (const activity of updatedActivities) {
+            await pushToServer(authToken!, activity);
+          }
         } else if (action.type === 'activities/deleteActivity') {
           const activityId = action.payload as string;
           const deletedActivity: Activity = {

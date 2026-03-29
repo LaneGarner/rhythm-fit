@@ -116,6 +116,63 @@ export const clearAllAppData = async (): Promise<void> => {
   }
 };
 
+// Auto rest timer preference storage
+export const saveAutoRestTimer = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('autoRestTimer', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving auto rest timer:', error);
+  }
+};
+
+export const loadAutoRestTimer = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('autoRestTimer');
+    return data ? JSON.parse(data) : false;
+  } catch (error) {
+    console.error('Error loading auto rest timer:', error);
+    return false;
+  }
+};
+
+// Timer vibration preference storage
+export const saveTimerVibration = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('timerVibration', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving timer vibration:', error);
+  }
+};
+
+export const loadTimerVibration = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('timerVibration');
+    return data !== null ? JSON.parse(data) : true; // Default: enabled
+  } catch (error) {
+    console.error('Error loading timer vibration:', error);
+    return true;
+  }
+};
+
+// Timer sound preference storage
+export const saveTimerSound = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('timerSound', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving timer sound:', error);
+  }
+};
+
+export const loadTimerSound = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('timerSound');
+    return data !== null ? JSON.parse(data) : true; // Default: enabled
+  } catch (error) {
+    console.error('Error loading timer sound:', error);
+    return true;
+  }
+};
+
 // Tutorial completion storage
 export const saveTutorialCompleted = async (completed: boolean) => {
   try {

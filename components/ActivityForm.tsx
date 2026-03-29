@@ -44,6 +44,17 @@ interface ActivityFormProps {
   onSave: (activity: Activity, recurringConfig?: RecurringConfig) => void;
   onCancel: () => void;
   onDelete?: () => void;
+  supersetMode?: boolean;
+  onToggleSupersetMode?: (enabled: boolean) => void;
+  supersetDrafts?: Activity[];
+  onRemoveDraft?: (index: number) => void;
+  saveButtonLabel?: string;
+  headerTitle?: string;
+  onSaveSuperset?: () => void;
+  deleteButtonLabel?: string;
+  hideDate?: boolean;
+  hideHeader?: boolean;
+  hideRecurring?: boolean;
 }
 
 export default function ActivityForm({
@@ -52,6 +63,17 @@ export default function ActivityForm({
   onSave,
   onCancel,
   onDelete,
+  supersetMode,
+  onToggleSupersetMode,
+  supersetDrafts,
+  onRemoveDraft,
+  saveButtonLabel,
+  headerTitle,
+  onSaveSuperset,
+  deleteButtonLabel,
+  hideDate,
+  hideHeader,
+  hideRecurring,
 }: ActivityFormProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -243,10 +265,16 @@ export default function ActivityForm({
       sets: sets,
       recurring: recurringConfig || undefined,
       trackingFields: trackingFields,
+      supersetId: initialActivity?.supersetId,
+      supersetPosition: initialActivity?.supersetPosition,
+      order: initialActivity?.order,
     };
 
     onSave(activity, recurringConfig || undefined);
   };
+
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
 
   const handleNameSelect = (name: string, type?: string) => {
     setActivityName(name);
@@ -274,7 +302,15 @@ export default function ActivityForm({
       if (result.success) {
         Alert.alert(
           'Added to Library',
-          `"${name}" has been added to your activity library.`
+          `"${name}" has been added to your activity library.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                handleSaveRef.current();
+              },
+            },
+          ]
         );
       } else {
         Alert.alert(
@@ -317,6 +353,7 @@ export default function ActivityForm({
       weight: setToDuplicate.weight,
       time: setToDuplicate.time,
       distance: setToDuplicate.distance,
+      band: setToDuplicate.band,
       completed: false,
     };
     setSets([...sets, newSet]);
@@ -329,86 +366,89 @@ export default function ActivityForm({
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          height: 132,
-          paddingHorizontal: 16,
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
-      >
-        {/* Left: Cancel button */}
-        <TouchableOpacity
-          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          onPress={onCancel}
-          style={{
-            position: 'absolute',
-            left: 16,
-            top: 44,
-            height: 88,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.primary.main,
-              fontSize: 18,
-              fontWeight: '500',
-            }}
-          >
-            Cancel
-          </Text>
-        </TouchableOpacity>
-        {/* Center: Title */}
+      {!hideHeader && (
         <View
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 44,
-            height: 88,
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
+            height: 132,
+            paddingHorizontal: 16,
+            backgroundColor: colors.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
           }}
         >
-          <Text
+          {/* Left: Cancel button */}
+          <TouchableOpacity
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            onPress={onCancel}
             style={{
-              fontSize: 17,
-              fontWeight: '600',
-              color: colors.text,
-              textAlign: 'center',
+              position: 'absolute',
+              left: 16,
+              top: 44,
+              height: 88,
+              justifyContent: 'center',
+              zIndex: 2,
             }}
           >
-            {mode === 'create' ? 'New Activity' : 'Edit Activity'}
-          </Text>
+            <Text
+              style={{
+                color: colors.primary.main,
+                fontSize: 18,
+                fontWeight: '500',
+              }}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          {/* Center: Title */}
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 44,
+              height: 88,
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 17,
+                fontWeight: '600',
+                color: colors.text,
+                textAlign: 'center',
+              }}
+            >
+              {headerTitle ||
+                (mode === 'create' ? 'New Activity' : 'Edit Activity')}
+            </Text>
+          </View>
+          {/* Right: Save button */}
+          <TouchableOpacity
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            onPress={handleSave}
+            style={{
+              position: 'absolute',
+              right: 16,
+              top: 44,
+              height: 88,
+              justifyContent: 'center',
+              zIndex: 2,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.primary.main,
+                fontSize: 18,
+                fontWeight: '600',
+              }}
+            >
+              {saveButtonLabel || 'Save'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        {/* Right: Save button */}
-        <TouchableOpacity
-          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          onPress={handleSave}
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: 44,
-            height: 88,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.primary.main,
-              fontSize: 18,
-              fontWeight: '600',
-            }}
-          >
-            Save
-          </Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
       <ScrollView
         className="flex-1"
@@ -420,6 +460,171 @@ export default function ActivityForm({
         ref={scrollViewRef}
       >
         <View className="p-4 space-y-8">
+          {/* Superset Toggle (create mode only) */}
+          {mode === 'create' && onToggleSupersetMode && (
+            <TouchableOpacity
+              onPress={() => onToggleSupersetMode(!supersetMode)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: supersetMode ? colors.primary.main : colors.border,
+                backgroundColor: supersetMode
+                  ? isDark
+                    ? '#23263a'
+                    : '#e0e7ff'
+                  : colors.surface,
+              }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: supersetMode }}
+              accessibilityLabel="Make it a superset"
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              >
+                <Ionicons
+                  name="link-outline"
+                  size={20}
+                  color={
+                    supersetMode ? colors.primary.main : colors.textSecondary
+                  }
+                />
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '500',
+                    color: supersetMode ? colors.primary.main : colors.text,
+                  }}
+                >
+                  Make it a Superset
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: supersetMode
+                    ? colors.primary.main
+                    : isDark
+                      ? '#555'
+                      : '#ccc',
+                  justifyContent: 'center',
+                  paddingHorizontal: 2,
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: '#fff',
+                    alignSelf: supersetMode ? 'flex-end' : 'flex-start',
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Superset Exercise Strip */}
+          {supersetMode && supersetDrafts && supersetDrafts.length > 0 && (
+            <View>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: colors.textSecondary,
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Exercises ({supersetDrafts.length})
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {supersetDrafts.map((draft, index) => (
+                  <View
+                    key={`draft-${index}`}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      minHeight: 44,
+                      borderRadius: 20,
+                      backgroundColor: isDark ? '#23263a' : '#e0e7ff',
+                      borderWidth: 1,
+                      borderColor: isDark
+                        ? colors.primary.main + '40'
+                        : '#a5b4fc',
+                      gap: 6,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{draft.emoji || '💪'}</Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: colors.text,
+                        maxWidth: 120,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {draft.name}
+                    </Text>
+                    {onRemoveDraft && (
+                      <TouchableOpacity
+                        onPress={() => onRemoveDraft(index)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel={`Remove ${draft.name}`}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={colors.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Save Superset Button */}
+              {supersetDrafts.length >= 2 && onSaveSuperset && (
+                <TouchableOpacity
+                  onPress={onSaveSuperset}
+                  style={{
+                    marginTop: 12,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    backgroundColor: colors.primary.main,
+                    alignItems: 'center',
+                  }}
+                  accessibilityLabel="Save superset"
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={{
+                      color: '#fff',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    Save Superset
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Activity Name */}
           <View>
             <Text
@@ -473,39 +678,41 @@ export default function ActivityForm({
           </View>
 
           {/* Date Selection */}
-          <View>
-            <Text
-              className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              Date
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setTempSelectedDate(selectedDate);
-                setShowDatePicker(true);
-              }}
-              className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                isDark
-                  ? 'bg-gray-800 border-gray-600'
-                  : 'bg-white border-gray-300'
-              }`}
-            >
+          {!hideDate && (
+            <View>
               <Text
-                className={`text-base ${
+                className={`text-lg font-semibold mb-2 ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}
               >
-                {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                Date
               </Text>
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setTempSelectedDate(selectedDate);
+                  setShowDatePicker(true);
+                }}
+                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
+                  isDark
+                    ? 'bg-gray-800 border-gray-600'
+                    : 'bg-white border-gray-300'
+                }`}
+              >
+                <Text
+                  className={`text-base ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                </Text>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Activity Type */}
           <View>
@@ -784,6 +991,7 @@ export default function ActivityForm({
                   { field: 'reps', label: 'Reps' },
                   { field: 'time', label: 'Time' },
                   { field: 'distance', label: 'Distance' },
+                  { field: 'band', label: 'Band' },
                 ] as { field: TrackingField; label: string }[]
               ).map(({ field, label }) => {
                 const isSelected = trackingFields.includes(field);
@@ -878,6 +1086,7 @@ export default function ActivityForm({
                       reps: { label: 'Reps' },
                       time: { label: 'Time', unit: 'm:ss' },
                       distance: { label: 'Distance', unit: 'mi' },
+                      band: { label: 'Band' },
                     };
                     const config = fieldConfig[field];
                     const value = set[field];
@@ -886,9 +1095,12 @@ export default function ActivityForm({
                       <View
                         key={field}
                         style={{
-                          flex: 1,
+                          flex: field === 'band' ? undefined : 1,
+                          width: field === 'band' ? '100%' : undefined,
                           minWidth:
-                            trackingFields.length > 2 ? '45%' : undefined,
+                            trackingFields.length > 2 && field !== 'band'
+                              ? '45%'
+                              : undefined,
                         }}
                       >
                         <Text
@@ -920,6 +1132,26 @@ export default function ActivityForm({
                               {value ? secondsToTimeString(value) : '0:00'}
                             </Text>
                           </TouchableOpacity>
+                        ) : field === 'band' ? (
+                          <TextInput
+                            value={set.band || ''}
+                            onChangeText={text => {
+                              handleUpdateSet(set.id, {
+                                band: text || undefined,
+                              });
+                            }}
+                            keyboardType="default"
+                            autoCapitalize="words"
+                            placeholder="e.g. Red Heavy"
+                            className={`px-3 py-2 border rounded-lg ${
+                              isDark
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                            placeholderTextColor={colors.textSecondary}
+                            returnKeyType="done"
+                            onSubmitEditing={() => Keyboard.dismiss()}
+                          />
                         ) : (
                           <TextInput
                             ref={ref => {
@@ -935,10 +1167,7 @@ export default function ActivityForm({
                             }
                             onChangeText={text => {
                               if (field === 'distance') {
-                                if (
-                                  text &&
-                                  !/^\d*\.?\d{0,2}$/.test(text)
-                                )
+                                if (text && !/^\d*\.?\d{0,2}$/.test(text))
                                   return;
                                 setDistanceText(prev => ({
                                   ...prev,
@@ -947,9 +1176,7 @@ export default function ActivityForm({
                                 return;
                               }
                               handleUpdateSet(set.id, {
-                                [field]: text
-                                  ? parseFloat(text)
-                                  : undefined,
+                                [field]: text ? parseFloat(text) : undefined,
                               });
                             }}
                             onBlur={() => {
@@ -970,9 +1197,7 @@ export default function ActivityForm({
                               }
                             }}
                             keyboardType={
-                              field === 'distance'
-                                ? 'decimal-pad'
-                                : 'numeric'
+                              field === 'distance' ? 'decimal-pad' : 'numeric'
                             }
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
@@ -1033,44 +1258,46 @@ export default function ActivityForm({
           </View>
 
           {/* Recurring Options */}
-          <View>
-            <Text
-              className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              Recurring
-            </Text>
-            <TouchableOpacity
-              onPress={() => setShowRecurringModal(true)}
-              className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                isDark
-                  ? 'bg-gray-800 border-gray-600'
-                  : 'bg-white border-gray-300'
-              }`}
-            >
+          {!hideRecurring && (
+            <View>
               <Text
-                className={`text-base ${
+                className={`text-lg font-semibold mb-2 ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}
               >
-                {recurringConfig
-                  ? `${recurringConfig.pattern === 'daily' ? 'Every day' : 'Weekly'} (${recurringConfig.occurrences} ${recurringConfig.pattern === 'daily' ? 'days' : 'weeks'})`
-                  : 'Set up recurring schedule'}
+                Recurring
               </Text>
-              <Ionicons
-                name="repeat-outline"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => setShowRecurringModal(true)}
+                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
+                  isDark
+                    ? 'bg-gray-800 border-gray-600'
+                    : 'bg-white border-gray-300'
+                }`}
+              >
+                <Text
+                  className={`text-base ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  {recurringConfig
+                    ? `${recurringConfig.pattern === 'daily' ? 'Every day' : 'Weekly'} (${recurringConfig.occurrences} ${recurringConfig.pattern === 'daily' ? 'days' : 'weeks'})`
+                    : 'Set up recurring schedule'}
+                </Text>
+                <Ionicons
+                  name="repeat-outline"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Delete Activity Link */}
           {mode === 'edit' && onDelete && (
             <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
               <Text className="text-red-500 text-center text-base">
-                Delete Activity
+                {deleteButtonLabel || 'Delete Activity'}
               </Text>
             </TouchableOpacity>
           )}

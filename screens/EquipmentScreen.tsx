@@ -27,11 +27,13 @@ import {
   updatePlateCount,
 } from '../services/equipmentService';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function EquipmentScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
+  const { insets } = useResponsiveLayout();
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,9 +181,9 @@ export default function EquipmentScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 60,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -206,7 +208,7 @@ export default function EquipmentScreen({ navigation }: any) {
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
         {loading ? (
           <Text
             className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
@@ -451,7 +453,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             <View className="mb-6">
               <Text
                 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -536,7 +541,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             <View className="mb-6">
               <Text
                 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -588,38 +596,35 @@ export default function EquipmentScreen({ navigation }: any) {
               >
                 Quick add:
               </Text>
-              <View className="flex-row flex-wrap">
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {[2.5, 5, 10, 25, 35, 45].map(weight => (
                   <TouchableOpacity
                     key={weight}
                     onPress={() => setNewPlateWeight(weight.toString())}
                     style={{
-                      backgroundColor:
-                        newPlateWeight === weight.toString()
-                          ? '#3b82f6'
-                          : isDark
-                            ? '#27272a'
-                            : '#e5e7eb',
+                      width: '33.33%',
+                      alignItems: 'center',
+                      marginBottom: 16,
                     }}
-                    className="px-4 py-2 rounded-full mr-2 mb-2"
                     accessibilityRole="button"
                     accessibilityLabel={`${weight} pounds${newPlateWeight === weight.toString() ? ', selected' : ''}`}
                     accessibilityState={{
                       selected: newPlateWeight === weight.toString(),
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        color:
+                        borderWidth: 2,
+                        borderColor:
                           newPlateWeight === weight.toString()
-                            ? '#fff'
-                            : isDark
-                              ? '#e5e5e5'
-                              : '#374151',
+                            ? '#3b82f6'
+                            : 'transparent',
+                        borderRadius: 44,
+                        padding: 4,
                       }}
                     >
-                      {weight}
-                    </Text>
+                      <PlateIcon weight={weight} size={76} />
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -661,7 +666,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             {showEditPlate && (
               <>
                 <View className="items-center mb-6">

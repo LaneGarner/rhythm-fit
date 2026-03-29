@@ -21,24 +21,29 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
+import StickyCompactTimer from '../components/StickyCompactTimer';
+import { usePreferences } from '../context/PreferencesContext';
 import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Activity, SetData, TrackingField } from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
   const dispatch = useDispatch();
   const { colorScheme, colors } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const activity = activities.find(a => a.id === activityId);
 
   // Global timer context (for checking if timer is running)
-  const { timer } = useTimer();
+  const { timer, startCountdown } = useTimer();
+  const { autoRestTimer } = usePreferences();
   const isTimerRunning = timer.activityId === activityId && timer.isRunning;
 
   const [sets, setSets] = useState<SetData[]>(activity?.sets || []);
@@ -48,6 +53,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(isTimerRunning);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null
@@ -131,6 +137,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       weight: setToDuplicate.weight,
       time: setToDuplicate.time,
       distance: setToDuplicate.distance,
+      band: setToDuplicate.band,
       completed: false,
     };
     const updatedSets = [...sets, newSet];
@@ -153,27 +160,25 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     );
     setSets(updatedSets);
 
-    // Auto-save progress when sets are updated
     if (activity) {
-      const updatedActivity: Activity = {
-        ...activity,
-        sets: updatedSets,
-      };
-      dispatch(updateActivity(updatedActivity));
-
-      // Check if all sets are now complete - auto-complete activity
       const allSetsComplete =
         updatedSets.length > 0 && updatedSets.every(s => s.completed);
-      if (allSetsComplete && !activity.completed) {
-        const completedActivity: Activity = {
+      const shouldAutoComplete = allSetsComplete && !activity.completed;
+
+      dispatch(
+        updateActivity({
           ...activity,
-          completed: true,
           sets: updatedSets,
-        };
-        dispatch(updateActivity(completedActivity));
+          completed: shouldAutoComplete ? true : activity.completed,
+        })
+      );
+
+      if (shouldAutoComplete) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
+      } else if (autoRestTimer && updates.completed === true) {
+        startCountdown(activityId, activity.name, 120);
       }
     }
   };
@@ -269,9 +274,10 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 72,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -314,6 +320,14 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           scrollY={scrollY}
         />
 
+        {/* Sticky compact timer - appears below sticky header when scrolled */}
+        <StickyCompactTimer
+          activityId={activity.id}
+          activityName={activity.name}
+          scrollY={scrollY}
+          isExpanded={isTimerExpanded}
+        />
+
         <Animated.ScrollView
           className={`flex-1`}
           contentContainerStyle={{
@@ -324,7 +338,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           ref={scrollViewRef}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
+            { useNativeDriver: false }
           )}
           scrollEventThrottle={16}
         >
@@ -342,6 +356,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               activityId={activity.id}
               activityName={activity.name}
               defaultExpanded={isTimerRunning}
+              onExpandedChange={setIsTimerExpanded}
             />
 
             {/* Notes */}
@@ -357,22 +372,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 >
                   Sets ({sets.length})
                 </Text>
-                <TouchableOpacity
-                  onPress={handleAddSet}
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add new set"
-                >
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontSize: 16,
-                      fontWeight: '600',
-                    }}
-                  >
-                    + Add Set
-                  </Text>
-                </TouchableOpacity>
               </View>
 
               {sets.map((set, index) => (
@@ -390,6 +389,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   }}
                   inputRefs={setInputRefs}
                   onInputFocus={scrollToSetInput}
+                  readOnly
                 />
               ))}
 
@@ -399,7 +399,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     isDark ? 'text-gray-400' : 'text-gray-500'
                   }`}
                 >
-                  No sets added yet. Tap "Add Set" to get started.
+                  No sets yet. Tap "Edit" to add sets.
                 </Text>
               )}
             </View>

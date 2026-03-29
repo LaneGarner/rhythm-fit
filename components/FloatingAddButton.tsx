@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef } from 'react';
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useTheme } from '../theme/ThemeContext';
 
 interface FloatingAddButtonProps {
@@ -12,6 +13,7 @@ interface FloatingAddButtonProps {
 const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
   ({ onPress, accessibilityLabel = 'Add', onLayout }, ref) => {
     const { colors } = useTheme();
+    const { insets } = useResponsiveLayout();
 
     return (
       <View
@@ -19,8 +21,8 @@ const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
         onLayout={onLayout}
         style={{
           position: 'absolute',
-          bottom: 30,
-          right: 34,
+          bottom: Math.max(30, insets.bottom + 10),
+          right: Math.max(34, insets.right + 10),
         }}
       >
         <TouchableOpacity

@@ -47,11 +47,14 @@ import { getEmojiForType } from '../services/activityTypeService';
 import {
   buildCoachAnalytics,
   formatAnalyticsForPrompt,
+  buildRecentWorkoutDetails,
+  buildWeeklySummaries,
+  buildExerciseProgression,
 } from '../services/coachAnalyticsService';
 import { addActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
-import { Activity, ActivityType } from '../types/activity';
+import { Activity, ActivityType, SetData } from '../types/activity';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { toTitleCase } from '../utils/storage';
 
@@ -300,6 +303,11 @@ export default function CoachScreen({ navigation }: any) {
     const analytics = buildCoachAnalytics(activities);
     const analyticsContext = formatAnalyticsForPrompt(analytics);
 
+    // Build workout history sections
+    const recentDetails = buildRecentWorkoutDetails(activities, 7);
+    const weeklySummaries = buildWeeklySummaries(activities, 12);
+    const exerciseProgression = buildExerciseProgression(activities, 8);
+
     let context = `Today's date: ${formattedToday}\n\n`;
 
     // Add user analytics section
@@ -337,6 +345,18 @@ export default function CoachScreen({ navigation }: any) {
         const date = dayjs(activity.date).format('MMM D');
         context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
       });
+    }
+
+    if (recentDetails) {
+      context += `\n${recentDetails}\n`;
+    }
+
+    if (weeklySummaries) {
+      context += `\n${weeklySummaries}\n`;
+    }
+
+    if (exerciseProgression) {
+      context += `\n${exerciseProgression}\n`;
     }
 
     return context;
@@ -444,6 +464,14 @@ export default function CoachScreen({ navigation }: any) {
     );
   };
 
+  const generateDefaultSets = (type: ActivityType): SetData[] => {
+    const count = type === 'weight-training' || type === 'calisthenics' ? 3 : 1;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `${Date.now().toString()}-${Math.random().toString(36).substr(2, 6)}-${i}`,
+      completed: false,
+    }));
+  };
+
   const createActivitiesFromRequest = (activityRequests: any[]) => {
     const createdActivities = [];
 
@@ -521,6 +549,7 @@ export default function CoachScreen({ navigation }: any) {
                   name: toTitleCase(exercise),
                   emoji: getEmojiForType(request.type),
                   completed: false,
+                  sets: generateDefaultSets(request.type),
                   notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
                 };
                 dispatch(addActivity(activity));
@@ -536,6 +565,7 @@ export default function CoachScreen({ navigation }: any) {
                 name: toTitleCase(exercise),
                 emoji: getEmojiForType(request.type),
                 completed: false,
+                sets: generateDefaultSets(request.type),
                 notes: `Created by AI coach based on your request`,
               };
               dispatch(addActivity(activity));
@@ -557,6 +587,7 @@ export default function CoachScreen({ navigation }: any) {
                 name: request.exercises.map(toTitleCase).join(', '),
                 emoji: getEmojiForType(request.type),
                 completed: false,
+                sets: generateDefaultSets(request.type),
                 notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
               };
               dispatch(addActivity(activity));
@@ -571,6 +602,7 @@ export default function CoachScreen({ navigation }: any) {
               name: request.exercises.map(toTitleCase).join(', '),
               emoji: getEmojiForType(request.type),
               completed: false,
+              sets: generateDefaultSets(request.type),
               notes: `Created by AI coach based on your request`,
             };
             dispatch(addActivity(activity));

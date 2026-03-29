@@ -9,8 +9,10 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
+import StickyCompactTimer from '../components/StickyCompactTimer';
 import { useTutorial } from '../components/tutorial/TutorialProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Activity, SetData } from '../types/activity';
 
 const DEMO_ACTIVITY: Activity = {
@@ -30,10 +32,12 @@ const DEMO_ACTIVITY: Activity = {
 
 export default function DemoActivityExecutionScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
+  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
   const { isActive, currentStep } = useTutorial();
 
   const [sets, setSets] = useState<SetData[]>(DEMO_ACTIVITY.sets || []);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<Animated.ScrollView>(null);
 
@@ -102,9 +106,10 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 72,
+          paddingTop: insets.top + 16,
           paddingBottom: 16,
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -142,6 +147,14 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
           scrollY={scrollY}
         />
 
+        {/* Sticky compact timer - appears below sticky header when scrolled */}
+        <StickyCompactTimer
+          activityId={DEMO_ACTIVITY.id}
+          activityName={DEMO_ACTIVITY.name}
+          scrollY={scrollY}
+          isExpanded={isTimerExpanded}
+        />
+
         <Animated.ScrollView
           ref={scrollViewRef}
           className="flex-1"
@@ -168,6 +181,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
               activityId={DEMO_ACTIVITY.id}
               activityName={DEMO_ACTIVITY.name}
               defaultExpanded={false}
+              onExpandedChange={setIsTimerExpanded}
             />
 
             {/* Notes */}
@@ -204,6 +218,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
                   activityType={DEMO_ACTIVITY.type}
                   onUpdateSet={handleUpdateSet}
                   onShowOptions={handleShowOptions}
+                  readOnly
                 />
               ))}
             </View>

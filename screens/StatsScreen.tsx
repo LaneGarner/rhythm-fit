@@ -29,7 +29,7 @@ import {
 import { useTheme } from '../theme/ThemeContext';
 import { isActivityComplete } from '../utils/supersetUtils';
 
-type TimeRange = 7 | 30 | 90 | 365;
+type TimeRange = 7 | 30 | 90 | 365 | 0;
 
 export default function StatsScreen({ navigation }: any) {
   const dispatch = useDispatch<AppDispatch>();
@@ -49,6 +49,9 @@ export default function StatsScreen({ navigation }: any) {
 
   // Filter activities by time range (only completed activities for stats)
   const filteredActivities = useMemo(() => {
+    if (timeRange === 0) {
+      return activities.filter(activity => isActivityComplete(activity));
+    }
     const startDate = dayjs().subtract(timeRange, 'day');
     const today = dayjs().endOf('day');
     return activities.filter(activity => {
@@ -106,7 +109,7 @@ export default function StatsScreen({ navigation }: any) {
     [filteredActivities]
   );
 
-  // Volume data (daily for 7D, weekly for longer ranges)
+  // Volume data (daily for 7D, monthly for All, weekly for other ranges)
   const volumeData = useMemo(() => {
     const data: { label: string; value: number }[] = [];
 
@@ -121,6 +124,31 @@ export default function StatsScreen({ navigation }: any) {
           const activityDate = dayjs(activity.date);
           if (
             activityDate.isSame(date, 'day') &&
+            isActivityComplete(activity) &&
+            activity.sets
+          ) {
+            for (const set of activity.sets) {
+              if (set.completed && set.weight && set.reps) {
+                volume += set.weight * set.reps;
+              }
+            }
+          }
+        }
+        data.push({ label, value: volume });
+      }
+    } else if (timeRange === 0) {
+      // Monthly data for All Time view
+      for (let i = 11; i >= 0; i--) {
+        const monthStart = dayjs().subtract(i, 'month').startOf('month');
+        const monthEnd = dayjs().subtract(i, 'month').endOf('month');
+        const label = monthStart.format('MMM');
+
+        let volume = 0;
+        for (const activity of activities) {
+          const activityDate = dayjs(activity.date);
+          if (
+            activityDate.isAfter(monthStart.subtract(1, 'day')) &&
+            activityDate.isBefore(monthEnd.add(1, 'day')) &&
             isActivityComplete(activity) &&
             activity.sets
           ) {
@@ -170,6 +198,7 @@ export default function StatsScreen({ navigation }: any) {
     { value: 30, label: '30D' },
     { value: 90, label: '90D' },
     { value: 365, label: '1Y' },
+    { value: 0, label: 'All' },
   ];
 
   return (
@@ -177,7 +206,7 @@ export default function StatsScreen({ navigation }: any) {
       <AppHeader>
         <AppHeaderTitle
           title="Your Stats"
-          subtitle={`Last ${timeRange} Days`}
+          subtitle={timeRange === 0 ? 'All Time' : `Last ${timeRange} Days`}
         />
       </AppHeader>
 
@@ -568,7 +597,13 @@ export default function StatsScreen({ navigation }: any) {
           {volumeData.some(d => d.value > 0) && (
             <VolumeBarChart
               data={volumeData}
-              title={timeRange === 7 ? 'Daily Volume' : 'Weekly Volume'}
+              title={
+                timeRange === 7
+                  ? 'Daily Volume'
+                  : timeRange === 0
+                    ? 'Monthly Volume'
+                    : 'Weekly Volume'
+              }
               suffix=" lbs"
             />
           )}

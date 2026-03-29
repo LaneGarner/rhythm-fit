@@ -11,7 +11,6 @@ import {
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
 import { useTutorial } from '../components/tutorial';
-import { HEADER_STYLES } from '../constants';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
@@ -19,11 +18,21 @@ import { clearSyncData } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
-  const { firstDayOfWeek, setFirstDayOfWeek } = usePreferences();
+  const {
+    firstDayOfWeek,
+    setFirstDayOfWeek,
+    autoRestTimer,
+    setAutoRestTimer,
+    timerVibration,
+    setTimerVibration,
+    timerSound,
+    setTimerSound,
+  } = usePreferences();
   const {
     startTutorial,
     registerTarget,
@@ -31,6 +40,7 @@ export default function SettingsScreen({ navigation }: any) {
     isActive: tutorialActive,
   } = useTutorial();
   const dispatch = useDispatch();
+  const { insets, isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
 
   const registerEquipment = useCallback(() => {
@@ -91,8 +101,11 @@ export default function SettingsScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
-        className={HEADER_STYLES}
+        className="pb-4 px-4 bg-white border-b border-gray-200 flex-row items-center"
         style={{
+          paddingTop: insets.top + 8,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           backgroundColor: colors.surface,
           borderBottomColor: colors.border,
         }}
@@ -430,6 +443,117 @@ export default function SettingsScreen({ navigation }: any) {
             <Switch
               value={isDark}
               onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Auto Rest Timer */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setAutoRestTimer(!autoRestTimer)}
+            accessibilityRole="switch"
+            accessibilityLabel="Auto rest timer"
+            accessibilityState={{ checked: autoRestTimer }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Auto Rest Timer
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Automatically starts a countdown timer after completing a set.
+              </Text>
+            </View>
+            <Switch
+              value={autoRestTimer}
+              onValueChange={setAutoRestTimer}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Timer Vibration */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setTimerVibration(!timerVibration)}
+            accessibilityRole="switch"
+            accessibilityLabel="Timer vibration"
+            accessibilityState={{ checked: timerVibration }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Timer Vibration
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Vibrate when the countdown timer finishes.
+              </Text>
+            </View>
+            <Switch
+              value={timerVibration}
+              onValueChange={setTimerVibration}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Timer Sound */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setTimerSound(!timerSound)}
+            accessibilityRole="switch"
+            accessibilityLabel="Timer sound"
+            accessibilityState={{ checked: timerSound }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Timer Sound
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Play a sound when the countdown timer finishes.
+              </Text>
+            </View>
+            <Switch
+              value={timerSound}
+              onValueChange={setTimerSound}
               trackColor={{
                 false: colors.toggleTrack,
                 true: colors.primary.main,

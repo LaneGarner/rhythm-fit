@@ -148,7 +148,11 @@ export default function RecurringActivityModal({
           </View>
         </View>
 
-        <ScrollView className="flex-1 p-4" ref={scrollViewRef}>
+        <ScrollView
+          className="flex-1 p-4"
+          ref={scrollViewRef}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Pattern Selection */}
           <View className="mb-6">
             <Text

@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { LineChart } from 'react-native-gifted-charts';
 import dayjs from 'dayjs';
@@ -40,7 +40,7 @@ export const ProgressionChart = ({
 }: ProgressionChartProps) => {
   const { colors } = useTheme();
   const chartColor = color || colors.primary.main;
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
   const [pointer, setPointer] = useState<PointerState | null>(null);
   const scrollOffsetRef = useRef(0);
 
@@ -103,11 +103,8 @@ export const ProgressionChart = ({
 
   const updatePointer = useCallback(
     (gestureX: number) => {
-      const adjustedX =
-        gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
-      const index = Math.round(
-        (adjustedX - INITIAL_SPACING) / spacing
-      );
+      const adjustedX = gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
+      const index = Math.round((adjustedX - INITIAL_SPACING) / spacing);
       const clamped = Math.max(0, Math.min(index, chartData.length - 1));
       const item = chartData[clamped];
       const x =

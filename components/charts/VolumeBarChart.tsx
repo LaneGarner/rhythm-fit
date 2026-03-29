@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -23,7 +23,7 @@ export const VolumeBarChart = ({
   height = 200,
 }: VolumeBarChartProps) => {
   const { colors } = useTheme();
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
 
   if (data.length === 0) {
     return (

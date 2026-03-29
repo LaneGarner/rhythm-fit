@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Dimensions,
   Modal,
   Platform,
   ScrollView,
@@ -33,11 +32,12 @@ import { useTheme } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
-  getSupersetEmojis,
+  getSupersetEmojisCompact,
   isActivityComplete,
   isSupersetComplete,
   ActivityGroup,
 } from '../utils/supersetUtils';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function WeeklyScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -47,6 +47,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getAccessToken } = useAuth();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
+  const { insets, width: screenWidth, isTablet } = useResponsiveLayout();
   const {
     registerTarget,
     unregisterTarget,
@@ -75,7 +76,6 @@ export default function WeeklyScreen({ navigation }: any) {
   const scrollViewRef = useRef<ScrollView>(null);
   const currentDayRef = useRef<View>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const screenWidth = Dimensions.get('window').width;
 
   const getWeekDays = (offset: number = 0) => {
     const days = [];
@@ -488,8 +488,8 @@ export default function WeeklyScreen({ navigation }: any) {
     const incompleteActivities = dayActivities.filter(
       activity => !isActivityComplete(activity)
     );
-    const completeActivities = dayActivities.filter(
-      activity => isActivityComplete(activity)
+    const completeActivities = dayActivities.filter(activity =>
+      isActivityComplete(activity)
     );
 
     if (Platform.OS === 'ios') {
@@ -733,11 +733,14 @@ export default function WeeklyScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
-        className="pt-14 pb-4 px-4 border-b border-grey-200"
+        className="pb-4 border-b border-grey-200"
         style={{
           backgroundColor: colors.surface,
           borderBottomColor: colors.border,
           marginTop: 2,
+          paddingTop: insets.top,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
         }}
       >
         {/* Settings Button - right positioned */}
@@ -747,7 +750,11 @@ export default function WeeklyScreen({ navigation }: any) {
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
           accessibilityLabel="Settings"
-          style={{ position: 'absolute', right: 16, top: 62 }}
+          style={{
+            position: 'absolute',
+            right: Math.max(16, insets.right),
+            top: insets.top + 8,
+          }}
         >
           <Ionicons
             name="person-circle-outline"
@@ -765,7 +772,7 @@ export default function WeeklyScreen({ navigation }: any) {
           {/* Top container: carets + week label with space-between */}
           <View
             style={{
-              width: 240,
+              width: isTablet ? 360 : 240,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -853,7 +860,8 @@ export default function WeeklyScreen({ navigation }: any) {
               const allCompleted =
                 dayActivities.length > 0 &&
                 dayActivities.every(isActivityComplete);
-              const completedCount = dayActivities.filter(isActivityComplete).length;
+              const completedCount =
+                dayActivities.filter(isActivityComplete).length;
               return (
                 <TouchableOpacity
                   key={day.date}
@@ -925,6 +933,9 @@ export default function WeeklyScreen({ navigation }: any) {
                                 key={group.supersetId}
                                 className="flex-row items-center mt-1"
                               >
+                                <Text className="text-lg mr-2">
+                                  {getSupersetEmojisCompact(group.activities)}
+                                </Text>
                                 <Text
                                   style={{
                                     color: colors.text,
@@ -932,7 +943,7 @@ export default function WeeklyScreen({ navigation }: any) {
                                   className="flex-1"
                                   numberOfLines={1}
                                 >
-                                  {getSupersetEmojis(group.activities)}
+                                  {group.activities.map(a => a.name || a.type).join(' → ')}
                                 </Text>
                                 {supersetComplete ? (
                                   <Ionicons

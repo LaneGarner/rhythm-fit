@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Activity } from '../types/activity';
-import { loadActivities, saveActivities } from '../utils/storage';
+import { loadActivities } from '../utils/storage';
 import {
   generateSupersetId,
   getNextSupersetPosition,
@@ -38,10 +38,6 @@ const activitySlice = createSlice({
         updated_at: new Date().toISOString(),
       };
       state.data.push(activityWithTimestamp);
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     updateActivity(state, action: PayloadAction<Activity>) {
       const index = state.data.findIndex(a => a.id === action.payload.id);
@@ -51,10 +47,15 @@ const activitySlice = createSlice({
           updated_at: new Date().toISOString(),
         };
       }
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
+    },
+    batchUpdateActivities(state, action: PayloadAction<Activity[]>) {
+      const now = new Date().toISOString();
+      for (const updated of action.payload) {
+        const index = state.data.findIndex(a => a.id === updated.id);
+        if (index !== -1) {
+          state.data[index] = { ...updated, updated_at: now };
+        }
+      }
     },
     deleteActivity(state, action: PayloadAction<string>) {
       const activityToDelete = state.data.find(a => a.id === action.payload);
@@ -99,25 +100,12 @@ const activitySlice = createSlice({
           });
         }
       }
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     deleteActivitiesForDate(state, action: PayloadAction<string>) {
       state.data = state.data.filter(a => a.date !== action.payload);
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     setActivities(state, action: PayloadAction<Activity[]>) {
       state.data = action.payload;
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     markAllActivitiesCompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
@@ -127,10 +115,6 @@ const activitySlice = createSlice({
           ? { ...activity, completed: true, updated_at: now }
           : activity
       );
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     markAllActivitiesIncompleteForWeek(state, action: PayloadAction<string[]>) {
       const weekDates = action.payload;
@@ -140,17 +124,9 @@ const activitySlice = createSlice({
           ? { ...activity, completed: false, updated_at: now }
           : activity
       );
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     clearAllActivities(state) {
       state.data = [];
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     reorderActivities(
       state,
@@ -170,11 +146,6 @@ const activitySlice = createSlice({
           };
         }
       });
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     createSuperset(state, action: PayloadAction<{ activityIds: string[] }>) {
       const { activityIds } = action.payload;
@@ -193,11 +164,6 @@ const activitySlice = createSlice({
             updated_at: now,
           };
         }
-      });
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
       });
     },
     addToSuperset(
@@ -220,11 +186,6 @@ const activitySlice = createSlice({
           updated_at: now,
         };
       }
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     removeFromSuperset(state, action: PayloadAction<string>) {
       const activityId = action.payload;
@@ -286,11 +247,6 @@ const activitySlice = createSlice({
           }
         });
       }
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
     breakSuperset(state, action: PayloadAction<string>) {
       const supersetId = action.payload;
@@ -304,11 +260,6 @@ const activitySlice = createSlice({
             updated_at: now,
           };
         }
-      });
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
       });
     },
     swapSupersetOrder(
@@ -336,11 +287,6 @@ const activitySlice = createSlice({
           updated_at: now,
         };
       }
-
-      // Auto-save to storage
-      saveActivities(state.data).catch(error => {
-        console.error('Error saving activities to storage:', error);
-      });
     },
   },
   extraReducers: builder => {
@@ -363,6 +309,7 @@ const activitySlice = createSlice({
 export const {
   addActivity,
   updateActivity,
+  batchUpdateActivities,
   deleteActivity,
   setActivities,
   deleteActivitiesForDate,

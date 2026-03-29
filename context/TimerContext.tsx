@@ -7,6 +7,9 @@ import React, {
   useCallback,
 } from 'react';
 import { Alert, AppState, AppStateStatus, Vibration } from 'react-native';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
+import { usePreferences } from './PreferencesContext';
 
 type TimerMode = 'countUp' | 'countDown';
 
@@ -30,6 +33,11 @@ interface TimerContextValue {
   stopTimer: () => void;
   setTimerMode: (mode: TimerMode) => void;
   setTargetSeconds: (seconds: number) => void;
+  startCountdown: (
+    activityId: string,
+    activityName: string,
+    seconds: number
+  ) => void;
   formatTime: (seconds: number) => string;
 }
 
@@ -51,6 +59,76 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
+  const { timerVibration, timerSound } = usePreferences();
+  const timerVibrationRef = useRef(timerVibration);
+  const timerSoundRef = useRef(timerSound);
+  const player = useAudioPlayer(require('../assets/sounds/timer-complete.wav'));
+
+  // Configure audio to play even when iOS silent switch is on
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true });
+  }, []);
+
+  // Keep refs in sync with preference values (refs needed inside setInterval callback)
+  useEffect(() => {
+    timerVibrationRef.current = timerVibration;
+  }, [timerVibration]);
+
+  useEffect(() => {
+    timerSoundRef.current = timerSound;
+  }, [timerSound]);
+
+  const vibrationActiveRef = useRef(false);
+  const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const playVibrationPattern = useCallback(async () => {
+    if (!vibrationActiveRef.current) return;
+    // Pattern: BUZZ tap tap [wait] BUZZ tap tap tap
+    if (timerSoundRef.current) {
+      player.seekTo(0);
+      player.play();
+    }
+    Vibration.vibrate();
+    await delay(500);
+    if (!vibrationActiveRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(150);
+    if (!vibrationActiveRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(400);
+    if (!vibrationActiveRef.current) return;
+    Vibration.vibrate();
+    await delay(500);
+    if (!vibrationActiveRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(150);
+    if (!vibrationActiveRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(150);
+    if (!vibrationActiveRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  }, []);
+
+  const stopVibration = useCallback(() => {
+    vibrationActiveRef.current = false;
+    Vibration.cancel();
+    if (vibrationIntervalRef.current) {
+      clearInterval(vibrationIntervalRef.current);
+      vibrationIntervalRef.current = null;
+    }
+  }, []);
+
+  const playCompletionFeedback = useCallback(() => {
+    if (timerVibrationRef.current) {
+      vibrationActiveRef.current = true;
+      playVibrationPattern();
+      vibrationIntervalRef.current = setInterval(() => {
+        playVibrationPattern();
+      }, 3000);
+    }
+  }, [playVibrationPattern, player]);
 
   // Show alert when countdown finishes
   useEffect(() => {
@@ -58,10 +136,18 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       Alert.alert(
         'Timer Complete',
         `Your timer for "${timerFinished}" has finished!`,
-        [{ text: 'OK', onPress: () => setTimerFinished(null) }]
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              stopVibration();
+              setTimerFinished(null);
+            },
+          },
+        ]
       );
     }
-  }, [timerFinished]);
+  }, [timerFinished, stopVibration]);
 
   // Check for pending finish alert after state updates
   useEffect(() => {
@@ -92,7 +178,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               const remaining = timer.targetSeconds - elapsed;
               if (remaining <= 0) {
                 // Timer finished while in background
-                Vibration.vibrate([0, 500, 200, 500]);
+                playCompletionFeedback();
                 setTimerFinished(timer.activityName);
                 setTimer(prev => ({
                   ...prev,
@@ -111,7 +197,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => subscription.remove();
-  }, [timer.isRunning, timer.startedAt, timer.mode, timer.targetSeconds]);
+  }, [
+    timer.isRunning,
+    timer.startedAt,
+    timer.mode,
+    timer.targetSeconds,
+    playCompletionFeedback,
+  ]);
 
   // Manage the interval for foreground counting
   useEffect(() => {
@@ -124,7 +216,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             // Countdown mode
             if (prev.seconds <= 1) {
               // Timer finished
-              Vibration.vibrate([0, 500, 200, 500]);
+              playCompletionFeedback();
               finishAlertRef.current = prev.activityName;
               return {
                 ...prev,
@@ -256,6 +348,21 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const startCountdown = useCallback(
+    (activityId: string, activityName: string, seconds: number): void => {
+      setTimer({
+        activityId,
+        activityName,
+        seconds,
+        isRunning: true,
+        startedAt: Date.now(),
+        mode: 'countDown',
+        targetSeconds: seconds,
+      });
+    },
+    []
+  );
+
   const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -272,6 +379,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     stopTimer,
     setTimerMode,
     setTargetSeconds,
+    startCountdown,
     formatTime,
   };
 
