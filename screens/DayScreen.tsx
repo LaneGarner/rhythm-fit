@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Animated,
   Keyboard,
   Modal,
   Platform,
@@ -47,6 +48,7 @@ import {
   getSupersetCompletedCount,
 } from '../utils/supersetUtils';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -86,6 +88,11 @@ export default function DayScreen({ navigation, route }: any) {
 
   // Pending order state - only saved when user clicks Save
   const [pendingOrderIds, setPendingOrderIds] = useState<string[] | null>(null);
+
+  // Swipe navigation state
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isSwipingRef = useRef(false);
+  const isAnimatingRef = useRef(false);
 
   // Sort activities: by custom order if available, then by id (preserve order regardless of completion)
   const savedActivities = activities
@@ -138,12 +145,23 @@ export default function DayScreen({ navigation, route }: any) {
     }
   }, [savedActivities, pendingOrderIds]);
 
+  // Reset local state when date changes (swipe navigation)
+  useEffect(() => {
+    setIsBulkMode(false);
+    setSelectedActivities(new Set());
+    setPendingOrderIds(null);
+    setShowMoveModal(false);
+    setShowCopyToDateModal(false);
+    setCopyActivity(null);
+    setIsDeleting(false);
+  }, [date]);
+
   const hasUnsavedChanges = pendingOrderIds !== null;
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
-  const { insets } = useResponsiveLayout();
+  const { insets, width: screenWidth } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
@@ -185,6 +203,76 @@ export default function DayScreen({ navigation, route }: any) {
   const discardChanges = useCallback(() => {
     setPendingOrderIds(null);
   }, []);
+
+  // Swipe day navigation
+  const navigateDay = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (isAnimatingRef.current) return;
+      isAnimatingRef.current = true;
+
+      const newDate =
+        direction === 'next'
+          ? dayjs(date).add(1, 'day').format('YYYY-MM-DD')
+          : dayjs(date).subtract(1, 'day').format('YYYY-MM-DD');
+
+      const slideDistance = screenWidth * 1.2;
+      const slideOutTo = direction === 'next' ? -slideDistance : slideDistance;
+
+      Animated.timing(slideAnim, {
+        toValue: slideOutTo,
+        duration: 65,
+        useNativeDriver: true,
+      }).start(() => {
+        navigation.setParams({ date: newDate });
+        slideAnim.setValue(
+          direction === 'next' ? slideDistance : -slideDistance
+        );
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 65,
+          useNativeDriver: true,
+        }).start(() => {
+          isAnimatingRef.current = false;
+          isSwipingRef.current = false;
+        });
+      });
+    },
+    [date, screenWidth, slideAnim, navigation]
+  );
+
+  const swipeGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-20, 20])
+    .onStart(() => {
+      isSwipingRef.current = true;
+    })
+    .onUpdate((event) => {
+      const clampedX = Math.max(-100, Math.min(100, event.translationX));
+      slideAnim.setValue(clampedX);
+    })
+    .onEnd((event) => {
+      const threshold = 50;
+      if (
+        event.translationX < -threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        navigateDay('next');
+      } else if (
+        event.translationX > threshold &&
+        Math.abs(event.translationX) > Math.abs(event.translationY)
+      ) {
+        navigateDay('prev');
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+        setTimeout(() => {
+          isSwipingRef.current = false;
+        }, 100);
+      }
+    })
+    .enabled(!isBulkMode);
 
   // Bulk selection helpers
   const toggleBulkMode = () => {
@@ -1839,8 +1927,7 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'relative',
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 0,
+          height: insets.top + 52,
           paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
@@ -1862,7 +1949,7 @@ export default function DayScreen({ navigation, route }: any) {
             position: 'absolute',
             left: 16,
             top: insets.top + 4,
-            height: 88,
+            height: 44,
             justifyContent: 'center',
             zIndex: 2,
           }}
@@ -1874,7 +1961,7 @@ export default function DayScreen({ navigation, route }: any) {
             left: 0,
             right: 0,
             top: insets.top + 4,
-            height: 88,
+            height: 44,
             alignItems: 'center',
             justifyContent: 'center',
             pointerEvents: 'none',
@@ -1908,7 +1995,7 @@ export default function DayScreen({ navigation, route }: any) {
               position: 'absolute',
               right: 16,
               top: insets.top + 4,
-              height: 88,
+              height: 44,
               justifyContent: 'center',
               zIndex: 2,
             }}
@@ -1916,6 +2003,11 @@ export default function DayScreen({ navigation, route }: any) {
         )}
       </View>
 
+      {/* Swipeable content area */}
+      <GestureDetector gesture={swipeGesture}>
+        <Animated.View
+          style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
+        >
       {/* Bulk Actions */}
       {isBulkMode && (
         <View
@@ -2054,6 +2146,8 @@ export default function DayScreen({ navigation, route }: any) {
 
       {/* Activities List */}
       {renderActivitiesList()}
+        </Animated.View>
+      </GestureDetector>
 
       <FloatingAddButton
         onPress={() => navigation.navigate('Activity', { date })}
