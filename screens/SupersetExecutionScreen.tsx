@@ -23,10 +23,7 @@ import {
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
 import StickyCompactTimer from '../components/StickyCompactTimer';
-import {
-  updateActivity,
-  batchUpdateActivities,
-} from '../redux/activitySlice';
+import { updateActivity, batchUpdateActivities } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -40,6 +37,8 @@ import {
   isSupersetComplete,
 } from '../utils/supersetUtils';
 import { secondsToTimeString } from '../utils/timeFormat';
+import { usePreferences } from '../context/PreferencesContext';
+import { useTimer } from '../context/TimerContext';
 
 export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
@@ -47,6 +46,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { colorScheme, colors } = useTheme();
   const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
+  const { autoRestTimer } = usePreferences();
+  const { startCountdown } = useTimer();
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const supersetActivities = getSupersetActivities(activities, supersetId);
@@ -194,6 +195,12 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         Alert.alert('Nice Work!', 'Superset complete!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
+      } else if (autoRestTimer) {
+        startCountdown(
+          supersetId,
+          getSupersetLabel(supersetActivities.length),
+          120
+        );
       }
     }
   };
@@ -571,23 +578,23 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               </Text>
                             </View>
                             <TouchableOpacity
-                                onPress={() => showSetOptions(activity.id, set)}
-                                hitSlop={{
-                                  top: 14,
-                                  bottom: 14,
-                                  left: 14,
-                                  right: 14,
-                                }}
-                                className="p-1"
-                                accessibilityRole="button"
-                                accessibilityLabel={`Set options for ${activity.name}`}
-                              >
-                                <Ionicons
-                                  name="ellipsis-vertical"
-                                  size={20}
-                                  color={colors.textSecondary}
-                                />
-                              </TouchableOpacity>
+                              onPress={() => showSetOptions(activity.id, set)}
+                              hitSlop={{
+                                top: 14,
+                                bottom: 14,
+                                left: 14,
+                                right: 14,
+                              }}
+                              className="p-1"
+                              accessibilityRole="button"
+                              accessibilityLabel={`Set options for ${activity.name}`}
+                            >
+                              <Ionicons
+                                name="ellipsis-vertical"
+                                size={20}
+                                color={colors.textSecondary}
+                              />
+                            </TouchableOpacity>
                           </View>
 
                           {/* Set inputs */}

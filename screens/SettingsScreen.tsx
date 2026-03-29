@@ -23,7 +23,8 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
-  const { firstDayOfWeek, setFirstDayOfWeek } = usePreferences();
+  const { firstDayOfWeek, setFirstDayOfWeek, autoRestTimer, setAutoRestTimer } =
+    usePreferences();
   const {
     startTutorial,
     registerTarget,
@@ -434,6 +435,43 @@ export default function SettingsScreen({ navigation }: any) {
             <Switch
               value={isDark}
               onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Auto Rest Timer */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setAutoRestTimer(!autoRestTimer)}
+            accessibilityRole="switch"
+            accessibilityLabel="Auto rest timer"
+            accessibilityState={{ checked: autoRestTimer }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Auto Rest Timer
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Automatically starts a countdown timer after completing a set.
+              </Text>
+            </View>
+            <Switch
+              value={autoRestTimer}
+              onValueChange={setAutoRestTimer}
               trackColor={{
                 false: colors.toggleTrack,
                 true: colors.primary.main,

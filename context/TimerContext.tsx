@@ -30,6 +30,11 @@ interface TimerContextValue {
   stopTimer: () => void;
   setTimerMode: (mode: TimerMode) => void;
   setTargetSeconds: (seconds: number) => void;
+  startCountdown: (
+    activityId: string,
+    activityName: string,
+    seconds: number
+  ) => void;
   formatTime: (seconds: number) => string;
 }
 
@@ -256,6 +261,21 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const startCountdown = useCallback(
+    (activityId: string, activityName: string, seconds: number): void => {
+      setTimer({
+        activityId,
+        activityName,
+        seconds,
+        isRunning: true,
+        startedAt: Date.now(),
+        mode: 'countDown',
+        targetSeconds: seconds,
+      });
+    },
+    []
+  );
+
   const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -272,6 +292,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     stopTimer,
     setTimerMode,
     setTargetSeconds,
+    startCountdown,
     formatTime,
   };
 

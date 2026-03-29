@@ -22,6 +22,7 @@ import {
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
 import StickyCompactTimer from '../components/StickyCompactTimer';
+import { usePreferences } from '../context/PreferencesContext';
 import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
@@ -41,7 +42,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const activity = activities.find(a => a.id === activityId);
 
   // Global timer context (for checking if timer is running)
-  const { timer } = useTimer();
+  const { timer, startCountdown } = useTimer();
+  const { autoRestTimer } = usePreferences();
   const isTimerRunning = timer.activityId === activityId && timer.isRunning;
 
   const [sets, setSets] = useState<SetData[]>(activity?.sets || []);
@@ -174,6 +176,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
+      } else if (autoRestTimer && updates.completed === true) {
+        startCountdown(activityId, activity.name, 120);
       }
     }
   };
