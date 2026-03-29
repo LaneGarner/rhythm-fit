@@ -21,6 +21,7 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
+import StickyCompactTimer from '../components/StickyCompactTimer';
 import { useTimer } from '../context/TimerContext';
 import { getActivityTypes } from '../services/activityTypeService';
 import { updateActivity } from '../redux/activitySlice';
@@ -50,6 +51,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(isTimerRunning);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null
@@ -313,6 +315,14 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           scrollY={scrollY}
         />
 
+        {/* Sticky compact timer - appears below sticky header when scrolled */}
+        <StickyCompactTimer
+          activityId={activity.id}
+          activityName={activity.name}
+          scrollY={scrollY}
+          isExpanded={isTimerExpanded}
+        />
+
         <Animated.ScrollView
           className={`flex-1`}
           contentContainerStyle={{
@@ -341,6 +351,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               activityId={activity.id}
               activityName={activity.name}
               defaultExpanded={isTimerRunning}
+              onExpandedChange={setIsTimerExpanded}
             />
 
             {/* Notes */}

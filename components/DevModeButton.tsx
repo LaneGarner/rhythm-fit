@@ -203,7 +203,7 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
     <View
       style={{
         position: 'absolute',
-        top: insets.top + 4,
+        top: insets.top - 20,
         left: Math.max(16, insets.left),
         zIndex: 1000,
       }}

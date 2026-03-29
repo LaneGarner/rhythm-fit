@@ -15,12 +15,14 @@ interface CollapsibleTimerProps {
   activityId: string;
   activityName: string;
   defaultExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 export default function CollapsibleTimer({
   activityId,
   activityName,
   defaultExpanded = false,
+  onExpandedChange,
 }: CollapsibleTimerProps) {
   const { colors } = useTheme();
 
@@ -49,6 +51,7 @@ export default function CollapsibleTimer({
   useEffect(() => {
     if (isTimerRunning) {
       setIsExpanded(true);
+      onExpandedChange?.(true);
     }
   }, [isTimerRunning]);
 
@@ -99,7 +102,11 @@ export default function CollapsibleTimer({
       style={{ backgroundColor: colors.surface }}
     >
       <TouchableOpacity
-        onPress={() => setIsExpanded(!isExpanded)}
+        onPress={() => {
+          const next = !isExpanded;
+          setIsExpanded(next);
+          onExpandedChange?.(next);
+        }}
         className="flex-row items-center justify-between p-4"
         accessibilityRole="button"
         accessibilityLabel={`Timer${isPaused ? ', paused' : ''}. ${isExpanded ? 'Collapse' : 'Expand'}`}

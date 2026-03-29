@@ -9,6 +9,7 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
+import StickyCompactTimer from '../components/StickyCompactTimer';
 import { useTutorial } from '../components/tutorial/TutorialProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -36,6 +37,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
   const { isActive, currentStep } = useTutorial();
 
   const [sets, setSets] = useState<SetData[]>(DEMO_ACTIVITY.sets || []);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<Animated.ScrollView>(null);
 
@@ -145,6 +147,14 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
           scrollY={scrollY}
         />
 
+        {/* Sticky compact timer - appears below sticky header when scrolled */}
+        <StickyCompactTimer
+          activityId={DEMO_ACTIVITY.id}
+          activityName={DEMO_ACTIVITY.name}
+          scrollY={scrollY}
+          isExpanded={isTimerExpanded}
+        />
+
         <Animated.ScrollView
           ref={scrollViewRef}
           className="flex-1"
@@ -171,6 +181,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
               activityId={DEMO_ACTIVITY.id}
               activityName={DEMO_ACTIVITY.name}
               defaultExpanded={false}
+              onExpandedChange={setIsTimerExpanded}
             />
 
             {/* Notes */}

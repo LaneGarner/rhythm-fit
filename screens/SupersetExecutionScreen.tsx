@@ -22,6 +22,7 @@ import {
   ContentHeader,
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
+import StickyCompactTimer from '../components/StickyCompactTimer';
 import {
   updateActivity,
   batchUpdateActivities,
@@ -72,6 +73,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     activityId: string;
     setId: string;
   } | null>(null);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null
@@ -367,6 +369,14 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           scrollY={scrollY}
         />
 
+        {/* Sticky compact timer - appears below sticky header when scrolled */}
+        <StickyCompactTimer
+          activityId={supersetId}
+          activityName={getSupersetLabel(supersetActivities.length)}
+          scrollY={scrollY}
+          isExpanded={isTimerExpanded}
+        />
+
         <Animated.ScrollView
           ref={scrollViewRef}
           className="flex-1"
@@ -395,6 +405,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             <CollapsibleTimer
               activityId={supersetId}
               activityName={getSupersetLabel(supersetActivities.length)}
+              onExpandedChange={setIsTimerExpanded}
             />
 
             {/* Notes - combined from all activities */}
