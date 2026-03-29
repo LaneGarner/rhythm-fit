@@ -25,7 +25,6 @@ import {
 import {
   updateActivity,
   batchUpdateActivities,
-  swapSupersetOrder,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
@@ -73,7 +72,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     activityId: string;
     setId: string;
   } | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null
@@ -348,8 +346,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           </Text>
         </View>
         <HeaderButton
-          label={isEditMode ? 'Done' : 'Edit'}
-          onPress={() => setIsEditMode(!isEditMode)}
+          label="Edit"
+          onPress={() =>
+            navigation.navigate('EditActivity', {
+              activityId: supersetActivities[0]?.id,
+              supersetId,
+            })
+          }
         />
       </View>
 
@@ -543,70 +546,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                         >
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
-                            {isEditMode && roundIndex === 0 && (
-                              <View style={{ marginRight: 8 }}>
-                                {activityIndex > 0 && (
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      const prevActivity =
-                                        round.sets[activityIndex - 1].activity;
-                                      dispatch(
-                                        swapSupersetOrder({
-                                          supersetId,
-                                          id1: activity.id,
-                                          id2: prevActivity.id,
-                                        })
-                                      );
-                                    }}
-                                    hitSlop={{
-                                      top: 14,
-                                      bottom: 14,
-                                      left: 14,
-                                      right: 14,
-                                    }}
-                                    className="p-1"
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Move ${activity.name} up`}
-                                  >
-                                    <Ionicons
-                                      name="chevron-up"
-                                      size={18}
-                                      color={isDark ? '#9CA3AF' : '#6B7280'}
-                                    />
-                                  </TouchableOpacity>
-                                )}
-                                {activityIndex < round.sets.length - 1 && (
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      const nextActivity =
-                                        round.sets[activityIndex + 1].activity;
-                                      dispatch(
-                                        swapSupersetOrder({
-                                          supersetId,
-                                          id1: activity.id,
-                                          id2: nextActivity.id,
-                                        })
-                                      );
-                                    }}
-                                    hitSlop={{
-                                      top: 14,
-                                      bottom: 14,
-                                      left: 14,
-                                      right: 14,
-                                    }}
-                                    className="p-1"
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Move ${activity.name} down`}
-                                  >
-                                    <Ionicons
-                                      name="chevron-down"
-                                      size={18}
-                                      color={isDark ? '#9CA3AF' : '#6B7280'}
-                                    />
-                                  </TouchableOpacity>
-                                )}
-                              </View>
-                            )}
                             <View className="flex-row items-center flex-1">
                               <Text className="text-xl mr-2">
                                 {activity.emoji || '💪'}
@@ -620,32 +559,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 {activity.name}
                               </Text>
                             </View>
-                            {isEditMode && roundIndex === 0 ? (
-                              <TouchableOpacity
-                                onPress={() =>
-                                  navigation.navigate('EditActivity', {
-                                    activityId: activity.id,
-                                    date: activity.date,
-                                  })
-                                }
-                                hitSlop={{
-                                  top: 14,
-                                  bottom: 14,
-                                  left: 14,
-                                  right: 14,
-                                }}
-                                className="p-1"
-                                accessibilityRole="button"
-                                accessibilityLabel={`Edit ${activity.name}`}
-                              >
-                                <Ionicons
-                                  name="pencil"
-                                  size={20}
-                                  color={colors.primary.main}
-                                />
-                              </TouchableOpacity>
-                            ) : (
-                              <TouchableOpacity
+                            <TouchableOpacity
                                 onPress={() => showSetOptions(activity.id, set)}
                                 hitSlop={{
                                   top: 14,
@@ -663,7 +577,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                   color={colors.textSecondary}
                                 />
                               </TouchableOpacity>
-                            )}
                           </View>
 
                           {/* Set inputs */}

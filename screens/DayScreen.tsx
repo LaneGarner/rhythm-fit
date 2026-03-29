@@ -964,16 +964,20 @@ export default function DayScreen({ navigation, route }: any) {
     const showSupersetOptions = () => {
       if (Platform.OS === 'ios') {
         const options = ['Cancel'];
+        let editSupersetIndex = -1;
         let markCompleteIndex = -1;
         let breakSupersetIndex = -1;
         let deleteIndex = -1;
 
+        options.push('Edit Superset');
+        editSupersetIndex = options.length - 1;
+
         if (supersetComplete) {
           options.push('Mark Incomplete');
-          markCompleteIndex = 1;
+          markCompleteIndex = options.length - 1;
         } else {
           options.push('Mark Complete');
-          markCompleteIndex = 1;
+          markCompleteIndex = options.length - 1;
         }
         options.push('Break Superset');
         breakSupersetIndex = options.length - 1;
@@ -988,7 +992,12 @@ export default function DayScreen({ navigation, route }: any) {
             userInterfaceStyle: isDark ? 'dark' : 'light',
           },
           buttonIndex => {
-            if (buttonIndex === markCompleteIndex) {
+            if (buttonIndex === editSupersetIndex) {
+              navigation.navigate('EditActivity', {
+                activityId: activities[0].id,
+                supersetId: group.supersetId,
+              });
+            } else if (buttonIndex === markCompleteIndex) {
               // Toggle completion for all activities in superset
               const newCompleted = !supersetComplete;
               activities.forEach(a => {
@@ -1036,6 +1045,15 @@ export default function DayScreen({ navigation, route }: any) {
       } else {
         Alert.alert('Superset Options', 'What would you like to do?', [
           { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Edit Superset',
+            onPress: () => {
+              navigation.navigate('EditActivity', {
+                activityId: activities[0].id,
+                supersetId: group.supersetId,
+              });
+            },
+          },
           {
             text: supersetComplete ? 'Mark Incomplete' : 'Mark Complete',
             onPress: () => {

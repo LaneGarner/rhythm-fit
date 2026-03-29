@@ -51,6 +51,10 @@ interface ActivityFormProps {
   saveButtonLabel?: string;
   headerTitle?: string;
   onSaveSuperset?: () => void;
+  deleteButtonLabel?: string;
+  hideDate?: boolean;
+  hideHeader?: boolean;
+  hideRecurring?: boolean;
 }
 
 export default function ActivityForm({
@@ -66,6 +70,10 @@ export default function ActivityForm({
   saveButtonLabel,
   headerTitle,
   onSaveSuperset,
+  deleteButtonLabel,
+  hideDate,
+  hideHeader,
+  hideRecurring,
 }: ActivityFormProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -257,6 +265,9 @@ export default function ActivityForm({
       sets: sets,
       recurring: recurringConfig || undefined,
       trackingFields: trackingFields,
+      supersetId: initialActivity?.supersetId,
+      supersetPosition: initialActivity?.supersetPosition,
+      order: initialActivity?.order,
     };
 
     onSave(activity, recurringConfig || undefined);
@@ -343,6 +354,7 @@ export default function ActivityForm({
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
+      {!hideHeader && (
       <View
         style={{
           height: 132,
@@ -423,6 +435,7 @@ export default function ActivityForm({
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       <ScrollView
         className="flex-1"
@@ -523,7 +536,8 @@ export default function ActivityForm({
                       flexDirection: 'row',
                       alignItems: 'center',
                       paddingHorizontal: 12,
-                      paddingVertical: 8,
+                      paddingVertical: 10,
+                      minHeight: 44,
                       borderRadius: 20,
                       backgroundColor: isDark ? '#23263a' : '#e0e7ff',
                       borderWidth: 1,
@@ -641,6 +655,7 @@ export default function ActivityForm({
           </View>
 
           {/* Date Selection */}
+          {!hideDate && (
           <View>
             <Text
               className={`text-lg font-semibold mb-2 ${
@@ -674,6 +689,7 @@ export default function ActivityForm({
               />
             </TouchableOpacity>
           </View>
+          )}
 
           {/* Activity Type */}
           <View>
@@ -1194,6 +1210,7 @@ export default function ActivityForm({
           </View>
 
           {/* Recurring Options */}
+          {!hideRecurring && (
           <View>
             <Text
               className={`text-lg font-semibold mb-2 ${
@@ -1226,12 +1243,13 @@ export default function ActivityForm({
               />
             </TouchableOpacity>
           </View>
+          )}
 
           {/* Delete Activity Link */}
           {mode === 'edit' && onDelete && (
             <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
               <Text className="text-red-500 text-center text-base">
-                Delete Activity
+                {deleteButtonLabel || 'Delete Activity'}
               </Text>
             </TouchableOpacity>
           )}

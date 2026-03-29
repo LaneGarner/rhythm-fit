@@ -42,7 +42,7 @@ export type RootStackParamList = {
   Main: undefined;
   Activity: { date: string };
   DemoActivityExecution: undefined;
-  EditActivity: { activityId: string };
+  EditActivity: { activityId: string; supersetId?: string };
   Settings: undefined;
   ActivityLibrary: undefined;
   EmojiLibrary: undefined;
