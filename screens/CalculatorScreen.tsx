@@ -120,7 +120,7 @@ export default function CalculatorScreen({ navigation }: any) {
         <AppHeaderTitle title="Weight Calculator" subtitle="Plate Breakdown" />
       </AppHeader>
 
-      <ScrollView className="flex-1 px-4 pt-4">
+      <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
         {/* Equipment link */}
         <TouchableOpacity
           ref={configureEquipmentRef}

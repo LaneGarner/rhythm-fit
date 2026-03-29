@@ -243,7 +243,7 @@ export default function EmojiLibraryScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4">
+          <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
             {/* Emoji Input */}
             <View className="mb-6">
               <Text
