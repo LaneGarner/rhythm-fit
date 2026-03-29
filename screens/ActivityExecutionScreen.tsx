@@ -137,6 +137,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       weight: setToDuplicate.weight,
       time: setToDuplicate.time,
       distance: setToDuplicate.distance,
+      band: setToDuplicate.band,
       completed: false,
     };
     const updatedSets = [...sets, newSet];
@@ -371,22 +372,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 >
                   Sets ({sets.length})
                 </Text>
-                <TouchableOpacity
-                  onPress={handleAddSet}
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add new set"
-                >
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontSize: 16,
-                      fontWeight: '600',
-                    }}
-                  >
-                    + Add Set
-                  </Text>
-                </TouchableOpacity>
               </View>
 
               {sets.map((set, index) => (
@@ -404,6 +389,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   }}
                   inputRefs={setInputRefs}
                   onInputFocus={scrollToSetInput}
+                  readOnly
                 />
               ))}
 
@@ -413,7 +399,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     isDark ? 'text-gray-400' : 'text-gray-500'
                   }`}
                 >
-                  No sets added yet. Tap "Add Set" to get started.
+                  No sets yet. Tap "Edit" to add sets.
                 </Text>
               )}
             </View>

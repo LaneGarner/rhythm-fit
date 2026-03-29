@@ -13,10 +13,8 @@ export function formatSetCompact(
   const parts: string[] = [];
   const hasWeight =
     trackingFields.includes('weight') && set.weight && set.weight > 0;
-  const hasReps =
-    trackingFields.includes('reps') && set.reps && set.reps > 0;
-  const hasTime =
-    trackingFields.includes('time') && set.time && set.time > 0;
+  const hasReps = trackingFields.includes('reps') && set.reps && set.reps > 0;
+  const hasTime = trackingFields.includes('time') && set.time && set.time > 0;
   const hasDistance =
     trackingFields.includes('distance') && set.distance && set.distance > 0;
 
@@ -29,6 +27,10 @@ export function formatSetCompact(
 
   if (hasTime) parts.push(secondsToTimeString(set.time));
   if (hasDistance) parts.push(`${set.distance} mi`);
+
+  if (trackingFields.includes('band') && set.band) {
+    parts.push(set.band);
+  }
 
   return parts.join(', ');
 }

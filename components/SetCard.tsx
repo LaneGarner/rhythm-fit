@@ -23,6 +23,7 @@ export interface SetCardProps {
   onOpenPlateCalculator?: (setId: string) => void;
   inputRefs?: React.MutableRefObject<{ [key: string]: TextInput | null }>;
   onInputFocus?: (refKey: string) => void;
+  readOnly?: boolean;
 }
 
 const FIELD_CONFIG: Record<TrackingField, { label: string; unit?: string }> = {
@@ -30,6 +31,7 @@ const FIELD_CONFIG: Record<TrackingField, { label: string; unit?: string }> = {
   reps: { label: 'Reps' },
   time: { label: 'Time', unit: 'm:ss' },
   distance: { label: 'Distance', unit: 'mi' },
+  band: { label: 'Band' },
 };
 
 export default function SetCard({
@@ -42,6 +44,7 @@ export default function SetCard({
   onOpenPlateCalculator,
   inputRefs,
   onInputFocus,
+  readOnly,
 }: SetCardProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -62,19 +65,21 @@ export default function SetCard({
         >
           Set {index + 1}
         </Text>
-        <TouchableOpacity
-          onPress={() => onShowOptions(set)}
-          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          className="p-1"
-          accessibilityRole="button"
-          accessibilityLabel={`Set ${index + 1} options`}
-        >
-          <Ionicons
-            name="ellipsis-vertical"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
+        {!readOnly && (
+          <TouchableOpacity
+            onPress={() => onShowOptions(set)}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            className="p-1"
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${index + 1} options`}
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
       <View className="flex-row flex-wrap" style={{ gap: 12 }}>
         {trackingFields.map(field => {
@@ -87,8 +92,12 @@ export default function SetCard({
             <View
               key={field}
               style={{
-                flex: 1,
-                minWidth: trackingFields.length > 2 ? '45%' : undefined,
+                flex: field === 'band' ? undefined : 1,
+                width: field === 'band' ? '100%' : undefined,
+                minWidth:
+                  trackingFields.length > 2 && field !== 'band'
+                    ? '45%'
+                    : undefined,
               }}
             >
               <View className="flex-row items-center mb-1">
@@ -100,7 +109,7 @@ export default function SetCard({
                   {config.label}
                   {config.unit ? ` (${config.unit})` : ''}
                 </Text>
-                {showPlateIcon && onOpenPlateCalculator && (
+                {showPlateIcon && onOpenPlateCalculator && !readOnly && (
                   <TouchableOpacity
                     onPress={() => onOpenPlateCalculator(set.id)}
                     hitSlop={{
@@ -117,7 +126,45 @@ export default function SetCard({
                   </TouchableOpacity>
                 )}
               </View>
-              {field === 'time' ? (
+              {readOnly ? (
+                <View
+                  style={{
+                    minHeight: 42,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color:
+                        field === 'time'
+                          ? value
+                            ? colors.text
+                            : colors.textSecondary
+                          : field === 'band'
+                            ? set.band
+                              ? colors.text
+                              : colors.textSecondary
+                            : value != null
+                              ? colors.text
+                              : colors.textSecondary,
+                    }}
+                  >
+                    {field === 'time'
+                      ? value
+                        ? secondsToTimeString(value)
+                        : '\u2014'
+                      : field === 'band'
+                        ? set.band || '\u2014'
+                        : value != null
+                          ? value.toString()
+                          : '\u2014'}
+                  </Text>
+                </View>
+              ) : field === 'time' ? (
                 <TouchableOpacity
                   onPress={() => setShowDurationPicker(true)}
                   className={`px-3 py-2 border rounded-lg ${
@@ -136,6 +183,24 @@ export default function SetCard({
                     {value ? secondsToTimeString(value) : '0:00'}
                   </Text>
                 </TouchableOpacity>
+              ) : field === 'band' ? (
+                <TextInput
+                  value={set.band || ''}
+                  onChangeText={text => {
+                    onUpdateSet(set.id, { band: text || undefined });
+                  }}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  placeholder="e.g. Red Heavy"
+                  className={`px-3 py-2 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
               ) : (
                 <TextInput
                   ref={

@@ -317,6 +317,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     reps: { label: 'Reps' },
     time: { label: 'Time', unit: 'm:ss' },
     distance: { label: 'Distance', unit: 'mi' },
+    band: { label: 'Band' },
   };
 
   return (
@@ -473,74 +474,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       : colors.primary.main;
 
                     if (!set) {
-                      // No set for this activity in this round - show add set option
-                      return (
-                        <View key={`${activity.id}-empty-${setIndex}`}>
-                          <TouchableOpacity
-                            onPress={() => handleAddSetToActivity(activity.id)}
-                            className={`p-4 rounded-lg ${
-                              isDark ? 'bg-gray-800' : 'bg-white'
-                            } shadow-sm`}
-                            style={{
-                              borderWidth: 2,
-                              borderStyle: 'dashed',
-                              borderColor: colors.border,
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Add set to ${activity.name}`}
-                          >
-                            <View className="flex-row items-center justify-between">
-                              <View className="flex-row items-center flex-1">
-                                <Text className="text-xl mr-2">
-                                  {activity.emoji || '💪'}
-                                </Text>
-                                <Text
-                                  className={`text-base font-medium ${
-                                    isDark ? 'text-gray-400' : 'text-gray-500'
-                                  }`}
-                                  numberOfLines={1}
-                                >
-                                  {activity.name}
-                                </Text>
-                              </View>
-                              <View className="flex-row items-center">
-                                <Ionicons
-                                  name="add-circle-outline"
-                                  size={20}
-                                  color={colors.primary.main}
-                                />
-                                <Text
-                                  style={{
-                                    color: colors.primary.main,
-                                    marginLeft: 4,
-                                    fontWeight: '600',
-                                  }}
-                                >
-                                  Add Set
-                                </Text>
-                              </View>
-                            </View>
-                          </TouchableOpacity>
-                          {/* Connecting line */}
-                          {!isLastActivity && (
-                            <View
-                              style={{
-                                alignItems: 'center',
-                                paddingVertical: 4,
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: 2,
-                                  height: 16,
-                                  backgroundColor: accentColor,
-                                  borderRadius: 1,
-                                }}
-                              />
-                            </View>
-                          )}
-                        </View>
-                      );
+                      return null;
                     }
 
                     const fields: TrackingField[] = activity.trackingFields || [
@@ -577,24 +511,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 {activity.name}
                               </Text>
                             </View>
-                            <TouchableOpacity
-                              onPress={() => showSetOptions(activity.id, set)}
-                              hitSlop={{
-                                top: 14,
-                                bottom: 14,
-                                left: 14,
-                                right: 14,
-                              }}
-                              className="p-1"
-                              accessibilityRole="button"
-                              accessibilityLabel={`Set options for ${activity.name}`}
-                            >
-                              <Ionicons
-                                name="ellipsis-vertical"
-                                size={20}
-                                color={colors.textSecondary}
-                              />
-                            </TouchableOpacity>
                           </View>
 
                           {/* Set inputs */}
@@ -613,9 +529,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 <View
                                   key={field}
                                   style={{
-                                    flex: 1,
+                                    flex: field === 'band' ? undefined : 1,
+                                    width:
+                                      field === 'band' ? '100%' : undefined,
                                     minWidth:
-                                      fields.length > 2 ? '45%' : undefined,
+                                      fields.length > 2 && field !== 'band'
+                                        ? '45%'
+                                        : undefined,
                                   }}
                                 >
                                   <View className="flex-row items-center mb-1">
@@ -629,152 +549,41 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       {config.label}
                                       {config.unit ? ` (${config.unit})` : ''}
                                     </Text>
-                                    {isWeightField && (
-                                      <TouchableOpacity
-                                        onPress={() => {
-                                          setActiveSetInfo({
-                                            activityId: activity.id,
-                                            setId: set.id,
-                                          });
-                                          setShowPlateCalculator(true);
-                                        }}
-                                        hitSlop={{
-                                          top: 16,
-                                          bottom: 16,
-                                          left: 16,
-                                          right: 16,
-                                        }}
-                                        style={{ marginLeft: 8 }}
-                                        accessibilityRole="button"
-                                        accessibilityLabel="Open plate calculator"
-                                      >
-                                        <PlateIcon variant="tooltip" />
-                                      </TouchableOpacity>
-                                    )}
                                   </View>
-                                  {field === 'time' ? (
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        setDurationPickerInfo({
-                                          activityId: activity.id,
-                                          setId: set.id,
-                                        })
-                                      }
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600'
-                                          : 'bg-white border-gray-300'
-                                      }`}
-                                      style={{ minHeight: 42 }}
-                                    >
-                                      <Text
-                                        style={{
-                                          color: value
-                                            ? colors.text
-                                            : colors.textSecondary,
-                                          fontSize: 16,
-                                        }}
-                                      >
-                                        {value
+                                  {(() => {
+                                    const displayValue =
+                                      field === 'time'
+                                        ? value
                                           ? secondsToTimeString(value)
-                                          : '0:00'}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  ) : (
-                                    <TextInput
-                                      ref={ref => {
-                                        setInputRefs.current[
-                                          `${activity.id}-${set.id}-${field}`
-                                        ] = ref;
-                                      }}
-                                      value={
-                                        field === 'distance' &&
-                                        distanceText[
-                                          `${activity.id}-${set.id}`
-                                        ] != null
-                                          ? distanceText[
-                                              `${activity.id}-${set.id}`
-                                            ]
+                                          : null
+                                        : field === 'band'
+                                          ? set.band || null
                                           : value != null
                                             ? value.toString()
-                                            : ''
-                                      }
-                                      onChangeText={text => {
-                                        if (field === 'distance') {
-                                          if (
-                                            text &&
-                                            !/^\d*\.?\d{0,2}$/.test(text)
-                                          )
-                                            return;
-                                          const key = `${activity.id}-${set.id}`;
-                                          setDistanceText(prev => ({
-                                            ...prev,
-                                            [key]: text,
-                                          }));
-                                          return;
-                                        }
-                                        handleUpdateSet(activity.id, set.id, {
-                                          [field]: text
-                                            ? parseFloat(text)
-                                            : undefined,
-                                        });
-                                      }}
-                                      onBlur={() => {
-                                        if (field === 'distance') {
-                                          const key = `${activity.id}-${set.id}`;
-                                          const text = distanceText[key];
-                                          if (text != null) {
-                                            handleUpdateSet(
-                                              activity.id,
-                                              set.id,
-                                              {
-                                                distance: text
-                                                  ? parseFloat(text)
-                                                  : undefined,
-                                              }
-                                            );
-                                            setDistanceText(prev => {
-                                              const next = { ...prev };
-                                              delete next[key];
-                                              return next;
-                                            });
-                                          }
-                                        }
-                                      }}
-                                      keyboardType={
-                                        field === 'distance'
-                                          ? 'decimal-pad'
-                                          : 'numeric'
-                                      }
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600 text-white'
-                                          : 'bg-white border-gray-300 text-gray-900'
-                                      }`}
-                                      placeholderTextColor={
-                                        colors.textSecondary
-                                      }
-                                      returnKeyType="done"
-                                      onSubmitEditing={() => Keyboard.dismiss()}
-                                      onFocus={() => {
-                                        if (field === 'distance') {
-                                          const key = `${activity.id}-${set.id}`;
-                                          setDistanceText(prev => ({
-                                            ...prev,
-                                            [key]:
-                                              value != null
-                                                ? value.toString()
-                                                : '',
-                                          }));
-                                        }
-                                        setTimeout(() => {
-                                          scrollToSetInput(
-                                            `${activity.id}-${set.id}-${field}`
-                                          );
-                                        }, 100);
-                                      }}
-                                    />
-                                  )}
+                                            : null;
+                                    return (
+                                      <View
+                                        style={{
+                                          minHeight: 42,
+                                          paddingHorizontal: 12,
+                                          paddingVertical: 8,
+                                          justifyContent: 'center',
+                                        }}
+                                      >
+                                        <Text
+                                          style={{
+                                            fontSize: 16,
+                                            fontWeight: '500',
+                                            color: displayValue
+                                              ? colors.text
+                                              : colors.textSecondary,
+                                          }}
+                                        >
+                                          {displayValue || '\u2014'}
+                                        </Text>
+                                      </View>
+                                    );
+                                  })()}
                                 </View>
                               );
                             })}
@@ -839,34 +648,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                 })()}
               </View>
             ))}
-
-            {/* Add Round Button */}
-            <TouchableOpacity
-              onPress={handleAddSupersetRound}
-              style={{
-                padding: 16,
-                borderRadius: 8,
-                borderWidth: 2,
-                borderStyle: 'dashed',
-                borderColor: colors.border,
-                alignItems: 'center',
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Add another superset round"
-            >
-              <Ionicons
-                name="add-circle-outline"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text
-                className={`mt-2 font-medium ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                Add Superset
-              </Text>
-            </TouchableOpacity>
           </View>
         </Animated.ScrollView>
       </View>
