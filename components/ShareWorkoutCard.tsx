@@ -9,8 +9,6 @@ import {
   groupActivitiesWithSupersets,
   getSupersetLabel,
   isActivityComplete,
-  isSupersetComplete,
-  getSupersetCompletedCount,
 } from '../utils/supersetUtils';
 import { formatActivitySetsSummary } from '../utils/shareUtils';
 import Logo from './Logo';
@@ -20,6 +18,22 @@ interface ShareWorkoutCardProps {
   date: string;
   includeDetails: boolean;
 }
+
+// Dark card palette
+const card = {
+  bg: '#0F0F13',
+  surface: '#1A1A22',
+  surfaceLight: '#22222E',
+  border: '#2A2A36',
+  text: '#F0F0F5',
+  textSecondary: '#8E8E9A',
+  textTertiary: '#5C5C6A',
+  accent: '#3B82F6',
+  accentGlow: 'rgba(59, 130, 246, 0.15)',
+  success: '#34D399',
+  successGlow: 'rgba(52, 211, 153, 0.12)',
+  incomplete: '#3A3A48',
+};
 
 export default function ShareWorkoutCard({
   activities,
@@ -51,9 +65,9 @@ export default function ShareWorkoutCard({
           alignItems: 'center',
           paddingHorizontal: inSuperset ? 16 : 14,
           paddingVertical: 12,
-          backgroundColor: palette.white,
+          backgroundColor: card.surface,
           borderBottomWidth: isLast ? 0 : 1,
-          borderBottomColor: palette.gray[100],
+          borderBottomColor: card.border,
         }}
       >
         <Text style={{ fontSize: 22, marginRight: 10 }}>
@@ -64,7 +78,7 @@ export default function ShareWorkoutCard({
             style={{
               fontSize: 15,
               fontWeight: '600',
-              color: completed ? palette.gray[700] : palette.black,
+              color: completed ? card.textSecondary : card.text,
             }}
           >
             {activity.name || activity.type}
@@ -73,7 +87,7 @@ export default function ShareWorkoutCard({
             <Text
               style={{
                 fontSize: 12,
-                color: palette.gray[600],
+                color: card.textTertiary,
                 marginTop: 3,
               }}
             >
@@ -84,7 +98,7 @@ export default function ShareWorkoutCard({
         <Ionicons
           name={completed ? 'checkmark-circle' : 'ellipse-outline'}
           size={20}
-          color={completed ? '#22C55E' : palette.gray[200]}
+          color={completed ? card.success : card.incomplete}
         />
       </View>
     );
@@ -103,15 +117,14 @@ export default function ShareWorkoutCard({
         key={group.supersetId}
         style={{
           borderBottomWidth: isLastGroup ? 0 : 1,
-          borderBottomColor: palette.gray[100],
+          borderBottomColor: card.border,
         }}
       >
-        {/* Superset badge + accent bar */}
         <View style={{ flexDirection: 'row' }}>
           <View
             style={{
               width: 4,
-              backgroundColor: palette.ios.blue,
+              backgroundColor: card.accent,
               borderTopLeftRadius: 4,
               borderBottomLeftRadius: 4,
             }}
@@ -123,13 +136,13 @@ export default function ShareWorkoutCard({
                 paddingHorizontal: 16,
                 paddingTop: 10,
                 paddingBottom: 2,
-                backgroundColor: palette.white,
+                backgroundColor: card.surface,
               }}
             >
               <View
                 style={{
                   alignSelf: 'flex-start',
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: card.accentGlow,
                   paddingHorizontal: 8,
                   paddingVertical: 3,
                   borderRadius: 6,
@@ -139,14 +152,13 @@ export default function ShareWorkoutCard({
                   style={{
                     fontSize: 11,
                     fontWeight: '600',
-                    color: palette.ios.blue,
+                    color: card.accent,
                   }}
                 >
                   {getSupersetLabel(group.activities.length)}
                 </Text>
               </View>
             </View>
-            {/* Activities in superset */}
             {group.activities.map((activity, i) =>
               renderActivityRow(
                 activity,
@@ -164,41 +176,97 @@ export default function ShareWorkoutCard({
     <View
       style={{
         width: 390,
-        backgroundColor: palette.gray[50],
+        backgroundColor: card.bg,
         borderRadius: 20,
         overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Branded header */}
       <View
         style={{
-          backgroundColor: allCompleted
-            ? 'rgba(52, 211, 153, 0.12)'
-            : palette.white,
+          backgroundColor: '#131318',
           paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingTop: 20,
+          paddingBottom: 16,
           borderBottomWidth: 1,
-          borderBottomColor: palette.gray[200],
+          borderBottomColor: card.border,
         }}
       >
-        <Text
+        {/* Brand stamp */}
+        <View
           style={{
-            fontSize: 20,
-            fontWeight: '700',
-            color: palette.black,
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 10,
           }}
         >
-          {formattedDate}
-        </Text>
-        <Text
+          <Logo showText={false} height={28} color={card.textTertiary} />
+          <View style={{ marginLeft: 4, flexDirection: 'column' }}>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '700',
+                color: card.textTertiary,
+                lineHeight: 16,
+              }}
+            >
+              Rhythm Fit
+            </Text>
+            <Text
+              style={{
+                fontSize: 9,
+                fontWeight: '600',
+                color: card.textTertiary,
+                letterSpacing: 0.3,
+                opacity: 0.7,
+                lineHeight: 12,
+              }}
+            >
+              AI Workout Tracker & Coach
+            </Text>
+          </View>
+        </View>
+
+        {/* Date + completion pill */}
+        <View
           style={{
-            fontSize: 14,
-            color: palette.gray[500],
-            marginTop: 2,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
           }}
         >
-          {completedCount}/{totalCount} complete
-        </Text>
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: '700',
+              color: card.text,
+              letterSpacing: -0.3,
+              flex: 1,
+            }}
+          >
+            {formattedDate}
+          </Text>
+          <View
+            style={{
+              backgroundColor: allCompleted ? card.successGlow : card.accentGlow,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 20,
+              marginLeft: 12,
+              marginTop: 2,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: allCompleted ? card.success : card.accent,
+              }}
+            >
+              {completedCount}/{totalCount}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Activity rows */}
@@ -206,21 +274,6 @@ export default function ShareWorkoutCard({
         {groups.map((group, i) => renderGroup(group, i))}
       </View>
 
-      {/* Footer branding */}
-      <View
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: palette.gray[200],
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          flexDirection: 'row',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          opacity: 0.55,
-        }}
-      >
-        <Logo showText height={18} color={palette.black} />
-      </View>
     </View>
   );
 }

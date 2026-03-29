@@ -89,6 +89,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const playVibrationPattern = useCallback(async () => {
     if (!vibrationActiveRef.current) return;
     // Pattern: BUZZ tap tap [wait] BUZZ tap tap tap
+    if (timerSoundRef.current) {
+      player.seekTo(0);
+      player.play();
+    }
     Vibration.vibrate();
     await delay(500);
     if (!vibrationActiveRef.current) return;
@@ -120,10 +124,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playCompletionFeedback = useCallback(() => {
-    if (timerSoundRef.current) {
-      player.seekTo(0);
-      player.play();
-    }
     if (timerVibrationRef.current) {
       vibrationActiveRef.current = true;
       playVibrationPattern();
