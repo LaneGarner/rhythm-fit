@@ -451,12 +451,17 @@ export function calculateOverallStats(
   daysRange: number = 30
 ): OverallStats {
   const now = dayjs();
-  const startDate = now.subtract(daysRange, 'day');
+  const isAllTime = daysRange === 0;
 
-  const recentActivities = activities.filter(a => {
-    const date = dayjs(a.date);
-    return date.isAfter(startDate) && date.isBefore(now.add(1, 'day'));
-  });
+  const recentActivities = isAllTime
+    ? activities
+    : activities.filter(a => {
+        const date = dayjs(a.date);
+        return (
+          date.isAfter(now.subtract(daysRange, 'day')) &&
+          date.isBefore(now.add(1, 'day'))
+        );
+      });
 
   const completedActivities = recentActivities.filter(a =>
     isActivityComplete(a)
@@ -483,6 +488,15 @@ export function calculateOverallStats(
 
   const { currentStreak, longestStreak } = calculateStreaks(activities);
 
+  // For all-time, compute span from earliest activity to now
+  let effectiveDays = daysRange;
+  if (isAllTime && completedActivities.length > 0) {
+    const sortedDates = completedActivities
+      .map(a => dayjs(a.date))
+      .sort((a, b) => a.unix() - b.unix());
+    effectiveDays = Math.max(now.diff(sortedDates[0], 'day'), 1);
+  }
+
   return {
     totalActivities: completedActivities.length,
     completedActivities: completedActivities.length,
@@ -497,7 +511,10 @@ export function calculateOverallStats(
     totalVolume,
     totalTime,
     totalDistance,
-    averagePerWeek: Math.round((completedActivities.length / daysRange) * 7),
+    averagePerWeek:
+      effectiveDays > 0
+        ? Math.round((completedActivities.length / effectiveDays) * 7)
+        : 0,
     currentStreak,
     longestStreak,
   };
@@ -665,13 +682,16 @@ export function calculatePersonalRecords(
   > = {};
 
   const now = dayjs();
-  const recentCutoff = now.subtract(timeRangeDays, 'day');
+  const isAllTime = timeRangeDays === 0;
+  const recentCutoff = isAllTime
+    ? dayjs(0)
+    : now.subtract(timeRangeDays, 'day');
 
   for (const activity of activities) {
     if (!isActivityComplete(activity) || !activity.sets) continue;
 
     const activityDate = dayjs(activity.date);
-    const isRecent = activityDate.isAfter(recentCutoff);
+    const isRecent = isAllTime || activityDate.isAfter(recentCutoff);
     const exerciseName = activity.name;
 
     if (!exerciseRecords[exerciseName]) {
@@ -729,12 +749,12 @@ export function calculatePersonalRecords(
     const isNewWeightPR =
       data.recentMaxWeight > 0 &&
       data.recentMaxWeight === data.maxWeight &&
-      dayjs(data.maxWeightDate).isAfter(recentCutoff);
+      (isAllTime || dayjs(data.maxWeightDate).isAfter(recentCutoff));
 
     const isNewRepsPR =
       data.recentMaxReps > 0 &&
       data.recentMaxReps === data.maxReps &&
-      dayjs(data.maxRepsDate).isAfter(recentCutoff);
+      (isAllTime || dayjs(data.maxRepsDate).isAfter(recentCutoff));
 
     const record: PersonalRecord = {
       exerciseName,
@@ -771,15 +791,16 @@ export function calculateConsistencyStats(
   daysRange: number
 ): ConsistencyStats {
   const now = dayjs();
-  const startDate = now.subtract(daysRange, 'day');
+  const isAllTime = daysRange === 0;
 
   const completedDates = new Set<string>();
   for (const activity of activities) {
     if (isActivityComplete(activity)) {
       const activityDate = dayjs(activity.date);
       if (
-        activityDate.isAfter(startDate) &&
-        activityDate.isBefore(now.add(1, 'day'))
+        isAllTime ||
+        (activityDate.isAfter(now.subtract(daysRange, 'day')) &&
+          activityDate.isBefore(now.add(1, 'day')))
       ) {
         completedDates.add(activity.date);
       }
@@ -787,7 +808,18 @@ export function calculateConsistencyStats(
   }
 
   const uniqueDates = Array.from(completedDates).sort();
-  const weeks = daysRange / 7;
+
+  // For all-time, compute weeks from earliest to latest activity
+  let weeks: number;
+  if (isAllTime && uniqueDates.length > 0) {
+    const span = dayjs(uniqueDates[uniqueDates.length - 1]).diff(
+      dayjs(uniqueDates[0]),
+      'day'
+    );
+    weeks = Math.max(span / 7, 1);
+  } else {
+    weeks = daysRange / 7;
+  }
   const daysPerWeek = weeks > 0 ? uniqueDates.length / weeks : 0;
 
   let longestGapDays = 0;
@@ -815,8 +847,9 @@ export function calculateConsistencyStats(
 
     const activityDate = dayjs(activity.date);
     if (
-      !activityDate.isAfter(startDate) ||
-      !activityDate.isBefore(now.add(1, 'day'))
+      !isAllTime &&
+      (!activityDate.isAfter(now.subtract(daysRange, 'day')) ||
+        !activityDate.isBefore(now.add(1, 'day')))
     ) {
       continue;
     }
