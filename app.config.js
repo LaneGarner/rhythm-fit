@@ -33,6 +33,7 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
+    plugins: ['expo-audio'],
     extra: {
       OPENAI_API_KEY:
         process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,

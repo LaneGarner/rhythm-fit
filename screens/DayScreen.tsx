@@ -49,6 +49,7 @@ import {
 } from '../utils/supersetUtils';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import ShareWorkoutModal from '../components/ShareWorkoutModal';
 
 // Check if running in Expo Go (StoreClient) vs a build
 const isExpoGo =
@@ -82,6 +83,7 @@ export default function DayScreen({ navigation, route }: any) {
   const [targetDate, setTargetDate] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCopyToDateModal, setShowCopyToDateModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [copyActivity, setCopyActivity] = useState<Activity | null>(null);
   const [copyTargetDate, setCopyTargetDate] = useState(new Date());
   const [isCopying, setIsCopying] = useState(false);
@@ -152,6 +154,7 @@ export default function DayScreen({ navigation, route }: any) {
     setPendingOrderIds(null);
     setShowMoveModal(false);
     setShowCopyToDateModal(false);
+    setShowShareModal(false);
     setCopyActivity(null);
     setIsDeleting(false);
   }, [date]);
@@ -988,6 +991,14 @@ export default function DayScreen({ navigation, route }: any) {
                 </>
               )}
               <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
+              {isBulkMode && (
+                <Ionicons
+                  name={isActivityComplete(activity) ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={20}
+                  color={isActivityComplete(activity) ? '#22C55E' : colors.border}
+                  style={{ marginRight: 6 }}
+                />
+              )}
               <View className="flex-1">
                 <Text
                   className={`text-lg font-semibold ${
@@ -1375,6 +1386,12 @@ export default function DayScreen({ navigation, route }: any) {
             />
           </TouchableOpacity>
           <Text className="text-xl mr-2">{activity.emoji || '💪'}</Text>
+          <Ionicons
+            name={isActivityComplete(activity) ? 'checkmark-circle' : 'ellipse-outline'}
+            size={18}
+            color={isActivityComplete(activity) ? '#22C55E' : colors.border}
+            style={{ marginRight: 4 }}
+          />
           <View className="flex-1">
             <Text
               className={`text-base font-medium ${
@@ -1489,8 +1506,17 @@ export default function DayScreen({ navigation, route }: any) {
               </TouchableOpacity>
 
               {isSuperset ? (
-                <View className="flex-1">
+                <View className="flex-1 flex-row items-center">
                   <SupersetBadge label={getSupersetLabel(activities.length)} />
+                  <Text
+                    style={{
+                      marginLeft: 8,
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                    }}
+                  >
+                    {activities.filter(isActivityComplete).length}/{activities.length} complete
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -1515,6 +1541,12 @@ export default function DayScreen({ navigation, route }: any) {
                   <Text className="text-2xl mr-3">
                     {activities[0].emoji || '💪'}
                   </Text>
+                  <Ionicons
+                    name={isActivityComplete(activities[0]) ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={isActivityComplete(activities[0]) ? '#22C55E' : colors.border}
+                    style={{ marginRight: 6 }}
+                  />
                   <View className="flex-1">
                     <Text
                       className={`text-lg font-semibold ${
@@ -1978,28 +2010,48 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </View>
-        {/* Right: Edit/Save button - only show if there are activities */}
+        {/* Right: Share + Edit/Save buttons */}
         {(dayActivities.length > 0 || isBulkMode) && (
-          <HeaderButton
-            label={isBulkMode ? 'Save' : 'Edit'}
-            onPress={() => {
-              if (isBulkMode) {
-                saveChanges();
-                setIsBulkMode(false);
-                setSelectedActivities(new Set());
-              } else {
-                setIsBulkMode(true);
-              }
-            }}
+          <View
             style={{
               position: 'absolute',
               right: 16,
               top: insets.top + 4,
               height: 44,
-              justifyContent: 'center',
+              flexDirection: 'row',
+              alignItems: 'center',
               zIndex: 2,
+              gap: 16,
             }}
-          />
+          >
+            {!isBulkMode && dayActivities.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowShareModal(true)}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                accessibilityRole="button"
+                accessibilityLabel="Share workout"
+                style={{ padding: 4 }}
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={22}
+                  color={colors.primary.main}
+                />
+              </TouchableOpacity>
+            )}
+            <HeaderButton
+              label={isBulkMode ? 'Save' : 'Edit'}
+              onPress={() => {
+                if (isBulkMode) {
+                  saveChanges();
+                  setIsBulkMode(false);
+                  setSelectedActivities(new Set());
+                } else {
+                  setIsBulkMode(true);
+                }
+              }}
+            />
+          </View>
         )}
       </View>
 
@@ -2156,6 +2208,12 @@ export default function DayScreen({ navigation, route }: any) {
 
       <MoveToDateModal />
       <CopyToDateModal />
+      <ShareWorkoutModal
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        activities={dayActivities}
+        date={date}
+      />
 
       {/* Deleting overlay */}
       {isDeleting && (

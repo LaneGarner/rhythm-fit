@@ -11,6 +11,10 @@ import {
   saveFirstDayOfWeek,
   loadAutoRestTimer,
   saveAutoRestTimer,
+  loadTimerVibration,
+  saveTimerVibration,
+  loadTimerSound,
+  saveTimerSound,
 } from '../utils/storage';
 import { useAuth } from './AuthContext';
 import { isBackendConfigured } from '../config/api';
@@ -24,6 +28,10 @@ interface PreferencesContextProps {
   setFirstDayOfWeek: (day: WeekStartDay) => void;
   autoRestTimer: boolean;
   setAutoRestTimer: (enabled: boolean) => void;
+  timerVibration: boolean;
+  setTimerVibration: (enabled: boolean) => void;
+  timerSound: boolean;
+  setTimerSound: (enabled: boolean) => void;
   isLoading: boolean;
 }
 
@@ -32,6 +40,10 @@ export const PreferencesContext = createContext<PreferencesContextProps>({
   setFirstDayOfWeek: () => {},
   autoRestTimer: false,
   setAutoRestTimer: () => {},
+  timerVibration: true,
+  setTimerVibration: () => {},
+  timerSound: true,
+  setTimerSound: () => {},
   isLoading: true,
 });
 
@@ -42,6 +54,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     DEFAULT_PREFERENCES.firstDayOfWeek
   );
   const [autoRestTimer, setAutoRestTimerState] = useState(false);
+  const [timerVibration, setTimerVibrationState] = useState(true);
+  const [timerSound, setTimerSoundState] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const { user, getAccessToken, isLoading: authLoading } = useAuth();
 
@@ -63,6 +77,12 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const localAutoRest = await loadAutoRestTimer();
       setAutoRestTimerState(localAutoRest);
+
+      const localTimerVibration = await loadTimerVibration();
+      setTimerVibrationState(localTimerVibration);
+
+      const localTimerSound = await loadTimerSound();
+      setTimerSoundState(localTimerSound);
 
       // If authenticated, try to fetch from server
       if (isAuthenticated) {
@@ -112,6 +132,16 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     await saveAutoRestTimer(enabled);
   }, []);
 
+  const handleSetTimerVibration = useCallback(async (enabled: boolean) => {
+    setTimerVibrationState(enabled);
+    await saveTimerVibration(enabled);
+  }, []);
+
+  const handleSetTimerSound = useCallback(async (enabled: boolean) => {
+    setTimerSoundState(enabled);
+    await saveTimerSound(enabled);
+  }, []);
+
   return (
     <PreferencesContext.Provider
       value={{
@@ -119,6 +149,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
         setFirstDayOfWeek: handleSetFirstDayOfWeek,
         autoRestTimer,
         setAutoRestTimer: handleSetAutoRestTimer,
+        timerVibration,
+        setTimerVibration: handleSetTimerVibration,
+        timerSound,
+        setTimerSound: handleSetTimerSound,
         isLoading,
       }}
     >

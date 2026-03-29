@@ -135,6 +135,44 @@ export const loadAutoRestTimer = async (): Promise<boolean> => {
   }
 };
 
+// Timer vibration preference storage
+export const saveTimerVibration = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('timerVibration', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving timer vibration:', error);
+  }
+};
+
+export const loadTimerVibration = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('timerVibration');
+    return data !== null ? JSON.parse(data) : true; // Default: enabled
+  } catch (error) {
+    console.error('Error loading timer vibration:', error);
+    return true;
+  }
+};
+
+// Timer sound preference storage
+export const saveTimerSound = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('timerSound', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving timer sound:', error);
+  }
+};
+
+export const loadTimerSound = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('timerSound');
+    return data !== null ? JSON.parse(data) : true; // Default: enabled
+  } catch (error) {
+    console.error('Error loading timer sound:', error);
+    return true;
+  }
+};
+
 // Tutorial completion storage
 export const saveTutorialCompleted = async (completed: boolean) => {
   try {

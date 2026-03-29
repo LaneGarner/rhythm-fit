@@ -23,8 +23,16 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 export default function SettingsScreen({ navigation }: any) {
   const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
   const { user, signOut, isConfigured } = useAuth();
-  const { firstDayOfWeek, setFirstDayOfWeek, autoRestTimer, setAutoRestTimer } =
-    usePreferences();
+  const {
+    firstDayOfWeek,
+    setFirstDayOfWeek,
+    autoRestTimer,
+    setAutoRestTimer,
+    timerVibration,
+    setTimerVibration,
+    timerSound,
+    setTimerSound,
+  } = usePreferences();
   const {
     startTutorial,
     registerTarget,
@@ -472,6 +480,80 @@ export default function SettingsScreen({ navigation }: any) {
             <Switch
               value={autoRestTimer}
               onValueChange={setAutoRestTimer}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Timer Vibration */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setTimerVibration(!timerVibration)}
+            accessibilityRole="switch"
+            accessibilityLabel="Timer vibration"
+            accessibilityState={{ checked: timerVibration }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Timer Vibration
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Vibrate when the countdown timer finishes.
+              </Text>
+            </View>
+            <Switch
+              value={timerVibration}
+              onValueChange={setTimerVibration}
+              trackColor={{
+                false: colors.toggleTrack,
+                true: colors.primary.main,
+              }}
+              thumbColor="#ffffff"
+            />
+          </TouchableOpacity>
+          <View
+            style={{
+              height: 0.5,
+              backgroundColor: colors.border,
+              marginLeft: 16,
+            }}
+          />
+          {/* Timer Sound */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between p-4"
+            onPress={() => setTimerSound(!timerSound)}
+            accessibilityRole="switch"
+            accessibilityLabel="Timer sound"
+            accessibilityState={{ checked: timerSound }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="text-base" style={{ color: colors.text }}>
+                Timer Sound
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Play a sound when the countdown timer finishes.
+              </Text>
+            </View>
+            <Switch
+              value={timerSound}
+              onValueChange={setTimerSound}
               trackColor={{
                 false: colors.toggleTrack,
                 true: colors.primary.main,
