@@ -32,7 +32,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
-  getSupersetEmojis,
+  getSupersetEmojisCompact,
   isActivityComplete,
   isSupersetComplete,
   ActivityGroup,
@@ -933,6 +933,9 @@ export default function WeeklyScreen({ navigation }: any) {
                                 key={group.supersetId}
                                 className="flex-row items-center mt-1"
                               >
+                                <Text className="text-lg mr-2">
+                                  {getSupersetEmojisCompact(group.activities)}
+                                </Text>
                                 <Text
                                   style={{
                                     color: colors.text,
@@ -940,7 +943,7 @@ export default function WeeklyScreen({ navigation }: any) {
                                   className="flex-1"
                                   numberOfLines={1}
                                 >
-                                  {getSupersetEmojis(group.activities)}
+                                  {group.activities.map(a => a.name || a.type).join(' → ')}
                                 </Text>
                                 {supersetComplete ? (
                                   <Ionicons

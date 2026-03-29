@@ -41,7 +41,7 @@ import SupersetBadge from '../components/SupersetBadge';
 import {
   ActivityGroup,
   groupActivitiesWithSupersets,
-  getSupersetEmojis,
+  getSupersetEmojisCompact,
   getSupersetLabel,
   isSupersetComplete,
   isActivityComplete,
@@ -1282,12 +1282,15 @@ export default function DayScreen({ navigation, route }: any) {
 
         {/* Combined emoji + name display */}
         <View className="flex-row items-center justify-between">
-          <View className="flex-1 mr-2">
+          <View className="flex-row items-center flex-1 mr-2">
+            <Text className="text-2xl mr-3">
+              {getSupersetEmojisCompact(activities)}
+            </Text>
             <Text
-              className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`text-lg font-semibold flex-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
               numberOfLines={2}
             >
-              {getSupersetEmojis(activities)}
+              {activities.map(a => a.name || a.type).join(' → ')}
             </Text>
           </View>
           {supersetComplete ? (
