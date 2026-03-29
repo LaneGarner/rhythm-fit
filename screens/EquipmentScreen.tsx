@@ -453,7 +453,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             <View className="mb-6">
               <Text
                 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -538,7 +541,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             <View className="mb-6">
               <Text
                 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -660,7 +666,10 @@ export default function EquipmentScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             {showEditPlate && (
               <>
                 <View className="items-center mb-6">

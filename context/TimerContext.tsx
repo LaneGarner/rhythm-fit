@@ -62,9 +62,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const { timerVibration, timerSound } = usePreferences();
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
-  const player = useAudioPlayer(
-    require('../assets/sounds/timer-complete.wav')
-  );
+  const player = useAudioPlayer(require('../assets/sounds/timer-complete.wav'));
 
   // Configure audio to play even when iOS silent switch is on
   useEffect(() => {
@@ -83,8 +81,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const vibrationActiveRef = useRef(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const delay = (ms: number) =>
-    new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const playVibrationPattern = useCallback(async () => {
     if (!vibrationActiveRef.current) return;
@@ -139,13 +136,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       Alert.alert(
         'Timer Complete',
         `Your timer for "${timerFinished}" has finished!`,
-        [{
-          text: 'OK',
-          onPress: () => {
-            stopVibration();
-            setTimerFinished(null);
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              stopVibration();
+              setTimerFinished(null);
+            },
           },
-        }]
+        ]
       );
     }
   }, [timerFinished, stopVibration]);
@@ -198,7 +197,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => subscription.remove();
-  }, [timer.isRunning, timer.startedAt, timer.mode, timer.targetSeconds, playCompletionFeedback]);
+  }, [
+    timer.isRunning,
+    timer.startedAt,
+    timer.mode,
+    timer.targetSeconds,
+    playCompletionFeedback,
+  ]);
 
   // Manage the interval for foreground counting
   useEffect(() => {

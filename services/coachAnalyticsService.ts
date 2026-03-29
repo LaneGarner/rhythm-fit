@@ -420,8 +420,7 @@ export function buildRecentWorkoutDetails(
     const dayActivities = grouped[date];
     const formattedDate = dayjs(date).format('ddd, MMM D');
     const exercises = dayActivities.map(a => {
-      const setInfo =
-        a.sets && a.sets.length > 0 ? compressSets(a.sets) : '';
+      const setInfo = a.sets && a.sets.length > 0 ? compressSets(a.sets) : '';
       return setInfo ? `${a.name} (${setInfo})` : a.name;
     });
     lines.push(`- ${formattedDate}: ${exercises.join(', ')}`);
@@ -580,9 +579,7 @@ export function buildExerciseProgression(
  * Sample weight progression milestones from exercise history.
  * Emits a value when max weight increases by 5+ lbs or 5%+ from last milestone.
  */
-function sampleWeightProgression(
-  history: { maxWeight: number }[]
-): number[] {
+function sampleWeightProgression(history: { maxWeight: number }[]): number[] {
   if (history.length === 0) return [];
 
   const milestones: number[] = [history[0].maxWeight];
@@ -593,8 +590,7 @@ function sampleWeightProgression(
     if (history[i].maxWeight > runningMax) {
       runningMax = history[i].maxWeight;
       const increase = runningMax - lastMilestone;
-      const pctIncrease =
-        lastMilestone > 0 ? increase / lastMilestone : 1;
+      const pctIncrease = lastMilestone > 0 ? increase / lastMilestone : 1;
       if (increase >= 5 || pctIncrease >= 0.05) {
         milestones.push(runningMax);
         lastMilestone = runningMax;
@@ -624,9 +620,7 @@ function sampleWeightProgression(
 /**
  * Sample reps progression milestones from exercise history.
  */
-function sampleRepsProgression(
-  history: { maxReps: number }[]
-): number[] {
+function sampleRepsProgression(history: { maxReps: number }[]): number[] {
   if (history.length === 0) return [];
 
   const milestones: number[] = [history[0].maxReps];

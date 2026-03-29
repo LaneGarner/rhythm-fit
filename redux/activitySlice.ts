@@ -100,7 +100,6 @@ const activitySlice = createSlice({
           });
         }
       }
-
     },
     deleteActivitiesForDate(state, action: PayloadAction<string>) {
       state.data = state.data.filter(a => a.date !== action.payload);
@@ -147,7 +146,6 @@ const activitySlice = createSlice({
           };
         }
       });
-
     },
     createSuperset(state, action: PayloadAction<{ activityIds: string[] }>) {
       const { activityIds } = action.payload;
@@ -167,7 +165,6 @@ const activitySlice = createSlice({
           };
         }
       });
-
     },
     addToSuperset(
       state,
@@ -189,7 +186,6 @@ const activitySlice = createSlice({
           updated_at: now,
         };
       }
-
     },
     removeFromSuperset(state, action: PayloadAction<string>) {
       const activityId = action.payload;
@@ -251,7 +247,6 @@ const activitySlice = createSlice({
           }
         });
       }
-
     },
     breakSuperset(state, action: PayloadAction<string>) {
       const supersetId = action.payload;
@@ -266,7 +261,6 @@ const activitySlice = createSlice({
           };
         }
       });
-
     },
     swapSupersetOrder(
       state,
@@ -293,7 +287,6 @@ const activitySlice = createSlice({
           updated_at: now,
         };
       }
-
     },
   },
   extraReducers: builder => {

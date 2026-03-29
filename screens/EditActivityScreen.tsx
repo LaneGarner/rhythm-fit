@@ -2,13 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import ActivityForm from '../components/ActivityForm';
 import {
@@ -322,8 +316,9 @@ export default function EditActivityScreen({ navigation, route }: any) {
   const handleRemoveFromSuperset = useCallback(
     (removeId: string) => {
       // Count remaining after removal
-      const remainingCount =
-        workingActivities.filter(a => a.id !== removeId).length;
+      const remainingCount = workingActivities.filter(
+        a => a.id !== removeId
+      ).length;
 
       if (remainingCount < 2) {
         Alert.alert(
@@ -364,8 +359,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
   const handleNewExerciseSave = useCallback(
     (newActivity: Activity) => {
-      const ssId =
-        resolvedSupersetId || generateSupersetId();
+      const ssId = resolvedSupersetId || generateSupersetId();
       const nextPosition = getNextSupersetPosition(workingActivities);
       const date = workingActivities[0]?.date || activity?.date;
 
@@ -671,26 +665,22 @@ export default function EditActivityScreen({ navigation, route }: any) {
                       : '#e0e7ff'
                     : colors.surface,
                   borderWidth: 1,
-                  borderColor: isActive
-                    ? colors.primary.main
-                    : colors.border,
+                  borderColor: isActive ? colors.primary.main : colors.border,
                   gap: 6,
                 }}
               >
-                  <Text style={{ fontSize: 16 }}>
-                    {displayAct.emoji || '💪'}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: '500',
-                      color: colors.text,
-                      maxWidth: 100,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {displayAct.name}
-                  </Text>
+                <Text style={{ fontSize: 16 }}>{displayAct.emoji || '💪'}</Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: colors.text,
+                    maxWidth: 100,
+                  }}
+                  numberOfLines={1}
+                >
+                  {displayAct.name}
+                </Text>
 
                 {/* Reorder buttons */}
                 {index > 0 && (
@@ -763,17 +753,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
             <Ionicons
               name="add"
               size={18}
-              color={
-                isAddingNew ? colors.primary.main : colors.textSecondary
-              }
+              color={isAddingNew ? colors.primary.main : colors.textSecondary}
             />
             <Text
               style={{
                 fontSize: 14,
                 fontWeight: '500',
-                color: isAddingNew
-                  ? colors.primary.main
-                  : colors.textSecondary,
+                color: isAddingNew ? colors.primary.main : colors.textSecondary,
               }}
             >
               Add

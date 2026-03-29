@@ -425,7 +425,10 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             </View>
           </View>
 
-          <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1 p-4"
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Name Input */}
             <View className="mb-6">
               <Text

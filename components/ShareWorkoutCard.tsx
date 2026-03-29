@@ -248,7 +248,9 @@ export default function ShareWorkoutCard({
           </Text>
           <View
             style={{
-              backgroundColor: allCompleted ? card.successGlow : card.accentGlow,
+              backgroundColor: allCompleted
+                ? card.successGlow
+                : card.accentGlow,
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 20,
@@ -273,7 +275,6 @@ export default function ShareWorkoutCard({
       <View style={{ paddingVertical: 4 }}>
         {groups.map((group, i) => renderGroup(group, i))}
       </View>
-
     </View>
   );
 }

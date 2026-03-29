@@ -249,11 +249,11 @@ export default function DayScreen({ navigation, route }: any) {
     .onStart(() => {
       isSwipingRef.current = true;
     })
-    .onUpdate((event) => {
+    .onUpdate(event => {
       const clampedX = Math.max(-100, Math.min(100, event.translationX));
       slideAnim.setValue(clampedX);
     })
-    .onEnd((event) => {
+    .onEnd(event => {
       const threshold = 50;
       if (
         event.translationX < -threshold &&
@@ -993,9 +993,15 @@ export default function DayScreen({ navigation, route }: any) {
               <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
               {isBulkMode && (
                 <Ionicons
-                  name={isActivityComplete(activity) ? 'checkmark-circle' : 'ellipse-outline'}
+                  name={
+                    isActivityComplete(activity)
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
                   size={20}
-                  color={isActivityComplete(activity) ? '#22C55E' : colors.border}
+                  color={
+                    isActivityComplete(activity) ? '#22C55E' : colors.border
+                  }
                   style={{ marginRight: 6 }}
                 />
               )}
@@ -1387,7 +1393,11 @@ export default function DayScreen({ navigation, route }: any) {
           </TouchableOpacity>
           <Text className="text-xl mr-2">{activity.emoji || '💪'}</Text>
           <Ionicons
-            name={isActivityComplete(activity) ? 'checkmark-circle' : 'ellipse-outline'}
+            name={
+              isActivityComplete(activity)
+                ? 'checkmark-circle'
+                : 'ellipse-outline'
+            }
             size={18}
             color={isActivityComplete(activity) ? '#22C55E' : colors.border}
             style={{ marginRight: 4 }}
@@ -1515,7 +1525,8 @@ export default function DayScreen({ navigation, route }: any) {
                       fontSize: 12,
                     }}
                   >
-                    {activities.filter(isActivityComplete).length}/{activities.length} complete
+                    {activities.filter(isActivityComplete).length}/
+                    {activities.length} complete
                   </Text>
                 </View>
               ) : (
@@ -1542,9 +1553,17 @@ export default function DayScreen({ navigation, route }: any) {
                     {activities[0].emoji || '💪'}
                   </Text>
                   <Ionicons
-                    name={isActivityComplete(activities[0]) ? 'checkmark-circle' : 'ellipse-outline'}
+                    name={
+                      isActivityComplete(activities[0])
+                        ? 'checkmark-circle'
+                        : 'ellipse-outline'
+                    }
                     size={20}
-                    color={isActivityComplete(activities[0]) ? '#22C55E' : colors.border}
+                    color={
+                      isActivityComplete(activities[0])
+                        ? '#22C55E'
+                        : colors.border
+                    }
                     style={{ marginRight: 6 }}
                   />
                   <View className="flex-1">
@@ -2060,144 +2079,148 @@ export default function DayScreen({ navigation, route }: any) {
         <Animated.View
           style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
         >
-      {/* Bulk Actions */}
-      {isBulkMode && (
-        <View
-          className={`p-4 border-b ${
-            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          }`}
-        >
-          {/* Selected count and reorder hint */}
-          <Text
-            className={`font-semibold mb-2 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            {selectedActivities.size} selected
-          </Text>
-
-          {/* Select/Deselect toggle */}
-          <View className="flex-row mb-3">
-            <TouchableOpacity
-              onPress={
-                selectedActivities.size === dayActivities.length &&
-                dayActivities.length > 0
-                  ? deselectAll
-                  : selectAll
-              }
-              className="px-3 py-1 rounded bg-blue-500"
+          {/* Bulk Actions */}
+          {isBulkMode && (
+            <View
+              className={`p-4 border-b ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700'
+                  : 'bg-white border-gray-200'
+              }`}
             >
-              <Text className="text-white text-sm">
-                {selectedActivities.size === dayActivities.length &&
-                dayActivities.length > 0
-                  ? 'Deselect All'
-                  : 'Select All'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Action buttons */}
-          <View className="flex-row space-x-2 mb-2">
-            <TouchableOpacity
-              onPress={handleBulkDelete}
-              className="flex-1 bg-red-500 py-2 rounded-lg"
-              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
-              disabled={selectedActivities.size === 0}
-            >
-              <Text className="text-white text-center font-semibold">
-                Delete
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBulkMove}
-              className="flex-1 bg-blue-500 py-2 rounded-lg"
-              style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
-              disabled={selectedActivities.size === 0}
-            >
-              <Text className="text-white text-center font-semibold">
-                Change Date
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Superset button - show when 2+ activities selected */}
-          {selectedActivities.size >= 2 && (
-            <TouchableOpacity
-              onPress={() => {
-                if (selectedSupersetId) {
-                  dispatch(breakSuperset(selectedSupersetId));
-                  setSelectedActivities(new Set());
-                } else {
-                  handleCreateSuperset();
-                }
-              }}
-              className="py-2 rounded-lg mb-2"
-              style={{
-                backgroundColor: selectedSupersetId
-                  ? 'transparent'
-                  : colors.primary.main,
-                borderWidth: selectedSupersetId ? 2 : 0,
-                borderColor: colors.error.main,
-              }}
-            >
+              {/* Selected count and reorder hint */}
               <Text
-                className="text-center font-semibold"
+                className={`font-semibold mb-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                {selectedActivities.size} selected
+              </Text>
+
+              {/* Select/Deselect toggle */}
+              <View className="flex-row mb-3">
+                <TouchableOpacity
+                  onPress={
+                    selectedActivities.size === dayActivities.length &&
+                    dayActivities.length > 0
+                      ? deselectAll
+                      : selectAll
+                  }
+                  className="px-3 py-1 rounded bg-blue-500"
+                >
+                  <Text className="text-white text-sm">
+                    {selectedActivities.size === dayActivities.length &&
+                    dayActivities.length > 0
+                      ? 'Deselect All'
+                      : 'Select All'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Action buttons */}
+              <View className="flex-row space-x-2 mb-2">
+                <TouchableOpacity
+                  onPress={handleBulkDelete}
+                  className="flex-1 bg-red-500 py-2 rounded-lg"
+                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  disabled={selectedActivities.size === 0}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleBulkMove}
+                  className="flex-1 bg-blue-500 py-2 rounded-lg"
+                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  disabled={selectedActivities.size === 0}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Change Date
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Superset button - show when 2+ activities selected */}
+              {selectedActivities.size >= 2 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedSupersetId) {
+                      dispatch(breakSuperset(selectedSupersetId));
+                      setSelectedActivities(new Set());
+                    } else {
+                      handleCreateSuperset();
+                    }
+                  }}
+                  className="py-2 rounded-lg mb-2"
+                  style={{
+                    backgroundColor: selectedSupersetId
+                      ? 'transparent'
+                      : colors.primary.main,
+                    borderWidth: selectedSupersetId ? 2 : 0,
+                    borderColor: colors.error.main,
+                  }}
+                >
+                  <Text
+                    className="text-center font-semibold"
+                    style={{
+                      color: selectedSupersetId ? colors.error.main : '#fff',
+                    }}
+                  >
+                    {selectedSupersetId
+                      ? 'Unlink Superset'
+                      : 'Link as Superset'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Sticky Progress Bar */}
+          {totalCount > 0 && !isBulkMode && (
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: colors.background,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <View
                 style={{
-                  color: selectedSupersetId ? colors.error.main : '#fff',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 6,
                 }}
               >
-                {selectedSupersetId ? 'Unlink Superset' : 'Link as Superset'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Sticky Progress Bar */}
-      {totalCount > 0 && !isBulkMode && (
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            backgroundColor: colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 6,
-            }}
-          >
-            {allCompleted && (
-              <Ionicons
-                name="checkmark-circle"
-                size={16}
-                color="#22C55E"
-                style={{ marginRight: 6 }}
+                {allCompleted && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                    style={{ marginRight: 6 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                  }}
+                >
+                  {completedCount}/{totalCount} complete
+                </Text>
+              </View>
+              <ProgressBar
+                completed={completedCount}
+                total={totalCount}
+                isDark={isDark}
               />
-            )}
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 14,
-              }}
-            >
-              {completedCount}/{totalCount} complete
-            </Text>
-          </View>
-          <ProgressBar
-            completed={completedCount}
-            total={totalCount}
-            isDark={isDark}
-          />
-        </View>
-      )}
+            </View>
+          )}
 
-      {/* Activities List */}
-      {renderActivitiesList()}
+          {/* Activities List */}
+          {renderActivitiesList()}
         </Animated.View>
       </GestureDetector>
 
