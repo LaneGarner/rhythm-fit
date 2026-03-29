@@ -273,6 +273,9 @@ export default function ActivityForm({
     onSave(activity, recurringConfig || undefined);
   };
 
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+
   const handleNameSelect = (name: string, type?: string) => {
     setActivityName(name);
     if (type) {
@@ -299,7 +302,15 @@ export default function ActivityForm({
       if (result.success) {
         Alert.alert(
           'Added to Library',
-          `"${name}" has been added to your activity library.`
+          `"${name}" has been added to your activity library.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                handleSaveRef.current();
+              },
+            },
+          ]
         );
       } else {
         Alert.alert(
