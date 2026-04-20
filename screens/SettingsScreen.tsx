@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import HeaderButton from '../components/HeaderButton';
+import SegmentedControl from '../components/SegmentedControl';
 import { useTutorial } from '../components/tutorial';
-import { useTheme } from '../theme/ThemeContext';
+import { ThemePreference, useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
 import { clearSyncData } from '../services/syncService';
@@ -21,7 +22,8 @@ import { isBackendConfigured } from '../config/api';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function SettingsScreen({ navigation }: any) {
-  const { themeMode, setThemeMode, colorScheme, colors } = useTheme();
+  const { themePreference, setThemePreference, colorScheme, colors } =
+    useTheme();
   const { user, signOut, isConfigured } = useAuth();
   const {
     firstDayOfWeek,
@@ -67,7 +69,6 @@ export default function SettingsScreen({ navigation }: any) {
       unregisterTarget('equipment-setting');
     };
   }, [tutorialActive, registerEquipment, unregisterTarget]);
-  const isDark = colorScheme === 'dark';
   const showAccountSection = isConfigured && isBackendConfigured();
 
   const handleStartTutorial = () => {
@@ -431,25 +432,36 @@ export default function SettingsScreen({ navigation }: any) {
               marginLeft: 16,
             }}
           />
-          {/* Dark Mode */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            className="flex-row items-center justify-between p-4"
-            onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
-          >
-            <Text className="text-base" style={{ color: colors.text }}>
-              Dark Mode
+          {/* Appearance */}
+          <View className="p-4">
+            <Text className="text-base mb-3" style={{ color: colors.text }}>
+              Appearance
             </Text>
-            <Switch
-              value={isDark}
-              onValueChange={value => setThemeMode(value ? 'dark' : 'light')}
-              trackColor={{
-                false: colors.toggleTrack,
-                true: colors.primary.main,
-              }}
-              thumbColor="#ffffff"
+            <SegmentedControl<ThemePreference>
+              options={[
+                {
+                  value: 'system',
+                  label: 'System',
+                  icon: 'phone-portrait-outline',
+                },
+                { value: 'light', label: 'Light', icon: 'sunny-outline' },
+                { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+              ]}
+              value={themePreference}
+              onValueChange={setThemePreference}
+              accessibilityLabel="Appearance mode"
             />
-          </TouchableOpacity>
+            <Text
+              className="text-xs mt-2"
+              style={{ color: colors.textSecondary }}
+            >
+              {themePreference === 'system'
+                ? 'Matches device settings'
+                : themePreference === 'light'
+                  ? 'Always light'
+                  : 'Always dark'}
+            </Text>
+          </View>
           <View
             style={{
               height: 0.5,
