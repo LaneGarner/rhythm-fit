@@ -535,7 +535,7 @@ function ActivityForm(
               }}
               accessibilityRole="switch"
               accessibilityState={{ checked: supersetMode }}
-              accessibilityLabel="Make it a superset"
+              accessibilityLabel="Superset"
             >
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
@@ -554,7 +554,7 @@ function ActivityForm(
                     color: supersetMode ? colors.primary.main : colors.text,
                   }}
                 >
-                  Make it a Superset
+                  Superset
                 </Text>
               </View>
               <View
