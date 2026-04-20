@@ -264,8 +264,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             return { ...prev, seconds: prev.seconds + 1 };
           } else if (prev.mode === 'emom') {
             if (prev.seconds <= 1) {
-              const isLastRound =
-                prev.emomCurrentRound >= prev.emomTotalRounds;
+              const isLastRound = prev.emomCurrentRound >= prev.emomTotalRounds;
               if (isLastRound) {
                 playCompletionFeedback();
                 finishAlertRef.current = prev.activityName;
@@ -375,16 +374,19 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         activityId,
         activityName,
         seconds: initialSecondsForMode(prev),
-        isRunning: prev.mode === 'emom'
-          ? prev.emomIntervalSeconds > 0 && prev.emomTotalRounds > 0
-          : true,
+        isRunning:
+          prev.mode === 'emom'
+            ? prev.emomIntervalSeconds > 0 && prev.emomTotalRounds > 0
+            : true,
         startedAt:
           prev.mode === 'emom' &&
           (prev.emomIntervalSeconds <= 0 || prev.emomTotalRounds <= 0)
             ? null
             : now,
         emomCurrentRound:
-          prev.mode === 'emom' && prev.emomIntervalSeconds > 0 && prev.emomTotalRounds > 0
+          prev.mode === 'emom' &&
+          prev.emomIntervalSeconds > 0 &&
+          prev.emomTotalRounds > 0
             ? 1
             : prev.emomCurrentRound,
       }));
