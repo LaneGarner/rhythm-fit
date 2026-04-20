@@ -829,9 +829,10 @@ export default function DayScreen({ navigation, route }: any) {
           onPress={handlePress}
           onLongPress={handleLongPress}
           delayLongPress={400}
-          className={`p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+          className="p-4 shadow-sm"
           style={{
             ...borderRadius,
+            backgroundColor: colors.cardBackground,
             marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
             borderColor: supersetInfo.isInSuperset
@@ -1255,8 +1256,9 @@ export default function DayScreen({ navigation, route }: any) {
         onPress={handlePress}
         onLongPress={handleLongPress}
         delayLongPress={400}
-        className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+        className="p-4 rounded-lg mb-3 shadow-sm"
         style={{
+          backgroundColor: colors.cardBackground,
           borderWidth: hasSelectedActivity ? 2 : 0,
           borderColor: colors.primary.main,
           borderLeftWidth: 4,
@@ -1473,7 +1475,7 @@ export default function DayScreen({ navigation, route }: any) {
       const content = (
         <View style={{ marginBottom: 12 }}>
           <View
-            className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+            className="p-4 rounded-lg shadow-sm"
             style={{
               borderWidth: hasSelectedActivity ? 2 : isActive ? 2 : 0,
               borderColor: isActive
@@ -1492,12 +1494,8 @@ export default function DayScreen({ navigation, route }: any) {
                   ? '#10B981'
                   : '#3B82F6',
               backgroundColor: isActive
-                ? isDark
-                  ? '#374151'
-                  : '#F3F4F6'
-                : isDark
-                  ? '#1f2937'
-                  : '#ffffff',
+                ? colors.surfaceSecondary
+                : colors.cardBackground,
             }}
           >
             {/* Header with drag handle */}
