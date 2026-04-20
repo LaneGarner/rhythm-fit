@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Keyboard,
@@ -57,24 +63,31 @@ interface ActivityFormProps {
   hideRecurring?: boolean;
 }
 
-export default function ActivityForm({
-  mode,
-  initialActivity,
-  onSave,
-  onCancel,
-  onDelete,
-  supersetMode,
-  onToggleSupersetMode,
-  supersetDrafts,
-  onRemoveDraft,
-  saveButtonLabel,
-  headerTitle,
-  onSaveSuperset,
-  deleteButtonLabel,
-  hideDate,
-  hideHeader,
-  hideRecurring,
-}: ActivityFormProps) {
+export interface ActivityFormHandle {
+  getCurrentActivity(): Activity | null;
+}
+
+function ActivityForm(
+  {
+    mode,
+    initialActivity,
+    onSave,
+    onCancel,
+    onDelete,
+    supersetMode,
+    onToggleSupersetMode,
+    supersetDrafts,
+    onRemoveDraft,
+    saveButtonLabel,
+    headerTitle,
+    onSaveSuperset,
+    deleteButtonLabel,
+    hideDate,
+    hideHeader,
+    hideRecurring,
+  }: ActivityFormProps,
+  ref: React.Ref<ActivityFormHandle>
+) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
@@ -275,6 +288,38 @@ export default function ActivityForm({
 
   const handleSaveRef = useRef(handleSave);
   handleSaveRef.current = handleSave;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCurrentActivity: () => ({
+        id: initialActivity?.id || Date.now().toString(),
+        date: dayjs(selectedDate).format('YYYY-MM-DD'),
+        type: activityType,
+        name: activityName.trim(),
+        emoji: selectedEmoji,
+        completed: initialActivity?.completed || false,
+        notes: notes.trim() || undefined,
+        sets: sets,
+        recurring: recurringConfig || undefined,
+        trackingFields: trackingFields,
+        supersetId: initialActivity?.supersetId,
+        supersetPosition: initialActivity?.supersetPosition,
+        order: initialActivity?.order,
+      }),
+    }),
+    [
+      initialActivity,
+      selectedDate,
+      activityType,
+      activityName,
+      selectedEmoji,
+      notes,
+      sets,
+      recurringConfig,
+      trackingFields,
+    ]
+  );
 
   const handleNameSelect = (name: string, type?: string) => {
     setActivityName(name);
@@ -1431,3 +1476,5 @@ export default function ActivityForm({
     </View>
   );
 }
+
+export default forwardRef<ActivityFormHandle, ActivityFormProps>(ActivityForm);
