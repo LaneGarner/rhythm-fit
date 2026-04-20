@@ -178,7 +178,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else if (autoRestTimer && updates.completed === true) {
-        startCountdown(activityId, activity.name, 120);
+        const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
+        startCountdown(activityId, activity.name, duration);
       }
     }
   };

@@ -47,7 +47,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
   const { autoRestTimer } = usePreferences();
-  const { startCountdown } = useTimer();
+  const { timer, startCountdown } = useTimer();
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const supersetActivities = getSupersetActivities(activities, supersetId);
@@ -196,10 +196,11 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else if (autoRestTimer) {
+        const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(
           supersetId,
           getSupersetLabel(supersetActivities.length),
-          120
+          duration
         );
       }
     }
