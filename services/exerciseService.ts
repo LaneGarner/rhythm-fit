@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Fuse, { IFuseOptions } from 'fuse.js';
 import { ActivityType } from '../types/activity';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -16,6 +17,19 @@ interface CachedExercises {
 }
 
 let memoryCache: Exercise[] | null = null;
+let fuseIndex: Fuse<Exercise> | null = null;
+
+const FUSE_OPTIONS: IFuseOptions<Exercise> = {
+  keys: ['name'],
+  threshold: 0.4,
+  ignoreLocation: true,
+  minMatchCharLength: 2,
+};
+
+function setMemoryCache(exercises: Exercise[]): void {
+  memoryCache = exercises;
+  fuseIndex = new Fuse(exercises, FUSE_OPTIONS);
+}
 
 /**
  * Fetch exercises from the backend API
@@ -78,7 +92,7 @@ export async function initializeExercises(): Promise<Exercise[]> {
   // Try to load from persistent cache first
   const cached = await loadCachedExercises();
   if (cached) {
-    memoryCache = cached;
+    setMemoryCache(cached);
     // Refresh in background (don't await)
     refreshExercisesInBackground();
     return cached;
@@ -87,7 +101,7 @@ export async function initializeExercises(): Promise<Exercise[]> {
   // Fetch from API
   try {
     const exercises = await fetchExercisesFromApi();
-    memoryCache = exercises;
+    setMemoryCache(exercises);
     await saveExercisesToCache(exercises);
     return exercises;
   } catch (error) {
@@ -103,7 +117,7 @@ export async function initializeExercises(): Promise<Exercise[]> {
 async function refreshExercisesInBackground(): Promise<void> {
   try {
     const exercises = await fetchExercisesFromApi();
-    memoryCache = exercises;
+    setMemoryCache(exercises);
     await saveExercisesToCache(exercises);
   } catch {
     // Silently fail - we have cached data
@@ -127,12 +141,22 @@ export function findExerciseByName(name: string): Exercise | undefined {
 }
 
 /**
- * Search exercises by partial match
+ * Search exercises by fuzzy match. Tolerates typos and transpositions.
+ * For 1-character queries, falls back to prefix/substring match to avoid
+ * noisy single-letter fuzzy hits.
  */
 export function searchExercises(query: string): Exercise[] {
   const exercises = getExercises();
-  const lowerQuery = query.toLowerCase();
-  return exercises.filter(e => e.name.toLowerCase().includes(lowerQuery));
+  const trimmed = query.trim();
+  if (!trimmed) return exercises;
+
+  const lower = trimmed.toLowerCase();
+  if (trimmed.length < 2) {
+    return exercises.filter(e => e.name.toLowerCase().includes(lower));
+  }
+
+  if (!fuseIndex) return [];
+  return fuseIndex.search(trimmed).map(r => r.item);
 }
 
 /**
@@ -147,5 +171,6 @@ export function getExerciseNames(): string[] {
  */
 export async function clearExerciseCache(): Promise<void> {
   memoryCache = null;
+  fuseIndex = null;
   await AsyncStorage.removeItem(EXERCISES_CACHE_KEY);
 }
