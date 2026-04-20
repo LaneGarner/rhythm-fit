@@ -19,11 +19,6 @@ import {
 } from '../services/activityTypeService';
 import { useAuth } from '../context/AuthContext';
 import { addToLibrary } from '../services/libraryService';
-import {
-  getCachedCustomEmojis,
-  addToEmojiLibrary,
-  EmojiItem,
-} from '../services/emojiLibraryService';
 import { useTheme } from '../theme/ThemeContext';
 import {
   Activity,
@@ -105,9 +100,6 @@ export default function ActivityForm({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [customEmojis, setCustomEmojis] = useState<EmojiItem[]>([]);
-  const [showCustomEmojiInput, setShowCustomEmojiInput] = useState(false);
-  const [customEmojiText, setCustomEmojiText] = useState('');
   const [distanceText, setDistanceText] = useState<Record<string, string>>({});
   const [durationPickerSetId, setDurationPickerSetId] = useState<string | null>(
     null
@@ -116,7 +108,6 @@ export default function ActivityForm({
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
-  const customEmojiInputRef = useRef<TextInput>(null);
 
   // Keyboard listeners
   useEffect(() => {
@@ -140,30 +131,6 @@ export default function ActivityForm({
       keyboardWillHideListener?.remove();
     };
   }, []);
-
-  // Load custom emojis on mount
-  useEffect(() => {
-    const loadCustomEmojis = async () => {
-      const emojis = await getCachedCustomEmojis();
-      setCustomEmojis(emojis);
-    };
-    loadCustomEmojis();
-  }, []);
-
-  // Scroll to custom emoji input when it appears
-  useEffect(() => {
-    if (showCustomEmojiInput) {
-      setTimeout(() => {
-        scrollToInput(customEmojiInputRef);
-      }, 150);
-    }
-  }, [showCustomEmojiInput]);
-
-  // Filter function to extract only emoji characters
-  const filterToEmoji = (text: string): string => {
-    const matches = text.match(/\p{Extended_Pictographic}/gu);
-    return matches ? matches.join('') : '';
-  };
 
   // Auto-set emoji when activity type changes or is initially set
   useEffect(() => {
@@ -243,10 +210,6 @@ export default function ActivityForm({
 
     if (!activityType) {
       newErrors.type = 'Required field';
-    }
-
-    if (!selectedEmoji) {
-      newErrors.emoji = 'Required field';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -767,211 +730,6 @@ export default function ActivityForm({
             </View>
             {errors.type && (
               <Text className="text-red-500 text-sm mt-1">{errors.type}</Text>
-            )}
-          </View>
-
-          {/* Emoji Selection */}
-          <View>
-            <Text
-              className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              Emoji *
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {/* Preset emojis */}
-              {Object.entries(getActivityEmojis()).map(([type, emoji]) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setSelectedEmoji(emoji)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      selectedEmoji === emoji
-                        ? isDark
-                          ? colors.primary.main
-                          : '#a5b4fc'
-                        : isDark
-                          ? '#444'
-                          : '#d1d5db',
-                    backgroundColor:
-                      selectedEmoji === emoji
-                        ? isDark
-                          ? '#23263a'
-                          : '#e0e7ff'
-                        : isDark
-                          ? '#1a1a1a'
-                          : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-2xl ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {emoji}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Custom emojis from library */}
-              {customEmojis.map(item => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => setSelectedEmoji(item.emoji)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      selectedEmoji === item.emoji
-                        ? isDark
-                          ? colors.primary.main
-                          : '#a5b4fc'
-                        : isDark
-                          ? '#444'
-                          : '#d1d5db',
-                    backgroundColor:
-                      selectedEmoji === item.emoji
-                        ? isDark
-                          ? '#23263a'
-                          : '#e0e7ff'
-                        : isDark
-                          ? '#1a1a1a'
-                          : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-2xl ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {item.emoji}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Add custom emoji button */}
-              <TouchableOpacity
-                onPress={() => setShowCustomEmojiInput(true)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderStyle: 'dashed',
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                }}
-              >
-                <Text
-                  className="text-2xl"
-                  style={{ color: colors.textSecondary }}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Custom emoji input */}
-            {showCustomEmojiInput && (
-              <View className="flex-row items-center mt-3" style={{ gap: 12 }}>
-                <TextInput
-                  ref={customEmojiInputRef}
-                  value={customEmojiText}
-                  onChangeText={text => setCustomEmojiText(filterToEmoji(text))}
-                  autoFocus
-                  placeholder="Enter emoji"
-                  placeholderTextColor={colors.textSecondary}
-                  className={`px-3 border rounded-lg text-center ${
-                    isDark
-                      ? 'bg-gray-800 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  style={{
-                    height: 40,
-                    fontSize: 16,
-                    width: 120,
-                  }}
-                  returnKeyType="done"
-                  onFocus={() => {
-                    setTimeout(() => {
-                      scrollToInput(customEmojiInputRef);
-                    }, 100);
-                  }}
-                  onSubmitEditing={async () => {
-                    if (customEmojiText) {
-                      setSelectedEmoji(customEmojiText);
-                      const token = await getAccessToken();
-                      const result = await addToEmojiLibrary(
-                        token,
-                        customEmojiText
-                      );
-                      if (result.success) {
-                        setCustomEmojis(await getCachedCustomEmojis());
-                      }
-                    }
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                />
-                <TouchableOpacity
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  onPress={async () => {
-                    if (customEmojiText) {
-                      setSelectedEmoji(customEmojiText);
-                      const token = await getAccessToken();
-                      const result = await addToEmojiLibrary(
-                        token,
-                        customEmojiText
-                      );
-                      if (result.success) {
-                        setCustomEmojis(await getCachedCustomEmojis());
-                      }
-                    }
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontWeight: '600',
-                      fontSize: 15,
-                    }}
-                  >
-                    Add
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  onPress={() => {
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.textSecondary,
-                      fontSize: 15,
-                    }}
-                  >
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {errors.emoji && (
-              <Text className="text-red-500 text-sm mt-1">{errors.emoji}</Text>
             )}
           </View>
 
