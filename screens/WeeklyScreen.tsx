@@ -976,7 +976,6 @@ export default function WeeklyScreen({ navigation }: any) {
                             >
                               <View className="mr-2">
                                 <ActivityIcon
-                                  emoji={activity.emoji}
                                   activityType={activity.type}
                                   size={18}
                                 />

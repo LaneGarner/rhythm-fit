@@ -5,7 +5,7 @@ A mobile workout tracking app focused on consistency, habits, and routine. Built
 ## Features
 
 - **Weekly View**: 7-day interface showing planned and completed workouts
-- **Workout Management**: Add, edit, and track workouts with custom emojis
+- **Workout Management**: Add, edit, and track workouts
 - **Exercise Tracking**: Log exercises with sets, reps, and weight
 - **Workout Execution**: Built-in timer and set tracking during workouts
 - **Statistics**: View workout frequency, completion rates, and trends
@@ -48,7 +48,7 @@ A mobile workout tracking app focused on consistency, habits, and routine. Built
 ```
 /rhythm
 ├── /components         # Reusable UI components
-├── /constants          # Colors, emoji maps, workout types
+├── /constants          # Colors, workout types
 ├── /navigation         # React Navigation setup
 ├── /redux              # Redux slices and store
 ├── /screens            # Core app screens
@@ -76,7 +76,6 @@ interface Workout {
   date: string;
   type: WorkoutType;
   name?: string;
-  emoji?: string;
   completed: boolean;
   notes?: string;
   exercises?: Exercise[];

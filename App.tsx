@@ -27,7 +27,6 @@ import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
 import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
-import EmojiLibraryScreen from './screens/EmojiLibraryScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
 import ExerciseStatsScreen from './screens/ExerciseStatsScreen';
 import PersonalRecordsScreen from './screens/PersonalRecordsScreen';
@@ -46,7 +45,6 @@ export type RootStackParamList = {
   EditActivity: { activityId: string; supersetId?: string };
   Settings: undefined;
   ActivityLibrary: undefined;
-  EmojiLibrary: undefined;
   Equipment: undefined;
   ExerciseStats: { exerciseName: string };
   PersonalRecords: undefined;
@@ -86,7 +84,6 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
             name="ActivityLibrary"
             component={ActivityLibraryScreen}
           />
-          <Stack.Screen name="EmojiLibrary" component={EmojiLibraryScreen} />
           <Stack.Screen name="Equipment" component={EquipmentScreen} />
           <Stack.Screen name="ExerciseStats" component={ExerciseStatsScreen} />
           <Stack.Screen

@@ -334,9 +334,7 @@ export default function CoachScreen({ navigation }: any) {
       );
 
       Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
-        context += `- ${day}: ${dayActivities
-          .map(a => (a.emoji ? `${a.emoji} ${a.name}` : a.name))
-          .join(', ')}\n`;
+        context += `- ${day}: ${dayActivities.map(a => a.name).join(', ')}\n`;
       });
     }
 
@@ -344,8 +342,7 @@ export default function CoachScreen({ navigation }: any) {
       context += `\nUpcoming activities:\n`;
       upcomingActivities.forEach(activity => {
         const date = dayjs(activity.date).format('MMM D');
-        const prefix = activity.emoji ? `${activity.emoji} ` : '';
-        context += `- ${date}: ${prefix}${activity.name}\n`;
+        context += `- ${date}: ${activity.name}\n`;
       });
     }
 

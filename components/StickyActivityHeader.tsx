@@ -7,7 +7,6 @@ import SupersetBadge from './SupersetBadge';
 import SupersetIcons from './SupersetIcons';
 
 interface StickyActivityHeaderProps {
-  emoji?: string | null;
   activityType?: string | null;
   /** If provided, renders icons for each activity (superset mode). */
   activities?: Activity[];
@@ -23,7 +22,6 @@ const COLLAPSE_THRESHOLD = 80;
  * Sticky compact header - renders OUTSIDE the ScrollView, fixed below nav header
  */
 export function StickyCompactHeader({
-  emoji,
   activityType,
   activities,
   title,
@@ -67,7 +65,7 @@ export function StickyCompactHeader({
           {activities && activities.length > 0 ? (
             <SupersetIcons activities={activities} size={16} />
           ) : (
-            <ActivityIcon emoji={emoji} activityType={activityType} size={16} />
+            <ActivityIcon activityType={activityType} size={16} />
           )}
         </View>
         <Text
@@ -103,7 +101,6 @@ export function StickyCompactHeader({
  * Large content header - renders INSIDE the ScrollView, fades out on scroll
  */
 export function ContentHeader({
-  emoji,
   activityType,
   activities,
   title,
@@ -132,7 +129,7 @@ export function ContentHeader({
         {activities && activities.length > 0 ? (
           <SupersetIcons activities={activities} size={40} />
         ) : (
-          <ActivityIcon emoji={emoji} activityType={activityType} size={40} />
+          <ActivityIcon activityType={activityType} size={40} />
         )}
       </View>
       <Text

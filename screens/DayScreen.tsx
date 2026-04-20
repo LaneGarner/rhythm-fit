@@ -992,11 +992,7 @@ export default function DayScreen({ navigation, route }: any) {
                 </>
               )}
               <View className="mr-3">
-                <ActivityIcon
-                  emoji={activity.emoji}
-                  activityType={activity.type}
-                  size={24}
-                />
+                <ActivityIcon activityType={activity.type} size={24} />
               </View>
               {isBulkMode && (
                 <Ionicons
@@ -1402,11 +1398,7 @@ export default function DayScreen({ navigation, route }: any) {
             />
           </TouchableOpacity>
           <View className="mr-2">
-            <ActivityIcon
-              emoji={activity.emoji}
-              activityType={activity.type}
-              size={22}
-            />
+            <ActivityIcon activityType={activity.type} size={22} />
           </View>
           <Ionicons
             name={
@@ -1566,11 +1558,7 @@ export default function DayScreen({ navigation, route }: any) {
                     />
                   </TouchableOpacity>
                   <View className="mr-3">
-                    <ActivityIcon
-                      emoji={activities[0].emoji}
-                      activityType={activities[0].type}
-                      size={24}
-                    />
+                    <ActivityIcon activityType={activities[0].type} size={24} />
                   </View>
                   <Ionicons
                     name={
@@ -1763,8 +1751,7 @@ export default function DayScreen({ navigation, route }: any) {
               marginBottom: 16,
             }}
           >
-            {copyActivity &&
-              `${copyActivity.emoji || ''} ${copyActivity.name || copyActivity.type}`.trim()}
+            {copyActivity && (copyActivity.name || copyActivity.type)}
           </Text>
 
           <Text

@@ -503,7 +503,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             <View className="flex-row items-center flex-1">
                               <View className="mr-2">
                                 <ActivityIcon
-                                  emoji={activity.emoji}
                                   activityType={activity.type}
                                   size={22}
                                 />

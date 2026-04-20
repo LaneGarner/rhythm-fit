@@ -73,7 +73,6 @@ export default function ShareWorkoutCard({
       >
         <View style={{ marginRight: 10 }}>
           <ActivityIcon
-            emoji={activity.emoji}
             activityType={activity.type}
             size={22}
             color={card.text}

@@ -36,7 +36,6 @@ export interface Activity {
   date: string;
   type: ActivityType;
   name: string;
-  emoji?: string;
   completed: boolean;
   notes?: string;
   sets?: SetData[];

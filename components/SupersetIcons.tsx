@@ -27,7 +27,6 @@ function SupersetIcons({
       {activities.map((activity, index) => (
         <React.Fragment key={activity.id}>
           <ActivityIcon
-            emoji={activity.emoji}
             activityType={activity.type}
             size={size}
             color={resolvedColor}

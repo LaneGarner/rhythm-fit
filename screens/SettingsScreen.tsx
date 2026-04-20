@@ -309,38 +309,6 @@ export default function SettingsScreen({ navigation }: any) {
               color={colors.textTertiary}
             />
           </TouchableOpacity>
-          <View
-            style={{
-              height: 0.5,
-              backgroundColor: colors.border,
-              marginLeft: 16,
-            }}
-          />
-          <TouchableOpacity
-            hitSlop={14}
-            className="p-4 flex-row items-center justify-between"
-            onPress={() => navigation.navigate('EmojiLibrary')}
-          >
-            <View className="flex-1">
-              <Text
-                className="text-base font-medium"
-                style={{ color: colors.text }}
-              >
-                Custom Emojis
-              </Text>
-              <Text
-                className="text-sm mt-1"
-                style={{ color: colors.textSecondary }}
-              >
-                Manage emojis you've added
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={colors.textTertiary}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Preferences Section */}

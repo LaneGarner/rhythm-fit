@@ -502,14 +502,12 @@ export default function EditActivityScreen({ navigation, route }: any) {
       !!currentActivity &&
       JSON.stringify({
         name: snapshot.name,
-        emoji: snapshot.emoji,
         notes: snapshot.notes,
         sets: snapshot.sets,
         trackingFields: snapshot.trackingFields,
       }) !==
         JSON.stringify({
           name: currentActivity.name,
-          emoji: currentActivity.emoji,
           notes: currentActivity.notes,
           sets: currentActivity.sets,
           trackingFields: currentActivity.trackingFields,
@@ -711,7 +709,6 @@ export default function EditActivityScreen({ navigation, route }: any) {
                 }}
               >
                 <ActivityIcon
-                  emoji={displayAct.emoji}
                   activityType={displayAct.type}
                   size={16}
                   color={colors.text}
