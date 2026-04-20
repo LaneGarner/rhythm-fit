@@ -456,38 +456,73 @@ export default function CollapsibleTimer({
                 onPress={
                   showResumeButton ? handleResumeTimer : handleStartTimer
                 }
-                className="bg-green-500 px-6 py-2 rounded-lg"
-                style={{ minWidth: 102, alignItems: 'center' }}
+                className="px-6 py-2 rounded-lg"
+                style={{
+                  minWidth: 102,
+                  alignItems: 'center',
+                  backgroundColor: colors.surface,
+                  borderWidth: 2,
+                  borderColor: colors.success.main,
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={
                   showResumeButton ? 'Resume timer' : 'Start timer'
                 }
               >
-                <Text className="text-white font-semibold">
+                <Text
+                  className="font-semibold"
+                  style={{ color: colors.success.main }}
+                >
                   {showResumeButton ? 'Resume' : 'Start'}
                 </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 onPress={handlePauseTimer}
-                className="bg-yellow-500 px-6 py-2 rounded-lg"
-                style={{ minWidth: 102, alignItems: 'center' }}
+                className="px-6 py-2 rounded-lg"
+                style={{
+                  minWidth: 102,
+                  alignItems: 'center',
+                  backgroundColor: colors.surface,
+                  borderWidth: 2,
+                  borderColor: colors.warning.main,
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Pause timer"
               >
-                <Text className="text-white font-semibold">Pause</Text>
+                <Text
+                  className="font-semibold"
+                  style={{ color: colors.warning.main }}
+                >
+                  Pause
+                </Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
               onPress={handleResetTimer}
               disabled={!isTimerOwner}
-              className={`px-6 py-2 rounded-lg ${isTimerOwner ? 'bg-red-500' : 'bg-gray-400'}`}
-              style={{ minWidth: 80, alignItems: 'center' }}
+              className="px-6 py-2 rounded-lg"
+              style={{
+                minWidth: 80,
+                alignItems: 'center',
+                backgroundColor: colors.surface,
+                borderWidth: 2,
+                borderColor: isTimerOwner ? colors.error.main : colors.border,
+              }}
               accessibilityRole="button"
               accessibilityLabel="Reset timer"
               accessibilityState={{ disabled: !isTimerOwner }}
             >
-              <Text className="text-white font-semibold">Reset</Text>
+              <Text
+                className="font-semibold"
+                style={{
+                  color: isTimerOwner
+                    ? colors.error.main
+                    : colors.textSecondary,
+                }}
+              >
+                Reset
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
