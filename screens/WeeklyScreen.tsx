@@ -943,7 +943,9 @@ export default function WeeklyScreen({ navigation }: any) {
                                   className="flex-1"
                                   numberOfLines={1}
                                 >
-                                  {group.activities.map(a => a.name || a.type).join(' → ')}
+                                  {group.activities
+                                    .map(a => a.name || a.type)
+                                    .join(' → ')}
                                 </Text>
                                 {supersetComplete ? (
                                   <Ionicons
