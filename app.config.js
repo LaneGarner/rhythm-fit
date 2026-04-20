@@ -20,6 +20,7 @@ export default {
       requireFullScreen: false,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ['remote-notification'],
       },
     },
     android: {
@@ -33,7 +34,16 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['expo-audio'],
+    plugins: [
+      'expo-audio',
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
+          color: '#000000',
+        },
+      ],
+    ],
     extra: {
       OPENAI_API_KEY:
         process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,

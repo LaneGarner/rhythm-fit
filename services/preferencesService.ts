@@ -1,13 +1,23 @@
 import { API_URL } from '../config/api';
-import { WeekStartDay } from '../types/preferences';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  NotificationSettings,
+  WeekStartDay,
+} from '../types/preferences';
 
 interface PreferencesResponse {
   first_day_of_week: number;
+  notification_settings?: Partial<NotificationSettings> | null;
+}
+
+export interface ServerPreferences {
+  firstDayOfWeek: WeekStartDay;
+  notificationSettings: NotificationSettings;
 }
 
 export async function fetchPreferences(
   accessToken: string
-): Promise<{ firstDayOfWeek: WeekStartDay } | null> {
+): Promise<ServerPreferences | null> {
   if (!API_URL) {
     return null;
   }
@@ -22,9 +32,15 @@ export async function fetchPreferences(
 
     if (response.ok) {
       const data: PreferencesResponse = await response.json();
-      // Ensure value is valid (0 or 1), default to 1 (Monday)
       const firstDayOfWeek = data.first_day_of_week === 0 ? 0 : 1;
-      return { firstDayOfWeek: firstDayOfWeek as WeekStartDay };
+      const notificationSettings: NotificationSettings = {
+        ...DEFAULT_NOTIFICATION_SETTINGS,
+        ...(data.notification_settings ?? {}),
+      };
+      return {
+        firstDayOfWeek: firstDayOfWeek as WeekStartDay,
+        notificationSettings,
+      };
     }
 
     return null;
@@ -36,22 +52,31 @@ export async function fetchPreferences(
 
 export async function updatePreferences(
   accessToken: string,
-  firstDayOfWeek: WeekStartDay
+  updates: {
+    firstDayOfWeek?: WeekStartDay;
+    notificationSettings?: NotificationSettings;
+  }
 ): Promise<boolean> {
   if (!API_URL) {
     return false;
   }
 
   try {
+    const body: Record<string, unknown> = {};
+    if (updates.firstDayOfWeek !== undefined) {
+      body.first_day_of_week = updates.firstDayOfWeek;
+    }
+    if (updates.notificationSettings !== undefined) {
+      body.notification_settings = updates.notificationSettings;
+    }
+
     const response = await fetch(`${API_URL}/api/preferences`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({
-        first_day_of_week: firstDayOfWeek,
-      }),
+      body: JSON.stringify(body),
     });
 
     return response.ok;

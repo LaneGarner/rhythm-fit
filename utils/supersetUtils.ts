@@ -27,19 +27,10 @@ export function getSupersetLabel(count: number): string {
 }
 
 /**
- * Get combined emoji + name pairs for superset display: "🏋️ Bench Press → 🚣 Band Rows"
+ * Get combined names joined by arrows: "Bench Press → Band Rows"
  */
-export function getSupersetEmojis(activities: Activity[]): string {
-  return activities
-    .map(a => `${a.emoji || '💪'} ${a.name || a.type}`)
-    .join(' → ');
-}
-
-/**
- * Get just emojis with arrows for compact display: "🏋️ → 🚣"
- */
-export function getSupersetEmojisCompact(activities: Activity[]): string {
-  return activities.map(a => a.emoji || '💪').join(' → ');
+export function getSupersetNames(activities: Activity[]): string {
+  return activities.map(a => a.name || a.type).join(' → ');
 }
 
 /**

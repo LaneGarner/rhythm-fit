@@ -29,6 +29,7 @@ import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useUnfinishedWorkoutNotification } from '../hooks/useUnfinishedWorkoutNotification';
 import { Activity, SetData, TrackingField } from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
@@ -40,6 +41,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const activity = activities.find(a => a.id === activityId);
+
+  useUnfinishedWorkoutNotification(activity);
 
   // Global timer context (for checking if timer is running)
   const { timer, startCountdown } = useTimer();
@@ -178,7 +181,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else if (autoRestTimer && updates.completed === true) {
-        startCountdown(activityId, activity.name, 120);
+        const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
+        startCountdown(activityId, activity.name, duration);
       }
     }
   };
@@ -314,7 +318,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       <View style={{ flex: 1, position: 'relative' }}>
         {/* Sticky compact header - positioned at top of content area */}
         <StickyCompactHeader
-          emoji={activity.emoji || '💪'}
+          activityType={activity.type}
           title={activity.name}
           subtitle={getActivityTypeLabel(activity.type)}
           scrollY={scrollY}
@@ -344,7 +348,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         >
           {/* Large content header - fades out on scroll */}
           <ContentHeader
-            emoji={activity.emoji || '💪'}
+            activityType={activity.type}
             title={activity.name}
             subtitle={getActivityTypeLabel(activity.type)}
             scrollY={scrollY}

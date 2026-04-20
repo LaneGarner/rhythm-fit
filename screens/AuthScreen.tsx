@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
@@ -109,7 +110,13 @@ export default function AuthScreen() {
         <View className="flex-1 justify-center px-8 py-12">
           {/* Logo/Title */}
           <View className="items-center mb-12">
-            <Text className="text-5xl mb-2">💪</Text>
+            <View className="mb-2">
+              <Ionicons
+                name="barbell-outline"
+                size={56}
+                color={colors.primary.main}
+              />
+            </View>
             <Text className="text-3xl font-bold" style={{ color: colors.text }}>
               Rhythm
             </Text>

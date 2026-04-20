@@ -1,10 +1,15 @@
 import React from 'react';
 import { Animated, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { Activity } from '../types/activity';
+import ActivityIcon from './ActivityIcon';
 import SupersetBadge from './SupersetBadge';
+import SupersetIcons from './SupersetIcons';
 
 interface StickyActivityHeaderProps {
-  emoji: string;
+  activityType?: string | null;
+  /** If provided, renders icons for each activity (superset mode). */
+  activities?: Activity[];
   title: string;
   subtitle: string;
   badge?: string;
@@ -17,7 +22,8 @@ const COLLAPSE_THRESHOLD = 80;
  * Sticky compact header - renders OUTSIDE the ScrollView, fixed below nav header
  */
 export function StickyCompactHeader({
-  emoji,
+  activityType,
+  activities,
   title,
   subtitle,
   badge,
@@ -55,16 +61,20 @@ export function StickyCompactHeader({
           justifyContent: 'center',
         }}
       >
-        {emoji ? (
-          <Text style={{ fontSize: 16, marginRight: 6 }}>{emoji}</Text>
-        ) : null}
+        <View style={{ marginRight: 6 }}>
+          {activities && activities.length > 0 ? (
+            <SupersetIcons activities={activities} size={16} />
+          ) : (
+            <ActivityIcon activityType={activityType} size={16} />
+          )}
+        </View>
         <Text
           numberOfLines={1}
           style={{
             fontSize: 16,
             fontWeight: '600',
             color: colors.text,
-            maxWidth: emoji ? '60%' : '70%',
+            maxWidth: '60%',
           }}
         >
           {title}
@@ -91,7 +101,8 @@ export function StickyCompactHeader({
  * Large content header - renders INSIDE the ScrollView, fades out on scroll
  */
 export function ContentHeader({
-  emoji,
+  activityType,
+  activities,
   title,
   subtitle,
   badge,
@@ -114,9 +125,13 @@ export function ContentHeader({
         paddingBottom: 8,
       }}
     >
-      {emoji ? (
-        <Text style={{ fontSize: 40, marginBottom: 8 }}>{emoji}</Text>
-      ) : null}
+      <View style={{ marginBottom: 8 }}>
+        {activities && activities.length > 0 ? (
+          <SupersetIcons activities={activities} size={40} />
+        ) : (
+          <ActivityIcon activityType={activityType} size={40} />
+        )}
+      </View>
       <Text
         numberOfLines={2}
         style={{

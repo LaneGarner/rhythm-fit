@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import ActivityForm from '../components/ActivityForm';
+import ActivityForm, { ActivityFormHandle } from '../components/ActivityForm';
+import ActivityIcon from '../components/ActivityIcon';
 import {
   addActivity,
   deleteActivity,
@@ -50,6 +51,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
   const [pendingAdditions, setPendingAdditions] = useState<Activity[]>([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const formRef = useRef<ActivityFormHandle>(null);
 
   // Get current superset activities from Redux (live)
   const supersetActivitiesFromRedux = useMemo(() => {
@@ -256,38 +258,39 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
   // ── Superset handlers ──
 
-  const handleSupersetActivitySave = useCallback(
-    (updatedActivity: Activity) => {
-      if (!currentActivity) return;
+  const snapshotCurrentForm = useCallback((): Activity | null => {
+    if (!currentActivity) return null;
+    const snapshot = formRef.current?.getCurrentActivity();
+    if (!snapshot) return null;
+    return {
+      ...snapshot,
+      id: currentActivity.id,
+      completed: currentActivity.completed,
+      supersetId: currentActivity.supersetId,
+      supersetPosition: currentActivity.supersetPosition,
+      order: currentActivity.order,
+    };
+  }, [currentActivity]);
 
-      // Store edits locally
-      const finalActivity: Activity = {
-        ...updatedActivity,
-        id: currentActivity.id,
-        completed: currentActivity.completed,
-        supersetId: currentActivity.supersetId,
-        supersetPosition: currentActivity.supersetPosition,
-        order: currentActivity.order,
-      };
-
-      setEditedActivities(prev => {
-        const next = new Map(prev);
-        next.set(currentActivity.id, finalActivity);
-        return next;
-      });
-
-      // Auto-advance to next activity if not at the end
-      if (activeIndex < workingActivities.length - 1) {
-        setActiveIndex(activeIndex + 1);
-        setFormKey(prev => prev + 1);
-      }
-    },
-    [currentActivity, activeIndex, workingActivities.length]
-  );
+  const commitCurrentFormToMap = useCallback(() => {
+    const snapshot = snapshotCurrentForm();
+    if (!snapshot) return;
+    setEditedActivities(prev => {
+      const next = new Map(prev);
+      next.set(snapshot.id, snapshot);
+      return next;
+    });
+  }, [snapshotCurrentForm]);
 
   const handleSupersetSaveAll = useCallback(async () => {
+    const snapshot = snapshotCurrentForm();
+    const merged = new Map(editedActivities);
+    if (snapshot) {
+      merged.set(snapshot.id, snapshot);
+    }
+
     // Update modified existing activities
-    for (const [, edited] of editedActivities) {
+    for (const [, edited] of merged) {
       if (!pendingAdditions.find(a => a.id === edited.id)) {
         dispatch(updateActivity(edited));
       }
@@ -300,12 +303,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
     // Process additions
     for (const newAct of pendingAdditions) {
-      const edited = editedActivities.get(newAct.id);
+      const edited = merged.get(newAct.id);
       dispatch(addActivity(edited || newAct));
     }
 
     navigation.goBack();
   }, [
+    snapshotCurrentForm,
     editedActivities,
     pendingRemovals,
     pendingAdditions,
@@ -353,9 +357,10 @@ export default function EditActivityScreen({ navigation, route }: any) {
   );
 
   const handleAddExercise = useCallback(() => {
+    commitCurrentFormToMap();
     setIsAddingNew(true);
     setFormKey(prev => prev + 1);
-  }, []);
+  }, [commitCurrentFormToMap]);
 
   const handleNewExerciseSave = useCallback(
     (newActivity: Activity) => {
@@ -392,6 +397,8 @@ export default function EditActivityScreen({ navigation, route }: any) {
       const act2 = workingActivities[toIndex];
 
       if (!act1 || !act2 || !resolvedSupersetId) return;
+
+      commitCurrentFormToMap();
 
       // For pending additions, just reorder locally
       const isPending1 = pendingAdditions.find(a => a.id === act1.id);
@@ -436,7 +443,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
       setActiveIndex(toIndex);
       setFormKey(prev => prev + 1);
     },
-    [workingActivities, resolvedSupersetId, pendingAdditions, dispatch]
+    [
+      workingActivities,
+      resolvedSupersetId,
+      pendingAdditions,
+      dispatch,
+      commitCurrentFormToMap,
+    ]
   );
 
   const handleDeleteSuperset = useCallback(() => {
@@ -483,10 +496,28 @@ export default function EditActivityScreen({ navigation, route }: any) {
   ]);
 
   const handleSupersetCancel = useCallback(() => {
+    const snapshot = snapshotCurrentForm();
+    const hasFormEdits =
+      !!snapshot &&
+      !!currentActivity &&
+      JSON.stringify({
+        name: snapshot.name,
+        notes: snapshot.notes,
+        sets: snapshot.sets,
+        trackingFields: snapshot.trackingFields,
+      }) !==
+        JSON.stringify({
+          name: currentActivity.name,
+          notes: currentActivity.notes,
+          sets: currentActivity.sets,
+          trackingFields: currentActivity.trackingFields,
+        });
+
     const hasChanges =
       editedActivities.size > 0 ||
       pendingRemovals.length > 0 ||
-      pendingAdditions.length > 0;
+      pendingAdditions.length > 0 ||
+      hasFormEdits;
 
     if (hasChanges) {
       Alert.alert(
@@ -504,7 +535,14 @@ export default function EditActivityScreen({ navigation, route }: any) {
       return;
     }
     navigation.goBack();
-  }, [editedActivities, pendingRemovals, pendingAdditions, navigation]);
+  }, [
+    snapshotCurrentForm,
+    currentActivity,
+    editedActivities,
+    pendingRemovals,
+    pendingAdditions,
+    navigation,
+  ]);
 
   // ── Not found state ──
 
@@ -642,6 +680,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
               <TouchableOpacity
                 key={act.id}
                 onPress={() => {
+                  commitCurrentFormToMap();
                   setIsAddingNew(false);
                   setActiveIndex(index);
                   setFormKey(prev => prev + 1);
@@ -669,7 +708,11 @@ export default function EditActivityScreen({ navigation, route }: any) {
                   gap: 6,
                 }}
               >
-                <Text style={{ fontSize: 16 }}>{displayAct.emoji || '💪'}</Text>
+                <ActivityIcon
+                  activityType={displayAct.type}
+                  size={16}
+                  color={colors.text}
+                />
                 <Text
                   style={{
                     fontSize: 14,
@@ -790,14 +833,14 @@ export default function EditActivityScreen({ navigation, route }: any) {
           />
         ) : currentActivity ? (
           <ActivityForm
+            ref={formRef}
             key={`edit-${currentActivity.id}-${formKey}`}
             mode="edit"
             initialActivity={currentActivity}
-            onSave={handleSupersetActivitySave}
+            onSave={() => {}}
             onCancel={handleSupersetCancel}
             onDelete={() => handleRemoveFromSuperset(currentActivity.id)}
             deleteButtonLabel="Remove from Superset"
-            saveButtonLabel="Update Exercise"
             hideHeader
             hideDate
             hideRecurring

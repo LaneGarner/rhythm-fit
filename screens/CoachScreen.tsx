@@ -42,8 +42,9 @@ import {
   getChatSessions,
   getChatSession,
   deleteChatSession,
+  ParsedSetData,
+  ParsedExercise,
 } from '../services/chatApi';
-import { getEmojiForType } from '../services/activityTypeService';
 import {
   buildCoachAnalytics,
   formatAnalyticsForPrompt,
@@ -51,7 +52,7 @@ import {
   buildWeeklySummaries,
   buildExerciseProgression,
 } from '../services/coachAnalyticsService';
-import { addActivity } from '../redux/activitySlice';
+import { addActivity, createSuperset } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, ActivityType, SetData } from '../types/activity';
@@ -81,7 +82,7 @@ export default function CoachScreen({ navigation }: any) {
     {
       id: '1',
       type: 'bot',
-      text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+      text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
       timestamp: new Date(),
     },
   ]);
@@ -156,7 +157,7 @@ export default function CoachScreen({ navigation }: any) {
       {
         id: '1',
         type: 'bot',
-        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+        text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
         timestamp: new Date(),
       },
     ]);
@@ -333,9 +334,7 @@ export default function CoachScreen({ navigation }: any) {
       );
 
       Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
-        context += `- ${day}: ${dayActivities
-          .map(a => `${a.emoji} ${a.name}`)
-          .join(', ')}\n`;
+        context += `- ${day}: ${dayActivities.map(a => a.name).join(', ')}\n`;
       });
     }
 
@@ -343,7 +342,7 @@ export default function CoachScreen({ navigation }: any) {
       context += `\nUpcoming activities:\n`;
       upcomingActivities.forEach(activity => {
         const date = dayjs(activity.date).format('MMM D');
-        context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
+        context += `- ${date}: ${activity.name}\n`;
       });
     }
 
@@ -385,7 +384,7 @@ export default function CoachScreen({ navigation }: any) {
                   {
                     id: '1',
                     type: 'bot' as const,
-                    text: "## 👋 Welcome to Your AI Fitness Coach!\n\nI'm here to help you **crush your fitness goals** and build the best version of yourself! 💪",
+                    text: "## Welcome to Your AI Fitness Coach\n\nI'm here to help you **crush your fitness goals** and build the best version of yourself.",
                     timestamp: new Date(),
                   },
                 ]
@@ -472,21 +471,34 @@ export default function CoachScreen({ navigation }: any) {
     }));
   };
 
+  const generateSetsFromParsed = (
+    parsedSets: ParsedSetData[] | undefined,
+    type: ActivityType
+  ): SetData[] => {
+    if (parsedSets && parsedSets.length > 0) {
+      return parsedSets.map((s, i) => ({
+        id: `${Date.now().toString()}-${Math.random().toString(36).substr(2, 6)}-${i}`,
+        reps: s.reps,
+        weight: s.weight,
+        time: s.time,
+        distance: s.distance,
+        completed: false,
+      }));
+    }
+    return generateDefaultSets(type);
+  };
+
   const createActivitiesFromRequest = (activityRequests: any[]) => {
-    const createdActivities = [];
+    const createdActivities: Activity[] = [];
 
     for (const request of activityRequests) {
       try {
-        // Validate the request has required fields
         if (!request.date || !request.exercises || !request.exercises.length) {
           continue;
         }
 
-        // Validate that exercises are not generic workout names
         const isGenericExercise = (exercise: string): boolean => {
           const lowerExercise = exercise.toLowerCase().trim();
-
-          // List of obvious generic terms that shouldn't be exercise names
           const genericTerms = [
             'workout',
             'workouts',
@@ -513,101 +525,84 @@ export default function CoachScreen({ navigation }: any) {
             'my schedule',
             'to my schedule',
           ];
-
           return genericTerms.some(term => lowerExercise.includes(term));
         };
 
         const hasGenericExercises = request.exercises.some((exercise: string) =>
           isGenericExercise(exercise)
         );
+        if (hasGenericExercises) continue;
 
-        if (hasGenericExercises) {
-          continue;
-        }
-
-        // If there are multiple exercises, split into separate activities
-        const exercises =
-          request.exercises && request.exercises.length > 1
+        const exercises: string[] =
+          request.exercises.length > 1
             ? request.exercises
-            : null;
-        if (exercises) {
-          for (const exercise of exercises) {
-            if (!exercise || typeof exercise !== 'string') {
-              continue;
-            }
+            : [request.exercises[0]];
 
-            if (request.isRecurring) {
-              for (let week = 0; week < request.weeksToRepeat; week++) {
-                const activityDate = dayjs(request.date).add(week * 7, 'day');
-                const activity: Activity = {
-                  id:
-                    Date.now().toString() +
-                    Math.random().toString(36).substr(2, 9) +
-                    week,
-                  date: activityDate.format('YYYY-MM-DD'),
-                  type: request.type,
-                  name: toTitleCase(exercise),
-                  emoji: getEmojiForType(request.type),
-                  completed: false,
-                  sets: generateDefaultSets(request.type),
-                  notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
-                };
-                dispatch(addActivity(activity));
-                createdActivities.push(activity);
-              }
-            } else {
-              const activity: Activity = {
-                id:
-                  Date.now().toString() +
-                  Math.random().toString(36).substr(2, 9),
-                date: request.date,
-                type: request.type,
-                name: toTitleCase(exercise),
-                emoji: getEmojiForType(request.type),
-                completed: false,
-                sets: generateDefaultSets(request.type),
-                notes: `Created by AI coach based on your request`,
-              };
-              dispatch(addActivity(activity));
-              createdActivities.push(activity);
-            }
-          }
-        } else {
-          // Single exercise or already split
-          if (request.isRecurring) {
-            for (let week = 0; week < request.weeksToRepeat; week++) {
-              const activityDate = dayjs(request.date).add(week * 7, 'day');
-              const activity: Activity = {
-                id:
-                  Date.now().toString() +
-                  Math.random().toString(36).substr(2, 9) +
-                  week,
-                date: activityDate.format('YYYY-MM-DD'),
-                type: request.type, // keep as enum value
-                name: request.exercises.map(toTitleCase).join(', '),
-                emoji: getEmojiForType(request.type),
-                completed: false,
-                sets: generateDefaultSets(request.type),
-                notes: `Recurring activity (week ${week + 1}/${request.weeksToRepeat}) - Created by AI coach`,
-              };
-              dispatch(addActivity(activity));
-              createdActivities.push(activity);
-            }
-          } else {
+        const createActivitiesForWeek = (
+          weekOffset: number,
+          weekLabel?: string
+        ): Activity[] => {
+          const weekActivities: Activity[] = [];
+          const activityDate = dayjs(request.date)
+            .add(weekOffset * 7, 'day')
+            .format('YYYY-MM-DD');
+
+          for (const exercise of exercises) {
+            if (!exercise || typeof exercise !== 'string') continue;
+
+            // Look up structured set data for this exercise
+            const detail = request.exerciseDetails?.find(
+              (d: ParsedExercise) =>
+                d.name.toLowerCase() === exercise.toLowerCase()
+            );
+
             const activity: Activity = {
               id:
-                Date.now().toString() + Math.random().toString(36).substr(2, 9),
-              date: request.date,
-              type: request.type, // keep as enum value
-              name: request.exercises.map(toTitleCase).join(', '),
-              emoji: getEmojiForType(request.type),
+                Date.now().toString() +
+                Math.random().toString(36).substr(2, 9) +
+                weekOffset +
+                weekActivities.length,
+              date: activityDate,
+              type: request.type,
+              name: toTitleCase(exercise),
               completed: false,
-              sets: generateDefaultSets(request.type),
-              notes: `Created by AI coach based on your request`,
+              sets: generateSetsFromParsed(detail?.sets, request.type),
+              notes: weekLabel
+                ? `${weekLabel} - Created by AI coach`
+                : 'Created by AI coach based on your request',
             };
             dispatch(addActivity(activity));
-            createdActivities.push(activity);
+            weekActivities.push(activity);
           }
+
+          // Create supersets for this week's activities
+          if (request.supersetGroups?.length) {
+            for (const group of request.supersetGroups) {
+              if (group.length >= 2) {
+                const ids = group
+                  .filter((i: number) => i < weekActivities.length)
+                  .map((i: number) => weekActivities[i].id);
+                if (ids.length >= 2) {
+                  dispatch(createSuperset({ activityIds: ids }));
+                }
+              }
+            }
+          }
+
+          return weekActivities;
+        };
+
+        if (request.isRecurring) {
+          for (let week = 0; week < request.weeksToRepeat; week++) {
+            const weekActivities = createActivitiesForWeek(
+              week,
+              `Recurring activity (week ${week + 1}/${request.weeksToRepeat})`
+            );
+            createdActivities.push(...weekActivities);
+          }
+        } else {
+          const weekActivities = createActivitiesForWeek(0);
+          createdActivities.push(...weekActivities);
         }
       } catch (error) {
         console.error('Error creating activity from request:', request, error);
@@ -942,7 +937,7 @@ Use Markdown formatting. ${activityContext}`;
       {
         id: '1',
         type: 'bot',
-        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+        text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
         timestamp: new Date(),
       },
     ]);
@@ -1085,7 +1080,7 @@ Use Markdown formatting. ${activityContext}`;
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
-          <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
+          <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <View className="flex-1 px-6 pt-4">
           <View
@@ -1164,7 +1159,7 @@ Use Markdown formatting. ${activityContext}`;
           </TouchableOpacity>
         }
       >
-        <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
+        <AppHeaderTitle title="AI Coach" />
       </AppHeader>
 
       {/* Tab Navigation */}

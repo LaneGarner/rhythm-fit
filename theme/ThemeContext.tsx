@@ -1,17 +1,25 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import { loadThemeMode, saveThemeMode } from '../utils/storage';
 import { getColors, ThemeColors } from './colors';
 
 export type ThemeMode = 'light' | 'dark';
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 interface ThemeContextProps {
+  themePreference: ThemePreference;
+  setThemePreference: (pref: ThemePreference) => void;
+  /** @deprecated Use themePreference and setThemePreference instead */
   themeMode: ThemeMode;
+  /** @deprecated Use setThemePreference instead */
   setThemeMode: (mode: ThemeMode) => void;
   colorScheme: 'light' | 'dark';
   colors: ThemeColors;
 }
 
 export const ThemeContext = createContext<ThemeContextProps>({
+  themePreference: 'system',
+  setThemePreference: () => {},
   themeMode: 'light',
   setThemeMode: () => {},
   colorScheme: 'light',
@@ -21,34 +29,46 @@ export const ThemeContext = createContext<ThemeContextProps>({
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+  const [themePreference, setThemePreference] =
+    useState<ThemePreference>('system');
+  const systemColorScheme = useColorScheme();
 
-  // Load saved theme mode on app start
+  const resolvedColorScheme: 'light' | 'dark' =
+    themePreference === 'system'
+      ? (systemColorScheme ?? 'light')
+      : themePreference;
+
+  // Load saved theme preference on app start
   useEffect(() => {
     const loadSavedTheme = async () => {
-      const savedTheme = await loadThemeMode();
-      // Only use saved theme if it's 'light' or 'dark', otherwise default to 'light'
-      if (savedTheme === 'light' || savedTheme === 'dark') {
-        setThemeMode(savedTheme as ThemeMode);
+      const saved = await loadThemeMode();
+      if (saved === 'system' || saved === 'light' || saved === 'dark') {
+        setThemePreference(saved as ThemePreference);
       }
     };
     loadSavedTheme();
   }, []);
 
-  // Save theme mode when it changes
-  const handleSetThemeMode = (mode: ThemeMode) => {
-    setThemeMode(mode);
-    saveThemeMode(mode);
+  const handleSetThemePreference = (pref: ThemePreference) => {
+    setThemePreference(pref);
+    saveThemeMode(pref);
   };
 
-  const colors = getColors(themeMode);
+  // Backward compat wrapper
+  const handleSetThemeMode = (mode: ThemeMode) => {
+    handleSetThemePreference(mode);
+  };
+
+  const colors = getColors(resolvedColorScheme);
 
   return (
     <ThemeContext.Provider
       value={{
-        themeMode,
+        themePreference,
+        setThemePreference: handleSetThemePreference,
+        themeMode: resolvedColorScheme,
         setThemeMode: handleSetThemeMode,
-        colorScheme: themeMode,
+        colorScheme: resolvedColorScheme,
         colors,
       }}
     >

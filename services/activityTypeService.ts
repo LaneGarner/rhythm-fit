@@ -1,13 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-const ACTIVITY_TYPES_CACHE_KEY = 'activity_types_cache';
+const ACTIVITY_TYPES_CACHE_KEY = 'activity_types_cache_v3';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export interface ActivityTypeDefinition {
   value: string;
   label: string;
-  emoji: string;
+  iconName: IoniconName;
 }
 
 interface CachedActivityTypes {
@@ -17,20 +20,23 @@ interface CachedActivityTypes {
 
 // Default activity types (fallback if backend unavailable)
 const DEFAULT_ACTIVITY_TYPES: ActivityTypeDefinition[] = [
-  { value: 'weight-training', label: 'Weight Training', emoji: '🏋️' },
-  { value: 'calisthenics', label: 'Calisthenics', emoji: '💪' },
-  { value: 'cardio', label: 'Cardio', emoji: '🏃' },
-  { value: 'mobility', label: 'Mobility', emoji: '🧘' },
-  { value: 'recovery', label: 'Recovery', emoji: '🛌' },
-  { value: 'sports', label: 'Sports', emoji: '⚽' },
-  { value: 'other', label: 'Other', emoji: '🎯' },
+  {
+    value: 'weight-training',
+    label: 'Weight Training',
+    iconName: 'barbell-outline',
+  },
+  { value: 'calisthenics', label: 'Calisthenics', iconName: 'body-outline' },
+  { value: 'cardio', label: 'Cardio', iconName: 'pulse-outline' },
+  { value: 'mobility', label: 'Mobility', iconName: 'color-filter-outline' },
+  { value: 'recovery', label: 'Recovery', iconName: 'water-outline' },
+  { value: 'sports', label: 'Sports', iconName: 'basketball-outline' },
+  { value: 'other', label: 'Other', iconName: 'apps-outline' },
 ];
+
+export const DEFAULT_ACTIVITY_ICON: IoniconName = 'fitness-outline';
 
 let memoryCache: ActivityTypeDefinition[] | null = null;
 
-/**
- * Fetch activity types from the backend API
- */
 async function fetchActivityTypesFromApi(): Promise<ActivityTypeDefinition[]> {
   const response = await fetch(`${API_URL}/api/activity-types`);
   if (!response.ok) {
@@ -40,9 +46,6 @@ async function fetchActivityTypesFromApi(): Promise<ActivityTypeDefinition[]> {
   return data.activityTypes;
 }
 
-/**
- * Load activity types from AsyncStorage cache
- */
 async function loadCachedActivityTypes(): Promise<
   ActivityTypeDefinition[] | null
 > {
@@ -53,7 +56,6 @@ async function loadCachedActivityTypes(): Promise<
     const { activityTypes, timestamp }: CachedActivityTypes =
       JSON.parse(cached);
 
-    // Check if cache is still valid
     if (Date.now() - timestamp > CACHE_DURATION_MS) {
       return null;
     }
@@ -64,9 +66,6 @@ async function loadCachedActivityTypes(): Promise<
   }
 }
 
-/**
- * Save activity types to AsyncStorage cache
- */
 async function saveActivityTypesToCache(
   activityTypes: ActivityTypeDefinition[]
 ): Promise<void> {
@@ -91,21 +90,17 @@ async function saveActivityTypesToCache(
 export async function initializeActivityTypes(): Promise<
   ActivityTypeDefinition[]
 > {
-  // Return memory cache if available
   if (memoryCache) {
     return memoryCache;
   }
 
-  // Try to load from persistent cache first
   const cached = await loadCachedActivityTypes();
   if (cached) {
     memoryCache = cached;
-    // Refresh in background (don't await)
     refreshActivityTypesInBackground();
     return cached;
   }
 
-  // Fetch from API
   try {
     const activityTypes = await fetchActivityTypesFromApi();
     memoryCache = activityTypes;
@@ -113,15 +108,11 @@ export async function initializeActivityTypes(): Promise<
     return activityTypes;
   } catch (error) {
     console.error('Failed to fetch activity types, using defaults:', error);
-    // Use defaults as fallback
     memoryCache = DEFAULT_ACTIVITY_TYPES;
     return DEFAULT_ACTIVITY_TYPES;
   }
 }
 
-/**
- * Refresh activity types from API in the background
- */
 async function refreshActivityTypesInBackground(): Promise<void> {
   try {
     const activityTypes = await fetchActivityTypesFromApi();
@@ -141,25 +132,14 @@ export function getActivityTypes(): ActivityTypeDefinition[] {
 }
 
 /**
- * Get emoji for an activity type
+ * Get Ionicon name for an activity type, falling back to a generic fitness icon.
  */
-export function getEmojiForType(type: string): string {
-  const activityTypes = getActivityTypes();
-  const found = activityTypes.find(t => t.value === type);
-  return found?.emoji || '🎯';
+export function getIconForType(type?: string | null): IoniconName {
+  if (!type) return DEFAULT_ACTIVITY_ICON;
+  const found = getActivityTypes().find(t => t.value === type);
+  return found?.iconName || DEFAULT_ACTIVITY_ICON;
 }
 
-/**
- * Get activity type emojis as a record (for backwards compatibility)
- */
-export function getActivityEmojis(): Record<string, string> {
-  const activityTypes = getActivityTypes();
-  return Object.fromEntries(activityTypes.map(t => [t.value, t.emoji]));
-}
-
-/**
- * Clear the activity types cache
- */
 export async function clearActivityTypesCache(): Promise<void> {
   memoryCache = null;
   await AsyncStorage.removeItem(ACTIVITY_TYPES_CACHE_KEY);

@@ -4,8 +4,10 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
+import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
+import SupersetIcons from '../components/SupersetIcons';
 import { useTutorial } from '../components/tutorial';
 import {
   ActionSheetIOS,
@@ -32,7 +34,6 @@ import { useTheme } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 import {
   groupActivitiesWithSupersets,
-  getSupersetEmojisCompact,
   isActivityComplete,
   isSupersetComplete,
   ActivityGroup,
@@ -749,7 +750,7 @@ export default function WeeklyScreen({ navigation }: any) {
           nativeID="settings-button"
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
-          accessibilityLabel="Settings"
+          accessibilityLabel="Settings & Preferences"
           style={{
             position: 'absolute',
             right: Math.max(16, insets.right),
@@ -933,9 +934,12 @@ export default function WeeklyScreen({ navigation }: any) {
                                 key={group.supersetId}
                                 className="flex-row items-center mt-1"
                               >
-                                <Text className="text-lg mr-2">
-                                  {getSupersetEmojisCompact(group.activities)}
-                                </Text>
+                                <View className="mr-2">
+                                  <SupersetIcons
+                                    activities={group.activities}
+                                    size={18}
+                                  />
+                                </View>
                                 <Text
                                   style={{
                                     color: colors.text,
@@ -943,7 +947,9 @@ export default function WeeklyScreen({ navigation }: any) {
                                   className="flex-1"
                                   numberOfLines={1}
                                 >
-                                  {group.activities.map(a => a.name || a.type).join(' → ')}
+                                  {group.activities
+                                    .map(a => a.name || a.type)
+                                    .join(' → ')}
                                 </Text>
                                 {supersetComplete ? (
                                   <Ionicons
@@ -968,9 +974,12 @@ export default function WeeklyScreen({ navigation }: any) {
                               key={activity.id}
                               className="flex-row items-center mt-1"
                             >
-                              <Text className="text-lg mr-2">
-                                {activity.emoji || '💪'}
-                              </Text>
+                              <View className="mr-2">
+                                <ActivityIcon
+                                  activityType={activity.type}
+                                  size={18}
+                                />
+                              </View>
                               <Text
                                 style={{
                                   color: colors.text,
