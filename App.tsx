@@ -19,6 +19,7 @@ import { AuthProvider } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
+import { useOrientationLock } from './hooks/useOrientationLock';
 
 // Import screens
 import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
@@ -105,6 +106,8 @@ function AppInitializer() {
   const { isReady, shouldShowTutorial } = useAppInitialization();
   const navigationRef =
     useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  useOrientationLock();
 
   if (!isReady) {
     return <SplashScreen />;
