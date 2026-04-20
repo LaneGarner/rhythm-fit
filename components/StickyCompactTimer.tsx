@@ -89,7 +89,7 @@ export default function StickyCompactTimer({
         backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        paddingVertical: 8,
+        paddingVertical: 10,
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -100,13 +100,13 @@ export default function StickyCompactTimer({
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Ionicons
           name="timer-outline"
-          size={18}
+          size={24}
           color={colors.textSecondary}
           style={{ marginRight: 6 }}
         />
         <Text
           style={{
-            fontSize: 20,
+            fontSize: 32,
             fontWeight: '600',
             fontVariant: ['tabular-nums'],
             color: colors.text,
