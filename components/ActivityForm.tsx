@@ -41,6 +41,8 @@ import {
 } from '../types/activity';
 import ActivityNameInput from './ActivityNameInput';
 import DurationPickerModal from './DurationPickerModal';
+import PlateCalculatorModal from './PlateCalculatorModal';
+import PlateIcon from './PlateIcon';
 import RecurringActivityModal from './RecurringActivityModal';
 import { secondsToTimeString } from '../utils/timeFormat';
 
@@ -125,6 +127,7 @@ function ActivityForm(
   const [durationPickerSetId, setDurationPickerSetId] = useState<string | null>(
     null
   );
+  const [plateCalcSetId, setPlateCalcSetId] = useState<string | null>(null);
 
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -1148,14 +1151,33 @@ function ActivityForm(
                               : undefined,
                         }}
                       >
-                        <Text
-                          className={`text-sm mb-1 ${
-                            isDark ? 'text-gray-300' : 'text-gray-600'
-                          }`}
-                        >
-                          {config.label}
-                          {config.unit ? ` (${config.unit})` : ''}
-                        </Text>
+                        <View className="flex-row items-center mb-1">
+                          <Text
+                            className={`text-sm ${
+                              isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}
+                          >
+                            {config.label}
+                            {config.unit ? ` (${config.unit})` : ''}
+                          </Text>
+                          {field === 'weight' &&
+                            activityType === 'weight-training' && (
+                              <TouchableOpacity
+                                onPress={() => setPlateCalcSetId(set.id)}
+                                hitSlop={{
+                                  top: 16,
+                                  bottom: 16,
+                                  left: 16,
+                                  right: 16,
+                                }}
+                                style={{ marginLeft: 8 }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Open plate calculator"
+                              >
+                                <PlateIcon variant="tooltip" />
+                              </TouchableOpacity>
+                            )}
+                        </View>
                         {field === 'time' ? (
                           <TouchableOpacity
                             onPress={() => setDurationPickerSetId(set.id)}
@@ -1472,6 +1494,23 @@ function ActivityForm(
           setDurationPickerSetId(null);
         }}
         onCancel={() => setDurationPickerSetId(null)}
+      />
+
+      {/* Plate Calculator Modal */}
+      <PlateCalculatorModal
+        visible={plateCalcSetId !== null}
+        onClose={() => setPlateCalcSetId(null)}
+        initialWeight={
+          plateCalcSetId
+            ? (sets.find(s => s.id === plateCalcSetId)?.weight ?? undefined)
+            : undefined
+        }
+        onSelectWeight={weight => {
+          if (plateCalcSetId) {
+            handleUpdateSet(plateCalcSetId, { weight });
+          }
+          setPlateCalcSetId(null);
+        }}
       />
     </View>
   );
