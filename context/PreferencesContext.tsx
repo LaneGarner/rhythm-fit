@@ -5,7 +5,12 @@ import React, {
   useState,
   useCallback,
 } from 'react';
-import { WeekStartDay, DEFAULT_PREFERENCES } from '../types/preferences';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  DEFAULT_PREFERENCES,
+  NotificationSettings,
+  WeekStartDay,
+} from '../types/preferences';
 import {
   loadFirstDayOfWeek,
   saveFirstDayOfWeek,
@@ -15,6 +20,8 @@ import {
   saveTimerVibration,
   loadTimerSound,
   saveTimerSound,
+  loadNotificationSettings,
+  saveNotificationSettings,
 } from '../utils/storage';
 import { useAuth } from './AuthContext';
 import { isBackendConfigured } from '../config/api';
@@ -32,6 +39,8 @@ interface PreferencesContextProps {
   setTimerVibration: (enabled: boolean) => void;
   timerSound: boolean;
   setTimerSound: (enabled: boolean) => void;
+  notificationSettings: NotificationSettings;
+  setNotificationSettings: (settings: NotificationSettings) => void;
   isLoading: boolean;
 }
 
@@ -44,6 +53,8 @@ export const PreferencesContext = createContext<PreferencesContextProps>({
   setTimerVibration: () => {},
   timerSound: true,
   setTimerSound: () => {},
+  notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
+  setNotificationSettings: () => {},
   isLoading: true,
 });
 
@@ -56,6 +67,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const [autoRestTimer, setAutoRestTimerState] = useState(false);
   const [timerVibration, setTimerVibrationState] = useState(true);
   const [timerSound, setTimerSoundState] = useState(true);
+  const [notificationSettings, setNotificationSettingsState] =
+    useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const { user, getAccessToken, isLoading: authLoading } = useAuth();
 
@@ -64,14 +77,12 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load preferences on mount and when auth state changes
   useEffect(() => {
     const loadPreferences = async () => {
-      // Wait for auth to finish loading
       if (authLoading) {
         return;
       }
 
       setIsLoading(true);
 
-      // First, load from local storage (immediate)
       const localPref = await loadFirstDayOfWeek();
       setFirstDayOfWeekState(localPref);
 
@@ -84,19 +95,23 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       const localTimerSound = await loadTimerSound();
       setTimerSoundState(localTimerSound);
 
-      // If authenticated, try to fetch from server
+      const localNotifications = await loadNotificationSettings();
+      setNotificationSettingsState(localNotifications);
+
       if (isAuthenticated) {
         const token = getAccessToken();
         if (token) {
           const serverPrefs = await fetchPreferences(token);
           if (serverPrefs) {
-            // Server preference takes precedence
             setFirstDayOfWeekState(serverPrefs.firstDayOfWeek);
-            // Also update local storage to keep in sync
+            setNotificationSettingsState(serverPrefs.notificationSettings);
             await saveFirstDayOfWeek(serverPrefs.firstDayOfWeek);
+            await saveNotificationSettings(serverPrefs.notificationSettings);
           } else {
-            // Server has no preference, push local to server
-            await updatePreferences(token, localPref);
+            await updatePreferences(token, {
+              firstDayOfWeek: localPref,
+              notificationSettings: localNotifications,
+            });
           }
         }
       }
@@ -107,20 +122,15 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     loadPreferences();
   }, [isAuthenticated, authLoading, getAccessToken]);
 
-  // Handle setting the preference (save locally + sync to server)
   const handleSetFirstDayOfWeek = useCallback(
     async (day: WeekStartDay) => {
-      // Update state immediately
       setFirstDayOfWeekState(day);
-
-      // Save to local storage
       await saveFirstDayOfWeek(day);
 
-      // Sync to server if authenticated
       if (isAuthenticated) {
         const token = getAccessToken();
         if (token) {
-          await updatePreferences(token, day);
+          await updatePreferences(token, { firstDayOfWeek: day });
         }
       }
     },
@@ -142,6 +152,21 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     await saveTimerSound(enabled);
   }, []);
 
+  const handleSetNotificationSettings = useCallback(
+    async (settings: NotificationSettings) => {
+      setNotificationSettingsState(settings);
+      await saveNotificationSettings(settings);
+
+      if (isAuthenticated) {
+        const token = getAccessToken();
+        if (token) {
+          await updatePreferences(token, { notificationSettings: settings });
+        }
+      }
+    },
+    [isAuthenticated, getAccessToken]
+  );
+
   return (
     <PreferencesContext.Provider
       value={{
@@ -153,6 +178,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
         setTimerVibration: handleSetTimerVibration,
         timerSound,
         setTimerSound: handleSetTimerSound,
+        notificationSettings,
+        setNotificationSettings: handleSetNotificationSettings,
         isLoading,
       }}
     >

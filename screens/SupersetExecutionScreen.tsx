@@ -40,6 +40,7 @@ import {
 import { secondsToTimeString } from '../utils/timeFormat';
 import { usePreferences } from '../context/PreferencesContext';
 import { useTimer } from '../context/TimerContext';
+import { useUnfinishedSupersetNotification } from '../hooks/useUnfinishedWorkoutNotification';
 
 export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
@@ -52,6 +53,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const supersetActivities = getSupersetActivities(activities, supersetId);
+
+  useUnfinishedSupersetNotification(supersetActivities);
 
   // Local state for sets (mirrors Redux but allows batched updates)
   const [localSets, setLocalSets] = useState<Map<string, SetData[]>>(

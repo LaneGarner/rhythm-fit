@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  NotificationSettings,
+} from '../types/preferences';
 import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
 import { clearExerciseCache, getExercises } from '../services/exerciseService';
@@ -171,6 +175,34 @@ export const loadTimerSound = async (): Promise<boolean> => {
     return true;
   }
 };
+
+// Notification settings preference storage
+export const saveNotificationSettings = async (
+  settings: NotificationSettings
+) => {
+  try {
+    await AsyncStorage.setItem(
+      'notificationSettings',
+      JSON.stringify(settings)
+    );
+  } catch (error) {
+    console.error('Error saving notification settings:', error);
+  }
+};
+
+export const loadNotificationSettings =
+  async (): Promise<NotificationSettings> => {
+    try {
+      const data = await AsyncStorage.getItem('notificationSettings');
+      if (!data) return DEFAULT_NOTIFICATION_SETTINGS;
+      const parsed = JSON.parse(data);
+      // Merge with defaults so newly added fields get sensible values
+      return { ...DEFAULT_NOTIFICATION_SETTINGS, ...parsed };
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+      return DEFAULT_NOTIFICATION_SETTINGS;
+    }
+  };
 
 // Tutorial completion storage
 export const saveTutorialCompleted = async (completed: boolean) => {

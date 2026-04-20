@@ -29,6 +29,7 @@ import { updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useUnfinishedWorkoutNotification } from '../hooks/useUnfinishedWorkoutNotification';
 import { Activity, SetData, TrackingField } from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
@@ -40,6 +41,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const activity = activities.find(a => a.id === activityId);
+
+  useUnfinishedWorkoutNotification(activity);
 
   // Global timer context (for checking if timer is running)
   const { timer, startCountdown } = useTimer();

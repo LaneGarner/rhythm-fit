@@ -10,6 +10,10 @@ import { Alert, AppState, AppStateStatus, Vibration } from 'react-native';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { usePreferences } from './PreferencesContext';
+import {
+  cancelTimerCompletion,
+  scheduleTimerCompletion,
+} from '../services/notifications';
 
 type TimerMode = 'countUp' | 'countDown' | 'emom';
 
@@ -67,9 +71,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
-  const { timerVibration, timerSound } = usePreferences();
+  const { timerVibration, timerSound, notificationSettings } = usePreferences();
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
+  const notificationSettingsRef = useRef(notificationSettings);
   const player = useAudioPlayer(require('../assets/sounds/timer-complete.wav'));
 
   // Configure audio to play even when iOS silent switch is on
@@ -85,6 +90,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     timerSoundRef.current = timerSound;
   }, [timerSound]);
+
+  useEffect(() => {
+    notificationSettingsRef.current = notificationSettings;
+  }, [notificationSettings]);
+
+  const scheduleTimerNotification = useCallback(
+    (activityName: string, completionAt: number) => {
+      const settings = notificationSettingsRef.current;
+      if (!settings.enabled || !settings.timerCompletion) return;
+      scheduleTimerCompletion(activityName, completionAt).catch(() => {});
+    },
+    []
+  );
+
+  const cancelTimerNotification = useCallback(() => {
+    cancelTimerCompletion().catch(() => {});
+  }, []);
 
   const vibrationActiveRef = useRef(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -205,6 +227,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 // All rounds finished while backgrounded
                 playCompletionFeedback();
                 setTimerFinished(timer.activityName);
+                cancelTimerNotification();
                 setTimer(prev => ({
                   ...prev,
                   seconds: 0,
@@ -227,6 +250,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 // Timer finished while in background
                 playCompletionFeedback();
                 setTimerFinished(timer.activityName);
+                cancelTimerNotification();
                 setTimer(prev => ({
                   ...prev,
                   seconds: 0,
@@ -253,6 +277,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     timer.emomTotalRounds,
     timer.emomCurrentRound,
     playCompletionFeedback,
+    cancelTimerNotification,
   ]);
 
   // Manage the interval for foreground counting
@@ -268,6 +293,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               if (isLastRound) {
                 playCompletionFeedback();
                 finishAlertRef.current = prev.activityName;
+                cancelTimerNotification();
                 return {
                   ...prev,
                   seconds: 0,
@@ -292,6 +318,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               // Timer finished
               playCompletionFeedback();
               finishAlertRef.current = prev.activityName;
+              cancelTimerNotification();
               return {
                 ...prev,
                 seconds: 0,
@@ -354,6 +381,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         startedAt: now,
         emomCurrentRound: prev.mode === 'emom' ? 1 : prev.emomCurrentRound,
       }));
+
+      // Schedule background-safe notification for modes with a finite end time
+      if (timer.mode === 'countDown' && timer.targetSeconds > 0) {
+        scheduleTimerNotification(
+          activityName,
+          now + timer.targetSeconds * 1000
+        );
+      } else if (
+        timer.mode === 'emom' &&
+        timer.emomIntervalSeconds > 0 &&
+        timer.emomTotalRounds > 0
+      ) {
+        scheduleTimerNotification(
+          activityName,
+          now + timer.emomIntervalSeconds * timer.emomTotalRounds * 1000
+        );
+      }
       return true;
     },
     [
@@ -362,6 +406,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       timer.mode,
       timer.emomIntervalSeconds,
       timer.emomTotalRounds,
+      timer.targetSeconds,
+      scheduleTimerNotification,
     ]
   );
 
@@ -400,7 +446,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       isRunning: false,
       startedAt: null,
     }));
-  }, []);
+    cancelTimerNotification();
+  }, [cancelTimerNotification]);
 
   const resumeTimer = useCallback(() => {
     if (timer.activityId) {
@@ -422,13 +469,33 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         isRunning: true,
         startedAt: newStartedAt,
       }));
+
+      if (timer.mode === 'countDown') {
+        scheduleTimerNotification(
+          timer.activityName,
+          now + timer.seconds * 1000
+        );
+      } else if (timer.mode === 'emom') {
+        const remainingRoundsSeconds =
+          timer.seconds +
+          Math.max(0, timer.emomTotalRounds - timer.emomCurrentRound) *
+            timer.emomIntervalSeconds;
+        scheduleTimerNotification(
+          timer.activityName,
+          now + remainingRoundsSeconds * 1000
+        );
+      }
     }
   }, [
     timer.activityId,
+    timer.activityName,
     timer.seconds,
     timer.mode,
     timer.targetSeconds,
     timer.emomIntervalSeconds,
+    timer.emomTotalRounds,
+    timer.emomCurrentRound,
+    scheduleTimerNotification,
   ]);
 
   const resetTimer = useCallback(() => {
@@ -444,7 +511,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       startedAt: null,
       emomCurrentRound: prev.mode === 'emom' ? 0 : prev.emomCurrentRound,
     }));
-  }, []);
+    cancelTimerNotification();
+  }, [cancelTimerNotification]);
 
   const stopTimer = useCallback(() => {
     setTimer(prev => ({
@@ -454,7 +522,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       emomIntervalSeconds: prev.emomIntervalSeconds,
       emomTotalRounds: prev.emomTotalRounds,
     }));
-  }, []);
+    cancelTimerNotification();
+  }, [cancelTimerNotification]);
 
   const setTimerMode = useCallback((mode: TimerMode) => {
     setTimer(prev => ({
@@ -500,19 +569,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const startCountdown = useCallback(
     (activityId: string, activityName: string, seconds: number): void => {
+      const now = Date.now();
       setTimer(prev => ({
         ...prev,
         activityId,
         activityName,
         seconds,
         isRunning: true,
-        startedAt: Date.now(),
+        startedAt: now,
         mode: 'countDown',
         targetSeconds: seconds,
         emomCurrentRound: 0,
       }));
+      if (seconds > 0) {
+        scheduleTimerNotification(activityName, now + seconds * 1000);
+      }
     },
-    []
+    [scheduleTimerNotification]
   );
 
   const formatTime = useCallback((seconds: number): string => {

@@ -3,8 +3,9 @@ import {
   NavigationContainerRef,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
@@ -15,11 +16,20 @@ import TabNavigator from './navigation/TabNavigator';
 import { store } from './redux/store';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
+import { useNotificationScheduler } from './hooks/useNotificationScheduler';
 import { useOrientationLock } from './hooks/useOrientationLock';
+import {
+  configureNotificationHandler,
+  getPermissionStatus,
+  NotificationPayload,
+} from './services/notifications';
+import { registerAndSavePushToken } from './services/pushToken';
+
+configureNotificationHandler();
 
 // Import screens
 import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
@@ -29,6 +39,7 @@ import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
 import ExerciseStatsScreen from './screens/ExerciseStatsScreen';
+import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 import PersonalRecordsScreen from './screens/PersonalRecordsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
@@ -44,6 +55,7 @@ export type RootStackParamList = {
   DemoActivityExecution: undefined;
   EditActivity: { activityId: string; supersetId?: string };
   Settings: undefined;
+  NotificationSettings: undefined;
   ActivityLibrary: undefined;
   Equipment: undefined;
   ExerciseStats: { exerciseName: string };
@@ -57,6 +69,53 @@ interface AppContentProps {
 
 function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
   const { colorScheme } = useTheme();
+  const { user, getAccessToken } = useAuth();
+
+  useNotificationScheduler();
+
+  // Register Expo push token with backend once the user is authenticated and
+  // notification permission is granted.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const status = await getPermissionStatus();
+      if (status !== 'granted') return;
+      const token = getAccessToken();
+      if (token) {
+        await registerAndSavePushToken(token);
+      }
+    })();
+  }, [user, getAccessToken]);
+
+  // Handle notification taps → deep link to relevant screen.
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      response => {
+        const data = response.notification.request.content.data as unknown as
+          | NotificationPayload
+          | undefined;
+        if (!data || !navigationRef.current) return;
+        switch (data.kind) {
+          case 'unfinished-workout':
+          case 'scheduled-reminder':
+            if (data.date) {
+              navigationRef.current.navigate('Activity', { date: data.date });
+            }
+            break;
+          case 'inactivity-nudge':
+          case 'weekly-summary':
+            navigationRef.current.navigate('Main');
+            break;
+          case 'timer-completion':
+          case 'rest-timer':
+          default:
+            // Timer notifications — opening the app is enough.
+            break;
+        }
+      }
+    );
+    return () => subscription.remove();
+  }, [navigationRef]);
 
   return (
     <TutorialProvider
@@ -80,6 +139,10 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
           />
           <Stack.Screen name="EditActivity" component={EditActivityScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen
+            name="NotificationSettings"
+            component={NotificationSettingsScreen}
+          />
           <Stack.Screen
             name="ActivityLibrary"
             component={ActivityLibraryScreen}
