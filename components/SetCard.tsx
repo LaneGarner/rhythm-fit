@@ -109,7 +109,7 @@ export default function SetCard({
                   {config.label}
                   {config.unit ? ` (${config.unit})` : ''}
                 </Text>
-                {showPlateIcon && onOpenPlateCalculator && !readOnly && (
+                {showPlateIcon && onOpenPlateCalculator && (
                   <TouchableOpacity
                     onPress={() => onOpenPlateCalculator(set.id)}
                     hitSlop={{
