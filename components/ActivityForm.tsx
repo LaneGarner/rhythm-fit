@@ -106,7 +106,13 @@ function ActivityForm(
     initialActivity?.emoji || ''
   );
   const [notes, setNotes] = useState(initialActivity?.notes || '');
-  const [sets, setSets] = useState<SetData[]>(initialActivity?.sets || []);
+  const [sets, setSets] = useState<SetData[]>(() => {
+    if (initialActivity?.sets) return initialActivity.sets;
+    if (mode === 'create') {
+      return [{ id: Date.now().toString(), completed: false }];
+    }
+    return [];
+  });
   const [selectedDate, setSelectedDate] = useState(
     initialActivity?.date ? dayjs(initialActivity.date).toDate() : new Date()
   );
