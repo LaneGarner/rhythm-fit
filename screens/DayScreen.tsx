@@ -2009,7 +2009,17 @@ export default function DayScreen({ navigation, route }: any) {
           }}
         />
         {/* Center: Title */}
-        <View
+        <TouchableOpacity
+          onPress={() => {
+            if (isAnimatingRef.current) return;
+            const today = dayjs().format('YYYY-MM-DD');
+            if (date === today) return;
+            navigation.setParams({ date: today });
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Return to today"
+          accessibilityHint="Jumps to today's workouts"
           style={{
             position: 'absolute',
             left: 0,
@@ -2018,7 +2028,6 @@ export default function DayScreen({ navigation, route }: any) {
             height: 44,
             alignItems: 'center',
             justifyContent: 'center',
-            pointerEvents: 'none',
           }}
         >
           <Text
@@ -2031,7 +2040,7 @@ export default function DayScreen({ navigation, route }: any) {
           >
             {formattedDate}
           </Text>
-        </View>
+        </TouchableOpacity>
         {/* Right: Share + Edit/Save buttons */}
         {(dayActivities.length > 0 || isBulkMode) && (
           <View
