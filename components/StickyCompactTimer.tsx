@@ -105,6 +105,7 @@ export default function StickyCompactTimer({
           style={{ marginRight: 6 }}
         />
         <Text
+          className="font-mono"
           style={{
             fontSize: 32,
             fontWeight: '600',
