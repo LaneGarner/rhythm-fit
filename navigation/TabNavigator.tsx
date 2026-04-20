@@ -66,7 +66,6 @@ const CustomTabBarButton = ({
         ref={viewRef}
         onLayout={handleLayout}
         style={{
-          marginTop: 5,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -97,21 +96,18 @@ export default function TabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: insets.bottom,
-          paddingTop: isLandscape ? 4 : 10,
-          height: (isLandscape ? 50 : 56) + insets.bottom,
+          paddingBottom: insets.bottom / 2,
+          height: (isLandscape ? 44 : 48) + insets.bottom,
           paddingLeft: insets.left,
           paddingRight: insets.right,
         },
         tabBarActiveTintColor: colors.primary.main,
         tabBarInactiveTintColor: colors.tabBarInactive,
-        tabBarIconStyle: {
-          marginBottom: 4,
-        },
       }}
     >
       <Tab.Screen
@@ -122,7 +118,7 @@ export default function TabNavigator() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'calendar' : 'calendar-outline'}
-              size={24}
+              size={26}
               color={color}
             />
           ),
@@ -139,7 +135,7 @@ export default function TabNavigator() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'bar-chart' : 'bar-chart-outline'}
-              size={24}
+              size={26}
               color={color}
             />
           ),
@@ -156,7 +152,7 @@ export default function TabNavigator() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'barbell' : 'barbell-outline'}
-              size={24}
+              size={26}
               color={color}
             />
           ),
@@ -173,7 +169,7 @@ export default function TabNavigator() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'chatbubble' : 'chatbubble-outline'}
-              size={24}
+              size={26}
               color={color}
             />
           ),
