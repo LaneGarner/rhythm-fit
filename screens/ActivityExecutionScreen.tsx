@@ -315,7 +315,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       <View style={{ flex: 1, position: 'relative' }}>
         {/* Sticky compact header - positioned at top of content area */}
         <StickyCompactHeader
-          emoji={activity.emoji || '💪'}
+          emoji={activity.emoji}
+          activityType={activity.type}
           title={activity.name}
           subtitle={getActivityTypeLabel(activity.type)}
           scrollY={scrollY}
@@ -345,7 +346,8 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         >
           {/* Large content header - fades out on scroll */}
           <ContentHeader
-            emoji={activity.emoji || '💪'}
+            emoji={activity.emoji}
+            activityType={activity.type}
             title={activity.name}
             subtitle={getActivityTypeLabel(activity.type)}
             scrollY={scrollY}

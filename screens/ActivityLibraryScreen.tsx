@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import { useAuth } from '../context/AuthContext';
@@ -142,11 +143,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
     }
   };
 
-  const getTypeEmoji = (type: string) => {
-    const activityType = activityTypes.find(at => at.value === type);
-    return activityType?.emoji || '';
-  };
-
   const getTypeLabel = (type: string) => {
     const activityType = activityTypes.find(at => at.value === type);
     return activityType?.label || type;
@@ -241,9 +237,13 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1">
-                      <Text className="text-2xl mr-3">
-                        {getTypeEmoji(item.type)}
-                      </Text>
+                      <View className="mr-3">
+                        <ActivityIcon
+                          activityType={item.type}
+                          size={24}
+                          color={colors.text}
+                        />
+                      </View>
                       <View className="flex-1">
                         <Text
                           className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -468,32 +468,41 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 Activity Type
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {activityTypes.map(type => (
-                  <TouchableOpacity
-                    key={type.value}
-                    onPress={() => setEditType(type.value)}
-                    style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor:
-                        editType === type.value
+                {activityTypes.map(type => {
+                  const isSelected = editType === type.value;
+                  return (
+                    <TouchableOpacity
+                      key={type.value}
+                      onPress={() => setEditType(type.value)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderColor: isSelected
                           ? colors.primary.main
                           : colors.border,
-                      backgroundColor:
-                        editType === type.value
+                        backgroundColor: isSelected
                           ? colors.primary.background
                           : colors.surface,
-                    }}
-                  >
-                    <Text
-                      className={`text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      }}
                     >
-                      {type.emoji} {type.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Ionicons
+                        name={type.iconName}
+                        size={18}
+                        color={isDark ? '#fff' : '#111827'}
+                      />
+                      <Text
+                        className={`text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           </ScrollView>

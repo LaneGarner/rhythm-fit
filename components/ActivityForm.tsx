@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import {
   getActivityTypes,
-  getActivityEmojis,
+  getIconForType,
 } from '../services/activityTypeService';
 import { useAuth } from '../context/AuthContext';
 import { addToLibrary } from '../services/libraryService';
@@ -39,6 +39,7 @@ import {
   SetData,
   TrackingField,
 } from '../types/activity';
+import ActivityIcon from './ActivityIcon';
 import ActivityNameInput from './ActivityNameInput';
 import DurationPickerModal from './DurationPickerModal';
 import PlateCalculatorModal from './PlateCalculatorModal';
@@ -187,16 +188,6 @@ function ActivityForm(
     return matches ? matches.join('') : '';
   };
 
-  // Auto-set emoji when activity type changes or is initially set
-  useEffect(() => {
-    if (activityType && !selectedEmoji) {
-      const defaultEmoji = getActivityEmojis()[activityType];
-      if (defaultEmoji) {
-        setSelectedEmoji(defaultEmoji);
-      }
-    }
-  }, [activityType, selectedEmoji]);
-
   // Auto-set tracking fields when activity type changes (only for new activities)
   useEffect(() => {
     if (mode === 'create') {
@@ -267,10 +258,6 @@ function ActivityForm(
       newErrors.type = 'Required field';
     }
 
-    if (!selectedEmoji) {
-      newErrors.emoji = 'Required field';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -281,7 +268,7 @@ function ActivityForm(
       date: dayjs(selectedDate).format('YYYY-MM-DD'),
       type: activityType,
       name: activityName.trim(),
-      emoji: selectedEmoji,
+      emoji: selectedEmoji || undefined,
       completed: initialActivity?.completed || false,
       notes: notes.trim() || undefined,
       sets: sets,
@@ -306,7 +293,7 @@ function ActivityForm(
         date: dayjs(selectedDate).format('YYYY-MM-DD'),
         type: activityType,
         name: activityName.trim(),
-        emoji: selectedEmoji,
+        emoji: selectedEmoji || undefined,
         completed: initialActivity?.completed || false,
         notes: notes.trim() || undefined,
         sets: sets,
@@ -334,10 +321,6 @@ function ActivityForm(
     setActivityName(name);
     if (type) {
       setActivityType(type as ActivityType);
-      const defaultEmoji = getActivityEmojis()[type];
-      if (defaultEmoji) {
-        setSelectedEmoji(defaultEmoji);
-      }
     }
   };
 
@@ -622,7 +605,12 @@ function ActivityForm(
                       gap: 6,
                     }}
                   >
-                    <Text style={{ fontSize: 16 }}>{draft.emoji || '💪'}</Text>
+                    <ActivityIcon
+                      emoji={draft.emoji}
+                      activityType={draft.type}
+                      size={16}
+                      color={colors.text}
+                    />
                     <Text
                       style={{
                         fontSize: 14,
@@ -778,99 +766,113 @@ function ActivityForm(
               Activity Type *
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {getActivityTypes().map(type => (
-                <TouchableOpacity
-                  key={type.value}
-                  onPress={() => {
-                    setActivityType(type.value as ActivityType);
-                    // Automatically select the emoji for this activity type
-                    setSelectedEmoji(type.emoji);
-                  }}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      activityType === type.value
+              {getActivityTypes().map(type => {
+                const isSelected = activityType === type.value;
+                return (
+                  <TouchableOpacity
+                    key={type.value}
+                    onPress={() => setActivityType(type.value as ActivityType)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
                           : '#d1d5db',
-                    backgroundColor:
-                      activityType === type.value
+                      backgroundColor: isSelected
                         ? isDark
                           ? '#23263a'
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-base ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
+                    }}
                   >
-                    {type.emoji} {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Ionicons
+                      name={type.iconName}
+                      size={18}
+                      color={isDark ? '#fff' : '#111827'}
+                    />
+                    <Text
+                      className={`text-base ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             {errors.type && (
               <Text className="text-red-500 text-sm mt-1">{errors.type}</Text>
             )}
           </View>
 
-          {/* Emoji Selection */}
+          {/* Icon / Emoji Selection */}
           <View>
             <Text
               className={`text-lg font-semibold mb-2 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}
             >
-              Emoji *
+              Icon / Emoji
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {/* Preset emojis */}
-              {Object.entries(getActivityEmojis()).map(([type, emoji]) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setSelectedEmoji(emoji)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      selectedEmoji === emoji
+              {/* Use type icon (clears custom emoji) */}
+              {(() => {
+                const useTypeIcon = !selectedEmoji;
+                return (
+                  <TouchableOpacity
+                    onPress={() => setSelectedEmoji('')}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderStyle: 'dashed',
+                      borderColor: useTypeIcon
                         ? isDark
                           ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
                           : '#d1d5db',
-                    backgroundColor:
-                      selectedEmoji === emoji
+                      backgroundColor: useTypeIcon
                         ? isDark
                           ? '#23263a'
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-2xl ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
+                    }}
                   >
-                    {emoji}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Ionicons
+                      name={getIconForType(activityType)}
+                      size={24}
+                      color={isDark ? '#fff' : '#111827'}
+                    />
+                    <Text
+                      className={`text-sm ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      Use type icon
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })()}
 
               {/* Custom emojis from library */}
               {customEmojis.map(item => (
@@ -1022,10 +1024,6 @@ function ActivityForm(
                   </Text>
                 </TouchableOpacity>
               </View>
-            )}
-
-            {errors.emoji && (
-              <Text className="text-red-500 text-sm mt-1">{errors.emoji}</Text>
             )}
           </View>
 

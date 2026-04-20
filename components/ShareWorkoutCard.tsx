@@ -11,6 +11,7 @@ import {
   isActivityComplete,
 } from '../utils/supersetUtils';
 import { formatActivitySetsSummary } from '../utils/shareUtils';
+import ActivityIcon from './ActivityIcon';
 import Logo from './Logo';
 
 interface ShareWorkoutCardProps {
@@ -70,9 +71,14 @@ export default function ShareWorkoutCard({
           borderBottomColor: card.border,
         }}
       >
-        <Text style={{ fontSize: 22, marginRight: 10 }}>
-          {activity.emoji || '\uD83D\uDCAA'}
-        </Text>
+        <View style={{ marginRight: 10 }}>
+          <ActivityIcon
+            emoji={activity.emoji}
+            activityType={activity.type}
+            size={22}
+            color={card.text}
+          />
+        </View>
         <View style={{ flex: 1 }}>
           <Text
             style={{

@@ -140,7 +140,11 @@ export default function EmojiLibraryScreen({ navigation }: any) {
           </Text>
         ) : customEmojis.length === 0 ? (
           <View className="items-center py-12">
-            <Text style={{ fontSize: 48 }}>👍</Text>
+            <Ionicons
+              name="happy-outline"
+              size={48}
+              color={colors.textSecondary}
+            />
             <Text
               className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             >

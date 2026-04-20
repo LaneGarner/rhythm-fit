@@ -5,6 +5,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import ActivityForm, { ActivityFormHandle } from '../components/ActivityForm';
+import ActivityIcon from '../components/ActivityIcon';
 import {
   addActivity,
   deleteActivity,
@@ -709,7 +710,12 @@ export default function EditActivityScreen({ navigation, route }: any) {
                   gap: 6,
                 }}
               >
-                <Text style={{ fontSize: 16 }}>{displayAct.emoji || '💪'}</Text>
+                <ActivityIcon
+                  emoji={displayAct.emoji}
+                  activityType={displayAct.type}
+                  size={16}
+                  color={colors.text}
+                />
                 <Text
                   style={{
                     fontSize: 14,

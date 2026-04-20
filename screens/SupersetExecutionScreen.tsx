@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import ActivityIcon from '../components/ActivityIcon';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
@@ -32,8 +33,8 @@ import {
   buildSupersetRounds,
   getMaxSetCount,
   getSupersetActivities,
-  getSupersetEmojis,
   getSupersetLabel,
+  getSupersetNames,
   isSupersetComplete,
 } from '../utils/supersetUtils';
 import { secondsToTimeString } from '../utils/timeFormat';
@@ -371,8 +372,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
       <View style={{ flex: 1, position: 'relative' }}>
         {/* Sticky compact header - positioned at top of content area */}
         <StickyCompactHeader
-          emoji=""
-          title={getSupersetEmojis(supersetActivities)}
+          activities={supersetActivities}
+          title={getSupersetNames(supersetActivities)}
           subtitle={getSupersetLabel(supersetActivities.length)}
           badge={getSupersetLabel(supersetActivities.length)}
           scrollY={scrollY}
@@ -402,8 +403,8 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         >
           {/* Large content header - fades out on scroll */}
           <ContentHeader
-            emoji=""
-            title={getSupersetEmojis(supersetActivities)}
+            activities={supersetActivities}
+            title={getSupersetNames(supersetActivities)}
             subtitle={getSupersetLabel(supersetActivities.length)}
             badge={getSupersetLabel(supersetActivities.length)}
             scrollY={scrollY}
@@ -422,7 +423,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
               <NotesCard
                 notes={supersetActivities
                   .filter(a => a.notes)
-                  .map(a => `${a.emoji || '💪'} ${a.name}: ${a.notes}`)
+                  .map(a => `${a.name}: ${a.notes}`)
                   .join('\n\n')}
               />
             )}
@@ -500,9 +501,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
                             <View className="flex-row items-center flex-1">
-                              <Text className="text-xl mr-2">
-                                {activity.emoji || '💪'}
-                              </Text>
+                              <View className="mr-2">
+                                <ActivityIcon
+                                  emoji={activity.emoji}
+                                  activityType={activity.type}
+                                  size={22}
+                                />
+                              </View>
                               <Text
                                 className={`text-base font-semibold ${
                                   isDark ? 'text-white' : 'text-gray-900'

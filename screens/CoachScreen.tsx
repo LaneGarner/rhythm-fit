@@ -45,7 +45,6 @@ import {
   ParsedSetData,
   ParsedExercise,
 } from '../services/chatApi';
-import { getEmojiForType } from '../services/activityTypeService';
 import {
   buildCoachAnalytics,
   formatAnalyticsForPrompt,
@@ -83,7 +82,7 @@ export default function CoachScreen({ navigation }: any) {
     {
       id: '1',
       type: 'bot',
-      text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+      text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
       timestamp: new Date(),
     },
   ]);
@@ -158,7 +157,7 @@ export default function CoachScreen({ navigation }: any) {
       {
         id: '1',
         type: 'bot',
-        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+        text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
         timestamp: new Date(),
       },
     ]);
@@ -336,7 +335,7 @@ export default function CoachScreen({ navigation }: any) {
 
       Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
         context += `- ${day}: ${dayActivities
-          .map(a => `${a.emoji} ${a.name}`)
+          .map(a => (a.emoji ? `${a.emoji} ${a.name}` : a.name))
           .join(', ')}\n`;
       });
     }
@@ -345,7 +344,8 @@ export default function CoachScreen({ navigation }: any) {
       context += `\nUpcoming activities:\n`;
       upcomingActivities.forEach(activity => {
         const date = dayjs(activity.date).format('MMM D');
-        context += `- ${date}: ${activity.emoji} ${activity.name}\n`;
+        const prefix = activity.emoji ? `${activity.emoji} ` : '';
+        context += `- ${date}: ${prefix}${activity.name}\n`;
       });
     }
 
@@ -387,7 +387,7 @@ export default function CoachScreen({ navigation }: any) {
                   {
                     id: '1',
                     type: 'bot' as const,
-                    text: "## 👋 Welcome to Your AI Fitness Coach!\n\nI'm here to help you **crush your fitness goals** and build the best version of yourself! 💪",
+                    text: "## Welcome to Your AI Fitness Coach\n\nI'm here to help you **crush your fitness goals** and build the best version of yourself.",
                     timestamp: new Date(),
                   },
                 ]
@@ -568,7 +568,6 @@ export default function CoachScreen({ navigation }: any) {
               date: activityDate,
               type: request.type,
               name: toTitleCase(exercise),
-              emoji: getEmojiForType(request.type),
               completed: false,
               sets: generateSetsFromParsed(detail?.sets, request.type),
               notes: weekLabel
@@ -941,7 +940,7 @@ Use Markdown formatting. ${activityContext}`;
       {
         id: '1',
         type: 'bot',
-        text: '## 👋 Welcome to Your AI Fitness Coach!\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself! 💪\n\n### What I can do for you:\n- 🏋️ **Create personalized workout plans**\n- 📅 **Schedule activities** for any day\n- 💡 **Provide exercise tips and form advice**\n- 🎯 **Track your progress** and suggest improvements\n- 🏃 **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started! 🚀',
+        text: '## Welcome to Your AI Fitness Coach\n\nI\'m here to help you **crush your fitness goals** and build the best version of yourself.\n\n### What I can do for you:\n- **Create personalized workout plans**\n- **Schedule activities** for any day\n- **Provide exercise tips and form advice**\n- **Track your progress** and suggest improvements\n- **Recommend exercises** based on your goals\n\n### Just ask me things like:\n- "Create a push day workout for Monday"\n- "Add deadlifts to today\'s routine"\n- "What\'s a good exercise for my back?"\n- "Copy this week\'s workouts to next week"\n\n**What are your fitness goals?** Let\'s get started.',
         timestamp: new Date(),
       },
     ]);

@@ -250,7 +250,6 @@ export const generateRandomWeekActivities = (
     .map(at => ({
       exercises: exercisesByType.get(at.value) || [],
       type: at.value as Activity['type'],
-      emoji: at.emoji,
     }));
 
   // Fallback if no cached data available
@@ -301,7 +300,6 @@ export const generateRandomWeekActivities = (
         date: dateString,
         type: category.type,
         name: exercise,
-        emoji: category.emoji,
         completed: Math.random() < 0.3, // 30% chance already completed
         notes: `Sample activity generated for testing - Week ${weekOffset === 0 ? '(current)' : weekOffset > 0 ? `+${weekOffset}` : weekOffset}`,
       };
