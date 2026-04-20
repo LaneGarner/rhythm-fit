@@ -52,6 +52,10 @@ export default function StickyCompactTimer({
     ((timer.mode === 'countUp' && timerSeconds > 0) ||
       (timer.mode === 'countDown' &&
         timerSeconds < timer.targetSeconds &&
+        timerSeconds > 0) ||
+      (timer.mode === 'emom' &&
+        timer.emomCurrentRound > 0 &&
+        timerSeconds < timer.emomIntervalSeconds &&
         timerSeconds > 0));
 
   const opacity = scrollY.interpolate({
@@ -118,9 +122,26 @@ export default function StickyCompactTimer({
               ? timerSeconds
               : timer.mode === 'countDown'
                 ? timer.targetSeconds
-                : 0
+                : timer.mode === 'emom'
+                  ? timer.emomIntervalSeconds
+                  : 0
           )}
         </Text>
+        {timer.mode === 'emom' &&
+          isTimerOwner &&
+          timer.emomCurrentRound > 0 && (
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                color: colors.textSecondary,
+                marginLeft: 8,
+              }}
+              accessibilityLabel={`Round ${timer.emomCurrentRound} of ${timer.emomTotalRounds}`}
+            >
+              R{timer.emomCurrentRound}/{timer.emomTotalRounds}
+            </Text>
+          )}
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {!isTimerRunning ? (
