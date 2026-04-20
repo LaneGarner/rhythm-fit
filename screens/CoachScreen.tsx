@@ -1080,7 +1080,7 @@ Use Markdown formatting. ${activityContext}`;
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
-          <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
+          <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <View className="flex-1 px-6 pt-4">
           <View
@@ -1159,7 +1159,7 @@ Use Markdown formatting. ${activityContext}`;
           </TouchableOpacity>
         }
       >
-        <AppHeaderTitle title="AI Coach" subtitle="Powered by ChatGPT" />
+        <AppHeaderTitle title="AI Coach" />
       </AppHeader>
 
       {/* Tab Navigation */}
