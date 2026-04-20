@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  NotificationSettings,
+} from '../types/preferences';
 import { getMondayOfWeekByOffset } from './dateUtils';
 import { clearLibraryCache } from '../services/libraryService';
 import { clearExerciseCache, getExercises } from '../services/exerciseService';
@@ -8,7 +12,6 @@ import {
   getActivityTypes,
   clearActivityTypesCache,
 } from '../services/activityTypeService';
-import { clearEmojiLibraryCache } from '../services/emojiLibraryService';
 import { clearEquipmentCache } from '../services/equipmentService';
 
 // Activity storage functions
@@ -42,10 +45,10 @@ export const saveThemeMode = async (themeMode: string) => {
 export const loadThemeMode = async (): Promise<string> => {
   try {
     const data = await AsyncStorage.getItem('themeMode');
-    return data || 'light';
+    return data || 'system';
   } catch (error) {
     console.error('Error loading theme mode:', error);
-    return 'light';
+    return 'system';
   }
 };
 
@@ -173,6 +176,34 @@ export const loadTimerSound = async (): Promise<boolean> => {
   }
 };
 
+// Notification settings preference storage
+export const saveNotificationSettings = async (
+  settings: NotificationSettings
+) => {
+  try {
+    await AsyncStorage.setItem(
+      'notificationSettings',
+      JSON.stringify(settings)
+    );
+  } catch (error) {
+    console.error('Error saving notification settings:', error);
+  }
+};
+
+export const loadNotificationSettings =
+  async (): Promise<NotificationSettings> => {
+    try {
+      const data = await AsyncStorage.getItem('notificationSettings');
+      if (!data) return DEFAULT_NOTIFICATION_SETTINGS;
+      const parsed = JSON.parse(data);
+      // Merge with defaults so newly added fields get sensible values
+      return { ...DEFAULT_NOTIFICATION_SETTINGS, ...parsed };
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+      return DEFAULT_NOTIFICATION_SETTINGS;
+    }
+  };
+
 // Tutorial completion storage
 export const saveTutorialCompleted = async (completed: boolean) => {
   try {
@@ -213,7 +244,6 @@ export const clearUserData = async (): Promise<void> => {
     await Promise.all([
       clearAllActivities(),
       clearLibraryCache(),
-      clearEmojiLibraryCache(),
       clearEquipmentCache(),
       AsyncStorage.multiRemove(chatHistoryKeys),
     ]);
@@ -250,7 +280,6 @@ export const generateRandomWeekActivities = (
     .map(at => ({
       exercises: exercisesByType.get(at.value) || [],
       type: at.value as Activity['type'],
-      emoji: at.emoji,
     }));
 
   // Fallback if no cached data available
@@ -301,7 +330,6 @@ export const generateRandomWeekActivities = (
         date: dateString,
         type: category.type,
         name: exercise,
-        emoji: category.emoji,
         completed: Math.random() < 0.3, // 30% chance already completed
         notes: `Sample activity generated for testing - Week ${weekOffset === 0 ? '(current)' : weekOffset > 0 ? `+${weekOffset}` : weekOffset}`,
       };

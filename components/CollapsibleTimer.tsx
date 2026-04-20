@@ -35,6 +35,8 @@ export default function CollapsibleTimer({
     resetTimer,
     setTimerMode,
     setTargetSeconds,
+    setEmomInterval,
+    setEmomRounds,
     formatTime,
   } = useTimer();
 
@@ -92,6 +94,10 @@ export default function CollapsibleTimer({
     ((timer.mode === 'countUp' && timerSeconds > 0) ||
       (timer.mode === 'countDown' &&
         timerSeconds < timer.targetSeconds &&
+        timerSeconds > 0) ||
+      (timer.mode === 'emom' &&
+        timer.emomCurrentRound > 0 &&
+        timerSeconds < timer.emomIntervalSeconds &&
         timerSeconds > 0));
 
   const showResumeButton = isPaused;
@@ -177,7 +183,7 @@ export default function CollapsibleTimer({
             <TouchableOpacity
               onPress={() => setTimerMode('countDown')}
               disabled={timer.isRunning}
-              className="px-4 py-2 rounded-r-lg"
+              className="px-4 py-2"
               style={{
                 backgroundColor:
                   timer.mode === 'countDown'
@@ -201,6 +207,35 @@ export default function CollapsibleTimer({
                 }}
               >
                 Count Down
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setTimerMode('emom')}
+              disabled={timer.isRunning}
+              className="px-4 py-2 rounded-r-lg"
+              style={{
+                backgroundColor:
+                  timer.mode === 'emom'
+                    ? colors.primary.main
+                    : colors.backgroundTertiary,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`EMOM interval timer${timer.mode === 'emom' ? ', selected' : ''}`}
+              accessibilityState={{
+                selected: timer.mode === 'emom',
+                disabled: timer.isRunning,
+              }}
+            >
+              <Text
+                className="font-semibold"
+                style={{
+                  color:
+                    timer.mode === 'emom'
+                      ? colors.textInverse
+                      : colors.textSecondary,
+                }}
+              >
+                EMOM
               </Text>
             </TouchableOpacity>
           </View>
@@ -273,6 +308,123 @@ export default function CollapsibleTimer({
             </View>
           )}
 
+          {/* EMOM Duration + Rounds Input */}
+          {timer.mode === 'emom' && !timer.isRunning && (
+            <View className="mb-4">
+              <View className="flex-row justify-center items-center mb-3">
+                <TextInput
+                  value={
+                    Math.floor(timer.emomIntervalSeconds / 60) > 0
+                      ? Math.floor(timer.emomIntervalSeconds / 60).toString()
+                      : ''
+                  }
+                  onChangeText={text => {
+                    const mins = parseInt(text) || 0;
+                    const secs = timer.emomIntervalSeconds % 60;
+                    setEmomInterval(mins * 60 + secs);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  className="w-16 px-3 py-2 border rounded-lg"
+                  style={{
+                    textAlign: 'center',
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  }}
+                  placeholder="0"
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  accessibilityLabel="Interval minutes"
+                />
+                <Text
+                  className="mx-2 text-base"
+                  style={{ color: colors.textSecondary }}
+                >
+                  min
+                </Text>
+                <TextInput
+                  value={
+                    timer.emomIntervalSeconds % 60 > 0
+                      ? (timer.emomIntervalSeconds % 60).toString()
+                      : ''
+                  }
+                  onChangeText={text => {
+                    const secs = Math.min(parseInt(text) || 0, 59);
+                    const mins = Math.floor(timer.emomIntervalSeconds / 60);
+                    setEmomInterval(mins * 60 + secs);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  className="w-16 px-3 py-2 border rounded-lg"
+                  style={{
+                    textAlign: 'center',
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  }}
+                  placeholder="0"
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  accessibilityLabel="Interval seconds"
+                />
+                <Text
+                  className="ml-2 text-base"
+                  style={{ color: colors.textSecondary }}
+                >
+                  sec interval
+                </Text>
+              </View>
+              <View className="flex-row justify-center items-center">
+                <TextInput
+                  value={
+                    timer.emomTotalRounds > 0
+                      ? String(timer.emomTotalRounds)
+                      : ''
+                  }
+                  onChangeText={text => {
+                    setEmomRounds(parseInt(text) || 0);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  className="w-16 px-3 py-2 border rounded-lg"
+                  style={{
+                    textAlign: 'center',
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  }}
+                  placeholder="0"
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  accessibilityLabel="Total rounds"
+                />
+                <Text
+                  className="ml-2 text-base"
+                  style={{ color: colors.textSecondary }}
+                >
+                  rounds
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Round indicator (EMOM while running/paused) */}
+          {timer.mode === 'emom' &&
+            isTimerOwner &&
+            timer.emomCurrentRound > 0 && (
+              <Text
+                className="text-center text-base font-semibold mb-1"
+                style={{ color: colors.textSecondary }}
+                accessibilityLabel={`Round ${timer.emomCurrentRound} of ${timer.emomTotalRounds}`}
+              >
+                Round {timer.emomCurrentRound} of {timer.emomTotalRounds}
+              </Text>
+            )}
+
           <Text
             className="text-4xl font-mono text-center mb-4"
             style={{ color: colors.text }}
@@ -282,7 +434,9 @@ export default function CollapsibleTimer({
                 ? timerSeconds
                 : timer.mode === 'countDown'
                   ? timer.targetSeconds
-                  : 0
+                  : timer.mode === 'emom'
+                    ? timer.emomIntervalSeconds
+                    : 0
             )}
           </Text>
 

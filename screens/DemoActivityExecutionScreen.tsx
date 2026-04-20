@@ -20,7 +20,6 @@ const DEMO_ACTIVITY: Activity = {
   date: dayjs().format('YYYY-MM-DD'),
   type: 'weight-training',
   name: 'Bench Press',
-  emoji: '🏋️',
   completed: false,
   trackingFields: ['weight', 'reps'],
   sets: [
@@ -141,7 +140,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
       <View style={{ flex: 1, position: 'relative' }}>
         {/* Sticky compact header - positioned at top of content area */}
         <StickyCompactHeader
-          emoji={DEMO_ACTIVITY.emoji || '💪'}
+          activityType={DEMO_ACTIVITY.type}
           title={DEMO_ACTIVITY.name}
           subtitle="Weight Training"
           scrollY={scrollY}
@@ -169,7 +168,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
         >
           {/* Large content header - fades out on scroll */}
           <ContentHeader
-            emoji={DEMO_ACTIVITY.emoji || '💪'}
+            activityType={DEMO_ACTIVITY.type}
             title={DEMO_ACTIVITY.name}
             subtitle="Weight Training"
             scrollY={scrollY}

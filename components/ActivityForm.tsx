@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Keyboard,
@@ -13,17 +19,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  getActivityTypes,
-  getActivityEmojis,
-} from '../services/activityTypeService';
+import { getActivityTypes } from '../services/activityTypeService';
 import { useAuth } from '../context/AuthContext';
 import { addToLibrary } from '../services/libraryService';
-import {
-  getCachedCustomEmojis,
-  addToEmojiLibrary,
-  EmojiItem,
-} from '../services/emojiLibraryService';
 import { useTheme } from '../theme/ThemeContext';
 import {
   Activity,
@@ -33,8 +31,11 @@ import {
   SetData,
   TrackingField,
 } from '../types/activity';
+import ActivityIcon from './ActivityIcon';
 import ActivityNameInput from './ActivityNameInput';
 import DurationPickerModal from './DurationPickerModal';
+import PlateCalculatorModal from './PlateCalculatorModal';
+import PlateIcon from './PlateIcon';
 import RecurringActivityModal from './RecurringActivityModal';
 import { secondsToTimeString } from '../utils/timeFormat';
 
@@ -57,24 +58,31 @@ interface ActivityFormProps {
   hideRecurring?: boolean;
 }
 
-export default function ActivityForm({
-  mode,
-  initialActivity,
-  onSave,
-  onCancel,
-  onDelete,
-  supersetMode,
-  onToggleSupersetMode,
-  supersetDrafts,
-  onRemoveDraft,
-  saveButtonLabel,
-  headerTitle,
-  onSaveSuperset,
-  deleteButtonLabel,
-  hideDate,
-  hideHeader,
-  hideRecurring,
-}: ActivityFormProps) {
+export interface ActivityFormHandle {
+  getCurrentActivity(): Activity | null;
+}
+
+function ActivityForm(
+  {
+    mode,
+    initialActivity,
+    onSave,
+    onCancel,
+    onDelete,
+    supersetMode,
+    onToggleSupersetMode,
+    supersetDrafts,
+    onRemoveDraft,
+    saveButtonLabel,
+    headerTitle,
+    onSaveSuperset,
+    deleteButtonLabel,
+    hideDate,
+    hideHeader,
+    hideRecurring,
+  }: ActivityFormProps,
+  ref: React.Ref<ActivityFormHandle>
+) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
@@ -87,11 +95,14 @@ export default function ActivityForm({
     initialActivity?.trackingFields ||
       DEFAULT_TRACKING_FIELDS[initialActivity?.type || 'weight-training']
   );
-  const [selectedEmoji, setSelectedEmoji] = useState(
-    initialActivity?.emoji || ''
-  );
   const [notes, setNotes] = useState(initialActivity?.notes || '');
-  const [sets, setSets] = useState<SetData[]>(initialActivity?.sets || []);
+  const [sets, setSets] = useState<SetData[]>(() => {
+    if (initialActivity?.sets) return initialActivity.sets;
+    if (mode === 'create') {
+      return [{ id: Date.now().toString(), completed: false }];
+    }
+    return [];
+  });
   const [selectedDate, setSelectedDate] = useState(
     initialActivity?.date ? dayjs(initialActivity.date).toDate() : new Date()
   );
@@ -105,18 +116,15 @@ export default function ActivityForm({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [customEmojis, setCustomEmojis] = useState<EmojiItem[]>([]);
-  const [showCustomEmojiInput, setShowCustomEmojiInput] = useState(false);
-  const [customEmojiText, setCustomEmojiText] = useState('');
   const [distanceText, setDistanceText] = useState<Record<string, string>>({});
   const [durationPickerSetId, setDurationPickerSetId] = useState<string | null>(
     null
   );
+  const [plateCalcSetId, setPlateCalcSetId] = useState<string | null>(null);
 
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const setInputRefs = useRef<{ [key: string]: TextInput | null }>({});
-  const customEmojiInputRef = useRef<TextInput>(null);
 
   // Keyboard listeners
   useEffect(() => {
@@ -140,40 +148,6 @@ export default function ActivityForm({
       keyboardWillHideListener?.remove();
     };
   }, []);
-
-  // Load custom emojis on mount
-  useEffect(() => {
-    const loadCustomEmojis = async () => {
-      const emojis = await getCachedCustomEmojis();
-      setCustomEmojis(emojis);
-    };
-    loadCustomEmojis();
-  }, []);
-
-  // Scroll to custom emoji input when it appears
-  useEffect(() => {
-    if (showCustomEmojiInput) {
-      setTimeout(() => {
-        scrollToInput(customEmojiInputRef);
-      }, 150);
-    }
-  }, [showCustomEmojiInput]);
-
-  // Filter function to extract only emoji characters
-  const filterToEmoji = (text: string): string => {
-    const matches = text.match(/\p{Extended_Pictographic}/gu);
-    return matches ? matches.join('') : '';
-  };
-
-  // Auto-set emoji when activity type changes or is initially set
-  useEffect(() => {
-    if (activityType && !selectedEmoji) {
-      const defaultEmoji = getActivityEmojis()[activityType];
-      if (defaultEmoji) {
-        setSelectedEmoji(defaultEmoji);
-      }
-    }
-  }, [activityType, selectedEmoji]);
 
   // Auto-set tracking fields when activity type changes (only for new activities)
   useEffect(() => {
@@ -245,10 +219,6 @@ export default function ActivityForm({
       newErrors.type = 'Required field';
     }
 
-    if (!selectedEmoji) {
-      newErrors.emoji = 'Required field';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -259,7 +229,6 @@ export default function ActivityForm({
       date: dayjs(selectedDate).format('YYYY-MM-DD'),
       type: activityType,
       name: activityName.trim(),
-      emoji: selectedEmoji,
       completed: initialActivity?.completed || false,
       notes: notes.trim() || undefined,
       sets: sets,
@@ -276,14 +245,40 @@ export default function ActivityForm({
   const handleSaveRef = useRef(handleSave);
   handleSaveRef.current = handleSave;
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCurrentActivity: () => ({
+        id: initialActivity?.id || Date.now().toString(),
+        date: dayjs(selectedDate).format('YYYY-MM-DD'),
+        type: activityType,
+        name: activityName.trim(),
+        completed: initialActivity?.completed || false,
+        notes: notes.trim() || undefined,
+        sets: sets,
+        recurring: recurringConfig || undefined,
+        trackingFields: trackingFields,
+        supersetId: initialActivity?.supersetId,
+        supersetPosition: initialActivity?.supersetPosition,
+        order: initialActivity?.order,
+      }),
+    }),
+    [
+      initialActivity,
+      selectedDate,
+      activityType,
+      activityName,
+      notes,
+      sets,
+      recurringConfig,
+      trackingFields,
+    ]
+  );
+
   const handleNameSelect = (name: string, type?: string) => {
     setActivityName(name);
     if (type) {
       setActivityType(type as ActivityType);
-      const defaultEmoji = getActivityEmojis()[type];
-      if (defaultEmoji) {
-        setSelectedEmoji(defaultEmoji);
-      }
     }
   };
 
@@ -460,171 +455,6 @@ export default function ActivityForm({
         ref={scrollViewRef}
       >
         <View className="p-4 space-y-8">
-          {/* Superset Toggle (create mode only) */}
-          {mode === 'create' && onToggleSupersetMode && (
-            <TouchableOpacity
-              onPress={() => onToggleSupersetMode(!supersetMode)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: supersetMode ? colors.primary.main : colors.border,
-                backgroundColor: supersetMode
-                  ? isDark
-                    ? '#23263a'
-                    : '#e0e7ff'
-                  : colors.surface,
-              }}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: supersetMode }}
-              accessibilityLabel="Make it a superset"
-            >
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-              >
-                <Ionicons
-                  name="link-outline"
-                  size={20}
-                  color={
-                    supersetMode ? colors.primary.main : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: '500',
-                    color: supersetMode ? colors.primary.main : colors.text,
-                  }}
-                >
-                  Make it a Superset
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 44,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: supersetMode
-                    ? colors.primary.main
-                    : isDark
-                      ? '#555'
-                      : '#ccc',
-                  justifyContent: 'center',
-                  paddingHorizontal: 2,
-                }}
-              >
-                <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
-                    backgroundColor: '#fff',
-                    alignSelf: supersetMode ? 'flex-end' : 'flex-start',
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* Superset Exercise Strip */}
-          {supersetMode && supersetDrafts && supersetDrafts.length > 0 && (
-            <View>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '600',
-                  color: colors.textSecondary,
-                  marginBottom: 8,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                }}
-              >
-                Exercises ({supersetDrafts.length})
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
-              >
-                {supersetDrafts.map((draft, index) => (
-                  <View
-                    key={`draft-${index}`}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      minHeight: 44,
-                      borderRadius: 20,
-                      backgroundColor: isDark ? '#23263a' : '#e0e7ff',
-                      borderWidth: 1,
-                      borderColor: isDark
-                        ? colors.primary.main + '40'
-                        : '#a5b4fc',
-                      gap: 6,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16 }}>{draft.emoji || '💪'}</Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: '500',
-                        color: colors.text,
-                        maxWidth: 120,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {draft.name}
-                    </Text>
-                    {onRemoveDraft && (
-                      <TouchableOpacity
-                        onPress={() => onRemoveDraft(index)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        accessibilityLabel={`Remove ${draft.name}`}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={18}
-                          color={colors.textSecondary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-
-              {/* Save Superset Button */}
-              {supersetDrafts.length >= 2 && onSaveSuperset && (
-                <TouchableOpacity
-                  onPress={onSaveSuperset}
-                  style={{
-                    marginTop: 12,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    backgroundColor: colors.primary.main,
-                    alignItems: 'center',
-                  }}
-                  accessibilityLabel="Save superset"
-                  accessibilityRole="button"
-                >
-                  <Text
-                    style={{
-                      color: '#fff',
-                      fontSize: 16,
-                      fontWeight: '600',
-                    }}
-                  >
-                    Save Superset
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
           {/* Activity Name */}
           <View>
             <Text
@@ -724,254 +554,54 @@ export default function ActivityForm({
               Activity Type *
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {getActivityTypes().map(type => (
-                <TouchableOpacity
-                  key={type.value}
-                  onPress={() => {
-                    setActivityType(type.value as ActivityType);
-                    // Automatically select the emoji for this activity type
-                    setSelectedEmoji(type.emoji);
-                  }}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      activityType === type.value
+              {getActivityTypes().map(type => {
+                const isSelected = activityType === type.value;
+                return (
+                  <TouchableOpacity
+                    key={type.value}
+                    onPress={() => setActivityType(type.value as ActivityType)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
                           : '#a5b4fc'
                         : isDark
                           ? '#444'
                           : '#d1d5db',
-                    backgroundColor:
-                      activityType === type.value
+                      backgroundColor: isSelected
                         ? isDark
                           ? '#23263a'
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-base ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
+                    }}
                   >
-                    {type.emoji} {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Ionicons
+                      name={type.iconName}
+                      size={18}
+                      color={isDark ? '#fff' : '#111827'}
+                    />
+                    <Text
+                      className={`text-base ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             {errors.type && (
               <Text className="text-red-500 text-sm mt-1">{errors.type}</Text>
-            )}
-          </View>
-
-          {/* Emoji Selection */}
-          <View>
-            <Text
-              className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              Emoji *
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {/* Preset emojis */}
-              {Object.entries(getActivityEmojis()).map(([type, emoji]) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setSelectedEmoji(emoji)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      selectedEmoji === emoji
-                        ? isDark
-                          ? colors.primary.main
-                          : '#a5b4fc'
-                        : isDark
-                          ? '#444'
-                          : '#d1d5db',
-                    backgroundColor:
-                      selectedEmoji === emoji
-                        ? isDark
-                          ? '#23263a'
-                          : '#e0e7ff'
-                        : isDark
-                          ? '#1a1a1a'
-                          : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-2xl ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {emoji}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Custom emojis from library */}
-              {customEmojis.map(item => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => setSelectedEmoji(item.emoji)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor:
-                      selectedEmoji === item.emoji
-                        ? isDark
-                          ? colors.primary.main
-                          : '#a5b4fc'
-                        : isDark
-                          ? '#444'
-                          : '#d1d5db',
-                    backgroundColor:
-                      selectedEmoji === item.emoji
-                        ? isDark
-                          ? '#23263a'
-                          : '#e0e7ff'
-                        : isDark
-                          ? '#1a1a1a'
-                          : '#fff',
-                  }}
-                >
-                  <Text
-                    className={`text-2xl ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {item.emoji}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Add custom emoji button */}
-              <TouchableOpacity
-                onPress={() => setShowCustomEmojiInput(true)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderStyle: 'dashed',
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                }}
-              >
-                <Text
-                  className="text-2xl"
-                  style={{ color: colors.textSecondary }}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Custom emoji input */}
-            {showCustomEmojiInput && (
-              <View className="flex-row items-center mt-3" style={{ gap: 12 }}>
-                <TextInput
-                  ref={customEmojiInputRef}
-                  value={customEmojiText}
-                  onChangeText={text => setCustomEmojiText(filterToEmoji(text))}
-                  autoFocus
-                  placeholder="Enter emoji"
-                  placeholderTextColor={colors.textSecondary}
-                  className={`px-3 border rounded-lg text-center ${
-                    isDark
-                      ? 'bg-gray-800 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  style={{
-                    height: 40,
-                    fontSize: 16,
-                    width: 120,
-                  }}
-                  returnKeyType="done"
-                  onFocus={() => {
-                    setTimeout(() => {
-                      scrollToInput(customEmojiInputRef);
-                    }, 100);
-                  }}
-                  onSubmitEditing={async () => {
-                    if (customEmojiText) {
-                      setSelectedEmoji(customEmojiText);
-                      const token = await getAccessToken();
-                      const result = await addToEmojiLibrary(
-                        token,
-                        customEmojiText
-                      );
-                      if (result.success) {
-                        setCustomEmojis(await getCachedCustomEmojis());
-                      }
-                    }
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                />
-                <TouchableOpacity
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  onPress={async () => {
-                    if (customEmojiText) {
-                      setSelectedEmoji(customEmojiText);
-                      const token = await getAccessToken();
-                      const result = await addToEmojiLibrary(
-                        token,
-                        customEmojiText
-                      );
-                      if (result.success) {
-                        setCustomEmojis(await getCachedCustomEmojis());
-                      }
-                    }
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontWeight: '600',
-                      fontSize: 15,
-                    }}
-                  >
-                    Add
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                  onPress={() => {
-                    setShowCustomEmojiInput(false);
-                    setCustomEmojiText('');
-                    Keyboard.dismiss();
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.textSecondary,
-                      fontSize: 15,
-                    }}
-                  >
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {errors.emoji && (
-              <Text className="text-red-500 text-sm mt-1">{errors.emoji}</Text>
             )}
           </View>
 
@@ -1103,14 +733,33 @@ export default function ActivityForm({
                               : undefined,
                         }}
                       >
-                        <Text
-                          className={`text-sm mb-1 ${
-                            isDark ? 'text-gray-300' : 'text-gray-600'
-                          }`}
-                        >
-                          {config.label}
-                          {config.unit ? ` (${config.unit})` : ''}
-                        </Text>
+                        <View className="flex-row items-center mb-1">
+                          <Text
+                            className={`text-sm ${
+                              isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}
+                          >
+                            {config.label}
+                            {config.unit ? ` (${config.unit})` : ''}
+                          </Text>
+                          {field === 'weight' &&
+                            activityType === 'weight-training' && (
+                              <TouchableOpacity
+                                onPress={() => setPlateCalcSetId(set.id)}
+                                hitSlop={{
+                                  top: 16,
+                                  bottom: 16,
+                                  left: 16,
+                                  right: 16,
+                                }}
+                                style={{ marginLeft: 8 }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Open plate calculator"
+                              >
+                                <PlateIcon variant="tooltip" />
+                              </TouchableOpacity>
+                            )}
+                        </View>
                         {field === 'time' ? (
                           <TouchableOpacity
                             onPress={() => setDurationPickerSetId(set.id)}
@@ -1293,6 +942,175 @@ export default function ActivityForm({
             </View>
           )}
 
+          {/* Superset Toggle (create mode only) */}
+          {mode === 'create' && onToggleSupersetMode && (
+            <TouchableOpacity
+              onPress={() => onToggleSupersetMode(!supersetMode)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: supersetMode ? colors.primary.main : colors.border,
+                backgroundColor: supersetMode
+                  ? isDark
+                    ? '#23263a'
+                    : '#e0e7ff'
+                  : colors.surface,
+              }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: supersetMode }}
+              accessibilityLabel="Superset"
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              >
+                <Ionicons
+                  name="link-outline"
+                  size={20}
+                  color={
+                    supersetMode ? colors.primary.main : colors.textSecondary
+                  }
+                />
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '500',
+                    color: supersetMode ? colors.primary.main : colors.text,
+                  }}
+                >
+                  Superset
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: supersetMode
+                    ? colors.primary.main
+                    : isDark
+                      ? '#555'
+                      : '#ccc',
+                  justifyContent: 'center',
+                  paddingHorizontal: 2,
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: '#fff',
+                    alignSelf: supersetMode ? 'flex-end' : 'flex-start',
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Superset Exercise Strip */}
+          {supersetMode && supersetDrafts && supersetDrafts.length > 0 && (
+            <View>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: colors.textSecondary,
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Exercises ({supersetDrafts.length})
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {supersetDrafts.map((draft, index) => (
+                  <View
+                    key={`draft-${index}`}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      minHeight: 44,
+                      borderRadius: 20,
+                      backgroundColor: isDark ? '#23263a' : '#e0e7ff',
+                      borderWidth: 1,
+                      borderColor: isDark
+                        ? colors.primary.main + '40'
+                        : '#a5b4fc',
+                      gap: 6,
+                    }}
+                  >
+                    <ActivityIcon
+                      activityType={draft.type}
+                      size={16}
+                      color={colors.text}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: colors.text,
+                        maxWidth: 120,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {draft.name}
+                    </Text>
+                    {onRemoveDraft && (
+                      <TouchableOpacity
+                        onPress={() => onRemoveDraft(index)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel={`Remove ${draft.name}`}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={colors.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Save Superset Button */}
+              {supersetDrafts.length >= 2 && onSaveSuperset && (
+                <TouchableOpacity
+                  onPress={onSaveSuperset}
+                  style={{
+                    marginTop: 12,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    backgroundColor: colors.primary.main,
+                    alignItems: 'center',
+                  }}
+                  accessibilityLabel="Save superset"
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={{
+                      color: '#fff',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    Save Superset
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Delete Activity Link */}
           {mode === 'edit' && onDelete && (
             <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
@@ -1428,6 +1246,25 @@ export default function ActivityForm({
         }}
         onCancel={() => setDurationPickerSetId(null)}
       />
+
+      {/* Plate Calculator Modal */}
+      <PlateCalculatorModal
+        visible={plateCalcSetId !== null}
+        onClose={() => setPlateCalcSetId(null)}
+        initialWeight={
+          plateCalcSetId
+            ? (sets.find(s => s.id === plateCalcSetId)?.weight ?? undefined)
+            : undefined
+        }
+        onSelectWeight={weight => {
+          if (plateCalcSetId) {
+            handleUpdateSet(plateCalcSetId, { weight });
+          }
+          setPlateCalcSetId(null);
+        }}
+      />
     </View>
   );
 }
+
+export default forwardRef<ActivityFormHandle, ActivityFormProps>(ActivityForm);

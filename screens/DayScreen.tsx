@@ -34,14 +34,15 @@ import { useAuth } from '../context/AuthContext';
 import { pushActivityChange } from '../services/syncService';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
+import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
+import SupersetIcons from '../components/SupersetIcons';
 import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
 import {
   ActivityGroup,
   groupActivitiesWithSupersets,
-  getSupersetEmojisCompact,
   getSupersetLabel,
   isSupersetComplete,
   isActivityComplete,
@@ -990,7 +991,9 @@ export default function DayScreen({ navigation, route }: any) {
                   </TouchableOpacity>
                 </>
               )}
-              <Text className="text-2xl mr-3">{activity.emoji || '💪'}</Text>
+              <View className="mr-3">
+                <ActivityIcon activityType={activity.type} size={24} />
+              </View>
               {isBulkMode && (
                 <Ionicons
                   name={
@@ -1280,12 +1283,12 @@ export default function DayScreen({ navigation, route }: any) {
           </Text>
         </View>
 
-        {/* Combined emoji + name display */}
+        {/* Combined icon + name display */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1 mr-2">
-            <Text className="text-2xl mr-3">
-              {getSupersetEmojisCompact(activities)}
-            </Text>
+            <View className="mr-3">
+              <SupersetIcons activities={activities} size={22} />
+            </View>
             <Text
               className={`text-lg font-semibold flex-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
               numberOfLines={2}
@@ -1394,7 +1397,9 @@ export default function DayScreen({ navigation, route }: any) {
               color={isSelected ? '#3B82F6' : '#6B7280'}
             />
           </TouchableOpacity>
-          <Text className="text-xl mr-2">{activity.emoji || '💪'}</Text>
+          <View className="mr-2">
+            <ActivityIcon activityType={activity.type} size={22} />
+          </View>
           <Ionicons
             name={
               isActivityComplete(activity)
@@ -1552,9 +1557,9 @@ export default function DayScreen({ navigation, route }: any) {
                       }
                     />
                   </TouchableOpacity>
-                  <Text className="text-2xl mr-3">
-                    {activities[0].emoji || '💪'}
-                  </Text>
+                  <View className="mr-3">
+                    <ActivityIcon activityType={activities[0].type} size={24} />
+                  </View>
                   <Ionicons
                     name={
                       isActivityComplete(activities[0])
@@ -1746,8 +1751,7 @@ export default function DayScreen({ navigation, route }: any) {
               marginBottom: 16,
             }}
           >
-            {copyActivity &&
-              `${copyActivity.emoji || ''} ${copyActivity.name || copyActivity.type}`.trim()}
+            {copyActivity && (copyActivity.name || copyActivity.type)}
           </Text>
 
           <Text
@@ -2009,7 +2013,17 @@ export default function DayScreen({ navigation, route }: any) {
           }}
         />
         {/* Center: Title */}
-        <View
+        <TouchableOpacity
+          onPress={() => {
+            if (isAnimatingRef.current) return;
+            const today = dayjs().format('YYYY-MM-DD');
+            if (date === today) return;
+            navigation.setParams({ date: today });
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Return to today"
+          accessibilityHint="Jumps to today's workouts"
           style={{
             position: 'absolute',
             left: 0,
@@ -2018,7 +2032,6 @@ export default function DayScreen({ navigation, route }: any) {
             height: 44,
             alignItems: 'center',
             justifyContent: 'center',
-            pointerEvents: 'none',
           }}
         >
           <Text
@@ -2031,7 +2044,7 @@ export default function DayScreen({ navigation, route }: any) {
           >
             {formattedDate}
           </Text>
-        </View>
+        </TouchableOpacity>
         {/* Right: Share + Edit/Save buttons */}
         {(dayActivities.length > 0 || isBulkMode) && (
           <View

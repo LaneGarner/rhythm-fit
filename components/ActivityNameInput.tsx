@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import Fuse from 'fuse.js';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
   ScrollView,
@@ -47,6 +48,40 @@ export default function ActivityNameInput({
 
   const activities = useSelector((state: RootState) => state.activities.data);
 
+  const recentActivityNames = useMemo(() => {
+    const cutoff = dayjs().subtract(30, 'day');
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const a of activities) {
+      if (!a.name || !dayjs(a.date).isAfter(cutoff)) continue;
+      if (seen.has(a.name)) continue;
+      seen.add(a.name);
+      names.push(a.name);
+    }
+    return names;
+  }, [activities]);
+
+  const libraryFuse = useMemo(
+    () =>
+      new Fuse(libraryItems, {
+        keys: ['name'],
+        threshold: 0.4,
+        ignoreLocation: true,
+        minMatchCharLength: 2,
+      }),
+    [libraryItems]
+  );
+
+  const recentFuse = useMemo(
+    () =>
+      new Fuse(recentActivityNames, {
+        threshold: 0.4,
+        ignoreLocation: true,
+        minMatchCharLength: 2,
+      }),
+    [recentActivityNames]
+  );
+
   // Load library items from cache
   useEffect(() => {
     const loadLibrary = async () => {
@@ -79,73 +114,71 @@ export default function ActivityNameInput({
     if (isFocused) {
       const allExercises = getExercises().map(ex => ex.name);
       const customExerciseNames = libraryItems.map(ex => ex.name);
-      const recentActivities = activities
-        .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
-        .map(a => a.name)
-        .filter(Boolean)
-        .slice(0, 5);
 
       const initialSuggestions = [
         ...new Set([
           ...customExerciseNames,
           ...allExercises.slice(0, 10),
-          ...recentActivities,
+          ...recentActivityNames.slice(0, 5),
         ]),
       ];
       setSuggestions(initialSuggestions);
       setShowSuggestions(true);
     }
-  }, [isFocused, activities, libraryItems]);
+  }, [isFocused, recentActivityNames, libraryItems]);
 
   // Update suggestions based on input
   useEffect(() => {
-    if (localValue.trim().length > 0) {
-      const results = searchExercises(localValue);
-      const suggestionNames = results.map(ex => ex.name);
+    const trimmed = localValue.trim();
+    if (trimmed.length > 0) {
+      const suggestionNames = searchExercises(trimmed).map(ex => ex.name);
 
-      // Search custom exercises
-      const matchingCustom = libraryItems
-        .filter(ex => ex.name.toLowerCase().includes(localValue.toLowerCase()))
-        .map(ex => ex.name);
+      const matchingCustom =
+        trimmed.length < 2
+          ? libraryItems
+              .filter(ex =>
+                ex.name.toLowerCase().includes(trimmed.toLowerCase())
+              )
+              .map(ex => ex.name)
+          : libraryFuse.search(trimmed).map(r => r.item.name);
 
-      // Add recent activities (last 30 days)
-      const recentActivities = activities
-        .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
-        .map(a => a.name)
-        .filter(
-          name => name && name.toLowerCase().includes(localValue.toLowerCase())
-        )
-        .slice(0, 5);
+      const matchingRecent =
+        trimmed.length < 2
+          ? recentActivityNames
+              .filter(name =>
+                name.toLowerCase().includes(trimmed.toLowerCase())
+              )
+              .slice(0, 5)
+          : recentFuse
+              .search(trimmed)
+              .slice(0, 5)
+              .map(r => r.item);
 
       // Combine and deduplicate (custom first, then database, then recent)
       const allSuggestions = [
-        ...new Set([
-          ...matchingCustom,
-          ...suggestionNames,
-          ...recentActivities,
-        ]),
+        ...new Set([...matchingCustom, ...suggestionNames, ...matchingRecent]),
       ];
       setSuggestions(allSuggestions);
     } else if (isFocused) {
-      // Show recent activities even when input is empty
-      const recentActivities = activities
-        .filter(a => dayjs(a.date).isAfter(dayjs().subtract(30, 'day')))
-        .map(a => a.name)
-        .filter(Boolean)
-        .slice(0, 5);
-
       const allExercises = getExercises().map(ex => ex.name);
       const customExerciseNames = libraryItems.map(ex => ex.name);
       const initialSuggestions = [
         ...new Set([
           ...customExerciseNames,
           ...allExercises.slice(0, 10),
-          ...recentActivities,
+          ...recentActivityNames.slice(0, 5),
         ]),
       ];
       setSuggestions(initialSuggestions);
     }
-  }, [localValue, activities, isFocused, libraryItems]);
+  }, [
+    localValue,
+    isFocused,
+    libraryItems,
+    libraryFuse,
+    recentActivityNames,
+    recentFuse,
+  ]);
 
   const handleSelectSuggestion = (suggestion: string) => {
     setIsSelectingSuggestion(true);

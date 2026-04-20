@@ -19,9 +19,23 @@ export type ActivityType =
   | 'sports'
   | 'other';
 
+export interface ParsedSetData {
+  reps?: number;
+  weight?: number;
+  time?: number; // seconds
+  distance?: number; // miles
+}
+
+export interface ParsedExercise {
+  name: string;
+  sets?: ParsedSetData[];
+}
+
 export interface ParsedActivity {
   date: string;
   exercises: string[];
+  exerciseDetails?: ParsedExercise[];
+  supersetGroups?: number[][];
   type: ActivityType;
   isRecurring: boolean;
   weeksToRepeat: number;
