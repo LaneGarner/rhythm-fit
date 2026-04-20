@@ -50,7 +50,7 @@ export default function AppHeader({
         hitSlop={14}
         onPress={() => navigation.navigate('Settings')}
         className="p-2"
-        accessibilityLabel="Settings"
+        accessibilityLabel="Settings & Preferences"
       >
         <Ionicons
           name="person-circle-outline"

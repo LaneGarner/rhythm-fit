@@ -88,7 +88,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'settings',
-    title: 'Settings',
+    title: 'Settings & Preferences',
     description:
       'Tap the profile icon to access settings. Customize your week start day, toggle dark mode, manage your account, or replay this tutorial.',
     targetId: 'settings-button',

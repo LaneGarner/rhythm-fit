@@ -117,7 +117,7 @@ export default function SettingsScreen({ navigation }: any) {
             className="text-2xl font-bold mt-0"
             style={{ color: colors.text }}
           >
-            Settings
+            Settings & Preferences
           </Text>
         </View>
         <View style={{ width: 40 }} />

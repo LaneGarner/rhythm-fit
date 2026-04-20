@@ -750,7 +750,7 @@ export default function WeeklyScreen({ navigation }: any) {
           nativeID="settings-button"
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
-          accessibilityLabel="Settings"
+          accessibilityLabel="Settings & Preferences"
           style={{
             position: 'absolute',
             right: Math.max(16, insets.right),
