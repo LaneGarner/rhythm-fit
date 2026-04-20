@@ -21,7 +21,7 @@ const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
         onLayout={onLayout}
         style={{
           position: 'absolute',
-          bottom: Math.max(30, insets.bottom + 10),
+          bottom: Math.max(6, insets.bottom - 14),
           right: Math.max(34, insets.right + 10),
         }}
       >
