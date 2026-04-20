@@ -35,12 +35,18 @@ export function configureNotificationHandler() {
   handlerConfigured = true;
 
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async notification => {
+      const kind = (notification.request.content.data as NotificationPayload)
+        ?.kind;
+      const suppressInForeground =
+        kind === 'timer-completion' || kind === 'rest-timer';
+      return {
+        shouldShowBanner: !suppressInForeground,
+        shouldShowList: !suppressInForeground,
+        shouldPlaySound: !suppressInForeground,
+        shouldSetBadge: false,
+      };
+    },
   });
 
   if (Platform.OS === 'android') {
