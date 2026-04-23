@@ -4,6 +4,7 @@ export default {
   expo: {
     name: 'Rhythm Fit',
     slug: 'rhythm',
+    scheme: 'rhythm',
     version: '1.0.0',
     orientation: 'default',
     icon: './assets/icon.png',
@@ -21,6 +22,8 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ['remote-notification'],
+        NSSupportsLiveActivities: true,
+        NSSupportsLiveActivitiesFrequentUpdates: true,
       },
     },
     android: {
@@ -41,6 +44,15 @@ export default {
         {
           icon: './assets/icon.png',
           color: '#000000',
+        },
+      ],
+      '@bacons/apple-targets',
+      [
+        'expo-build-properties',
+        {
+          ios: {
+            deploymentTarget: '16.1',
+          },
         },
       ],
     ],

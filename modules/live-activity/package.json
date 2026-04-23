@@ -1,0 +1,8 @@
+{
+  "name": "live-activity",
+  "version": "0.1.0",
+  "description": "Local Expo module for iOS Live Activities (Dynamic Island)",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true
+}

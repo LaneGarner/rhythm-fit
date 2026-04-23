@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
@@ -86,6 +87,24 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
       }
     })();
   }, [user, getAccessToken]);
+
+  // Handle Live Activity taps (Dynamic Island / Lock Screen banner).
+  // The widget's widgetURL is `rhythm://timer/<activityId>`. Opening the app
+  // is the primary affordance — the sticky timer component surfaces inside
+  // the app, letting the user resume or view the running activity.
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (!url || !url.startsWith('rhythm://timer/')) return;
+      if (!navigationRef.current) return;
+      navigationRef.current.navigate('Main');
+    };
+
+    Linking.getInitialURL().then(handleUrl);
+    const subscription = Linking.addEventListener('url', ({ url }) =>
+      handleUrl(url)
+    );
+    return () => subscription.remove();
+  }, [navigationRef]);
 
   // Handle notification taps → deep link to relevant screen.
   useEffect(() => {
