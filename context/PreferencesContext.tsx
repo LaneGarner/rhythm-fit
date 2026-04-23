@@ -20,6 +20,8 @@ import {
   saveTimerVibration,
   loadTimerSound,
   saveTimerSound,
+  loadLiveActivity,
+  saveLiveActivity,
   loadNotificationSettings,
   saveNotificationSettings,
 } from '../utils/storage';
@@ -39,6 +41,8 @@ interface PreferencesContextProps {
   setTimerVibration: (enabled: boolean) => void;
   timerSound: boolean;
   setTimerSound: (enabled: boolean) => void;
+  liveActivity: boolean;
+  setLiveActivity: (enabled: boolean) => void;
   notificationSettings: NotificationSettings;
   setNotificationSettings: (settings: NotificationSettings) => void;
   isLoading: boolean;
@@ -53,6 +57,8 @@ export const PreferencesContext = createContext<PreferencesContextProps>({
   setTimerVibration: () => {},
   timerSound: true,
   setTimerSound: () => {},
+  liveActivity: true,
+  setLiveActivity: () => {},
   notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
   setNotificationSettings: () => {},
   isLoading: true,
@@ -67,6 +73,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const [autoRestTimer, setAutoRestTimerState] = useState(false);
   const [timerVibration, setTimerVibrationState] = useState(true);
   const [timerSound, setTimerSoundState] = useState(true);
+  const [liveActivity, setLiveActivityState] = useState(true);
   const [notificationSettings, setNotificationSettingsState] =
     useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +101,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const localTimerSound = await loadTimerSound();
       setTimerSoundState(localTimerSound);
+
+      const localLiveActivity = await loadLiveActivity();
+      setLiveActivityState(localLiveActivity);
 
       const localNotifications = await loadNotificationSettings();
       setNotificationSettingsState(localNotifications);
@@ -152,6 +162,11 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     await saveTimerSound(enabled);
   }, []);
 
+  const handleSetLiveActivity = useCallback(async (enabled: boolean) => {
+    setLiveActivityState(enabled);
+    await saveLiveActivity(enabled);
+  }, []);
+
   const handleSetNotificationSettings = useCallback(
     async (settings: NotificationSettings) => {
       setNotificationSettingsState(settings);
@@ -178,6 +193,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
         setTimerVibration: handleSetTimerVibration,
         timerSound,
         setTimerSound: handleSetTimerSound,
+        liveActivity,
+        setLiveActivity: handleSetLiveActivity,
         notificationSettings,
         setNotificationSettings: handleSetNotificationSettings,
         isLoading,

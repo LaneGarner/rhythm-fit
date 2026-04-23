@@ -72,9 +72,12 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
-  const { timerVibration, timerSound, notificationSettings } = usePreferences();
+  const { timerVibration, timerSound, liveActivity, notificationSettings } =
+    usePreferences();
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
+  const liveActivityRef = useRef(liveActivity);
+  const liveActivityKitIdRef = useRef<string | null>(null);
   const notificationSettingsRef = useRef(notificationSettings);
   const player = useAudioPlayer(require('../assets/sounds/timer-complete.wav'));
 
@@ -96,6 +99,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     notificationSettingsRef.current = notificationSettings;
   }, [notificationSettings]);
 
+  // When the user toggles Live Activity off mid-timer, end the running one.
+  useEffect(() => {
+    liveActivityRef.current = liveActivity;
+    if (!liveActivity) {
+      LiveActivity.endAll();
+      liveActivityKitIdRef.current = null;
+    }
+  }, [liveActivity]);
+
   const scheduleTimerNotification = useCallback(
     (activityName: string, completionAt: number) => {
       const settings = notificationSettingsRef.current;
@@ -111,7 +123,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const vibrationActiveRef = useRef(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const liveActivityKitIdRef = useRef<string | null>(null);
 
   const startLiveActivity = useCallback(
     async (
@@ -125,6 +136,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         emomTotalRounds?: number;
       }
     ) => {
+      if (!liveActivityRef.current) return;
       const id = await LiveActivity.start({
         activityId,
         activityName,
