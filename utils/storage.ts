@@ -176,6 +176,25 @@ export const loadTimerSound = async (): Promise<boolean> => {
   }
 };
 
+// Live Activity preference storage (iOS Dynamic Island / Lock Screen)
+export const saveLiveActivity = async (enabled: boolean) => {
+  try {
+    await AsyncStorage.setItem('liveActivity', JSON.stringify(enabled));
+  } catch (error) {
+    console.error('Error saving live activity preference:', error);
+  }
+};
+
+export const loadLiveActivity = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('liveActivity');
+    return data !== null ? JSON.parse(data) : true; // Default: enabled
+  } catch (error) {
+    console.error('Error loading live activity preference:', error);
+    return true;
+  }
+};
+
 // Notification settings preference storage
 export const saveNotificationSettings = async (
   settings: NotificationSettings

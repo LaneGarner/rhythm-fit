@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Alert,
+  Platform,
   ScrollView,
   Switch,
   Text,
@@ -34,6 +35,8 @@ export default function SettingsScreen({ navigation }: any) {
     setTimerVibration,
     timerSound,
     setTimerSound,
+    liveActivity,
+    setLiveActivity,
   } = usePreferences();
   const {
     startTutorial,
@@ -541,6 +544,47 @@ export default function SettingsScreen({ navigation }: any) {
               thumbColor="#ffffff"
             />
           </TouchableOpacity>
+          {Platform.OS === 'ios' && (
+            <>
+              <View
+                style={{
+                  height: 0.5,
+                  backgroundColor: colors.border,
+                  marginLeft: 16,
+                }}
+              />
+              {/* Live Activity (Dynamic Island / Lock Screen) */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="flex-row items-center justify-between p-4"
+                onPress={() => setLiveActivity(!liveActivity)}
+                accessibilityRole="switch"
+                accessibilityLabel="Live Activity"
+                accessibilityState={{ checked: liveActivity }}
+              >
+                <View className="flex-1 mr-3">
+                  <Text className="text-base" style={{ color: colors.text }}>
+                    Live Activity
+                  </Text>
+                  <Text
+                    className="text-sm mt-1"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Show running timers on the Lock Screen and Dynamic Island.
+                  </Text>
+                </View>
+                <Switch
+                  value={liveActivity}
+                  onValueChange={setLiveActivity}
+                  trackColor={{
+                    false: colors.toggleTrack,
+                    true: colors.primary.main,
+                  }}
+                  thumbColor="#ffffff"
+                />
+              </TouchableOpacity>
+            </>
+          )}
           <View
             style={{
               height: 0.5,

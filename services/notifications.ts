@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
 import { NotificationSettings } from '../types/preferences';
@@ -35,12 +35,28 @@ export function configureNotificationHandler() {
   handlerConfigured = true;
 
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async notification => {
+      const rawData = notification.request.content.data;
+      let kind: string | undefined;
+      if (typeof rawData === 'string') {
+        try {
+          kind = JSON.parse(rawData)?.kind;
+        } catch {
+          kind = undefined;
+        }
+      } else {
+        kind = (rawData as NotificationPayload | undefined)?.kind;
+      }
+      const isTimerKind = kind === 'timer-completion' || kind === 'rest-timer';
+      const isForeground = AppState.currentState === 'active';
+      const suppress = isTimerKind && isForeground;
+      return {
+        shouldShowBanner: !suppress,
+        shouldShowList: !suppress,
+        shouldPlaySound: !suppress,
+        shouldSetBadge: false,
+      };
+    },
   });
 
   if (Platform.OS === 'android') {

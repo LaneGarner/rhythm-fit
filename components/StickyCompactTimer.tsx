@@ -148,7 +148,9 @@ export default function StickyCompactTimer({
           <TouchableOpacity
             onPress={isPaused ? resumeTimer : handleStart}
             style={{
-              backgroundColor: '#22c55e',
+              backgroundColor: colors.surface,
+              borderWidth: 2,
+              borderColor: colors.success.main,
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 6,
@@ -156,7 +158,13 @@ export default function StickyCompactTimer({
             accessibilityRole="button"
             accessibilityLabel={isPaused ? 'Resume timer' : 'Start timer'}
           >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 13 }}>
+            <Text
+              style={{
+                color: colors.success.main,
+                fontWeight: '600',
+                fontSize: 13,
+              }}
+            >
               {isPaused ? 'Resume' : 'Start'}
             </Text>
           </TouchableOpacity>
@@ -164,7 +172,9 @@ export default function StickyCompactTimer({
           <TouchableOpacity
             onPress={pauseTimer}
             style={{
-              backgroundColor: '#eab308',
+              backgroundColor: colors.surface,
+              borderWidth: 2,
+              borderColor: colors.warning.main,
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 6,
@@ -172,7 +182,13 @@ export default function StickyCompactTimer({
             accessibilityRole="button"
             accessibilityLabel="Pause timer"
           >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 13 }}>
+            <Text
+              style={{
+                color: colors.warning.main,
+                fontWeight: '600',
+                fontSize: 13,
+              }}
+            >
               Pause
             </Text>
           </TouchableOpacity>
@@ -181,7 +197,9 @@ export default function StickyCompactTimer({
           onPress={resetTimer}
           disabled={!isTimerOwner}
           style={{
-            backgroundColor: isTimerOwner ? '#ef4444' : '#9ca3af',
+            backgroundColor: colors.surface,
+            borderWidth: 2,
+            borderColor: isTimerOwner ? colors.error.main : colors.border,
             paddingHorizontal: 14,
             paddingVertical: 6,
             borderRadius: 6,
@@ -190,7 +208,13 @@ export default function StickyCompactTimer({
           accessibilityLabel="Reset timer"
           accessibilityState={{ disabled: !isTimerOwner }}
         >
-          <Text style={{ color: 'white', fontWeight: '600', fontSize: 13 }}>
+          <Text
+            style={{
+              color: isTimerOwner ? colors.error.main : colors.textSecondary,
+              fontWeight: '600',
+              fontSize: 13,
+            }}
+          >
             Reset
           </Text>
         </TouchableOpacity>

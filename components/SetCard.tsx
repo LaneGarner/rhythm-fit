@@ -53,9 +53,8 @@ export default function SetCard({
 
   return (
     <View
-      className={`p-4 rounded-lg mb-3 ${
-        isDark ? 'bg-gray-800' : 'bg-white'
-      } shadow-sm`}
+      className="p-4 rounded-lg mb-3 shadow-sm"
+      style={{ backgroundColor: colors.cardBackground }}
     >
       <View className="flex-row justify-between items-center mb-3">
         <Text
@@ -109,7 +108,7 @@ export default function SetCard({
                   {config.label}
                   {config.unit ? ` (${config.unit})` : ''}
                 </Text>
-                {showPlateIcon && onOpenPlateCalculator && !readOnly && (
+                {showPlateIcon && onOpenPlateCalculator && (
                   <TouchableOpacity
                     onPress={() => onOpenPlateCalculator(set.id)}
                     hitSlop={{
