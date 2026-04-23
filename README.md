@@ -1,6 +1,6 @@
-# Rhythm - Workout Tracking App
+# Rhythm - AI-Powered Workout Tracker & Coach
 
-A mobile workout tracking app focused on consistency, habits, and routine. Built with React Native, Expo, and TypeScript.
+An AI-Powered Workout Tracker & Coach. Built with React Native, Expo, and TypeScript.
 
 ## Features
 
