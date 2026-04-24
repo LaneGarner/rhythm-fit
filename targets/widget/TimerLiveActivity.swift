@@ -19,7 +19,7 @@ private func modeSymbol(_ mode: String, isPaused: Bool) -> String {
   }
 }
 
-private func accentColor(for mode: String, endsAt: Date?) -> Color {
+private func timerAccentColor(for mode: String, endsAt: Date?) -> Color {
   if mode == "rest" { return Color("$rest") }
   if let endsAt = endsAt, endsAt.timeIntervalSinceNow <= 10 {
     return Color("$warning")
@@ -34,7 +34,7 @@ struct LockScreenView: View {
 
   var body: some View {
     let mode = context.state.mode
-    let accent = accentColor(for: mode, endsAt: context.state.endsAt)
+    let accent = timerAccentColor(for: mode, endsAt: context.state.endsAt)
 
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 8) {
@@ -116,7 +116,7 @@ struct TimerLiveActivity: Widget {
         .widgetURL(URL(string: "rhythm://timer/\(context.attributes.activityId)"))
     } dynamicIsland: { context in
       let mode = context.state.mode
-      let accent = accentColor(for: mode, endsAt: context.state.endsAt)
+      let accent = timerAccentColor(for: mode, endsAt: context.state.endsAt)
 
       return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
