@@ -17,7 +17,7 @@ public class LiveActivityModule: Module {
     }
 
     AsyncFunction("start") { (options: LiveActivityStartOptions) -> String? in
-      guard #available(iOS 16.1, *) else { return nil }
+      guard #available(iOS 16.2, *) else { return nil }
       guard ActivityAuthorizationInfo().areActivitiesEnabled else { return nil }
 
       // Only one timer activity at a time — end any existing ones.
@@ -56,7 +56,7 @@ public class LiveActivityModule: Module {
     }
 
     AsyncFunction("update") { (options: LiveActivityUpdateOptions) -> Void in
-      guard #available(iOS 16.1, *) else { return }
+      guard #available(iOS 16.2, *) else { return }
       let targetActivities: [Activity<TimerAttributes>] = Activity<TimerAttributes>.activities
         .filter { options.activityKitId == nil || $0.id == options.activityKitId }
 
@@ -78,7 +78,7 @@ public class LiveActivityModule: Module {
     }
 
     AsyncFunction("end") { (options: LiveActivityEndOptions) -> Void in
-      guard #available(iOS 16.1, *) else { return }
+      guard #available(iOS 16.2, *) else { return }
       let dismissal: ActivityUIDismissalPolicy
       switch options.dismissalPolicy ?? "afterSeconds" {
       case "immediate":
@@ -111,7 +111,7 @@ public class LiveActivityModule: Module {
     }
 
     AsyncFunction("endAll") { () -> Void in
-      guard #available(iOS 16.1, *) else { return }
+      guard #available(iOS 16.2, *) else { return }
       for activity in Activity<TimerAttributes>.activities {
         await activity.end(nil, dismissalPolicy: .immediate)
       }
