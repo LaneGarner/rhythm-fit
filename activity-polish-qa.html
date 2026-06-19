@@ -189,6 +189,117 @@
         color: var(--success);
       }
 
+      .result-cell {
+        white-space: nowrap;
+      }
+
+      .result-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .qa-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 36px;
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: white;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          background 0.12s ease,
+          border-color 0.12s ease,
+          color 0.12s ease;
+      }
+
+      .qa-btn:hover {
+        border-color: #c2cad6;
+      }
+
+      .qa-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .qa-btn.is-pass[aria-pressed="true"] {
+        background: #e7f6ec;
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      .qa-btn.is-fail[aria-pressed="true"] {
+        background: #fdeaea;
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .qa-btn.is-note[aria-pressed="true"] {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .qa-note-row td {
+        background: #fbfcfe;
+        padding-top: 0;
+      }
+
+      .qa-note-field {
+        width: 100%;
+        min-height: 60px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 8px 10px;
+        font:
+          inherit;
+        font-size: 0.92rem;
+        color: var(--ink);
+        background: white;
+      }
+
+      .qa-note-field:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+        border-color: var(--accent);
+      }
+
+      tr.row-pass td:first-child {
+        box-shadow: inset 3px 0 0 var(--success);
+      }
+
+      tr.row-fail td:first-child {
+        box-shadow: inset 3px 0 0 var(--danger);
+      }
+
+      .qa-progress {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .qa-reset {
+        margin-left: 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: white;
+        color: var(--muted);
+        padding: 4px 10px;
+        font-size: 0.82rem;
+        cursor: pointer;
+      }
+
+      .qa-reset:hover {
+        border-color: #c2cad6;
+      }
+
       @media print {
         body {
           background: white;
@@ -253,13 +364,20 @@
 
       <section>
         <h2>Feature QA Matrix</h2>
-        <table>
+        <p class="qa-progress" id="qa-progress" aria-live="polite">
+          <span id="qa-progress-text">Loading saved results…</span>
+          <button type="button" class="qa-reset" id="qa-reset">
+            Reset all
+          </button>
+        </p>
+        <table id="qa-matrix">
           <thead>
             <tr>
               <th>Feature</th>
               <th>Design intent</th>
               <th>Manual QA</th>
               <th>Expected result</th>
+              <th>Result</th>
             </tr>
           </thead>
           <tbody>
@@ -433,5 +551,224 @@
         </p>
       </section>
     </main>
+
+    <script>
+      (function () {
+        var STORAGE_PREFIX = "qa:activity-polish:v1:";
+        var hasStorage = (function () {
+          try {
+            var k = "__qa_test__";
+            window.localStorage.setItem(k, "1");
+            window.localStorage.removeItem(k);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        })();
+
+        function slugify(text) {
+          return text
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        }
+
+        function loadState(key) {
+          if (!hasStorage) return { status: null, note: "", noteOpen: false };
+          try {
+            var raw = window.localStorage.getItem(STORAGE_PREFIX + key);
+            if (!raw) return { status: null, note: "", noteOpen: false };
+            var parsed = JSON.parse(raw);
+            return {
+              status: parsed.status || null,
+              note: parsed.note || "",
+              noteOpen: !!parsed.noteOpen,
+            };
+          } catch (e) {
+            return { status: null, note: "", noteOpen: false };
+          }
+        }
+
+        function saveState(key, state) {
+          if (!hasStorage) return;
+          try {
+            if (!state.status && !state.note && !state.noteOpen) {
+              window.localStorage.removeItem(STORAGE_PREFIX + key);
+            } else {
+              window.localStorage.setItem(
+                STORAGE_PREFIX + key,
+                JSON.stringify(state)
+              );
+            }
+          } catch (e) {
+            /* ignore quota / privacy errors */
+          }
+        }
+
+        var table = document.getElementById("qa-matrix");
+        if (!table) return;
+        var rows = Array.prototype.slice.call(
+          table.querySelectorAll("tbody tr")
+        );
+        var keys = [];
+
+        var progressText = document.getElementById("qa-progress-text");
+
+        function updateProgress() {
+          if (!progressText) return;
+          var pass = 0;
+          var fail = 0;
+          keys.forEach(function (key) {
+            var s = loadState(key).status;
+            if (s === "pass") pass++;
+            else if (s === "fail") fail++;
+          });
+          var total = keys.length;
+          var done = pass + fail;
+          var msg =
+            done +
+            " of " +
+            total +
+            " tested — " +
+            pass +
+            " pass, " +
+            fail +
+            " fail";
+          if (!hasStorage) {
+            msg += " (results will not persist: localStorage unavailable)";
+          }
+          progressText.textContent = msg;
+        }
+
+        rows.forEach(function (row) {
+          var firstCell = row.querySelector("td");
+          if (!firstCell) return;
+          var label = firstCell.textContent.trim();
+          var key = slugify(label);
+          keys.push(key);
+
+          var state = loadState(key);
+
+          var cell = document.createElement("td");
+          cell.className = "result-cell";
+
+          var controls = document.createElement("div");
+          controls.className = "result-controls";
+
+          var passBtn = document.createElement("button");
+          passBtn.type = "button";
+          passBtn.className = "qa-btn is-pass";
+          passBtn.textContent = "✓";
+          passBtn.setAttribute("title", "Mark pass");
+          passBtn.setAttribute("aria-label", "Mark " + label + " as pass");
+
+          var failBtn = document.createElement("button");
+          failBtn.type = "button";
+          failBtn.className = "qa-btn is-fail";
+          failBtn.textContent = "✗";
+          failBtn.setAttribute("title", "Mark fail");
+          failBtn.setAttribute("aria-label", "Mark " + label + " as fail");
+
+          var noteBtn = document.createElement("button");
+          noteBtn.type = "button";
+          noteBtn.className = "qa-btn is-note";
+          noteBtn.textContent = "✎";
+          noteBtn.setAttribute("title", "Add notes");
+          noteBtn.setAttribute("aria-label", "Toggle notes for " + label);
+
+          controls.appendChild(passBtn);
+          controls.appendChild(failBtn);
+          controls.appendChild(noteBtn);
+          cell.appendChild(controls);
+          row.appendChild(cell);
+
+          // Notes row (sits directly beneath the feature row)
+          var noteRow = document.createElement("tr");
+          noteRow.className = "qa-note-row";
+          var noteTd = document.createElement("td");
+          noteTd.colSpan = 5;
+          var noteField = document.createElement("textarea");
+          noteField.className = "qa-note-field";
+          noteField.placeholder = "Notes for " + label + "…";
+          noteField.setAttribute("aria-label", "Notes for " + label);
+          noteField.value = state.note;
+          noteTd.appendChild(noteField);
+          noteRow.appendChild(noteTd);
+          row.parentNode.insertBefore(noteRow, row.nextSibling);
+
+          function render() {
+            passBtn.setAttribute(
+              "aria-pressed",
+              state.status === "pass" ? "true" : "false"
+            );
+            failBtn.setAttribute(
+              "aria-pressed",
+              state.status === "fail" ? "true" : "false"
+            );
+            noteBtn.setAttribute(
+              "aria-pressed",
+              state.noteOpen ? "true" : "false"
+            );
+            noteRow.style.display = state.noteOpen ? "" : "none";
+            row.classList.toggle("row-pass", state.status === "pass");
+            row.classList.toggle("row-fail", state.status === "fail");
+          }
+
+          function commit() {
+            saveState(key, state);
+            render();
+            updateProgress();
+          }
+
+          passBtn.addEventListener("click", function () {
+            state.status = state.status === "pass" ? null : "pass";
+            commit();
+          });
+
+          failBtn.addEventListener("click", function () {
+            state.status = state.status === "fail" ? null : "fail";
+            commit();
+          });
+
+          noteBtn.addEventListener("click", function () {
+            state.noteOpen = !state.noteOpen;
+            commit();
+            if (state.noteOpen) noteField.focus();
+          });
+
+          noteField.addEventListener("input", function () {
+            state.note = noteField.value;
+            saveState(key, state);
+          });
+
+          render();
+        });
+
+        var resetBtn = document.getElementById("qa-reset");
+        if (resetBtn) {
+          resetBtn.addEventListener("click", function () {
+            if (
+              !window.confirm(
+                "Clear all saved QA results and notes on this page?"
+              )
+            ) {
+              return;
+            }
+            keys.forEach(function (key) {
+              if (hasStorage) {
+                try {
+                  window.localStorage.removeItem(STORAGE_PREFIX + key);
+                } catch (e) {
+                  /* ignore */
+                }
+              }
+            });
+            window.location.reload();
+          });
+        }
+
+        updateProgress();
+      })();
+    </script>
   </body>
 </html>
