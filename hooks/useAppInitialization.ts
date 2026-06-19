@@ -16,7 +16,7 @@ import { AppDispatch, RootState } from '../redux/store';
 import { Activity } from '../types/activity';
 import { loadTutorialCompleted } from '../utils/storage';
 
-const MIN_SPLASH_TIME_MS = 1000;
+const MIN_SPLASH_TIME_MS = 300;
 
 export function useAppInitialization() {
   const dispatch = useDispatch<AppDispatch>();
