@@ -14,8 +14,6 @@ import {
   updateActivity,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
-import { useAuth } from '../context/AuthContext';
-import { pushActivityChange } from '../services/syncService';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, RecurringConfig } from '../types/activity';
 import {
@@ -30,7 +28,6 @@ dayjs.extend(isSameOrAfter);
 export default function EditActivityScreen({ navigation, route }: any) {
   const { activityId, supersetId: paramSupersetId } = route.params;
   const dispatch = useDispatch();
-  const { getAccessToken } = useAuth();
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
 
@@ -161,7 +158,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             navigation.navigate('Main', {
               screen: 'Weekly',
               params: {
@@ -170,14 +167,6 @@ export default function EditActivityScreen({ navigation, route }: any) {
               },
             });
             dispatch(deleteActivity(activityId));
-            try {
-              const token = await getAccessToken();
-              if (token) {
-                await pushActivityChange(token, activity, true);
-              }
-            } catch (err) {
-              console.error('Failed to sync deletion:', err);
-            }
           },
         },
       ]
@@ -462,7 +451,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             navigation.navigate('Main', {
               screen: 'Weekly',
               params: {
@@ -473,14 +462,6 @@ export default function EditActivityScreen({ navigation, route }: any) {
 
             for (const a of supersetActivitiesFromRedux) {
               dispatch(deleteActivity(a.id));
-              try {
-                const token = await getAccessToken();
-                if (token) {
-                  await pushActivityChange(token, a, true);
-                }
-              } catch (err) {
-                console.error('Failed to sync deletion:', err);
-              }
             }
           },
         },
@@ -492,7 +473,6 @@ export default function EditActivityScreen({ navigation, route }: any) {
     activity,
     navigation,
     dispatch,
-    getAccessToken,
   ]);
 
   const handleSupersetCancel = useCallback(() => {

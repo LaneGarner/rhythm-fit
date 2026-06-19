@@ -30,8 +30,6 @@ import {
 } from '../redux/activitySlice';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
-import { useAuth } from '../context/AuthContext';
-import { pushActivityChange } from '../services/syncService';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 import ActivityIcon from '../components/ActivityIcon';
@@ -73,7 +71,6 @@ export default function DayScreen({ navigation, route }: any) {
   const { date } = route.params;
   const dispatch = useDispatch();
   const activities = useSelector((state: RootState) => state.activities.data);
-  const { getAccessToken } = useAuth();
 
   // Bulk selection state
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -98,7 +95,7 @@ export default function DayScreen({ navigation, route }: any) {
   const isAnimatingRef = useRef(false);
 
   // Sort activities: by custom order if available, then by id (preserve order regardless of completion)
-  const savedActivities = activities
+  const savedActivities: Activity[] = activities
     .filter(activity => activity.date === date)
     .sort((a, b) => {
       // Primary: Use custom order if available
@@ -112,13 +109,13 @@ export default function DayScreen({ navigation, route }: any) {
     });
 
   // Use pending order if available, otherwise use saved order
-  const dayActivities = pendingOrderIds
+  const dayActivities: Activity[] = pendingOrderIds
     ? pendingOrderIds
         .map((id, index) => {
           const activity = savedActivities.find(a => a.id === id);
-          return activity ? { ...activity, order: index } : undefined;
+          return activity ? ({ ...activity, order: index } as Activity) : null;
         })
-        .filter((a): a is Activity => a !== undefined)
+        .filter((a): a is Activity => a !== null)
     : savedActivities;
 
   // Sync pendingOrderIds when activities are deleted or moved away
@@ -354,11 +351,13 @@ export default function DayScreen({ navigation, route }: any) {
         if (direction === 'up') {
           // Move the item before the superset to after the superset
           const itemToMove = reordered[firstIndex - 1];
+          if (!itemToMove) return;
           reordered.splice(firstIndex - 1, 1);
           reordered.splice(lastIndex, 0, itemToMove);
         } else {
           // Move the item after the superset to before the superset
           const itemToMove = reordered[lastIndex + 1];
+          if (!itemToMove) return;
           reordered.splice(lastIndex + 1, 1);
           reordered.splice(firstIndex, 0, itemToMove);
         }
@@ -375,6 +374,8 @@ export default function DayScreen({ navigation, route }: any) {
         if (targetIndex < 0 || targetIndex >= dayActivities.length) return;
 
         const targetActivity = dayActivities[targetIndex];
+
+        if (!targetActivity) return;
 
         // If target is part of a superset, we need to move past the whole superset
         if (targetActivity.supersetId) {
@@ -400,6 +401,7 @@ export default function DayScreen({ navigation, route }: any) {
         if (targetActivity.supersetId) {
           // Moving past a superset group - use splice with adjusted index
           const [movedActivity] = reordered.splice(currentIndex, 1);
+          if (!movedActivity) return;
           const adjustedTarget =
             targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
           reordered.splice(adjustedTarget, 0, movedActivity);
@@ -433,19 +435,7 @@ export default function DayScreen({ navigation, route }: any) {
           onPress: async () => {
             setIsDeleting(true);
             for (const activityId of selectedActivities) {
-              const activity = activities.find(a => a.id === activityId);
               dispatch(deleteActivity(activityId));
-              // Sync deletion to backend
-              if (activity) {
-                try {
-                  const token = await getAccessToken();
-                  if (token) {
-                    await pushActivityChange(token, activity, true);
-                  }
-                } catch (err) {
-                  console.error('Failed to sync deletion:', err);
-                }
-              }
             }
             setSelectedActivities(new Set());
             setIsBulkMode(false);
@@ -483,7 +473,6 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   const handleDeleteActivity = (activityId: string) => {
-    const activity = activities.find(a => a.id === activityId);
     Alert.alert(
       'Delete Activity',
       'Are you sure you want to delete this activity? This cannot be undone.',
@@ -492,19 +481,8 @@ export default function DayScreen({ navigation, route }: any) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             dispatch(deleteActivity(activityId));
-            // Sync deletion to backend
-            if (activity) {
-              try {
-                const token = await getAccessToken();
-                if (token) {
-                  await pushActivityChange(token, activity, true);
-                }
-              } catch (err) {
-                console.error('Failed to sync deletion:', err);
-              }
-            }
           },
         },
       ]
@@ -529,15 +507,6 @@ export default function DayScreen({ navigation, route }: any) {
     };
 
     dispatch(addActivity(newActivity));
-
-    try {
-      const token = await getAccessToken();
-      if (token) {
-        await pushActivityChange(token, newActivity);
-      }
-    } catch (err) {
-      console.error('Failed to sync duplicated activity:', err);
-    }
 
     Alert.alert(
       'Duplicated',
@@ -573,15 +542,6 @@ export default function DayScreen({ navigation, route }: any) {
     };
 
     dispatch(addActivity(newActivity));
-
-    try {
-      const token = await getAccessToken();
-      if (token) {
-        await pushActivityChange(token, newActivity);
-      }
-    } catch (err) {
-      console.error('Failed to sync copied activity:', err);
-    }
 
     setIsCopying(false);
     setShowCopyToDateModal(false);
@@ -912,11 +872,13 @@ export default function DayScreen({ navigation, route }: any) {
                               a => a.id === activity.id
                             );
                             if (pos > 0) {
+                              const previousMember = supersetMembers[pos - 1];
+                              if (!previousMember) return;
                               dispatch(
                                 swapSupersetOrder({
                                   supersetId: activity.supersetId!,
                                   id1: activity.id,
-                                  id2: supersetMembers[pos - 1].id,
+                                  id2: previousMember.id,
                                 })
                               );
                             }
@@ -952,11 +914,13 @@ export default function DayScreen({ navigation, route }: any) {
                               a => a.id === activity.id
                             );
                             if (pos < supersetMembers.length - 1) {
+                              const nextMember = supersetMembers[pos + 1];
+                              if (!nextMember) return;
                               dispatch(
                                 swapSupersetOrder({
                                   supersetId: activity.supersetId!,
                                   id1: activity.id,
-                                  id2: supersetMembers[pos + 1].id,
+                                  id2: nextMember.id,
                                 })
                               );
                             }
@@ -1135,14 +1099,6 @@ export default function DayScreen({ navigation, route }: any) {
                     onPress: async () => {
                       for (const a of activities) {
                         dispatch(deleteActivity(a.id));
-                        try {
-                          const token = await getAccessToken();
-                          if (token) {
-                            await pushActivityChange(token, a, true);
-                          }
-                        } catch (err) {
-                          console.error('Failed to sync deletion:', err);
-                        }
                       }
                     },
                   },
@@ -1200,14 +1156,6 @@ export default function DayScreen({ navigation, route }: any) {
                     onPress: async () => {
                       for (const a of activities) {
                         dispatch(deleteActivity(a.id));
-                        try {
-                          const token = await getAccessToken();
-                          if (token) {
-                            await pushActivityChange(token, a, true);
-                          }
-                        } catch (err) {
-                          console.error('Failed to sync deletion:', err);
-                        }
                       }
                     },
                   },

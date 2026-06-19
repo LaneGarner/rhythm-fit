@@ -28,8 +28,6 @@ import {
   updateActivity,
 } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
-import { useAuth } from '../context/AuthContext';
-import { pushActivityChange } from '../services/syncService';
 import { useTheme } from '../theme/ThemeContext';
 import { useWeekContext } from '../WeekContext';
 import {
@@ -46,7 +44,6 @@ export default function WeeklyScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
-  const { getAccessToken } = useAuth();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
   const { insets, width: screenWidth, isTablet } = useResponsiveLayout();
   const {
@@ -64,7 +61,7 @@ export default function WeeklyScreen({ navigation }: any) {
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
-  const longPressInterval = useRef<NodeJS.Timeout | null>(null);
+  const longPressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // State for copy to date modal
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -390,19 +387,7 @@ export default function WeeklyScreen({ navigation }: any) {
   };
 
   const handleClearActivitiesForDate = async (date: string) => {
-    const activitiesToDelete = activities.filter(a => a.date === date);
     dispatch(deleteActivitiesForDate(date));
-    // Sync deletions to backend
-    try {
-      const token = await getAccessToken();
-      if (token) {
-        for (const activity of activitiesToDelete) {
-          await pushActivityChange(token, activity, true);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to sync deletions:', err);
-    }
   };
 
   const handleCopyToDate = (sourceDate: string) => {
@@ -451,16 +436,6 @@ export default function WeeklyScreen({ navigation }: any) {
       };
 
       dispatch(addActivity(newActivity));
-
-      // Sync to backend
-      try {
-        const token = await getAccessToken();
-        if (token) {
-          await pushActivityChange(token, newActivity);
-        }
-      } catch (err) {
-        console.error('Failed to sync copied activity:', err);
-      }
     }
 
     setIsCopying(false);
@@ -747,7 +722,7 @@ export default function WeeklyScreen({ navigation }: any) {
         {/* Settings Button - right positioned */}
         <TouchableOpacity
           ref={settingsButtonRef}
-          nativeID="settings-button"
+          id="settings-button"
           onPress={() => navigation.navigate('Settings')}
           className="p-2"
           accessibilityLabel="Settings & Preferences"

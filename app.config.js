@@ -58,8 +58,9 @@ export default {
       ],
     ],
     extra: {
-      OPENAI_API_KEY:
-        process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      API_URL: process.env.EXPO_PUBLIC_API_URL || '',
+      SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+      SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
       eas: {
         projectId: 'ec09ca85-b109-41d4-bb48-b4caadaea1a6',
       },

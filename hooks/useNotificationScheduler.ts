@@ -13,7 +13,7 @@ import {
 export function useNotificationScheduler() {
   const activities = useSelector((state: RootState) => state.activities.data);
   const { notificationSettings, isLoading } = usePreferences();
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isLoading) return;

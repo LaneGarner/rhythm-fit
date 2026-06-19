@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Fuse, { IFuseOptions } from 'fuse.js';
+import { getApiEndpoint } from '../config/api';
 import { ActivityType } from '../types/activity';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const EXERCISES_CACHE_KEY = 'exercises_cache';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -35,7 +35,7 @@ function setMemoryCache(exercises: Exercise[]): void {
  * Fetch exercises from the backend API
  */
 async function fetchExercisesFromApi(): Promise<Exercise[]> {
-  const response = await fetch(`${API_URL}/api/exercises`);
+  const response = await fetch(getApiEndpoint('/api/exercises'));
   if (!response.ok) {
     throw new Error('Failed to fetch exercises');
   }

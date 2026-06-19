@@ -154,7 +154,9 @@ export default function SetCard({
                   >
                     {field === 'time'
                       ? value
-                        ? secondsToTimeString(value)
+                        ? typeof value === 'number'
+                          ? secondsToTimeString(value)
+                          : '\u2014'
                         : '\u2014'
                       : field === 'band'
                         ? set.band || '\u2014'
@@ -179,7 +181,9 @@ export default function SetCard({
                       fontSize: 16,
                     }}
                   >
-                    {value ? secondsToTimeString(value) : '0:00'}
+                    {typeof value === 'number'
+                      ? secondsToTimeString(value)
+                      : '0:00'}
                   </Text>
                 </TouchableOpacity>
               ) : field === 'band' ? (

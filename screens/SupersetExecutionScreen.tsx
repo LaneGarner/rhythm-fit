@@ -561,7 +561,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                   {(() => {
                                     const displayValue =
                                       field === 'time'
-                                        ? value
+                                        ? typeof value === 'number'
                                           ? secondsToTimeString(value)
                                           : null
                                         : field === 'band'

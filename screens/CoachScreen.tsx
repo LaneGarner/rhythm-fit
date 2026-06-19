@@ -5,7 +5,6 @@ import * as Crypto from 'expo-crypto';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import OpenAI from 'openai';
 import React, {
   useCallback,
   useEffect,
@@ -34,10 +33,12 @@ import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { ChatSuggestions } from '../components/ChatSuggestions';
 import { StreamingText } from '../components/StreamingText';
 import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
-import { OPENAI_CONFIG, isBackendConfigured } from '../config/api';
+import {
+  getBackendConfigErrorMessage,
+  isBackendConfigured,
+} from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  sendChatMessage,
   streamChatMessage,
   getChatSessions,
   getChatSession,
@@ -66,8 +67,6 @@ const GLOW_COLOR_DARK = palette.blue[500];
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
-
-const openai = new OpenAI(OPENAI_CONFIG);
 
 interface ChatSession {
   id: string;
@@ -674,214 +673,188 @@ export default function CoachScreen({ navigation }: any) {
           }
         });
 
-      // Use backend API if authenticated (streaming), otherwise use direct OpenAI
-      if (isAuthenticated) {
-        const token = getAccessToken();
-        if (!token) {
-          throw new Error('No access token available');
-        }
-        const allMessages = [
-          ...conversationHistory,
-          { role: 'user' as const, content: currentInput },
-        ];
-        const isFirstUserMessage = messages.length === 1;
-        const sessionTitle = isFirstUserMessage
-          ? currentInput.substring(0, 50)
-          : messages[1]?.text?.substring(0, 50) || 'Chat Session';
-
-        // Create bot message ID but don't add to messages yet — show "Thinking..." first
-        const botMessageId = (Date.now() + 1).toString();
-        streamContentRef.current = '';
-
-        const streamHandle = streamChatMessage(
-          token,
-          allMessages,
+      if (!isAuthenticated) {
+        setMessages(prev => [
+          ...prev,
           {
-            onToken: (text: string) => {
-              // On first token, add the bot message and start streaming scroll
-              if (!streamContentRef.current) {
-                const botMessage = {
-                  id: botMessageId,
-                  type: 'bot' as const,
-                  text: '',
-                  timestamp: new Date(),
-                };
-                setMessages(prev => [...prev, botMessage]);
-                setStreamingMessageId(botMessageId);
-
-                // Start periodic scroll to pin user's message at the top
-                const targetY = { value: -1 };
-                streamScrollTimerRef.current = setInterval(() => {
-                  if (!scrollViewRef.current) return;
-                  if (lastUserMessageRef.current) {
-                    lastUserMessageRef.current.measureLayout(
-                      scrollViewRef.current as any,
-                      (x, y) => {
-                        const scrollTarget = Math.max(0, y - 12);
-                        if (targetY.value === -1) {
-                          targetY.value = scrollTarget;
-                        }
-                        scrollViewRef.current?.scrollTo({
-                          y: scrollTarget,
-                          animated: false,
-                        });
-                      },
-                      () => {}
-                    );
-                  }
-                }, 200);
-              }
-
-              streamContentRef.current += text;
-
-              // Throttled flush to state (~50ms)
-              if (!streamFlushTimerRef.current) {
-                streamFlushTimerRef.current = setTimeout(() => {
-                  const content = streamContentRef.current;
-                  setMessages(prev =>
-                    prev.map(m =>
-                      m.id === botMessageId ? { ...m, text: content } : m
-                    )
-                  );
-                  streamFlushTimerRef.current = null;
-                }, 50);
-              }
-            },
-            onDone: (content: string, activities: any[]) => {
-              // Clear timers and do final update
-              if (streamFlushTimerRef.current) {
-                clearTimeout(streamFlushTimerRef.current);
-                streamFlushTimerRef.current = null;
-              }
-              if (streamScrollTimerRef.current) {
-                clearInterval(streamScrollTimerRef.current);
-                streamScrollTimerRef.current = null;
-              }
-              let finalContent = content;
-
-              // Create activities if any were parsed
-              if (activities.length > 0) {
-                const createdActivities =
-                  createActivitiesFromRequest(activities);
-                if (createdActivities.length === 0) {
-                  finalContent =
-                    "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
-                }
-              }
-
-              // If no tokens arrived, add the message; otherwise update it
-              if (!streamContentRef.current) {
-                setMessages(prev => [
-                  ...prev,
-                  {
-                    id: botMessageId,
-                    type: 'bot' as const,
-                    text: finalContent,
-                    timestamp: new Date(),
-                  },
-                ]);
-              } else {
-                setMessages(prev =>
-                  prev.map(m =>
-                    m.id === botMessageId ? { ...m, text: finalContent } : m
-                  )
-                );
-              }
-              setStreamingMessageId(null);
-              streamAbortRef.current = null;
-              setIsProcessing(false);
-
-              // Save session after each message and refresh history
-              setTimeout(() => {
-                saveCurrentSession();
-                loadChatHistory();
-              }, 100);
-            },
-            onError: (message: string) => {
-              if (streamFlushTimerRef.current) {
-                clearTimeout(streamFlushTimerRef.current);
-                streamFlushTimerRef.current = null;
-              }
-              if (streamScrollTimerRef.current) {
-                clearInterval(streamScrollTimerRef.current);
-                streamScrollTimerRef.current = null;
-              }
-              const errorText =
-                message ||
-                "Sorry, I'm having trouble connecting right now. Please try again in a moment.";
-              if (!streamContentRef.current) {
-                setMessages(prev => [
-                  ...prev,
-                  {
-                    id: botMessageId,
-                    type: 'bot' as const,
-                    text: errorText,
-                    timestamp: new Date(),
-                  },
-                ]);
-              } else {
-                setMessages(prev =>
-                  prev.map(m =>
-                    m.id === botMessageId ? { ...m, text: errorText } : m
-                  )
-                );
-              }
-              setStreamingMessageId(null);
-              streamAbortRef.current = null;
-              setIsProcessing(false);
-            },
+            id: (Date.now() + 1).toString(),
+            type: 'bot' as const,
+            text: user
+              ? getBackendConfigErrorMessage()
+              : 'Sign in to use the AI coach.',
+            timestamp: new Date(),
           },
-          {
-            activityContext,
-            sessionId: currentSessionId,
-            sessionTitle,
-          }
-        );
-
-        streamAbortRef.current = streamHandle;
-        // Don't set isProcessing to false here - callbacks handle it
+        ]);
+        setIsProcessing(false);
         return;
       }
 
-      // Fallback for unauthenticated users - minimal system prompt, no activity parsing
-      const fallbackSystemPrompt = `You are an AI fitness coach. Help with workouts, nutrition, sleep, recovery, motivation, and any health/wellness topics. Only redirect if asked about something completely unrelated (like coding or math).
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error('No access token available');
+      }
+      const allMessages = [
+        ...conversationHistory,
+        { role: 'user' as const, content: currentInput },
+      ];
+      const isFirstUserMessage = messages.length === 1;
+      const sessionTitle = isFirstUserMessage
+        ? currentInput.substring(0, 50)
+        : messages[1]?.text?.substring(0, 50) || 'Chat Session';
 
-Use Markdown formatting. ${activityContext}`;
-      const response = await openai.chat.completions
-        .create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: fallbackSystemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: currentInput },
-          ],
-          max_tokens: 1000,
-          temperature: 0.7,
-        })
-        .catch(error => {
-          console.error('OpenAI API Error:', error);
-          throw new Error('Failed to get AI response');
-        });
-      const botResponse =
-        response.choices[0]?.message?.content ||
-        "Sorry, I couldn't process that request.";
+      // Create bot message ID but don't add to messages yet - show "Thinking..." first
+      const botMessageId = (Date.now() + 1).toString();
+      streamContentRef.current = '';
 
-      const botMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot' as const,
-        text: botResponse,
-        timestamp: new Date(),
-      };
+      const streamHandle = streamChatMessage(
+        token,
+        allMessages,
+        {
+          onToken: (text: string) => {
+            // On first token, add the bot message and start streaming scroll
+            if (!streamContentRef.current) {
+              const botMessage = {
+                id: botMessageId,
+                type: 'bot' as const,
+                text: '',
+                timestamp: new Date(),
+              };
+              setMessages(prev => [...prev, botMessage]);
+              setStreamingMessageId(botMessageId);
 
-      setMessages(prev => [...prev, botMessage]);
+              // Start periodic scroll to pin user's message at the top
+              const targetY = { value: -1 };
+              streamScrollTimerRef.current = setInterval(() => {
+                if (!scrollViewRef.current) return;
+                if (lastUserMessageRef.current) {
+                  lastUserMessageRef.current.measureLayout(
+                    scrollViewRef.current as any,
+                    (x, y) => {
+                      const scrollTarget = Math.max(0, y - 12);
+                      if (targetY.value === -1) {
+                        targetY.value = scrollTarget;
+                      }
+                      scrollViewRef.current?.scrollTo({
+                        y: scrollTarget,
+                        animated: false,
+                      });
+                    },
+                    () => {}
+                  );
+                }
+              }, 200);
+            }
 
-      // Save session after each message and refresh history
-      setTimeout(() => {
-        saveCurrentSession();
-        loadChatHistory();
-      }, 100);
+            streamContentRef.current += text;
+
+            // Throttled flush to state (~50ms)
+            if (!streamFlushTimerRef.current) {
+              streamFlushTimerRef.current = setTimeout(() => {
+                const content = streamContentRef.current;
+                setMessages(prev =>
+                  prev.map(m =>
+                    m.id === botMessageId ? { ...m, text: content } : m
+                  )
+                );
+                streamFlushTimerRef.current = null;
+              }, 50);
+            }
+          },
+          onDone: (content: string, activities: any[]) => {
+            // Clear timers and do final update
+            if (streamFlushTimerRef.current) {
+              clearTimeout(streamFlushTimerRef.current);
+              streamFlushTimerRef.current = null;
+            }
+            if (streamScrollTimerRef.current) {
+              clearInterval(streamScrollTimerRef.current);
+              streamScrollTimerRef.current = null;
+            }
+            let finalContent = content;
+
+            // Create activities if any were parsed
+            if (activities.length > 0) {
+              const createdActivities = createActivitiesFromRequest(activities);
+              if (createdActivities.length === 0) {
+                finalContent =
+                  "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
+              }
+            }
+
+            // If no tokens arrived, add the message; otherwise update it
+            if (!streamContentRef.current) {
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: botMessageId,
+                  type: 'bot' as const,
+                  text: finalContent,
+                  timestamp: new Date(),
+                },
+              ]);
+            } else {
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === botMessageId ? { ...m, text: finalContent } : m
+                )
+              );
+            }
+            setStreamingMessageId(null);
+            streamAbortRef.current = null;
+            setIsProcessing(false);
+
+            // Save session after each message and refresh history
+            setTimeout(() => {
+              saveCurrentSession();
+              loadChatHistory();
+            }, 100);
+          },
+          onError: (message: string) => {
+            if (streamFlushTimerRef.current) {
+              clearTimeout(streamFlushTimerRef.current);
+              streamFlushTimerRef.current = null;
+            }
+            if (streamScrollTimerRef.current) {
+              clearInterval(streamScrollTimerRef.current);
+              streamScrollTimerRef.current = null;
+            }
+            const errorText =
+              message ||
+              "Sorry, I'm having trouble connecting right now. Please try again in a moment.";
+            if (!streamContentRef.current) {
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: botMessageId,
+                  type: 'bot' as const,
+                  text: errorText,
+                  timestamp: new Date(),
+                },
+              ]);
+            } else {
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === botMessageId ? { ...m, text: errorText } : m
+                )
+              );
+            }
+            setStreamingMessageId(null);
+            streamAbortRef.current = null;
+            setIsProcessing(false);
+          },
+        },
+        {
+          activityContext,
+          sessionId: currentSessionId,
+          sessionTitle,
+        }
+      );
+
+      streamAbortRef.current = streamHandle;
+      // Don't set isProcessing to false here - callbacks handle it
+      return;
     } catch (error) {
-      console.error('OpenAI API Error:', error);
+      console.error('Coach API error:', error);
 
       const errorMessage = {
         id: (Date.now() + 1).toString(),

@@ -218,7 +218,9 @@ export const ProgressionChart = ({
             initialSpacing={INITIAL_SPACING}
             endSpacing={10}
             scrollToEnd
-            onScroll={ev => {
+            onScroll={(ev: {
+              nativeEvent: { contentOffset: { x: number } };
+            }) => {
               scrollOffsetRef.current = ev.nativeEvent.contentOffset.x;
             }}
             color={chartColor}

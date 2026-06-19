@@ -45,7 +45,7 @@ export function configureNotificationHandler() {
           kind = undefined;
         }
       } else {
-        kind = (rawData as NotificationPayload | undefined)?.kind;
+        kind = (rawData as unknown as NotificationPayload | undefined)?.kind;
       }
       const isTimerKind = kind === 'timer-completion' || kind === 'rest-timer';
       const isForeground = AppState.currentState === 'active';

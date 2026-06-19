@@ -21,6 +21,7 @@ A React Native / Expo mobile app for tracking workouts, building consistency, an
 ## Tech Stack
 
 **Frontend (this repo)**
+
 - React Native (0.81) + Expo SDK 54
 - TypeScript (strict)
 - Redux Toolkit — single activity slice with AsyncStorage persistence
@@ -30,6 +31,7 @@ A React Native / Expo mobile app for tracking workouts, building consistency, an
 - `react-native-gifted-charts`, `react-native-reanimated`, `react-native-gesture-handler`
 
 **Backend (private, separate repo)**
+
 - Node.js + Express + TypeScript, deployed on Railway
 - Supabase (Postgres + Auth, Row Level Security)
 - OpenAI GPT-5.2 for the AI coach (NDJSON streaming)
@@ -52,7 +54,6 @@ All are **optional** — without them, the app runs in local-only mode.
 EXPO_PUBLIC_API_URL=              # Backend URL (enables sync + AI coach)
 EXPO_PUBLIC_SUPABASE_URL=         # Supabase project URL
 EXPO_PUBLIC_SUPABASE_ANON_KEY=    # Supabase anon key
-EXPO_PUBLIC_OPENAI_API_KEY=       # Only if using the OpenAI client directly
 ```
 
 Production builds use EAS environment variables, not local `.env`.
@@ -147,8 +148,8 @@ interface SetData {
   id: string;
   reps?: number;
   weight?: number;
-  time?: number;      // seconds
-  distance?: number;  // miles/km
+  time?: number; // seconds
+  distance?: number; // miles/km
   band?: string;
   notes?: string;
   completed: boolean;
