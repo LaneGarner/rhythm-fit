@@ -47,14 +47,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(prev => ({
-        ...prev,
-        session,
-        user: session?.user ?? null,
-        isLoading: false,
-      }));
-    });
+    console.log('[auth] checking initial session');
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        console.log('[auth] initial session loaded');
+        setState(prev => ({
+          ...prev,
+          session,
+          user: session?.user ?? null,
+          isLoading: false,
+        }));
+      })
+      .catch(error => {
+        console.warn('[auth] initial session load failed', error);
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+        }));
+      });
 
     // Listen for auth changes
     const {
