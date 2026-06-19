@@ -226,9 +226,11 @@ export default function SpotlightOverlay({
             <View
               style={[
                 StyleSheet.absoluteFill,
-                styles.fullScreenOverlay(
-                  step.overlayOpacity ?? DEFAULT_OVERLAY_OPACITY
-                ),
+                {
+                  backgroundColor: `rgba(0,0,0,${
+                    step.overlayOpacity ?? DEFAULT_OVERLAY_OPACITY
+                  })`,
+                },
               ]}
             />
           ) : (
@@ -385,9 +387,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  fullScreenOverlay: (opacity: number) => ({
-    backgroundColor: `rgba(0,0,0,${opacity})`,
-  }),
   spotlightRing: {
     position: 'absolute',
     borderWidth: 2,

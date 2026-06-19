@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiEndpoint } from '../config/api';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const ACTIVITY_TYPES_CACHE_KEY = 'activity_types_cache_v3';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -38,7 +38,7 @@ export const DEFAULT_ACTIVITY_ICON: IoniconName = 'fitness-outline';
 let memoryCache: ActivityTypeDefinition[] | null = null;
 
 async function fetchActivityTypesFromApi(): Promise<ActivityTypeDefinition[]> {
-  const response = await fetch(`${API_URL}/api/activity-types`);
+  const response = await fetch(getApiEndpoint('/api/activity-types'));
   if (!response.ok) {
     throw new Error('Failed to fetch activity types');
   }

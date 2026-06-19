@@ -1,6 +1,12 @@
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
@@ -38,7 +44,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
   const [sets, setSets] = useState<SetData[]>(DEMO_ACTIVITY.sets || []);
   const [isTimerExpanded, setIsTimerExpanded] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Auto-scroll during tutorial to showcase the sets section
   useEffect(() => {

@@ -778,7 +778,9 @@ function ActivityForm(
                                 fontSize: 16,
                               }}
                             >
-                              {value ? secondsToTimeString(value) : '0:00'}
+                              {typeof value === 'number'
+                                ? secondsToTimeString(value)
+                                : '0:00'}
                             </Text>
                           </TouchableOpacity>
                         ) : field === 'band' ? (

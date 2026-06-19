@@ -69,7 +69,7 @@ const TimerContext = createContext<TimerContextValue | undefined>(undefined);
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [timer, setTimer] = useState<TimerState>(initialState);
   const [timerFinished, setTimerFinished] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
   const { timerVibration, timerSound, liveActivity, notificationSettings } =
@@ -122,7 +122,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const vibrationActiveRef = useRef(false);
-  const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const vibrationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const startLiveActivity = useCallback(
     async (

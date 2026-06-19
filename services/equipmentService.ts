@@ -1,10 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-
-const API_URL =
-  (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
-  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-  '';
+import { API_URL, getApiEndpoint } from '../config/api';
 
 const EQUIPMENT_KEY = 'rhythm_equipment_config';
 
@@ -117,7 +112,7 @@ export async function addBarbell(
   // Sync to server if authenticated
   if (accessToken && API_URL) {
     try {
-      const response = await fetch(`${API_URL}/api/equipment`, {
+      const response = await fetch(getApiEndpoint('/api/equipment'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +164,7 @@ export async function removeBarbell(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !barbellId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment?id=${barbellId}`, {
+      await fetch(getApiEndpoint(`/api/equipment?id=${barbellId}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -214,7 +209,7 @@ export async function addPlate(
   // Sync to server if authenticated
   if (accessToken && API_URL) {
     try {
-      const response = await fetch(`${API_URL}/api/equipment`, {
+      const response = await fetch(getApiEndpoint('/api/equipment'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +248,7 @@ export async function removePlate(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !plateId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment?id=${plateId}`, {
+      await fetch(getApiEndpoint(`/api/equipment?id=${plateId}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -284,7 +279,7 @@ export async function updatePlateCount(
   // Sync to server if authenticated and not a temp ID
   if (accessToken && API_URL && !plateId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/equipment`, {
+      await fetch(getApiEndpoint('/api/equipment'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -316,7 +311,7 @@ export async function fetchEquipment(
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/equipment`, {
+    const response = await fetch(getApiEndpoint('/api/equipment'), {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,

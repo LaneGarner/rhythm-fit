@@ -1,10 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-
-const API_URL =
-  (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
-  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-  '';
+import { API_URL, getApiEndpoint } from '../config/api';
 
 const LIBRARY_CACHE_KEY = 'rhythm_activity_library';
 
@@ -45,7 +40,7 @@ export async function fetchLibrary(
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/library`, {
+    const response = await fetch(getApiEndpoint('/api/library'), {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -88,7 +83,7 @@ export async function addToLibrary(
   // If we have an access token and API URL, sync to server
   if (accessToken && API_URL) {
     try {
-      const response = await fetch(`${API_URL}/api/library`, {
+      const response = await fetch(getApiEndpoint('/api/library'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +126,7 @@ export async function removeFromLibrary(
   // Sync to server if possible
   if (accessToken && API_URL && !itemId.startsWith('temp_')) {
     try {
-      await fetch(`${API_URL}/api/library?id=${itemId}`, {
+      await fetch(getApiEndpoint(`/api/library?id=${itemId}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -179,14 +174,17 @@ export async function updateLibraryItem(
   // Sync to server if possible
   if (accessToken && API_URL && !itemId.startsWith('temp_')) {
     try {
-      const response = await fetch(`${API_URL}/api/library?id=${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(updates),
-      });
+      const response = await fetch(
+        getApiEndpoint(`/api/library?id=${itemId}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(updates),
+        }
+      );
 
       if (!response.ok) {
         // Revert cache on failure

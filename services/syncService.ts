@@ -1,11 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+import { API_URL, getApiEndpoint } from '../config/api';
 import { Activity } from '../types/activity';
-
-const API_URL =
-  (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
-  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-  '';
 
 const LAST_SYNC_KEY = 'rhythm_last_sync_time';
 const PENDING_SYNC_KEY = 'rhythm_pending_sync';
@@ -74,12 +69,14 @@ export async function addToPendingSync(
   }
 }
 
-// Clear pending sync queue
-async function clearPendingSync(): Promise<void> {
+async function removePendingSync(ids: string[]): Promise<void> {
   try {
-    await AsyncStorage.removeItem(PENDING_SYNC_KEY);
+    const idSet = new Set(ids);
+    const pending = await getPendingActivities();
+    const filtered = pending.filter(a => !idSet.has(a.id));
+    await AsyncStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(filtered));
   } catch (err) {
-    console.error('Failed to clear pending sync:', err);
+    console.error('Failed to remove synced activities from queue:', err);
   }
 }
 
@@ -143,8 +140,10 @@ export async function syncActivities(
     let fetchSyncTime: string | null = null;
     try {
       const url = lastSyncTime
-        ? `${API_URL}/api/activities?since=${encodeURIComponent(lastSyncTime)}`
-        : `${API_URL}/api/activities`;
+        ? getApiEndpoint(
+            `/api/activities?since=${encodeURIComponent(lastSyncTime)}`
+          )
+        : getApiEndpoint('/api/activities');
 
       const response = await fetch(url, {
         method: 'GET',
@@ -171,7 +170,7 @@ export async function syncActivities(
     // 4. Push pending local changes to server
     if (pendingActivities.length > 0) {
       try {
-        const response = await fetch(`${API_URL}/api/activities`, {
+        const response = await fetch(getApiEndpoint('/api/activities'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -192,8 +191,12 @@ export async function syncActivities(
             onActivitiesUpdated(finalMerged);
           }
 
-          // Clear pending queue on success
-          await clearPendingSync();
+          // Remove only acknowledged items. Conflicts remain queued for review/retry.
+          const conflictIds = new Set(data.conflicts || []);
+          const acknowledgedIds = pendingActivities
+            .map(a => a.id)
+            .filter(id => !conflictIds.has(id));
+          await removePendingSync(acknowledgedIds);
           await setLastSyncTime(data.syncTime);
         }
       } catch (err) {
@@ -209,51 +212,19 @@ export async function syncActivities(
   }
 }
 
-// Push a single activity change immediately (call after mutations)
+// Queue a single activity change for the next sync flush.
 export async function pushActivityChange(
-  accessToken: string,
+  _accessToken: string,
   activity: Activity,
   deleted: boolean = false
 ): Promise<void> {
-  if (!API_URL) {
-    return;
-  }
-
   const syncableActivity: SyncableActivity = {
     ...activity,
     updated_at: new Date().toISOString(),
     deleted_at: deleted ? new Date().toISOString() : undefined,
   };
 
-  // Always add to pending queue first (for offline support)
   await addToPendingSync(syncableActivity);
-
-  // Try to push immediately
-  try {
-    const response = await fetch(`${API_URL}/api/activities`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        activities: [syncableActivity],
-      }),
-    });
-
-    if (response.ok) {
-      // Remove from pending queue on success
-      const pending = await getPendingActivities();
-      const filtered = pending.filter(a => a.id !== activity.id);
-      await AsyncStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(filtered));
-
-      const data: SyncResponse = await response.json();
-      await setLastSyncTime(data.syncTime);
-    }
-  } catch (err) {
-    console.error('Failed to push activity change:', err);
-    // Activity stays in pending queue for next sync
-  }
 }
 
 // Clear all sync data (call on logout)

@@ -1,9 +1,4 @@
-import Constants from 'expo-constants';
-
-const API_URL =
-  (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
-  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-  '';
+import { getApiEndpoint } from '../config/api';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -90,7 +85,7 @@ export function streamChatMessage(
   const xhr = new XMLHttpRequest();
   let lastProcessedIndex = 0;
 
-  xhr.open('POST', `${API_URL}/api/chat`);
+  xhr.open('POST', getApiEndpoint('/api/chat'));
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
 
@@ -151,7 +146,7 @@ export async function sendChatMessage(
     sessionTitle?: string;
   }
 ): Promise<ChatResponse> {
-  const response = await fetch(`${API_URL}/api/chat`, {
+  const response = await fetch(getApiEndpoint('/api/chat'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -176,7 +171,7 @@ export async function sendChatMessage(
 export async function getChatSessions(
   accessToken: string
 ): Promise<ChatSession[]> {
-  const response = await fetch(`${API_URL}/api/chat-history`, {
+  const response = await fetch(getApiEndpoint('/api/chat-history'), {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -197,7 +192,7 @@ export async function getChatSession(
   sessionId: string
 ): Promise<{ session: ChatSession; messages: ChatMessage[] }> {
   const response = await fetch(
-    `${API_URL}/api/chat-history?sessionId=${sessionId}`,
+    getApiEndpoint(`/api/chat-history?sessionId=${sessionId}`),
     {
       method: 'GET',
       headers: {
@@ -223,7 +218,7 @@ export async function deleteChatSession(
   sessionId: string
 ): Promise<void> {
   const response = await fetch(
-    `${API_URL}/api/chat-history?sessionId=${sessionId}`,
+    getApiEndpoint(`/api/chat-history?sessionId=${sessionId}`),
     {
       method: 'DELETE',
       headers: {
@@ -241,7 +236,7 @@ export async function deleteChatSession(
 export type ChatSuggestions = Record<string, string[]>;
 
 export async function getChatSuggestions(): Promise<ChatSuggestions> {
-  const response = await fetch(`${API_URL}/api/suggestions`);
+  const response = await fetch(getApiEndpoint('/api/suggestions'));
   if (!response.ok) {
     throw new Error('Failed to fetch suggestions');
   }

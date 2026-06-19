@@ -1,16 +1,11 @@
 import { Middleware, UnknownAction } from '@reduxjs/toolkit';
-import Constants from 'expo-constants';
+import { addToPendingSync } from '../services/syncService';
 import { Activity } from '../types/activity';
 
 // Type guard for actions with payload
 interface ActionWithPayload<T = unknown> extends UnknownAction {
   payload: T;
 }
-
-const API_URL =
-  (Constants.expoConfig?.extra?.API_URL as string | undefined) ||
-  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-  '';
 
 // Auth token storage - set from AuthContext
 let authToken: string | null = null;
@@ -21,30 +16,18 @@ export function setSyncAuth(token: string | null, configured: boolean) {
   isConfigured = configured;
 }
 
-// Push activity to server
-async function pushToServer(
-  token: string,
+// Queue activity for server sync
+async function enqueueForSync(
   activity: Activity,
   deleted: boolean = false
 ): Promise<void> {
-  if (!API_URL) return;
-
   const syncableActivity = {
     ...activity,
     updated_at: new Date().toISOString(),
     deleted_at: deleted ? new Date().toISOString() : undefined,
   };
 
-  await fetch(`${API_URL}/api/activities`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      activities: [syncableActivity],
-    }),
-  });
+  await addToPendingSync(syncableActivity);
 }
 
 // Activity action types to sync
@@ -53,8 +36,10 @@ const SYNC_ACTIONS = [
   'activities/updateActivity',
   'activities/batchUpdateActivities',
   'activities/deleteActivity',
+  'activities/deleteActivitiesForDate',
   'activities/markAllActivitiesCompleteForWeek',
   'activities/markAllActivitiesIncompleteForWeek',
+  'activities/reorderActivities',
   'activities/createSuperset',
   'activities/addToSuperset',
   'activities/removeFromSuperset',
@@ -63,6 +48,8 @@ const SYNC_ACTIONS = [
 ];
 
 export const syncMiddleware: Middleware = store => next => unknownAction => {
+  const previousState = store.getState();
+
   // Always let the action pass through first (local update)
   const result = next(unknownAction);
   const action = unknownAction as ActionWithPayload;
@@ -76,25 +63,40 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
       try {
         if (action.type === 'activities/addActivity') {
           const activity = action.payload as Activity;
-          await pushToServer(authToken!, activity);
+          await enqueueForSync(activity);
         } else if (action.type === 'activities/updateActivity') {
           const activity = action.payload as Activity;
-          await pushToServer(authToken!, activity);
+          await enqueueForSync(activity);
         } else if (action.type === 'activities/batchUpdateActivities') {
           const updatedActivities = action.payload as Activity[];
           for (const activity of updatedActivities) {
-            await pushToServer(authToken!, activity);
+            await enqueueForSync(activity);
           }
         } else if (action.type === 'activities/deleteActivity') {
           const activityId = action.payload as string;
-          const deletedActivity: Activity = {
+          const previousActivities = previousState.activities
+            .data as Activity[];
+          const previousActivity = previousActivities.find(
+            a => a.id === activityId
+          );
+          const deletedActivity: Activity = previousActivity || {
             id: activityId,
             date: '',
             type: 'other',
             name: '',
             completed: false,
           };
-          await pushToServer(authToken!, deletedActivity, true);
+          await enqueueForSync(deletedActivity, true);
+        } else if (action.type === 'activities/deleteActivitiesForDate') {
+          const deletedDate = action.payload as string;
+          const previousActivities = previousState.activities
+            .data as Activity[];
+          const deletedActivities = previousActivities.filter(
+            a => a.date === deletedDate
+          );
+          for (const activity of deletedActivities) {
+            await enqueueForSync(activity, true);
+          }
         } else if (
           action.type === 'activities/markAllActivitiesCompleteForWeek' ||
           action.type === 'activities/markAllActivitiesIncompleteForWeek'
@@ -105,7 +107,19 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
             weekDates.includes(a.date)
           );
           for (const activity of affectedActivities) {
-            await pushToServer(authToken!, activity);
+            await enqueueForSync(activity);
+          }
+        } else if (action.type === 'activities/reorderActivities') {
+          const { orderedIds } = action.payload as {
+            date: string;
+            orderedIds: string[];
+          };
+          const activities = state.activities.data as Activity[];
+          for (const id of orderedIds) {
+            const activity = activities.find(a => a.id === id);
+            if (activity) {
+              await enqueueForSync(activity);
+            }
           }
         } else if (action.type === 'activities/createSuperset') {
           // Sync all activities that were added to the superset
@@ -114,7 +128,7 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           for (const id of activityIds) {
             const activity = activities.find(a => a.id === id);
             if (activity) {
-              await pushToServer(authToken!, activity);
+              await enqueueForSync(activity);
             }
           }
         } else if (action.type === 'activities/addToSuperset') {
@@ -126,7 +140,7 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           const activities = state.activities.data as Activity[];
           const activity = activities.find(a => a.id === activityId);
           if (activity) {
-            await pushToServer(authToken!, activity);
+            await enqueueForSync(activity);
           }
         } else if (action.type === 'activities/removeFromSuperset') {
           // Sync the removed activity and any remaining superset activities
@@ -134,7 +148,7 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           const activities = state.activities.data as Activity[];
           const activity = activities.find(a => a.id === activityId);
           if (activity) {
-            await pushToServer(authToken!, activity);
+            await enqueueForSync(activity);
           }
           // Also sync remaining activities in the superset (positions may have changed)
           // Note: We can't easily get the old supersetId here, so we sync all activities
@@ -150,7 +164,7 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
               new Date().getTime() - new Date(a.updated_at).getTime() < 1000
           );
           for (const activity of recentlyUpdated) {
-            await pushToServer(authToken!, activity);
+            await enqueueForSync(activity);
           }
         } else if (action.type === 'activities/swapSupersetOrder') {
           // Sync both swapped activities
@@ -162,8 +176,8 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           const activities = state.activities.data as Activity[];
           const activity1 = activities.find(a => a.id === id1);
           const activity2 = activities.find(a => a.id === id2);
-          if (activity1) await pushToServer(authToken!, activity1);
-          if (activity2) await pushToServer(authToken!, activity2);
+          if (activity1) await enqueueForSync(activity1);
+          if (activity2) await enqueueForSync(activity2);
         }
       } catch (err) {
         console.error('Background sync failed:', err);
