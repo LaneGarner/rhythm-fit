@@ -506,7 +506,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   }}
                   inputRefs={setInputRefs}
                   onInputFocus={scrollToSetInput}
-                  readOnly
                 />
               ))}
 
