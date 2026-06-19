@@ -23,8 +23,6 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ['remote-notification'],
-        NSSupportsLiveActivities: true,
-        NSSupportsLiveActivitiesFrequentUpdates: true,
       },
     },
     android: {
@@ -47,16 +45,10 @@ export default {
           color: '#000000',
         },
       ],
-      '@bacons/apple-targets',
-      [
-        'expo-build-properties',
-        {
-          ios: {
-            deploymentTarget: '16.1',
-          },
-        },
-      ],
     ],
+    autolinking: {
+      exclude: ['live-activity'],
+    },
     extra: {
       API_URL: process.env.EXPO_PUBLIC_API_URL || '',
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',

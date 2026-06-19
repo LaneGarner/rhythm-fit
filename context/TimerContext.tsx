@@ -16,8 +16,6 @@ import {
 } from '../services/notifications';
 
 type LiveActivityMode = 'countUp' | 'countDown' | 'emom' | 'rest';
-type LiveActivityApi =
-  typeof import('../modules/live-activity/src').LiveActivity;
 type ExpoAudioApi = typeof import('expo-audio');
 
 type TimerMode = 'countUp' | 'countDown' | 'emom';
@@ -76,25 +74,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
-  const { timerVibration, timerSound, liveActivity, notificationSettings } =
+  const { timerVibration, timerSound, notificationSettings } =
     usePreferences();
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
-  const liveActivityRef = useRef(liveActivity);
-  const liveActivityKitIdRef = useRef<string | null>(null);
   const notificationSettingsRef = useRef(notificationSettings);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const audioModeConfiguredRef = useRef(false);
-
-  const getLiveActivity = useCallback((): LiveActivityApi | null => {
-    try {
-      return require('../modules/live-activity/src')
-        .LiveActivity as LiveActivityApi;
-    } catch (error) {
-      console.error('Failed to load Live Activity module:', error);
-      return null;
-    }
-  }, []);
 
   const getTimerAudioPlayer =
     useCallback(async (): Promise<AudioPlayer | null> => {
@@ -141,15 +127,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     notificationSettingsRef.current = notificationSettings;
   }, [notificationSettings]);
 
-  // When the user toggles Live Activity off mid-timer, end the running one.
-  useEffect(() => {
-    liveActivityRef.current = liveActivity;
-    if (!liveActivity) {
-      getLiveActivity()?.endAll();
-      liveActivityKitIdRef.current = null;
-    }
-  }, [getLiveActivity, liveActivity]);
-
   const scheduleTimerNotification = useCallback(
     (activityName: string, completionAt: number) => {
       const settings = notificationSettingsRef.current;
@@ -180,22 +157,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         emomTotalRounds?: number;
       }
     ) => {
-      if (!liveActivityRef.current) return;
-      const liveActivityApi = getLiveActivity();
-      if (!liveActivityApi) return;
-      const id = await liveActivityApi.start({
-        activityId,
-        activityName,
-        mode,
-        startedAt,
-        endsAt: endsAt ?? undefined,
-        isPaused: false,
-        emomCurrentRound: extra?.emomCurrentRound,
-        emomTotalRounds: extra?.emomTotalRounds,
-      });
-      if (id) liveActivityKitIdRef.current = id;
+      void activityId;
+      void activityName;
+      void mode;
+      void startedAt;
+      void endsAt;
+      void extra;
     },
-    [getLiveActivity]
+    []
   );
 
   const updateLiveActivity = useCallback(
@@ -209,47 +178,25 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         emomTotalRounds?: number;
       }
     ) => {
-      if (!liveActivityKitIdRef.current) return;
-      const liveActivityApi = getLiveActivity();
-      if (!liveActivityApi) return;
-      await liveActivityApi.update({
-        activityKitId: liveActivityKitIdRef.current,
-        mode,
-        startedAt,
-        endsAt: endsAt ?? undefined,
-        isPaused,
-        emomCurrentRound: extra?.emomCurrentRound,
-        emomTotalRounds: extra?.emomTotalRounds,
-      });
+      void mode;
+      void startedAt;
+      void endsAt;
+      void isPaused;
+      void extra;
     },
-    [getLiveActivity]
+    []
   );
 
   const endLiveActivity = useCallback(
     async (dismissAfterSeconds = 4) => {
-      if (!liveActivityKitIdRef.current) return;
-      const liveActivityApi = getLiveActivity();
-      if (!liveActivityApi) return;
-      await liveActivityApi.end({
-        activityKitId: liveActivityKitIdRef.current,
-        dismissalPolicy: 'afterSeconds',
-        dismissAfterSeconds,
-      });
-      liveActivityKitIdRef.current = null;
+      void dismissAfterSeconds;
     },
-    [getLiveActivity]
+    []
   );
 
   const endLiveActivityImmediate = useCallback(async () => {
-    if (!liveActivityKitIdRef.current) return;
-    const liveActivityApi = getLiveActivity();
-    if (!liveActivityApi) return;
-    await liveActivityApi.end({
-      activityKitId: liveActivityKitIdRef.current,
-      dismissalPolicy: 'immediate',
-    });
-    liveActivityKitIdRef.current = null;
-  }, [getLiveActivity]);
+    return;
+  }, []);
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
