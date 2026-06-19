@@ -40,9 +40,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [showAllLibrary, setShowAllLibrary] = useState(false);
-
-  const LIBRARY_PREVIEW_COUNT = 10;
 
   const activityTypes = getActivityTypes();
 
@@ -186,7 +183,15 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         style={{ flex: 1 }}
         onPress={() => openMenuId && setOpenMenuId(null)}
       >
-        <ScrollView className="flex-1 p-4">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: Math.max(120, insets.bottom + 104),
+          }}
+          keyboardShouldPersistTaps="handled"
+          scrollIndicatorInsets={{ bottom: Math.max(88, insets.bottom + 72) }}
+        >
           {loading ? (
             <Text
               className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
@@ -220,10 +225,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 {libraryItems.length} custom{' '}
                 {libraryItems.length === 1 ? 'activity' : 'activities'}
               </Text>
-              {(showAllLibrary
-                ? libraryItems
-                : libraryItems.slice(0, LIBRARY_PREVIEW_COUNT)
-              ).map(item => (
+              {libraryItems.map(item => (
                 <View
                   key={item.id}
                   className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
@@ -345,40 +347,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 </View>
               ))}
 
-              {/* Show More / Show Less Button */}
-              {libraryItems.length > LIBRARY_PREVIEW_COUNT && (
-                <TouchableOpacity
-                  onPress={() => setShowAllLibrary(!showAllLibrary)}
-                  hitSlop={14}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingVertical: 12,
-                    marginTop: 4,
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showAllLibrary
-                      ? 'Show fewer activities'
-                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} more activities`
-                  }
-                >
-                  <Ionicons
-                    name={showAllLibrary ? 'chevron-up' : 'chevron-down'}
-                    size={18}
-                    color={colors.primary.main}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text
-                    style={{ color: colors.primary.main, fontWeight: '500' }}
-                  >
-                    {showAllLibrary
-                      ? 'Show Less'
-                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} More`}
-                  </Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
         </ScrollView>
@@ -426,8 +394,13 @@ export default function ActivityLibraryScreen({ navigation }: any) {
           </View>
 
           <ScrollView
-            className="flex-1 p-4"
+            className="flex-1"
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: Math.max(32, insets.bottom + 24),
+            }}
             keyboardShouldPersistTaps="handled"
+            scrollIndicatorInsets={{ bottom: insets.bottom }}
           >
             {/* Name Input */}
             <View className="mb-6">
