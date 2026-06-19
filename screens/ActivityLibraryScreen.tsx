@@ -4,7 +4,6 @@ import {
   Alert,
   Keyboard,
   Modal,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -178,18 +177,17 @@ export default function ActivityLibraryScreen({ navigation }: any) {
       </View>
 
       {/* Content */}
-      <Pressable
-        style={{ flex: 1 }}
-        onPress={() => openMenuId && setOpenMenuId(null)}
-      >
+      <View style={{ flex: 1 }}>
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           contentContainerStyle={{
             padding: 16,
             paddingBottom: Math.max(120, insets.bottom + 104),
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
           scrollIndicatorInsets={{ bottom: Math.max(88, insets.bottom + 72) }}
+          onScrollBeginDrag={() => openMenuId && setOpenMenuId(null)}
         >
           {loading ? (
             <Text
@@ -342,7 +340,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             </>
           )}
         </ScrollView>
-      </Pressable>
+      </View>
 
       <FloatingAddButton
         onPress={handleCreateNew}
