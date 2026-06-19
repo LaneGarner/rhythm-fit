@@ -27,7 +27,6 @@
     "dotenv": "^17.1.0",
     "expo": "~54.0.33",
     "expo-audio": "~1.1.1",
-    "expo-build-properties": "~1.0.10",
     "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.8",
@@ -57,7 +56,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
-    "@bacons/apple-targets": "^4.0.6",
     "@types/react": "~19.1.10",
     "@types/react-native": "^0.72.8",
     "prettier": "^3.6.2",
