@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import DurationPickerModal from './DurationPickerModal';
+import NumericWheelModal from './NumericWheelModal';
 import PlateIcon from './PlateIcon';
 import { useTheme } from '../theme/ThemeContext';
 import { ActivityType, SetData, TrackingField } from '../types/activity';
@@ -49,7 +50,17 @@ export default function SetCard({
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [numericWheelField, setNumericWheelField] = useState<
+    'reps' | 'weight' | null
+  >(null);
   const [distanceText, setDistanceText] = useState<Record<string, string>>({});
+
+  const numericWheelConfig =
+    numericWheelField === 'reps'
+      ? { title: 'Reps', max: 200, step: 1 }
+      : numericWheelField === 'weight'
+        ? { title: 'Weight', max: 1000, step: 5, unit: 'lbs' }
+        : null;
 
   return (
     <View
@@ -204,6 +215,27 @@ export default function SetCard({
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
                 />
+              ) : field === 'reps' || field === 'weight' ? (
+                <TouchableOpacity
+                  onPress={() => setNumericWheelField(field)}
+                  className={`px-3 py-2 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-white border-gray-300'
+                  }`}
+                  style={{ minHeight: 42, justifyContent: 'center' }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${config.label.toLowerCase()} for set ${index + 1}`}
+                >
+                  <Text
+                    style={{
+                      color: value != null ? colors.text : colors.textSecondary,
+                      fontSize: 16,
+                    }}
+                  >
+                    {value != null ? value.toString() : '0'}
+                  </Text>
+                </TouchableOpacity>
               ) : (
                 <TextInput
                   ref={
@@ -309,6 +341,30 @@ export default function SetCard({
         }}
         onCancel={() => setShowDurationPicker(false)}
       />
+
+      {numericWheelConfig && (
+        <NumericWheelModal
+          visible={numericWheelField !== null}
+          title={numericWheelConfig.title}
+          value={
+            numericWheelField === 'reps'
+              ? set.reps
+              : numericWheelField === 'weight'
+                ? set.weight
+                : undefined
+          }
+          max={numericWheelConfig.max}
+          step={numericWheelConfig.step}
+          unit={numericWheelConfig.unit}
+          onConfirm={nextValue => {
+            if (numericWheelField) {
+              onUpdateSet(set.id, { [numericWheelField]: nextValue });
+            }
+            setNumericWheelField(null);
+          }}
+          onCancel={() => setNumericWheelField(null)}
+        />
+      )}
     </View>
   );
 }
