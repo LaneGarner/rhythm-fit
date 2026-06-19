@@ -47,11 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Get initial session
-    console.log('[auth] checking initial session');
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        console.log('[auth] initial session loaded');
         setState(prev => ({
           ...prev,
           session,
@@ -60,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
       })
       .catch(error => {
-        console.warn('[auth] initial session load failed', error);
+        console.error('Failed to load initial session:', error);
         setState(prev => ({
           ...prev,
           isLoading: false,
