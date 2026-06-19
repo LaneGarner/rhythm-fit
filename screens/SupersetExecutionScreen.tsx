@@ -263,6 +263,34 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     );
   };
 
+  const handleDuplicateSet = (activityId: string, setToDuplicate: SetData) => {
+    const activity = supersetActivities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const newSet: SetData = {
+      ...setToDuplicate,
+      id: `${activityId}-${Date.now()}`,
+      completed: false,
+    };
+    const sets = activity.sets || [];
+    const sourceIndex = sets.findIndex(set => set.id === setToDuplicate.id);
+    const insertIndex = sourceIndex >= 0 ? sourceIndex + 1 : sets.length;
+    const updatedSets = [
+      ...sets.slice(0, insertIndex),
+      newSet,
+      ...sets.slice(insertIndex),
+    ];
+
+    setLocalSets(prev => new Map(prev).set(activityId, updatedSets));
+    dispatch(
+      updateActivity({
+        ...activity,
+        sets: updatedSets,
+        completed: false,
+      })
+    );
+  };
+
   const handlePlateWeightSelect = (weight: number) => {
     if (activeSetInfo) {
       handleUpdateSet(activeSetInfo.activityId, activeSetInfo.setId, {
@@ -277,13 +305,15 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Delete'],
+          options: ['Cancel', 'Duplicate', 'Delete'],
           cancelButtonIndex: 0,
-          destructiveButtonIndex: 1,
+          destructiveButtonIndex: 2,
           userInterfaceStyle: isDark ? 'dark' : 'light',
         },
         buttonIndex => {
           if (buttonIndex === 1) {
+            handleDuplicateSet(activityId, set);
+          } else if (buttonIndex === 2) {
             handleDeleteSet(activityId, set.id);
           }
         }
@@ -291,6 +321,10 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     } else {
       Alert.alert('Set Options', 'What would you like to do?', [
         { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Duplicate',
+          onPress: () => handleDuplicateSet(activityId, set),
+        },
         {
           text: 'Delete',
           style: 'destructive',
