@@ -6,6 +6,7 @@ import {
   Animated,
   Keyboard,
   Platform,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -48,6 +49,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { timer, startCountdown } = useTimer();
   const { autoRestTimer } = usePreferences();
   const isTimerRunning = timer.activityId === activityId && timer.isRunning;
+  const restTimerEnabled = activity?.restTimerEnabled ?? true;
 
   const [sets, setSets] = useState<SetData[]>(activity?.sets || []);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -180,11 +182,20 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
-      } else if (autoRestTimer && updates.completed === true) {
+      } else if (
+        autoRestTimer &&
+        restTimerEnabled &&
+        updates.completed === true
+      ) {
         const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(activityId, activity.name, duration);
       }
     }
+  };
+
+  const handleRestTimerToggle = (enabled: boolean) => {
+    if (!activity) return;
+    dispatch(updateActivity({ ...activity, restTimerEnabled: enabled }));
   };
 
   const handleDeleteSet = (setId: string) => {
@@ -362,6 +373,50 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               defaultExpanded={isTimerRunning}
               onExpandedChange={setIsTimerExpanded}
             />
+
+            <View
+              className="p-4 rounded-lg"
+              style={{ backgroundColor: colors.cardBackground }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text
+                    className={`text-base font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Auto Rest Countdown
+                  </Text>
+                  <Text
+                    className={`text-sm mt-1 ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}
+                  >
+                    Start automatically after completed sets
+                  </Text>
+                </View>
+                <Switch
+                  value={restTimerEnabled}
+                  onValueChange={handleRestTimerToggle}
+                  disabled={!autoRestTimer}
+                  trackColor={{
+                    false: isDark ? '#4B5563' : '#D1D5DB',
+                    true: colors.primary.main,
+                  }}
+                  thumbColor="#FFFFFF"
+                  accessibilityLabel="Auto rest countdown for this activity"
+                />
+              </View>
+              {!autoRestTimer && (
+                <Text
+                  className={`text-xs mt-3 ${
+                    isDark ? 'text-gray-500' : 'text-gray-500'
+                  }`}
+                >
+                  Enable global auto rest timer in Settings to use this toggle.
+                </Text>
+              )}
+            </View>
 
             {/* Notes */}
             <NotesCard notes={activity.notes || ''} />

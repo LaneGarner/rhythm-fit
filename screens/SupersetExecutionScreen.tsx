@@ -52,6 +52,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const supersetActivities = getSupersetActivities(activities, supersetId);
+  const supersetRestTimerEnabled = supersetActivities.every(
+    activity => activity.restTimerEnabled ?? true
+  );
 
   useUnfinishedSupersetNotification(supersetActivities);
 
@@ -198,7 +201,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         Alert.alert('Nice Work!', 'Superset complete!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
-      } else if (autoRestTimer) {
+      } else if (autoRestTimer && supersetRestTimerEnabled) {
         const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(
           supersetId,
