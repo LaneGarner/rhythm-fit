@@ -113,6 +113,11 @@ async function schedule(
   trigger: Notifications.NotificationTriggerInput,
   payload: NotificationPayload
 ) {
+  const triggerWithChannel =
+    trigger && typeof trigger === 'object'
+      ? { ...trigger, channelId: 'default' }
+      : trigger;
+
   await cancelById(identifier);
   await Notifications.scheduleNotificationAsync({
     identifier,
@@ -121,8 +126,10 @@ async function schedule(
       body,
       data: payload as unknown as Record<string, unknown>,
       sound: 'default',
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      interruptionLevel: 'active',
     },
-    trigger,
+    trigger: triggerWithChannel,
   });
 }
 
