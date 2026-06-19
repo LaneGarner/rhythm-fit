@@ -264,6 +264,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     );
   }
 
+  const completedSetsCount = sets.filter(set => set.completed).length;
+  const totalSetsCount = sets.length;
+  const allSetsComplete =
+    totalSetsCount > 0 && completedSetsCount === totalSetsCount;
+
   const scrollToSetInput = (refKey: string) => {
     const inputRef = setInputRefs.current[refKey];
     if (inputRef && scrollViewRef.current) {
@@ -421,16 +426,69 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             {/* Notes */}
             <NotesCard notes={activity.notes || ''} />
 
+            {allSetsComplete && (
+              <View
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(34, 197, 94, 0.16)'
+                    : 'rgba(34, 197, 94, 0.10)',
+                  borderWidth: 2,
+                  borderColor: colors.success.main,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.success.main,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                >
+                  Activity Complete
+                </Text>
+                <Text
+                  className="mt-1 text-center"
+                  style={{
+                    color: isDark ? '#BBF7D0' : colors.success.dark,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  {completedSetsCount} of {totalSetsCount} sets complete
+                </Text>
+              </View>
+            )}
+
             {/* Sets */}
             <View>
               <View className="flex-row justify-between items-center mb-4">
-                <Text
-                  className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Sets ({sets.length})
-                </Text>
+                <View>
+                  <Text
+                    className={`text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Sets ({sets.length})
+                  </Text>
+                  <Text
+                    className={`text-sm mt-1 ${
+                      allSetsComplete
+                        ? ''
+                        : isDark
+                          ? 'text-gray-400'
+                          : 'text-gray-500'
+                    }`}
+                    style={{
+                      color: allSetsComplete
+                        ? colors.success.main
+                        : undefined,
+                      fontWeight: allSetsComplete ? '700' : '500',
+                    }}
+                  >
+                    {completedSetsCount} of {totalSetsCount} sets complete
+                  </Text>
+                </View>
               </View>
 
               {sets.map((set, index) => (

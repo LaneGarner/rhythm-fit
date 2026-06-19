@@ -65,16 +65,46 @@ export default function SetCard({
   return (
     <View
       className="p-4 rounded-lg mb-3 shadow-sm"
-      style={{ backgroundColor: colors.cardBackground }}
+      style={{
+        backgroundColor: set.completed
+          ? isDark
+            ? 'rgba(34, 197, 94, 0.14)'
+            : 'rgba(34, 197, 94, 0.10)'
+          : colors.cardBackground,
+        borderWidth: set.completed ? 2 : 0,
+        borderColor: set.completed ? colors.success.main : 'transparent',
+      }}
     >
       <View className="flex-row justify-between items-center mb-3">
-        <Text
-          className={`text-lg font-semibold ${
-            isDark ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          Set {index + 1}
-        </Text>
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          <Text
+            className={`text-lg font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            Set {index + 1}
+          </Text>
+          {set.completed && (
+            <View
+              style={{
+                backgroundColor: colors.success.main,
+                borderRadius: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: '700',
+                }}
+              >
+                Complete
+              </Text>
+            </View>
+          )}
+        </View>
         {!readOnly && (
           <TouchableOpacity
             onPress={() => onShowOptions(set)}
@@ -314,7 +344,9 @@ export default function SetCard({
         onPress={() => onUpdateSet(set.id, { completed: !set.completed })}
         className="mt-5 px-4 py-4 rounded-lg"
         style={{
-          backgroundColor: colors.surface,
+          backgroundColor: set.completed
+            ? colors.success.main
+            : colors.surface,
           borderWidth: 2,
           borderColor: set.completed ? colors.success.main : colors.border,
         }}
@@ -325,10 +357,10 @@ export default function SetCard({
         <Text
           className={`text-center font-semibold text-lg`}
           style={{
-            color: set.completed ? colors.success.main : colors.textSecondary,
+            color: set.completed ? '#FFFFFF' : colors.textSecondary,
           }}
         >
-          {set.completed ? 'Completed  ✅' : 'Mark Complete'}
+          {set.completed ? 'Completed - Tap to Undo' : 'Mark Complete'}
         </Text>
       </TouchableOpacity>
 
