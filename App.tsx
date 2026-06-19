@@ -11,7 +11,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import DevModeButton from './components/DevModeButton';
-import SplashScreen from './components/SplashScreen';
 import { TutorialProvider } from './components/tutorial';
 import TabNavigator from './navigation/TabNavigator';
 import { store } from './redux/store';
@@ -182,15 +181,11 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
 }
 
 function AppInitializer() {
-  const { isReady, shouldShowTutorial } = useAppInitialization();
+  const { shouldShowTutorial } = useAppInitialization();
   const navigationRef =
     useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useOrientationLock();
-
-  if (!isReady) {
-    return <SplashScreen />;
-  }
 
   return (
     <AppContent
