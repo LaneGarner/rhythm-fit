@@ -1,8 +1,17 @@
 import React from 'react';
 import { Animated, View } from 'react-native';
+import { Text } from 'react-native';
 import Logo from './Logo';
 
-export default function SplashScreen() {
+interface SplashScreenProps {
+  statusMessage?: string;
+  errorMessage?: string | null;
+}
+
+export default function SplashScreen({
+  statusMessage,
+  errorMessage,
+}: SplashScreenProps) {
   // Simple loading animation for dots
   const dotAnimations = React.useRef([
     new Animated.Value(0.3),
@@ -63,6 +72,47 @@ export default function SplashScreen() {
           />
         ))}
       </View>
+
+      {(statusMessage || errorMessage) && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 24,
+            right: 24,
+            bottom: 28,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 12,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+          }}
+        >
+          {statusMessage ? (
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: '600',
+                textAlign: 'center',
+                marginBottom: errorMessage ? 6 : 0,
+              }}
+            >
+              {statusMessage}
+            </Text>
+          ) : null}
+          {errorMessage ? (
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.75)',
+                fontSize: 12,
+                lineHeight: 16,
+                textAlign: 'center',
+              }}
+            >
+              {errorMessage}
+            </Text>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }
