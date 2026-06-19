@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activity Flow Polish QA</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --panel: #ffffff;
+        --ink: #111827;
+        --muted: #5f6b7a;
+        --line: #dfe4ec;
+        --accent: #0f766e;
+        --accent-soft: #e6f5f2;
+        --success: #15803d;
+        --danger: #b91c1c;
+        --warn: #92400e;
+        --radius: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      header {
+        background: #10201e;
+        color: white;
+        padding: 40px 24px 32px;
+      }
+
+      header .wrap,
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.15;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.45rem;
+        margin-bottom: 14px;
+      }
+
+      h3 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .subtitle {
+        max-width: 760px;
+        margin-top: 14px;
+        color: #c7d8d4;
+        font-size: 1.05rem;
+      }
+
+      main {
+        padding: 24px;
+      }
+
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+
+      .note {
+        background: var(--accent-soft);
+        border-left: 4px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 14px;
+      }
+
+      .qa-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 14px;
+        background: #fbfcfe;
+      }
+
+      .principles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .principle {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 12px;
+        background: white;
+      }
+
+      .principle strong,
+      .tag {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 8px 0 0 20px;
+        padding: 0;
+      }
+
+      li {
+        margin: 6px 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 0.94rem;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f2f5f9;
+        color: #263142;
+        font-weight: 700;
+      }
+
+      code {
+        background: #eef2f7;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+        font-size: 0.92em;
+      }
+
+      .status {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 10px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.82rem;
+      }
+
+      .danger {
+        color: var(--danger);
+      }
+
+      .success {
+        color: var(--success);
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        section {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <span class="status">Activity Flow Polish</span>
+        <h1>Design Rationale and Manual QA</h1>
+        <p class="subtitle">
+          A compact review guide for the activity library, execution cards,
+          supersets, rest countdown behavior, completion feedback, and timer
+          notification reliability.
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Norman UX Frame</h2>
+        <p>
+          These changes reduce hidden state and make the available action map
+          more directly to the user's workout task: find an activity, perform a
+          set, understand what is complete, and control whether rest starts
+          automatically.
+        </p>
+        <div class="principles">
+          <div class="principle">
+            <strong>Affordances</strong>
+            <p>Rows scroll, toggles toggle, wheel fields invite picking.</p>
+          </div>
+          <div class="principle">
+            <strong>Signifiers</strong>
+            <p>Names, type labels, counts, and status text replace decorative activity glyphs.</p>
+          </div>
+          <div class="principle">
+            <strong>Feedback</strong>
+            <p>Completed sets use stronger color, borders, and explicit labels.</p>
+          </div>
+          <div class="principle">
+            <strong>Mapping</strong>
+            <p>Reps step by 1, weight by 5, matching common gym adjustments.</p>
+          </div>
+          <div class="principle">
+            <strong>Constraints</strong>
+            <p>Rest auto-start requires both global and per-activity enablement.</p>
+          </div>
+          <div class="principle">
+            <strong>Error Prevention</strong>
+            <p>Superset unlink asks for confirmation and preserves existing workout data.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Feature QA Matrix</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Design intent</th>
+              <th>Manual QA</th>
+              <th>Expected result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Activity library scrolling</td>
+              <td>Full list reachability without secondary "show more" state.</td>
+              <td>Create or seed 15+ custom activities. Open Settings -> Activity Library. Scroll to the bottom on small and large devices.</td>
+              <td>Every activity is reachable; the floating add button does not cover the final rows.</td>
+            </tr>
+            <tr>
+              <td>Activity icons removed</td>
+              <td>Names and type labels become the conceptual model for identity.</td>
+              <td>Review library, weekly/day lists, create/edit forms, execution headers, supersets, and share preview cards.</td>
+              <td>No activity-type glyphs appear. Functional icons like check, menu, trash, arrows, and plate calculator remain.</td>
+            </tr>
+            <tr>
+              <td>Superset set duplication</td>
+              <td>Set options operate on the selected exercise only.</td>
+              <td>Open a superset, use a set's options, tap Duplicate.</td>
+              <td>Only that exercise gets a copied set; field values match; the copied set is incomplete.</td>
+            </tr>
+            <tr>
+              <td>Wheel reps and weight</td>
+              <td>Fast, bounded picking for common numeric fields.</td>
+              <td>Open regular activity execution. Tap reps and pick 6, 8, and 12. Tap weight and pick several values.</td>
+              <td>Reps increments by 1; weight increments by 5; distance remains decimal input; time remains duration picker; plate calculator still opens.</td>
+            </tr>
+            <tr>
+              <td>Per-activity rest countdown</td>
+              <td>Auto behavior is local and reversible, while manual timer controls stay available.</td>
+              <td>Enable global auto rest timer in Settings. In activity execution, turn Auto Rest Countdown off and complete a set. Turn it on and complete another set.</td>
+              <td>Off prevents auto-start only. On starts the rest countdown. Manual timer controls remain usable either way.</td>
+            </tr>
+            <tr>
+              <td>Superset rest countdown gate</td>
+              <td>A superset should not auto-start if any included activity opted out.</td>
+              <td>Disable rest countdown for one activity in a superset. Complete a superset round.</td>
+              <td>No auto rest countdown starts until every superset activity has rest countdown enabled and global auto rest is enabled.</td>
+            </tr>
+            <tr>
+              <td>Superset visual cleanup</td>
+              <td>Superset execution cards should feel like regular execution cards.</td>
+              <td>Open a superset execution flow and compare card styling to regular activity execution.</td>
+              <td>Cards use neutral card styling without blue rails; connectors are neutral.</td>
+            </tr>
+            <tr>
+              <td>Unlink superset</td>
+              <td>Destructive group change has a clear confirmation and preserves data.</td>
+              <td>Open a superset, tap Unlink Superset, cancel once, then confirm.</td>
+              <td>Cancel does nothing. Confirm splits activities, preserves sets/order/completion, and returns to the prior screen.</td>
+            </tr>
+            <tr>
+              <td>Completion feedback</td>
+              <td>Progress should be visible without interpreting color alone.</td>
+              <td>Complete sets one by one in regular activity execution.</td>
+              <td>The header shows x of y sets complete. Completed sets have success styling and status text. All sets complete shows an Activity Complete banner.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Timer Notification QA</h2>
+        <div class="note">
+          <p>
+            Timer notifications now separate generic timer completion from rest
+            completion IDs, cancel stale opposite IDs before scheduling, cancel
+            both IDs when timer notifications are disabled or the timer stops,
+            and schedule through the default Android channel with high priority.
+          </p>
+        </div>
+        <div class="grid" style="margin-top: 14px">
+          <div class="qa-card">
+            <h3>Foreground</h3>
+            <ol>
+              <li>Enable notifications and timer completion in settings.</li>
+              <li>Start a short manual countdown while the app is open.</li>
+              <li>Wait for completion.</li>
+            </ol>
+            <p><strong>Expected:</strong> in-app timer feedback appears; foreground banner may be suppressed by design.</p>
+          </div>
+          <div class="qa-card">
+            <h3>Background</h3>
+            <ol>
+              <li>Start a 20-30 second countdown.</li>
+              <li>Send the app to background.</li>
+              <li>Wait for completion.</li>
+            </ol>
+            <p><strong>Expected:</strong> local notification appears with sound if permissions and OS settings allow it.</p>
+          </div>
+          <div class="qa-card">
+            <h3>iOS Lock Screen</h3>
+            <ol>
+              <li>Use a physical iPhone, not Simulator.</li>
+              <li>Confirm iOS Settings -> Rhythm -> Notifications allows Lock Screen, Banners, and Sounds.</li>
+              <li>Disable Focus modes that silence the app.</li>
+              <li>Start an auto-rest countdown, lock the phone, and wait.</li>
+            </ol>
+            <p><strong>Expected:</strong> "Rest complete" notification is delivered on the lock screen when iOS permits delivery.</p>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Limit</th>
+              <th>What to verify</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Permissions</td>
+              <td>Notifications, lock-screen display, and sounds must be granted at OS level.</td>
+            </tr>
+            <tr>
+              <td>Focus / Do Not Disturb</td>
+              <td>Focus can delay or hide active notifications unless the app is allowed.</td>
+            </tr>
+            <tr>
+              <td>Silent mode and volume</td>
+              <td>Local notification sound behavior depends on iOS sound settings; in-app audio uses the app audio mode.</td>
+            </tr>
+            <tr>
+              <td>Expo Go</td>
+              <td>Use a development or production build for reliable notification validation.</td>
+            </tr>
+            <tr>
+              <td>Android exactness</td>
+              <td>Android may apply timing variance without exact alarm privileges on some devices.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Regression Checklist</h2>
+        <div class="grid">
+          <div class="qa-card">
+            <h3>Data Integrity</h3>
+            <ul>
+              <li>Duplicate regular and superset sets; verify copied values.</li>
+              <li>Unlink a superset; verify activities keep original dates, sets, order, and completion.</li>
+              <li>Edit reps/weight; leave and reopen activity; verify persistence.</li>
+            </ul>
+          </div>
+          <div class="qa-card">
+            <h3>Navigation</h3>
+            <ul>
+              <li>Back/Edit controls still work from regular and superset execution.</li>
+              <li>Share preview still renders with check/status icons.</li>
+              <li>Activity library modal save/cancel still works after scrolling.</li>
+            </ul>
+          </div>
+          <div class="qa-card">
+            <h3>Accessibility</h3>
+            <ul>
+              <li>Switch exposes checked state for Auto Rest Countdown.</li>
+              <li>Set complete buttons announce complete/incomplete state.</li>
+              <li>Icon removal does not remove the text label needed to identify any activity.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Verification</h2>
+        <p>
+          Static verification command: <code>npm run typecheck</code>.
+          Manual verification should prioritize small iPhone viewports, iOS
+          physical-device notification delivery, and real workout flows with
+          multiple set types.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
