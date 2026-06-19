@@ -23,7 +23,11 @@ import {
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
 import StickyCompactTimer from '../components/StickyCompactTimer';
-import { updateActivity, batchUpdateActivities } from '../redux/activitySlice';
+import {
+  batchUpdateActivities,
+  breakSuperset,
+  updateActivity,
+} from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -337,6 +341,24 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     }
   };
 
+  const handleUnlinkSuperset = () => {
+    Alert.alert(
+      'Unlink Superset',
+      'This will split the superset into separate activities and keep all sets, order, and completion state.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unlink',
+          style: 'destructive',
+          onPress: () => {
+            dispatch(breakSuperset(supersetId));
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
   const scrollToSetInput = (refKey: string) => {
     const inputRef = setInputRefs.current[refKey];
     if (inputRef && scrollViewRef.current) {
@@ -457,6 +479,29 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
               onExpandedChange={setIsTimerExpanded}
             />
 
+            <TouchableOpacity
+              onPress={handleUnlinkSuperset}
+              className="p-4 rounded-lg"
+              style={{
+                backgroundColor: colors.cardBackground,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Unlink superset"
+            >
+              <Text
+                style={{
+                  color: colors.error.main,
+                  fontWeight: '600',
+                  fontSize: 16,
+                  textAlign: 'center',
+                }}
+              >
+                Unlink Superset
+              </Text>
+            </TouchableOpacity>
+
             {/* Notes - combined from all activities */}
             {supersetActivities.some(a => a.notes) && (
               <NotesCard
@@ -510,9 +555,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   ({ activity, set, setIndex }, activityIndex) => {
                     const isLastActivity =
                       activityIndex === round.sets.length - 1;
-                    const accentColor = set?.completed
-                      ? colors.success.main
-                      : colors.primary.main;
 
                     if (!set) {
                       return null;
@@ -532,10 +574,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                           className={`p-4 rounded-lg ${
                             isDark ? 'bg-gray-800' : 'bg-white'
                           } shadow-sm`}
-                          style={{
-                            borderLeftWidth: 4,
-                            borderLeftColor: accentColor,
-                          }}
+                          style={{ backgroundColor: colors.cardBackground }}
                         >
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
@@ -639,7 +678,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               style={{
                                 width: 2,
                                 height: 16,
-                                backgroundColor: accentColor,
+                                backgroundColor: colors.border,
                                 borderRadius: 1,
                               }}
                             />
