@@ -4,10 +4,8 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
-import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
-import SupersetIcons from '../components/SupersetIcons';
 import { useTutorial } from '../components/tutorial';
 import {
   ActionSheetIOS,
@@ -909,12 +907,6 @@ export default function WeeklyScreen({ navigation }: any) {
                                 key={group.supersetId}
                                 className="flex-row items-center mt-1"
                               >
-                                <View className="mr-2">
-                                  <SupersetIcons
-                                    activities={group.activities}
-                                    size={18}
-                                  />
-                                </View>
                                 <Text
                                   style={{
                                     color: colors.text,
@@ -949,12 +941,6 @@ export default function WeeklyScreen({ navigation }: any) {
                               key={activity.id}
                               className="flex-row items-center mt-1"
                             >
-                              <View className="mr-2">
-                                <ActivityIcon
-                                  activityType={activity.type}
-                                  size={18}
-                                />
-                              </View>
                               <Text
                                 style={{
                                   color: colors.text,

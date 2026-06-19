@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import { useAuth } from '../context/AuthContext';
@@ -239,13 +238,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1">
-                      <View className="mr-3">
-                        <ActivityIcon
-                          activityType={item.type}
-                          size={24}
-                          color={colors.text}
-                        />
-                      </View>
                       <View className="flex-1">
                         <Text
                           className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -463,11 +455,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                           : colors.surface,
                       }}
                     >
-                      <Ionicons
-                        name={type.iconName}
-                        size={18}
-                        color={isDark ? '#fff' : '#111827'}
-                      />
                       <Text
                         className={`text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
                       >

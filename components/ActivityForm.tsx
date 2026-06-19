@@ -31,7 +31,6 @@ import {
   SetData,
   TrackingField,
 } from '../types/activity';
-import ActivityIcon from './ActivityIcon';
 import ActivityNameInput from './ActivityNameInput';
 import DurationPickerModal from './DurationPickerModal';
 import PlateCalculatorModal from './PlateCalculatorModal';
@@ -584,11 +583,6 @@ function ActivityForm(
                           : '#fff',
                     }}
                   >
-                    <Ionicons
-                      name={type.iconName}
-                      size={18}
-                      color={isDark ? '#fff' : '#111827'}
-                    />
                     <Text
                       className={`text-base ${
                         isDark ? 'text-white' : 'text-gray-900'
@@ -1052,11 +1046,6 @@ function ActivityForm(
                       gap: 6,
                     }}
                   >
-                    <ActivityIcon
-                      activityType={draft.type}
-                      size={16}
-                      color={colors.text}
-                    />
                     <Text
                       style={{
                         fontSize: 14,

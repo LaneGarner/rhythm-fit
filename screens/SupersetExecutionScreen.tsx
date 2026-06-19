@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import ActivityIcon from '../components/ActivityIcon';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
@@ -504,12 +503,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
                             <View className="flex-row items-center flex-1">
-                              <View className="mr-2">
-                                <ActivityIcon
-                                  activityType={activity.type}
-                                  size={22}
-                                />
-                              </View>
                               <Text
                                 className={`text-base font-semibold ${
                                   isDark ? 'text-white' : 'text-gray-900'
