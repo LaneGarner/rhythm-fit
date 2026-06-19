@@ -7,14 +7,18 @@ import React, {
   useCallback,
 } from 'react';
 import { Alert, AppState, AppStateStatus, Vibration } from 'react-native';
-import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { usePreferences } from './PreferencesContext';
 import {
   cancelTimerCompletion,
   scheduleTimerCompletion,
 } from '../services/notifications';
-import { LiveActivity, LiveActivityMode } from '../modules/live-activity/src';
+
+type LiveActivityMode = 'countUp' | 'countDown' | 'emom' | 'rest';
+type LiveActivityApi =
+  typeof import('../modules/live-activity/src').LiveActivity;
+type ExpoAudioApi = typeof import('expo-audio');
 
 type TimerMode = 'countUp' | 'countDown' | 'emom';
 
@@ -79,11 +83,49 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const liveActivityRef = useRef(liveActivity);
   const liveActivityKitIdRef = useRef<string | null>(null);
   const notificationSettingsRef = useRef(notificationSettings);
-  const player = useAudioPlayer(require('../assets/sounds/timer-complete.wav'));
+  const audioPlayerRef = useRef<AudioPlayer | null>(null);
+  const audioModeConfiguredRef = useRef(false);
 
-  // Configure audio to play even when iOS silent switch is on
+  const getLiveActivity = useCallback((): LiveActivityApi | null => {
+    try {
+      return require('../modules/live-activity/src')
+        .LiveActivity as LiveActivityApi;
+    } catch (error) {
+      console.error('Failed to load Live Activity module:', error);
+      return null;
+    }
+  }, []);
+
+  const getTimerAudioPlayer =
+    useCallback(async (): Promise<AudioPlayer | null> => {
+      try {
+        const { createAudioPlayer, setAudioModeAsync } =
+          require('expo-audio') as ExpoAudioApi;
+
+        if (!audioModeConfiguredRef.current) {
+          await setAudioModeAsync({ playsInSilentMode: true });
+          audioModeConfiguredRef.current = true;
+        }
+
+        if (!audioPlayerRef.current) {
+          audioPlayerRef.current = createAudioPlayer(
+            require('../assets/sounds/timer-complete.wav')
+          );
+        }
+
+        return audioPlayerRef.current;
+      } catch (error) {
+        console.error('Failed to load timer audio:', error);
+        return null;
+      }
+    }, []);
+
   useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true });
+    return () => {
+      audioPlayerRef.current?.remove();
+      audioPlayerRef.current = null;
+      audioModeConfiguredRef.current = false;
+    };
   }, []);
 
   // Keep refs in sync with preference values (refs needed inside setInterval callback)
@@ -103,10 +145,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     liveActivityRef.current = liveActivity;
     if (!liveActivity) {
-      LiveActivity.endAll();
+      getLiveActivity()?.endAll();
       liveActivityKitIdRef.current = null;
     }
-  }, [liveActivity]);
+  }, [getLiveActivity, liveActivity]);
 
   const scheduleTimerNotification = useCallback(
     (activityName: string, completionAt: number) => {
@@ -139,7 +181,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }
     ) => {
       if (!liveActivityRef.current) return;
-      const id = await LiveActivity.start({
+      const liveActivityApi = getLiveActivity();
+      if (!liveActivityApi) return;
+      const id = await liveActivityApi.start({
         activityId,
         activityName,
         mode,
@@ -151,7 +195,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       });
       if (id) liveActivityKitIdRef.current = id;
     },
-    []
+    [getLiveActivity]
   );
 
   const updateLiveActivity = useCallback(
@@ -166,7 +210,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }
     ) => {
       if (!liveActivityKitIdRef.current) return;
-      await LiveActivity.update({
+      const liveActivityApi = getLiveActivity();
+      if (!liveActivityApi) return;
+      await liveActivityApi.update({
         activityKitId: liveActivityKitIdRef.current,
         mode,
         startedAt,
@@ -176,27 +222,34 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         emomTotalRounds: extra?.emomTotalRounds,
       });
     },
-    []
+    [getLiveActivity]
   );
 
-  const endLiveActivity = useCallback(async (dismissAfterSeconds = 4) => {
-    if (!liveActivityKitIdRef.current) return;
-    await LiveActivity.end({
-      activityKitId: liveActivityKitIdRef.current,
-      dismissalPolicy: 'afterSeconds',
-      dismissAfterSeconds,
-    });
-    liveActivityKitIdRef.current = null;
-  }, []);
+  const endLiveActivity = useCallback(
+    async (dismissAfterSeconds = 4) => {
+      if (!liveActivityKitIdRef.current) return;
+      const liveActivityApi = getLiveActivity();
+      if (!liveActivityApi) return;
+      await liveActivityApi.end({
+        activityKitId: liveActivityKitIdRef.current,
+        dismissalPolicy: 'afterSeconds',
+        dismissAfterSeconds,
+      });
+      liveActivityKitIdRef.current = null;
+    },
+    [getLiveActivity]
+  );
 
   const endLiveActivityImmediate = useCallback(async () => {
     if (!liveActivityKitIdRef.current) return;
-    await LiveActivity.end({
+    const liveActivityApi = getLiveActivity();
+    if (!liveActivityApi) return;
+    await liveActivityApi.end({
       activityKitId: liveActivityKitIdRef.current,
       dismissalPolicy: 'immediate',
     });
     liveActivityKitIdRef.current = null;
-  }, []);
+  }, [getLiveActivity]);
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -204,8 +257,11 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     if (!vibrationActiveRef.current) return;
     // Pattern: BUZZ tap tap [wait] BUZZ tap tap tap
     if (timerSoundRef.current) {
-      player.seekTo(0);
-      player.play();
+      const player = await getTimerAudioPlayer();
+      if (player) {
+        await player.seekTo(0);
+        player.play();
+      }
     }
     Vibration.vibrate();
     await delay(500);
@@ -226,7 +282,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     await delay(150);
     if (!vibrationActiveRef.current) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-  }, []);
+  }, [getTimerAudioPlayer]);
 
   const stopVibration = useCallback(() => {
     vibrationActiveRef.current = false;
@@ -245,7 +301,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         playVibrationPattern();
       }, 3000);
     }
-  }, [playVibrationPattern, player]);
+  }, [playVibrationPattern]);
 
   // One-shot variant for per-interval EMOM dings — no repeating setInterval.
   const playIntervalFeedback = useCallback(() => {

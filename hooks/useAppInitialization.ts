@@ -17,30 +17,6 @@ import { Activity } from '../types/activity';
 import { loadTutorialCompleted } from '../utils/storage';
 
 const MIN_SPLASH_TIME_MS = 1000;
-const STARTUP_TIMEOUT_MS = 15000;
-
-function logStartup(message: string, details?: unknown) {
-  if (details === undefined) {
-    console.log(`[startup] ${message}`);
-    return;
-  }
-
-  console.log(`[startup] ${message}`, details);
-}
-
-function logStartupError(message: string, error: unknown) {
-  console.warn(`[startup] ${message}`, error);
-}
-
-function toErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
-  }
-}
 
 export function useAppInitialization() {
   const dispatch = useDispatch<AppDispatch>();
@@ -60,32 +36,10 @@ export function useAppInitialization() {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [tutorialReady, setTutorialReady] = useState(false);
   const [shouldShowTutorial, setShouldShowTutorial] = useState(false);
-  const [startupTimedOut, setStartupTimedOut] = useState(false);
-  const [startupStatus, setStartupStatus] = useState('Starting up');
-  const [startupError, setStartupError] = useState<string | null>(null);
 
   // Use ref to avoid re-triggering sync when activities change
   const activitiesRef = useRef<Activity[]>([]);
   activitiesRef.current = activities;
-
-  const readinessSnapshotRef = useRef({
-    activitiesLoaded,
-    authLoading,
-    hasUser: Boolean(user),
-    isConfigured,
-    syncComplete,
-    minTimeElapsed,
-    tutorialReady,
-  });
-  readinessSnapshotRef.current = {
-    activitiesLoaded,
-    authLoading,
-    hasUser: Boolean(user),
-    isConfigured,
-    syncComplete,
-    minTimeElapsed,
-    tutorialReady,
-  };
 
   const handleActivitiesUpdated = useCallback(
     (updatedActivities: Activity[]) => {
@@ -102,70 +56,28 @@ export function useAppInitialization() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fail open after a bounded wait so TestFlight does not sit on the splash
-  // forever if one of the startup promises stalls.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const snapshot = readinessSnapshotRef.current;
-      logStartupError(`startup timeout after ${STARTUP_TIMEOUT_MS}ms`, snapshot);
-      setStartupStatus('Startup timed out');
-      setStartupError(JSON.stringify(snapshot));
-      setStartupTimedOut(true);
-    }, STARTUP_TIMEOUT_MS);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Load activities from storage and check tutorial status
   useEffect(() => {
-    logStartup('bootstrap begin');
-    setStartupStatus('Loading saved workouts');
-
     (async () => {
-      logStartup('loading activities from storage');
       try {
         await dispatch(loadActivitiesFromStorage()).unwrap();
-        logStartup('activities loaded');
       } catch (error) {
-        logStartupError('failed to load activities from storage', error);
-        setStartupError(toErrorMessage(error));
+        console.error('Failed to load activities from storage:', error);
       } finally {
         setActivitiesLoaded(true);
       }
     })();
 
-    logStartup('initializing exercise cache');
-    setStartupStatus('Preparing exercise library');
-    void Promise.resolve(initializeExercises())
-      .then(() => {
-        logStartup('exercise cache initialized');
-      })
-      .catch(error => {
-        logStartupError('exercise cache initialization failed', error);
-        setStartupError(toErrorMessage(error));
-      });
-
-    logStartup('initializing activity type cache');
-    setStartupStatus('Preparing activity types');
-    void Promise.resolve(initializeActivityTypes())
-      .then(() => {
-        logStartup('activity type cache initialized');
-      })
-      .catch(error => {
-        logStartupError('activity type cache initialization failed', error);
-        setStartupError(toErrorMessage(error));
-      });
+    // Initialize exercise database and activity types from backend
+    initializeExercises();
+    initializeActivityTypes();
 
     (async () => {
-      logStartup('loading tutorial completion state');
-      setStartupStatus('Restoring tutorial state');
       try {
         const completed = await loadTutorialCompleted();
         setShouldShowTutorial(!completed);
-        logStartup(`tutorial completion loaded: ${completed ? 'complete' : 'incomplete'}`);
       } catch (error) {
-        logStartupError('failed to load tutorial completion state', error);
-        setStartupError(toErrorMessage(error));
+        console.error('Failed to load tutorial completion state:', error);
         setShouldShowTutorial(false);
       } finally {
         setTutorialReady(true);
@@ -182,42 +94,6 @@ export function useAppInitialization() {
 
   // Auth ready check
   const authReady = !isConfigured || !authLoading;
-
-  useEffect(() => {
-    if (!isConfigured) {
-      setStartupStatus('Starting local app');
-      return;
-    }
-
-    if (authLoading) {
-      setStartupStatus('Checking sign-in');
-      return;
-    }
-
-    if (!activitiesLoaded) {
-      setStartupStatus('Loading saved workouts');
-      return;
-    }
-
-    if (!syncComplete) {
-      setStartupStatus(user ? 'Syncing workout data' : 'Preparing offline mode');
-      return;
-    }
-
-    if (!tutorialReady) {
-      setStartupStatus('Restoring tutorial state');
-      return;
-    }
-
-    setStartupStatus('Ready');
-  }, [
-    activitiesLoaded,
-    authLoading,
-    isConfigured,
-    syncComplete,
-    tutorialReady,
-    user,
-  ]);
 
   // Sync activities when user is authenticated
   useEffect(() => {
@@ -310,10 +186,5 @@ export function useAppInitialization() {
     minTimeElapsed &&
     tutorialReady;
 
-  return {
-    isReady: isReady || startupTimedOut,
-    shouldShowTutorial,
-    startupStatus,
-    startupError,
-  };
+  return { isReady, shouldShowTutorial };
 }

@@ -182,17 +182,14 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
 }
 
 function AppInitializer() {
-  const { isReady, shouldShowTutorial, startupStatus, startupError } =
-    useAppInitialization();
+  const { isReady, shouldShowTutorial } = useAppInitialization();
   const navigationRef =
     useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useOrientationLock();
 
   if (!isReady) {
-    return (
-      <SplashScreen statusMessage={startupStatus} errorMessage={startupError} />
-    );
+    return <SplashScreen />;
   }
 
   return (
