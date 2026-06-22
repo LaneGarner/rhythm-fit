@@ -45,6 +45,14 @@ export default {
           color: '#000000',
         },
       ],
+      [
+        'expo-build-properties',
+        {
+          ios: {
+            deploymentTarget: '16.1',
+          },
+        },
+      ],
     ],
     autolinking: {
       exclude: ['live-activity'],
