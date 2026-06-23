@@ -512,6 +512,28 @@ export default function DayScreen({ navigation, route }: any) {
     );
   };
 
+  const handleDuplicateSuperset = async (activities: Activity[]) => {
+    const base = Date.now();
+    const newSupersetId = `${base}-ss-${Math.random().toString(36).substr(2, 9)}`;
+
+    activities.forEach((activity, i) => {
+      const newActivity: Activity = {
+        ...activity,
+        id: `${base}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+        completed: false,
+        sets: activity.sets?.map(set => ({ ...set, completed: false })),
+        supersetId: newSupersetId,
+        supersetPosition: activity.supersetPosition ?? i,
+        recurring: undefined,
+        order: undefined,
+        updated_at: new Date().toISOString(),
+      };
+      dispatch(addActivity(newActivity));
+    });
+
+    Alert.alert('Duplicated', 'Superset has been duplicated.');
+  };
+
   const handleCopyToDate = (activity: Activity) => {
     setCopyActivity(activity);
     setCopyTargetDate(new Date());
@@ -1033,12 +1055,16 @@ export default function DayScreen({ navigation, route }: any) {
       if (Platform.OS === 'ios') {
         const options = ['Cancel'];
         let editSupersetIndex = -1;
+        let duplicateSupersetIndex = -1;
         let markCompleteIndex = -1;
         let breakSupersetIndex = -1;
         let deleteIndex = -1;
 
         options.push('Edit Superset');
         editSupersetIndex = options.length - 1;
+
+        options.push('Duplicate Superset');
+        duplicateSupersetIndex = options.length - 1;
 
         if (supersetComplete) {
           options.push('Mark Incomplete');
@@ -1065,6 +1091,8 @@ export default function DayScreen({ navigation, route }: any) {
                 activityId: activities[0].id,
                 supersetId: group.supersetId,
               });
+            } else if (buttonIndex === duplicateSupersetIndex) {
+              handleDuplicateSuperset(activities);
             } else if (buttonIndex === markCompleteIndex) {
               // Toggle completion for all activities in superset
               const newCompleted = !supersetComplete;
@@ -1113,6 +1141,10 @@ export default function DayScreen({ navigation, route }: any) {
                 supersetId: group.supersetId,
               });
             },
+          },
+          {
+            text: 'Duplicate Superset',
+            onPress: () => handleDuplicateSuperset(activities),
           },
           {
             text: supersetComplete ? 'Mark Incomplete' : 'Mark Complete',

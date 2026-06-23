@@ -365,7 +365,7 @@
       <section>
         <h2>Feature QA Matrix</h2>
         <p class="qa-progress" id="qa-progress" aria-live="polite">
-          <span id="qa-progress-text">Loading saved results…</span>
+          <span id="qa-progress-text">0 tested</span>
           <button type="button" class="qa-reset" id="qa-reset">
             Reset all
           </button>
@@ -548,63 +548,13 @@
 
     <script>
       (function () {
-        var STORAGE_PREFIX = "qa:activity-polish:v2:";
-        var hasStorage = (function () {
-          try {
-            var k = "__qa_test__";
-            window.localStorage.setItem(k, "1");
-            window.localStorage.removeItem(k);
-            return true;
-          } catch (e) {
-            return false;
-          }
-        })();
-
-        function slugify(text) {
-          return text
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "");
-        }
-
-        function loadState(key) {
-          if (!hasStorage) return { status: null, note: "", noteOpen: false };
-          try {
-            var raw = window.localStorage.getItem(STORAGE_PREFIX + key);
-            if (!raw) return { status: null, note: "", noteOpen: false };
-            var parsed = JSON.parse(raw);
-            return {
-              status: parsed.status || null,
-              note: parsed.note || "",
-              noteOpen: !!parsed.noteOpen,
-            };
-          } catch (e) {
-            return { status: null, note: "", noteOpen: false };
-          }
-        }
-
-        function saveState(key, state) {
-          if (!hasStorage) return;
-          try {
-            if (!state.status && !state.note && !state.noteOpen) {
-              window.localStorage.removeItem(STORAGE_PREFIX + key);
-            } else {
-              window.localStorage.setItem(
-                STORAGE_PREFIX + key,
-                JSON.stringify(state)
-              );
-            }
-          } catch (e) {
-            /* ignore quota / privacy errors */
-          }
-        }
-
+        // Session-only QA state — intentionally NOT persisted.
         var table = document.getElementById("qa-matrix");
         if (!table) return;
         var rows = Array.prototype.slice.call(
           table.querySelectorAll("tbody tr")
         );
-        var keys = [];
+        var entries = [];
 
         var progressText = document.getElementById("qa-progress-text");
 
@@ -612,14 +562,13 @@
           if (!progressText) return;
           var pass = 0;
           var fail = 0;
-          keys.forEach(function (key) {
-            var s = loadState(key).status;
-            if (s === "pass") pass++;
-            else if (s === "fail") fail++;
+          entries.forEach(function (e) {
+            if (e.state.status === "pass") pass++;
+            else if (e.state.status === "fail") fail++;
           });
-          var total = keys.length;
+          var total = entries.length;
           var done = pass + fail;
-          var msg =
+          progressText.textContent =
             done +
             " of " +
             total +
@@ -628,20 +577,14 @@
             " pass, " +
             fail +
             " fail";
-          if (!hasStorage) {
-            msg += " (results will not persist: localStorage unavailable)";
-          }
-          progressText.textContent = msg;
         }
 
         rows.forEach(function (row) {
           var firstCell = row.querySelector("td");
           if (!firstCell) return;
           var label = firstCell.textContent.trim();
-          var key = slugify(label);
-          keys.push(key);
 
-          var state = loadState(key);
+          var state = { status: null, note: "", noteOpen: false };
 
           var cell = document.createElement("td");
           cell.className = "result-cell";
@@ -709,7 +652,6 @@
           }
 
           function commit() {
-            saveState(key, state);
             render();
             updateProgress();
           }
@@ -732,8 +674,17 @@
 
           noteField.addEventListener("input", function () {
             state.note = noteField.value;
-            saveState(key, state);
           });
+
+          function reset() {
+            state.status = null;
+            state.note = "";
+            state.noteOpen = false;
+            noteField.value = "";
+            render();
+          }
+
+          entries.push({ state: state, reset: reset });
 
           render();
         });
@@ -742,22 +693,14 @@
         if (resetBtn) {
           resetBtn.addEventListener("click", function () {
             if (
-              !window.confirm(
-                "Clear all saved QA results and notes on this page?"
-              )
+              !window.confirm("Clear all QA results and notes on this page?")
             ) {
               return;
             }
-            keys.forEach(function (key) {
-              if (hasStorage) {
-                try {
-                  window.localStorage.removeItem(STORAGE_PREFIX + key);
-                } catch (e) {
-                  /* ignore */
-                }
-              }
+            entries.forEach(function (e) {
+              e.reset();
             });
-            window.location.reload();
+            updateProgress();
           });
         }
 

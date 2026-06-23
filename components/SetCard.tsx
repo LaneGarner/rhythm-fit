@@ -68,15 +68,7 @@ export default function SetCard({
       onLongPress={readOnly ? undefined : () => onShowOptions(set)}
       delayLongPress={300}
       className="p-4 rounded-lg mb-3 shadow-sm"
-      style={{
-        backgroundColor: set.completed
-          ? isDark
-            ? 'rgba(34, 197, 94, 0.14)'
-            : 'rgba(34, 197, 94, 0.10)'
-          : colors.cardBackground,
-        borderWidth: set.completed ? 2 : 0,
-        borderColor: set.completed ? colors.success.main : 'transparent',
-      }}
+      style={{ backgroundColor: colors.cardBackground }}
     >
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center" style={{ gap: 8 }}>
@@ -347,7 +339,7 @@ export default function SetCard({
         onPress={() => onUpdateSet(set.id, { completed: !set.completed })}
         className="mt-5 px-4 py-4 rounded-lg"
         style={{
-          backgroundColor: set.completed ? colors.success.main : colors.surface,
+          backgroundColor: colors.surface,
           borderWidth: 2,
           borderColor: set.completed ? colors.success.main : colors.border,
         }}
@@ -358,10 +350,10 @@ export default function SetCard({
         <Text
           className={`text-center font-semibold text-lg`}
           style={{
-            color: set.completed ? '#FFFFFF' : colors.textSecondary,
+            color: set.completed ? colors.success.main : colors.textSecondary,
           }}
         >
-          {set.completed ? 'Completed - Tap to Undo' : 'Mark Complete'}
+          {set.completed ? 'Completed' : 'Mark Complete'}
         </Text>
       </TouchableOpacity>
 

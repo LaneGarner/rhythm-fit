@@ -135,6 +135,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const supersetRounds = buildSupersetRounds(supersetActivities);
   const maxSets = getMaxSetCount(supersetActivities);
 
+  const totalRounds = supersetRounds.length;
+  const completedRounds = supersetRounds.filter(round => {
+    const roundSets = round.sets.filter(s => s.set !== null);
+    return roundSets.length > 0 && roundSets.every(s => s.set!.completed);
+  }).length;
+  const supersetComplete = totalRounds > 0 && completedRounds === totalRounds;
+
   const handleUpdateSet = (
     activityId: string,
     setId: string,
@@ -487,6 +494,40 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
               />
             )}
 
+            {supersetComplete && (
+              <View
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(34, 197, 94, 0.16)'
+                    : 'rgba(34, 197, 94, 0.10)',
+                  borderWidth: 2,
+                  borderColor: colors.success.main,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.success.main,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                >
+                  Superset Complete
+                </Text>
+                <Text
+                  className="mt-1 text-center"
+                  style={{
+                    color: isDark ? '#BBF7D0' : colors.success.dark,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  {completedRounds} of {totalRounds} sets complete
+                </Text>
+              </View>
+            )}
+
             {/* Superset Rounds */}
             {supersetRounds.map((round, roundIndex) => (
               <View key={round.roundNumber}>
@@ -548,22 +589,44 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                         <Pressable
                           onLongPress={() => showSetOptions(activity.id, set)}
                           delayLongPress={300}
-                          className={`p-4 rounded-lg ${
-                            isDark ? 'bg-gray-800' : 'bg-white'
-                          } shadow-sm`}
+                          className="p-4 rounded-lg shadow-sm"
                           style={{ backgroundColor: colors.cardBackground }}
                         >
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
-                            <View className="flex-row items-center flex-1">
+                            <View
+                              className="flex-row items-center flex-1"
+                              style={{ gap: 8 }}
+                            >
                               <Text
                                 className={`text-base font-semibold ${
                                   isDark ? 'text-white' : 'text-gray-900'
                                 }`}
                                 numberOfLines={1}
+                                style={{ flexShrink: 1 }}
                               >
                                 {activity.name}
                               </Text>
+                              {set.completed && (
+                                <View
+                                  style={{
+                                    backgroundColor: colors.success.main,
+                                    borderRadius: 6,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 3,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      color: '#FFFFFF',
+                                      fontSize: 12,
+                                      fontWeight: '700',
+                                    }}
+                                  >
+                                    Complete
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                             <TouchableOpacity
                               onPress={() => showSetOptions(activity.id, set)}
@@ -855,7 +918,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   return (
                     <TouchableOpacity
                       onPress={() => handleCompleteRound(round)}
-                      className="mt-3 px-4 py-3 rounded-lg"
+                      className="mt-3 px-4 py-4 rounded-lg"
                       style={{
                         backgroundColor: colors.surface,
                         borderWidth: 2,
@@ -868,7 +931,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       accessibilityState={{ checked: allRoundComplete }}
                     >
                       <Text
-                        className="text-center font-semibold"
+                        className="text-center font-semibold text-lg"
                         style={{
                           color: allRoundComplete
                             ? colors.success.main
