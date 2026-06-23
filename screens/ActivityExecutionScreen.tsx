@@ -432,15 +432,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                     Sets ({sets.length})
                   </Text>
                   <Text
-                    className={`text-sm mt-1 ${
-                      allSetsComplete
-                        ? ''
-                        : isDark
-                          ? 'text-gray-400'
-                          : 'text-gray-500'
-                    }`}
+                    className="text-sm mt-1"
                     style={{
-                      color: allSetsComplete ? colors.success.main : undefined,
+                      color: allSetsComplete
+                        ? colors.success.main
+                        : colors.textSecondary,
                       fontWeight: allSetsComplete ? '700' : '500',
                     }}
                   >
