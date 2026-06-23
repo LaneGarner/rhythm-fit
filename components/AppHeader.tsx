@@ -1,9 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
-import { RootStackParamList } from '../App';
+import { View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
@@ -20,12 +16,6 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const { colors } = useTheme();
   const { insets, isLandscape } = useResponsiveLayout();
-
-  // Use the navigation prop from React Navigation
-  // This requires the component to receive navigation as a prop, or use the useNavigation hook.
-  // We'll use the useNavigation hook for functional components.
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <View
@@ -45,19 +35,12 @@ export default function AppHeader({
       {/* Center: Children */}
       <View className="flex-1 items-center justify-center">{children}</View>
 
-      {/* Right: Settings Cog */}
-      <TouchableOpacity
-        hitSlop={14}
-        onPress={() => navigation.navigate('Settings')}
-        className="p-2"
-        accessibilityLabel="Settings & Preferences"
-      >
-        <Ionicons
-          name="person-circle-outline"
-          size={28}
-          color={colors.textSecondary}
-        />
-      </TouchableOpacity>
+      {/*
+        Right: optional action. Settings moved to the footer tab bar; the
+        fallback spacer keeps the former settings-icon footprint (28px icon +
+        p-2 = 44px) so the centered title stays exactly where it was.
+      */}
+      {rightAction ? rightAction : <View style={{ width: 44 }} />}
     </View>
   );
 }
@@ -72,8 +55,11 @@ interface AppHeaderTitleProps {
 export const AppHeaderTitle = ({ title, subtitle }: AppHeaderTitleProps) => {
   const { colors } = useTheme();
 
+  // NOTE: content-height (not flex-1). The header used to get its height from
+  // the settings icon; now that the icon lives in the footer, the title must
+  // define the header's height or the whole bar collapses.
   return (
-    <View className="flex-1 items-center">
+    <View className="items-center">
       <Text className="text-2xl font-bold" style={{ color: colors.text }}>
         {title}
       </Text>

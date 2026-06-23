@@ -4,14 +4,12 @@ import {
   Alert,
   Keyboard,
   Modal,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import ActivityIcon from '../components/ActivityIcon';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import { useAuth } from '../context/AuthContext';
@@ -40,9 +38,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [showAllLibrary, setShowAllLibrary] = useState(false);
-
-  const LIBRARY_PREVIEW_COUNT = 10;
 
   const activityTypes = getActivityTypes();
 
@@ -182,207 +177,161 @@ export default function ActivityLibraryScreen({ navigation }: any) {
       </View>
 
       {/* Content */}
-      <Pressable
-        style={{ flex: 1 }}
-        onPress={() => openMenuId && setOpenMenuId(null)}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => openMenuId && setOpenMenuId(null)}
       >
-        <ScrollView className="flex-1 p-4">
-          {loading ? (
+        {loading ? (
+          <Text
+            className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+          >
+            Loading...
+          </Text>
+        ) : libraryItems.length === 0 ? (
+          <View className="items-center py-12">
+            <Ionicons
+              name="library-outline"
+              size={48}
+              color={colors.textSecondary}
+            />
             <Text
-              className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             >
-              Loading...
+              No custom activities yet
             </Text>
-          ) : libraryItems.length === 0 ? (
-            <View className="items-center py-12">
-              <Ionicons
-                name="library-outline"
-                size={48}
-                color={colors.textSecondary}
-              />
-              <Text
-                className={`text-lg font-semibold mt-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+            <Text
+              className={`text-center mt-2 px-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              Tap the + button to create a custom activity, or add activities
+              from the activity form.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text
+              className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              {libraryItems.length} custom{' '}
+              {libraryItems.length === 1 ? 'activity' : 'activities'}
+            </Text>
+            {libraryItems.map(item => (
+              <View
+                key={item.id}
+                className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                  elevation: 2,
+                }}
               >
-                No custom activities yet
-              </Text>
-              <Text
-                className={`text-center mt-2 px-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-              >
-                Tap the + button to create a custom activity, or add activities
-                from the activity form.
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Text
-                className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-              >
-                {libraryItems.length} custom{' '}
-                {libraryItems.length === 1 ? 'activity' : 'activities'}
-              </Text>
-              {(showAllLibrary
-                ? libraryItems
-                : libraryItems.slice(0, LIBRARY_PREVIEW_COUNT)
-              ).map(item => (
-                <View
-                  key={item.id}
-                  className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-                  style={{
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 2,
-                    elevation: 2,
-                  }}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <View className="mr-3">
-                        <ActivityIcon
-                          activityType={item.type}
-                          size={24}
-                          color={colors.text}
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Text
-                          className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                        >
-                          {item.name}
-                        </Text>
-                        <Text
-                          className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                        >
-                          {getTypeLabel(item.type)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ position: 'relative' }}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setOpenMenuId(
-                            openMenuId === item.id ? null : item.id!
-                          )
-                        }
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        style={{ padding: 4 }}
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="flex-1">
+                      <Text
+                        className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
                       >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={20}
-                          color={colors.textSecondary}
-                        />
-                      </TouchableOpacity>
-                      {openMenuId === item.id && (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            top: 30,
-                            right: 0,
-                            backgroundColor: colors.surface,
-                            borderRadius: 8,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 4,
-                            elevation: 5,
-                            zIndex: 1000,
-                            minWidth: 120,
-                            borderWidth: isDark ? 0 : 1,
-                            borderColor: colors.border,
-                          }}
-                        >
-                          <TouchableOpacity
-                            onPress={() => handleEdit(item)}
-                            hitSlop={{
-                              top: 10,
-                              bottom: 10,
-                              left: 10,
-                              right: 10,
-                            }}
-                            style={{
-                              paddingVertical: 12,
-                              paddingHorizontal: 16,
-                              borderBottomWidth: 1,
-                              borderBottomColor: colors.border,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                color: colors.primary.main,
-                                fontSize: 16,
-                                fontWeight: '600',
-                              }}
-                            >
-                              Edit
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleDeleteWithMenu(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              paddingVertical: 12,
-                              paddingHorizontal: 16,
-                            }}
-                          >
-                            <Ionicons
-                              name="trash-outline"
-                              size={18}
-                              color={colors.error.main}
-                              style={{ marginRight: 10 }}
-                            />
-                            <Text
-                              style={{ color: colors.error.main, fontSize: 16 }}
-                            >
-                              Delete
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
+                        {item.name}
+                      </Text>
+                      <Text
+                        className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        {getTypeLabel(item.type)}
+                      </Text>
                     </View>
                   </View>
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setOpenMenuId(openMenuId === item.id ? null : item.id!)
+                      }
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: 4 }}
+                    >
+                      <Ionicons
+                        name="ellipsis-vertical"
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                    {openMenuId === item.id && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 30,
+                          right: 0,
+                          backgroundColor: colors.surface,
+                          borderRadius: 8,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 4,
+                          elevation: 5,
+                          zIndex: 1000,
+                          minWidth: 120,
+                          borderWidth: isDark ? 0 : 1,
+                          borderColor: colors.border,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => handleEdit(item)}
+                          hitSlop={{
+                            top: 10,
+                            bottom: 10,
+                            left: 10,
+                            right: 10,
+                          }}
+                          style={{
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            borderBottomWidth: 1,
+                            borderBottomColor: colors.border,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: colors.primary.main,
+                              fontSize: 16,
+                              fontWeight: '600',
+                            }}
+                          >
+                            Edit
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteWithMenu(item)}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                          }}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color={colors.error.main}
+                            style={{ marginRight: 10 }}
+                          />
+                          <Text
+                            style={{ color: colors.error.main, fontSize: 16 }}
+                          >
+                            Delete
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              ))}
-
-              {/* Show More / Show Less Button */}
-              {libraryItems.length > LIBRARY_PREVIEW_COUNT && (
-                <TouchableOpacity
-                  onPress={() => setShowAllLibrary(!showAllLibrary)}
-                  hitSlop={14}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingVertical: 12,
-                    marginTop: 4,
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showAllLibrary
-                      ? 'Show fewer activities'
-                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} more activities`
-                  }
-                >
-                  <Ionicons
-                    name={showAllLibrary ? 'chevron-up' : 'chevron-down'}
-                    size={18}
-                    color={colors.primary.main}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text
-                    style={{ color: colors.primary.main, fontWeight: '500' }}
-                  >
-                    {showAllLibrary
-                      ? 'Show Less'
-                      : `Show ${libraryItems.length - LIBRARY_PREVIEW_COUNT} More`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        </ScrollView>
-      </Pressable>
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
 
       <FloatingAddButton
         onPress={handleCreateNew}
@@ -426,8 +375,13 @@ export default function ActivityLibraryScreen({ navigation }: any) {
           </View>
 
           <ScrollView
-            className="flex-1 p-4"
+            className="flex-1"
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: Math.max(32, insets.bottom + 24),
+            }}
             keyboardShouldPersistTaps="handled"
+            scrollIndicatorInsets={{ bottom: insets.bottom }}
           >
             {/* Name Input */}
             <View className="mb-6">
@@ -490,11 +444,6 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                           : colors.surface,
                       }}
                     >
-                      <Ionicons
-                        name={type.iconName}
-                        size={18}
-                        color={isDark ? '#fff' : '#111827'}
-                      />
                       <Text
                         className={`text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
                       >

@@ -31,9 +31,9 @@ import {
   SetData,
   TrackingField,
 } from '../types/activity';
-import ActivityIcon from './ActivityIcon';
 import ActivityNameInput from './ActivityNameInput';
 import DurationPickerModal from './DurationPickerModal';
+import NumericWheelModal from './NumericWheelModal';
 import PlateCalculatorModal from './PlateCalculatorModal';
 import PlateIcon from './PlateIcon';
 import RecurringActivityModal from './RecurringActivityModal';
@@ -121,6 +121,10 @@ function ActivityForm(
     null
   );
   const [plateCalcSetId, setPlateCalcSetId] = useState<string | null>(null);
+  const [wheelTarget, setWheelTarget] = useState<{
+    setId: string;
+    field: 'reps' | 'weight';
+  } | null>(null);
 
   const notesInputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -584,11 +588,6 @@ function ActivityForm(
                           : '#fff',
                     }}
                   >
-                    <Ionicons
-                      name={type.iconName}
-                      size={18}
-                      color={isDark ? '#fff' : '#111827'}
-                    />
                     <Text
                       className={`text-base ${
                         isDark ? 'text-white' : 'text-gray-900'
@@ -803,6 +802,32 @@ function ActivityForm(
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
                           />
+                        ) : field === 'reps' || field === 'weight' ? (
+                          <TouchableOpacity
+                            onPress={() =>
+                              setWheelTarget({ setId: set.id, field })
+                            }
+                            className={`px-3 py-2 border rounded-lg ${
+                              isDark
+                                ? 'bg-gray-700 border-gray-600'
+                                : 'bg-white border-gray-300'
+                            }`}
+                            style={{ minHeight: 42, justifyContent: 'center' }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Edit ${config.label.toLowerCase()} for set ${index + 1}`}
+                          >
+                            <Text
+                              style={{
+                                color:
+                                  value != null
+                                    ? colors.text
+                                    : colors.textSecondary,
+                                fontSize: 16,
+                              }}
+                            >
+                              {value != null ? value.toString() : '0'}
+                            </Text>
+                          </TouchableOpacity>
                         ) : (
                           <TextInput
                             ref={ref => {
@@ -879,7 +904,8 @@ function ActivityForm(
                 <View className="flex-row space-x-3 mt-3">
                   <TouchableOpacity
                     onPress={() => handleDuplicateSet(set)}
-                    className="flex-1 bg-blue-500 px-4 py-2 rounded-lg"
+                    className="flex-1 px-4 py-2 rounded-lg"
+                    style={{ backgroundColor: colors.primary.main }}
                   >
                     <Text className="text-white text-center font-semibold">
                       Duplicate
@@ -1052,11 +1078,6 @@ function ActivityForm(
                       gap: 6,
                     }}
                   >
-                    <ActivityIcon
-                      activityType={draft.type}
-                      size={16}
-                      color={colors.text}
-                    />
                     <Text
                       style={{
                         fontSize: 14,
@@ -1247,6 +1268,30 @@ function ActivityForm(
           setDurationPickerSetId(null);
         }}
         onCancel={() => setDurationPickerSetId(null)}
+      />
+
+      {/* Reps/Weight Wheel Modal */}
+      <NumericWheelModal
+        visible={wheelTarget !== null}
+        title={wheelTarget?.field === 'weight' ? 'Weight' : 'Reps'}
+        value={
+          wheelTarget
+            ? sets.find(s => s.id === wheelTarget.setId)?.[wheelTarget.field]
+            : undefined
+        }
+        max={wheelTarget?.field === 'weight' ? 1000 : 200}
+        step={wheelTarget?.field === 'weight' ? 5 : 1}
+        unit={wheelTarget?.field === 'weight' ? 'lbs' : undefined}
+        stepOptions={wheelTarget?.field === 'weight' ? [2.5, 5, 10] : undefined}
+        onConfirm={nextValue => {
+          if (wheelTarget) {
+            handleUpdateSet(wheelTarget.setId, {
+              [wheelTarget.field]: nextValue,
+            });
+          }
+          setWheelTarget(null);
+        }}
+        onCancel={() => setWheelTarget(null)}
       />
 
       {/* Plate Calculator Modal */}

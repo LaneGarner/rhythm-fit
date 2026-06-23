@@ -19,6 +19,7 @@ const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
       <View
         ref={ref}
         onLayout={onLayout}
+        pointerEvents="box-none"
         style={{
           position: 'absolute',
           bottom: Math.max(6, insets.bottom - 14),

@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Keyboard,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import DurationPickerModal from './DurationPickerModal';
+import NumericWheelModal from './NumericWheelModal';
 import PlateIcon from './PlateIcon';
 import { useTheme } from '../theme/ThemeContext';
 import { ActivityType, SetData, TrackingField } from '../types/activity';
@@ -49,21 +51,61 @@ export default function SetCard({
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [numericWheelField, setNumericWheelField] = useState<
+    'reps' | 'weight' | null
+  >(null);
   const [distanceText, setDistanceText] = useState<Record<string, string>>({});
 
+  const numericWheelConfig =
+    numericWheelField === 'reps'
+      ? { title: 'Reps', max: 200, step: 1 }
+      : numericWheelField === 'weight'
+        ? {
+            title: 'Weight',
+            max: 1000,
+            step: 5,
+            unit: 'lbs',
+            stepOptions: [2.5, 5, 10],
+          }
+        : null;
+
   return (
-    <View
+    <Pressable
+      onLongPress={readOnly ? undefined : () => onShowOptions(set)}
+      delayLongPress={300}
       className="p-4 rounded-lg mb-3 shadow-sm"
       style={{ backgroundColor: colors.cardBackground }}
     >
       <View className="flex-row justify-between items-center mb-3">
-        <Text
-          className={`text-lg font-semibold ${
-            isDark ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          Set {index + 1}
-        </Text>
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          <Text
+            className={`text-lg font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            Set {index + 1}
+          </Text>
+          {set.completed && (
+            <View
+              style={{
+                backgroundColor: colors.success.main,
+                borderRadius: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: '700',
+                }}
+              >
+                Complete
+              </Text>
+            </View>
+          )}
+        </View>
         {!readOnly && (
           <TouchableOpacity
             onPress={() => onShowOptions(set)}
@@ -204,6 +246,27 @@ export default function SetCard({
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
                 />
+              ) : field === 'reps' || field === 'weight' ? (
+                <TouchableOpacity
+                  onPress={() => setNumericWheelField(field)}
+                  className={`px-3 py-2 border rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-white border-gray-300'
+                  }`}
+                  style={{ minHeight: 42, justifyContent: 'center' }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${config.label.toLowerCase()} for set ${index + 1}`}
+                >
+                  <Text
+                    style={{
+                      color: value != null ? colors.text : colors.textSecondary,
+                      fontSize: 16,
+                    }}
+                  >
+                    {value != null ? value.toString() : '0'}
+                  </Text>
+                </TouchableOpacity>
               ) : (
                 <TextInput
                   ref={
@@ -296,7 +359,7 @@ export default function SetCard({
             color: set.completed ? colors.success.main : colors.textSecondary,
           }}
         >
-          {set.completed ? 'Completed  ✅' : 'Mark Complete'}
+          {set.completed ? 'Completed' : 'Mark Complete'}
         </Text>
       </TouchableOpacity>
 
@@ -309,6 +372,31 @@ export default function SetCard({
         }}
         onCancel={() => setShowDurationPicker(false)}
       />
-    </View>
+
+      {numericWheelConfig && (
+        <NumericWheelModal
+          visible={numericWheelField !== null}
+          title={numericWheelConfig.title}
+          value={
+            numericWheelField === 'reps'
+              ? set.reps
+              : numericWheelField === 'weight'
+                ? set.weight
+                : undefined
+          }
+          max={numericWheelConfig.max}
+          step={numericWheelConfig.step}
+          unit={numericWheelConfig.unit}
+          stepOptions={numericWheelConfig.stepOptions}
+          onConfirm={nextValue => {
+            if (numericWheelField) {
+              onUpdateSet(set.id, { [numericWheelField]: nextValue });
+            }
+            setNumericWheelField(null);
+          }}
+          onCancel={() => setNumericWheelField(null)}
+        />
+      )}
+    </Pressable>
   );
 }

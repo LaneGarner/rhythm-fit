@@ -6,13 +6,13 @@ import {
   Animated,
   Keyboard,
   Platform,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import ActivityIcon from '../components/ActivityIcon';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
@@ -24,7 +24,7 @@ import {
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
 import StickyCompactTimer from '../components/StickyCompactTimer';
-import { updateActivity, batchUpdateActivities } from '../redux/activitySlice';
+import { batchUpdateActivities, updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -53,6 +53,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const activities = useSelector((state: RootState) => state.activities.data);
   const supersetActivities = getSupersetActivities(activities, supersetId);
+  const supersetRestTimerEnabled = supersetActivities.every(
+    activity => activity.restTimerEnabled ?? true
+  );
 
   useUnfinishedSupersetNotification(supersetActivities);
 
@@ -125,6 +128,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
   const supersetRounds = buildSupersetRounds(supersetActivities);
   const maxSets = getMaxSetCount(supersetActivities);
+
+  const totalRounds = supersetRounds.length;
+  const completedRounds = supersetRounds.filter(round => {
+    const roundSets = round.sets.filter(s => s.set !== null);
+    return roundSets.length > 0 && roundSets.every(s => s.set!.completed);
+  }).length;
+  const supersetComplete = totalRounds > 0 && completedRounds === totalRounds;
 
   const handleUpdateSet = (
     activityId: string,
@@ -199,7 +209,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         Alert.alert('Nice Work!', 'Superset complete!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
-      } else if (autoRestTimer) {
+      } else if (autoRestTimer && supersetRestTimerEnabled) {
         const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(
           supersetId,
@@ -264,6 +274,34 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     );
   };
 
+  const handleDuplicateSet = (activityId: string, setToDuplicate: SetData) => {
+    const activity = supersetActivities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const newSet: SetData = {
+      ...setToDuplicate,
+      id: `${activityId}-${Date.now()}`,
+      completed: false,
+    };
+    const sets = activity.sets || [];
+    const sourceIndex = sets.findIndex(set => set.id === setToDuplicate.id);
+    const insertIndex = sourceIndex >= 0 ? sourceIndex + 1 : sets.length;
+    const updatedSets = [
+      ...sets.slice(0, insertIndex),
+      newSet,
+      ...sets.slice(insertIndex),
+    ];
+
+    setLocalSets(prev => new Map(prev).set(activityId, updatedSets));
+    dispatch(
+      updateActivity({
+        ...activity,
+        sets: updatedSets,
+        completed: false,
+      })
+    );
+  };
+
   const handlePlateWeightSelect = (weight: number) => {
     if (activeSetInfo) {
       handleUpdateSet(activeSetInfo.activityId, activeSetInfo.setId, {
@@ -278,13 +316,15 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Delete'],
+          options: ['Cancel', 'Duplicate', 'Delete'],
           cancelButtonIndex: 0,
-          destructiveButtonIndex: 1,
+          destructiveButtonIndex: 2,
           userInterfaceStyle: isDark ? 'dark' : 'light',
         },
         buttonIndex => {
           if (buttonIndex === 1) {
+            handleDuplicateSet(activityId, set);
+          } else if (buttonIndex === 2) {
             handleDeleteSet(activityId, set.id);
           }
         }
@@ -293,12 +333,24 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
       Alert.alert('Set Options', 'What would you like to do?', [
         { text: 'Cancel', style: 'cancel' },
         {
+          text: 'Duplicate',
+          onPress: () => handleDuplicateSet(activityId, set),
+        },
+        {
           text: 'Delete',
           style: 'destructive',
           onPress: () => handleDeleteSet(activityId, set.id),
         },
       ]);
     }
+  };
+
+  const handleSupersetRestToggle = (enabled: boolean) => {
+    const updatedActivities = supersetActivities.map(activity => ({
+      ...activity,
+      restTimerEnabled: enabled,
+    }));
+    dispatch(batchUpdateActivities(updatedActivities));
   };
 
   const scrollToSetInput = (refKey: string) => {
@@ -414,11 +466,16 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           />
 
           <View className="p-4" style={{ gap: 24 }}>
-            {/* Timer - Collapsible */}
+            {/* Timer - Collapsible (hosts the superset-wide auto rest toggle) */}
             <CollapsibleTimer
               activityId={supersetId}
               activityName={getSupersetLabel(supersetActivities.length)}
               onExpandedChange={setIsTimerExpanded}
+              restToggle={{
+                enabled: supersetRestTimerEnabled,
+                onToggle: handleSupersetRestToggle,
+                globalEnabled: autoRestTimer,
+              }}
             />
 
             {/* Notes - combined from all activities */}
@@ -429,6 +486,40 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   .map(a => `${a.name}: ${a.notes}`)
                   .join('\n\n')}
               />
+            )}
+
+            {supersetComplete && (
+              <View
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(34, 197, 94, 0.16)'
+                    : 'rgba(34, 197, 94, 0.10)',
+                  borderWidth: 2,
+                  borderColor: colors.success.main,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.success.main,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                >
+                  Superset Complete
+                </Text>
+                <Text
+                  className="mt-1 text-center"
+                  style={{
+                    color: isDark ? '#BBF7D0' : colors.success.dark,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  {completedRounds} of {totalRounds} sets complete
+                </Text>
+              </View>
             )}
 
             {/* Superset Rounds */}
@@ -474,9 +565,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   ({ activity, set, setIndex }, activityIndex) => {
                     const isLastActivity =
                       activityIndex === round.sets.length - 1;
-                    const accentColor = set?.completed
-                      ? colors.success.main
-                      : colors.primary.main;
 
                     if (!set) {
                       return null;
@@ -486,42 +574,58 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       'weight',
                       'reps',
                     ];
-                    const showPlateIcon =
-                      fields.includes('weight') &&
-                      activity.type === 'weight-training';
 
                     return (
                       <View key={`${activity.id}-${set.id}`}>
+                        {/*
+                          INTENTIONAL: superset execution is READ-ONLY for set
+                          values — display only, edit on the activity form. Do
+                          NOT add wheel/text inputs or a duplicate/options menu
+                          here. See memory "execution-screens-read-only".
+                        */}
                         <View
-                          className={`p-4 rounded-lg ${
-                            isDark ? 'bg-gray-800' : 'bg-white'
-                          } shadow-sm`}
-                          style={{
-                            borderLeftWidth: 4,
-                            borderLeftColor: accentColor,
-                          }}
+                          className="p-4 rounded-lg shadow-sm"
+                          style={{ backgroundColor: colors.cardBackground }}
                         >
                           {/* Activity name header */}
                           <View className="flex-row justify-between items-center mb-3">
-                            <View className="flex-row items-center flex-1">
-                              <View className="mr-2">
-                                <ActivityIcon
-                                  activityType={activity.type}
-                                  size={22}
-                                />
-                              </View>
+                            <View
+                              className="flex-row items-center flex-1"
+                              style={{ gap: 8 }}
+                            >
                               <Text
                                 className={`text-base font-semibold ${
                                   isDark ? 'text-white' : 'text-gray-900'
                                 }`}
                                 numberOfLines={1}
+                                style={{ flexShrink: 1 }}
                               >
                                 {activity.name}
                               </Text>
+                              {set.completed && (
+                                <View
+                                  style={{
+                                    backgroundColor: colors.success.main,
+                                    borderRadius: 6,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 3,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      color: '#FFFFFF',
+                                      fontSize: 12,
+                                      fontWeight: '700',
+                                    }}
+                                  >
+                                    Complete
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                           </View>
 
-                          {/* Set inputs */}
+                          {/* Set values */}
                           <View
                             className="flex-row flex-wrap"
                             style={{ gap: 12 }}
@@ -529,9 +633,17 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             {fields.map(field => {
                               const config = fieldConfig[field];
                               const value = set[field];
-                              const isWeightField =
-                                field === 'weight' &&
-                                activity.type === 'weight-training';
+
+                              const displayValue =
+                                field === 'time'
+                                  ? typeof value === 'number'
+                                    ? secondsToTimeString(value)
+                                    : null
+                                  : field === 'band'
+                                    ? set.band || null
+                                    : value != null
+                                      ? value.toString()
+                                      : null;
 
                               return (
                                 <View
@@ -558,40 +670,26 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       {config.unit ? ` (${config.unit})` : ''}
                                     </Text>
                                   </View>
-                                  {(() => {
-                                    const displayValue =
-                                      field === 'time'
-                                        ? typeof value === 'number'
-                                          ? secondsToTimeString(value)
-                                          : null
-                                        : field === 'band'
-                                          ? set.band || null
-                                          : value != null
-                                            ? value.toString()
-                                            : null;
-                                    return (
-                                      <View
-                                        style={{
-                                          minHeight: 42,
-                                          paddingHorizontal: 12,
-                                          paddingVertical: 8,
-                                          justifyContent: 'center',
-                                        }}
-                                      >
-                                        <Text
-                                          style={{
-                                            fontSize: 16,
-                                            fontWeight: '500',
-                                            color: displayValue
-                                              ? colors.text
-                                              : colors.textSecondary,
-                                          }}
-                                        >
-                                          {displayValue || '\u2014'}
-                                        </Text>
-                                      </View>
-                                    );
-                                  })()}
+                                  <View
+                                    style={{
+                                      minHeight: 42,
+                                      paddingHorizontal: 12,
+                                      paddingVertical: 8,
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Text
+                                      style={{
+                                        fontSize: 16,
+                                        fontWeight: '500',
+                                        color: displayValue
+                                          ? colors.text
+                                          : colors.textSecondary,
+                                      }}
+                                    >
+                                      {displayValue || '—'}
+                                    </Text>
+                                  </View>
                                 </View>
                               );
                             })}
@@ -609,7 +707,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                               style={{
                                 width: 2,
                                 height: 16,
-                                backgroundColor: accentColor,
+                                backgroundColor: colors.border,
                                 borderRadius: 1,
                               }}
                             />
@@ -629,7 +727,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   return (
                     <TouchableOpacity
                       onPress={() => handleCompleteRound(round)}
-                      className="mt-3 px-4 py-3 rounded-lg"
+                      className="mt-3 px-4 py-4 rounded-lg"
                       style={{
                         backgroundColor: colors.surface,
                         borderWidth: 2,
@@ -642,7 +740,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       accessibilityState={{ checked: allRoundComplete }}
                     >
                       <Text
-                        className="text-center font-semibold"
+                        className="text-center font-semibold text-lg"
                         style={{
                           color: allRoundComplete
                             ? colors.success.main

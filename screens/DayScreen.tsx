@@ -31,10 +31,8 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
-import { Activity } from '../types/activity';
-import ActivityIcon from '../components/ActivityIcon';
+import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
 import FloatingAddButton from '../components/FloatingAddButton';
-import SupersetIcons from '../components/SupersetIcons';
 import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
@@ -499,6 +497,8 @@ export default function DayScreen({ navigation, route }: any) {
       id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
       completed: false,
       sets: activity.sets?.map(set => ({ ...set, completed: false })),
+      trackingFields:
+        activity.trackingFields || DEFAULT_TRACKING_FIELDS[activity.type],
       supersetId: undefined,
       supersetPosition: undefined,
       recurring: undefined,
@@ -512,6 +512,30 @@ export default function DayScreen({ navigation, route }: any) {
       'Duplicated',
       `${activity.name || activity.type} has been duplicated.`
     );
+  };
+
+  const handleDuplicateSuperset = async (activities: Activity[]) => {
+    const base = Date.now();
+    const newSupersetId = `${base}-ss-${Math.random().toString(36).substr(2, 9)}`;
+
+    activities.forEach((activity, i) => {
+      const newActivity: Activity = {
+        ...activity,
+        id: `${base}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+        completed: false,
+        sets: activity.sets?.map(set => ({ ...set, completed: false })),
+        trackingFields:
+          activity.trackingFields || DEFAULT_TRACKING_FIELDS[activity.type],
+        supersetId: newSupersetId,
+        supersetPosition: activity.supersetPosition ?? i,
+        recurring: undefined,
+        order: undefined,
+        updated_at: new Date().toISOString(),
+      };
+      dispatch(addActivity(newActivity));
+    });
+
+    Alert.alert('Duplicated', 'Superset has been duplicated.');
   };
 
   const handleCopyToDate = (activity: Activity) => {
@@ -534,6 +558,9 @@ export default function DayScreen({ navigation, route }: any) {
       date: targetDateStr,
       completed: false,
       sets: copyActivity.sets?.map(set => ({ ...set, completed: false })),
+      trackingFields:
+        copyActivity.trackingFields ||
+        DEFAULT_TRACKING_FIELDS[copyActivity.type],
       supersetId: undefined,
       supersetPosition: undefined,
       recurring: undefined,
@@ -956,9 +983,6 @@ export default function DayScreen({ navigation, route }: any) {
                   </TouchableOpacity>
                 </>
               )}
-              <View className="mr-3">
-                <ActivityIcon activityType={activity.type} size={24} />
-              </View>
               {isBulkMode && (
                 <Ionicons
                   name={
@@ -1038,12 +1062,16 @@ export default function DayScreen({ navigation, route }: any) {
       if (Platform.OS === 'ios') {
         const options = ['Cancel'];
         let editSupersetIndex = -1;
+        let duplicateSupersetIndex = -1;
         let markCompleteIndex = -1;
         let breakSupersetIndex = -1;
         let deleteIndex = -1;
 
         options.push('Edit Superset');
         editSupersetIndex = options.length - 1;
+
+        options.push('Duplicate Superset');
+        duplicateSupersetIndex = options.length - 1;
 
         if (supersetComplete) {
           options.push('Mark Incomplete');
@@ -1070,6 +1098,8 @@ export default function DayScreen({ navigation, route }: any) {
                 activityId: activities[0].id,
                 supersetId: group.supersetId,
               });
+            } else if (buttonIndex === duplicateSupersetIndex) {
+              handleDuplicateSuperset(activities);
             } else if (buttonIndex === markCompleteIndex) {
               // Toggle completion for all activities in superset
               const newCompleted = !supersetComplete;
@@ -1118,6 +1148,10 @@ export default function DayScreen({ navigation, route }: any) {
                 supersetId: group.supersetId,
               });
             },
+          },
+          {
+            text: 'Duplicate Superset',
+            onPress: () => handleDuplicateSuperset(activities),
           },
           {
             text: supersetComplete ? 'Mark Incomplete' : 'Mark Complete',
@@ -1233,12 +1267,9 @@ export default function DayScreen({ navigation, route }: any) {
           </Text>
         </View>
 
-        {/* Combined icon + name display */}
+        {/* Combined name display */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1 mr-2">
-            <View className="mr-3">
-              <SupersetIcons activities={activities} size={22} />
-            </View>
             <Text
               className={`text-lg font-semibold flex-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
               numberOfLines={2}
@@ -1347,9 +1378,6 @@ export default function DayScreen({ navigation, route }: any) {
               color={isSelected ? '#3B82F6' : '#6B7280'}
             />
           </TouchableOpacity>
-          <View className="mr-2">
-            <ActivityIcon activityType={activity.type} size={22} />
-          </View>
           <Ionicons
             name={
               isActivityComplete(activity)
@@ -1503,9 +1531,6 @@ export default function DayScreen({ navigation, route }: any) {
                       }
                     />
                   </TouchableOpacity>
-                  <View className="mr-3">
-                    <ActivityIcon activityType={activities[0].type} size={24} />
-                  </View>
                   <Ionicons
                     name={
                       isActivityComplete(activities[0])

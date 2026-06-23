@@ -30,7 +30,12 @@ import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useUnfinishedWorkoutNotification } from '../hooks/useUnfinishedWorkoutNotification';
-import { Activity, SetData, TrackingField } from '../types/activity';
+import {
+  Activity,
+  SetData,
+  TrackingField,
+  DEFAULT_TRACKING_FIELDS,
+} from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
@@ -48,6 +53,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { timer, startCountdown } = useTimer();
   const { autoRestTimer } = usePreferences();
   const isTimerRunning = timer.activityId === activityId && timer.isRunning;
+  const restTimerEnabled = activity?.restTimerEnabled ?? true;
 
   const [sets, setSets] = useState<SetData[]>(activity?.sets || []);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -127,7 +133,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     }
 
     // Focus the first tracking field input of the new set after render
-    const fields = activity?.trackingFields || ['weight', 'reps'];
+    const fields =
+      activity?.trackingFields ||
+      (activity ? DEFAULT_TRACKING_FIELDS[activity.type] : ['weight', 'reps']);
     setTimeout(() => {
       setInputRefs.current[`${newSetId}-${fields[0]}`]?.focus();
     }, 100);
@@ -180,11 +188,20 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
-      } else if (autoRestTimer && updates.completed === true) {
+      } else if (
+        autoRestTimer &&
+        restTimerEnabled &&
+        updates.completed === true
+      ) {
         const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(activityId, activity.name, duration);
       }
     }
+  };
+
+  const handleRestTimerToggle = (enabled: boolean) => {
+    if (!activity) return;
+    dispatch(updateActivity({ ...activity, restTimerEnabled: enabled }));
   };
 
   const handleDeleteSet = (setId: string) => {
@@ -252,6 +269,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
       </View>
     );
   }
+
+  const completedSetsCount = sets.filter(set => set.completed).length;
+  const totalSetsCount = sets.length;
+  const allSetsComplete =
+    totalSetsCount > 0 && completedSetsCount === totalSetsCount;
 
   const scrollToSetInput = (refKey: string) => {
     const inputRef = setInputRefs.current[refKey];
@@ -355,35 +377,97 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
           />
 
           <View className="p-4" style={{ gap: 24 }}>
-            {/* Timer - Collapsible */}
+            {/* Timer - Collapsible (now hosts the auto rest toggle) */}
             <CollapsibleTimer
               activityId={activity.id}
               activityName={activity.name}
               defaultExpanded={isTimerRunning}
               onExpandedChange={setIsTimerExpanded}
+              restToggle={{
+                enabled: restTimerEnabled,
+                onToggle: handleRestTimerToggle,
+                globalEnabled: autoRestTimer,
+              }}
             />
 
             {/* Notes */}
             <NotesCard notes={activity.notes || ''} />
 
+            {allSetsComplete && (
+              <View
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(34, 197, 94, 0.16)'
+                    : 'rgba(34, 197, 94, 0.10)',
+                  borderWidth: 2,
+                  borderColor: colors.success.main,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.success.main,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                >
+                  Activity Complete
+                </Text>
+                <Text
+                  className="mt-1 text-center"
+                  style={{
+                    color: isDark ? '#BBF7D0' : colors.success.dark,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  {completedSetsCount} of {totalSetsCount} sets complete
+                </Text>
+              </View>
+            )}
+
             {/* Sets */}
             <View>
               <View className="flex-row justify-between items-center mb-4">
-                <Text
-                  className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Sets ({sets.length})
-                </Text>
+                <View>
+                  <Text
+                    className={`text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Sets ({sets.length})
+                  </Text>
+                  <Text
+                    className="text-sm mt-1"
+                    style={{
+                      color: allSetsComplete
+                        ? colors.success.main
+                        : colors.textSecondary,
+                      fontWeight: allSetsComplete ? '700' : '500',
+                    }}
+                  >
+                    {completedSetsCount} of {totalSetsCount} sets complete
+                  </Text>
+                </View>
               </View>
 
+              {/*
+                INTENTIONAL: the execution screen is READ-ONLY for set values.
+                Sets are displayed, not edited, here — editing happens on the
+                Edit/create activity form. Do NOT remove `readOnly` to "enable
+                editing" (that regression happened once in 74da89b). See memory
+                "execution-screens-read-only".
+              */}
               {sets.map((set, index) => (
                 <SetCard
                   key={set.id}
                   set={set}
                   index={index}
-                  trackingFields={activity.trackingFields || ['weight', 'reps']}
+                  trackingFields={
+                    activity.trackingFields ||
+                    DEFAULT_TRACKING_FIELDS[activity.type]
+                  }
                   activityType={activity.type}
                   onUpdateSet={handleUpdateSet}
                   onShowOptions={showSetOptions}

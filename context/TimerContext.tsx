@@ -125,19 +125,36 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     notificationSettingsRef.current = notificationSettings;
+    if (!notificationSettings.enabled || !notificationSettings.timerCompletion) {
+      Promise.all([
+        cancelTimerCompletion('timer-completion'),
+        cancelTimerCompletion('rest-timer'),
+      ]).catch(() => {});
+    }
   }, [notificationSettings]);
 
   const scheduleTimerNotification = useCallback(
-    (activityName: string, completionAt: number) => {
+    (
+      activityName: string,
+      completionAt: number,
+      kind: 'timer-completion' | 'rest-timer' = 'timer-completion'
+    ) => {
       const settings = notificationSettingsRef.current;
       if (!settings.enabled || !settings.timerCompletion) return;
-      scheduleTimerCompletion(activityName, completionAt).catch(() => {});
+      const staleKind =
+        kind === 'rest-timer' ? 'timer-completion' : 'rest-timer';
+      cancelTimerCompletion(staleKind)
+        .then(() => scheduleTimerCompletion(activityName, completionAt, kind))
+        .catch(() => {});
     },
     []
   );
 
   const cancelTimerNotification = useCallback(() => {
-    cancelTimerCompletion().catch(() => {});
+    Promise.all([
+      cancelTimerCompletion('timer-completion'),
+      cancelTimerCompletion('rest-timer'),
+    ]).catch(() => {});
   }, []);
 
   const vibrationActiveRef = useRef(false);
@@ -793,7 +810,11 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         emomCurrentRound: 0,
       }));
       if (seconds > 0) {
-        scheduleTimerNotification(activityName, now + seconds * 1000);
+        scheduleTimerNotification(
+          activityName,
+          now + seconds * 1000,
+          'rest-timer'
+        );
         // startCountdown is the auto-rest entry point — tag as 'rest' so the
         // island renders the amber rest styling.
         endLiveActivityImmediate();

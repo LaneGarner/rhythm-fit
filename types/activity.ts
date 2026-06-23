@@ -45,6 +45,7 @@ export interface Activity {
   trackingFields?: TrackingField[]; // Fields to show for sets
   supersetId?: string; // Shared ID between grouped activities in a superset
   supersetPosition?: number; // 1, 2, 3... for ordering within the superset
+  restTimerEnabled?: boolean; // Defaults to true when absent
 }
 
 export interface SetData {
