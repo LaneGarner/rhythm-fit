@@ -30,7 +30,12 @@ import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useUnfinishedWorkoutNotification } from '../hooks/useUnfinishedWorkoutNotification';
-import { Activity, SetData, TrackingField } from '../types/activity';
+import {
+  Activity,
+  SetData,
+  TrackingField,
+  DEFAULT_TRACKING_FIELDS,
+} from '../types/activity';
 
 export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { activityId } = route.params;
@@ -128,7 +133,9 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
     }
 
     // Focus the first tracking field input of the new set after render
-    const fields = activity?.trackingFields || ['weight', 'reps'];
+    const fields =
+      activity?.trackingFields ||
+      (activity ? DEFAULT_TRACKING_FIELDS[activity.type] : ['weight', 'reps']);
     setTimeout(() => {
       setInputRefs.current[`${newSetId}-${fields[0]}`]?.focus();
     }, 100);
@@ -457,7 +464,10 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   key={set.id}
                   set={set}
                   index={index}
-                  trackingFields={activity.trackingFields || ['weight', 'reps']}
+                  trackingFields={
+                    activity.trackingFields ||
+                    DEFAULT_TRACKING_FIELDS[activity.type]
+                  }
                   activityType={activity.type}
                   onUpdateSet={handleUpdateSet}
                   onShowOptions={showSetOptions}

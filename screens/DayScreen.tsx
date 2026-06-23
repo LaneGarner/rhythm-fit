@@ -31,7 +31,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
-import { Activity } from '../types/activity';
+import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import ProgressBar from '../components/ProgressBar';
@@ -497,6 +497,8 @@ export default function DayScreen({ navigation, route }: any) {
       id: `${Date.now()}-0-${Math.random().toString(36).substr(2, 9)}`,
       completed: false,
       sets: activity.sets?.map(set => ({ ...set, completed: false })),
+      trackingFields:
+        activity.trackingFields || DEFAULT_TRACKING_FIELDS[activity.type],
       supersetId: undefined,
       supersetPosition: undefined,
       recurring: undefined,
@@ -522,6 +524,8 @@ export default function DayScreen({ navigation, route }: any) {
         id: `${base}-${i}-${Math.random().toString(36).substr(2, 9)}`,
         completed: false,
         sets: activity.sets?.map(set => ({ ...set, completed: false })),
+        trackingFields:
+          activity.trackingFields || DEFAULT_TRACKING_FIELDS[activity.type],
         supersetId: newSupersetId,
         supersetPosition: activity.supersetPosition ?? i,
         recurring: undefined,
@@ -554,6 +558,9 @@ export default function DayScreen({ navigation, route }: any) {
       date: targetDateStr,
       completed: false,
       sets: copyActivity.sets?.map(set => ({ ...set, completed: false })),
+      trackingFields:
+        copyActivity.trackingFields ||
+        DEFAULT_TRACKING_FIELDS[copyActivity.type],
       supersetId: undefined,
       supersetPosition: undefined,
       recurring: undefined,
