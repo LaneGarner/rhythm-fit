@@ -35,8 +35,12 @@ export default function AppHeader({
       {/* Center: Children */}
       <View className="flex-1 items-center justify-center">{children}</View>
 
-      {/* Right: Optional action (settings now lives in the footer tab bar) */}
-      {rightAction ? rightAction : <View style={{ width: 40 }} />}
+      {/*
+        Right: optional action. Settings moved to the footer tab bar; the
+        fallback spacer keeps the former settings-icon footprint (28px icon +
+        p-2 = 44px) so the centered title stays exactly where it was.
+      */}
+      {rightAction ? rightAction : <View style={{ width: 44 }} />}
     </View>
   );
 }
