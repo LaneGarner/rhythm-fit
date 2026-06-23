@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Keyboard,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
@@ -63,7 +64,9 @@ export default function SetCard({
         : null;
 
   return (
-    <View
+    <Pressable
+      onLongPress={readOnly ? undefined : () => onShowOptions(set)}
+      delayLongPress={300}
       className="p-4 rounded-lg mb-3 shadow-sm"
       style={{
         backgroundColor: set.completed
@@ -344,9 +347,7 @@ export default function SetCard({
         onPress={() => onUpdateSet(set.id, { completed: !set.completed })}
         className="mt-5 px-4 py-4 rounded-lg"
         style={{
-          backgroundColor: set.completed
-            ? colors.success.main
-            : colors.surface,
+          backgroundColor: set.completed ? colors.success.main : colors.surface,
           borderWidth: 2,
           borderColor: set.completed ? colors.success.main : colors.border,
         }}
@@ -397,6 +398,6 @@ export default function SetCard({
           onCancel={() => setNumericWheelField(null)}
         />
       )}
-    </View>
+    </Pressable>
   );
 }

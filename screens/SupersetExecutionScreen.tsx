@@ -6,6 +6,7 @@ import {
   Animated,
   Keyboard,
   Platform,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,6 +17,7 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
+import NumericWheelModal from '../components/NumericWheelModal';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
 import {
@@ -23,11 +25,7 @@ import {
   StickyCompactHeader,
 } from '../components/StickyActivityHeader';
 import StickyCompactTimer from '../components/StickyCompactTimer';
-import {
-  batchUpdateActivities,
-  breakSuperset,
-  updateActivity,
-} from '../redux/activitySlice';
+import { batchUpdateActivities, updateActivity } from '../redux/activitySlice';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -83,6 +81,11 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const [durationPickerInfo, setDurationPickerInfo] = useState<{
     activityId: string;
     setId: string;
+  } | null>(null);
+  const [numericWheelInfo, setNumericWheelInfo] = useState<{
+    activityId: string;
+    setId: string;
+    field: 'reps' | 'weight';
   } | null>(null);
   const [isTimerExpanded, setIsTimerExpanded] = useState(false);
 
@@ -341,22 +344,12 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     }
   };
 
-  const handleUnlinkSuperset = () => {
-    Alert.alert(
-      'Unlink Superset',
-      'This will split the superset into separate activities and keep all sets, order, and completion state.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unlink',
-          style: 'destructive',
-          onPress: () => {
-            dispatch(breakSuperset(supersetId));
-            navigation.goBack();
-          },
-        },
-      ]
-    );
+  const handleSupersetRestToggle = (enabled: boolean) => {
+    const updatedActivities = supersetActivities.map(activity => ({
+      ...activity,
+      restTimerEnabled: enabled,
+    }));
+    dispatch(batchUpdateActivities(updatedActivities));
   };
 
   const scrollToSetInput = (refKey: string) => {
@@ -472,35 +465,17 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
           />
 
           <View className="p-4" style={{ gap: 24 }}>
-            {/* Timer - Collapsible */}
+            {/* Timer - Collapsible (hosts the superset-wide auto rest toggle) */}
             <CollapsibleTimer
               activityId={supersetId}
               activityName={getSupersetLabel(supersetActivities.length)}
               onExpandedChange={setIsTimerExpanded}
-            />
-
-            <TouchableOpacity
-              onPress={handleUnlinkSuperset}
-              className="p-4 rounded-lg"
-              style={{
-                backgroundColor: colors.cardBackground,
-                borderWidth: 1,
-                borderColor: colors.border,
+              restToggle={{
+                enabled: supersetRestTimerEnabled,
+                onToggle: handleSupersetRestToggle,
+                globalEnabled: autoRestTimer,
               }}
-              accessibilityRole="button"
-              accessibilityLabel="Unlink superset"
-            >
-              <Text
-                style={{
-                  color: colors.error.main,
-                  fontWeight: '600',
-                  fontSize: 16,
-                  textAlign: 'center',
-                }}
-              >
-                Unlink Superset
-              </Text>
-            </TouchableOpacity>
+            />
 
             {/* Notes - combined from all activities */}
             {supersetActivities.some(a => a.notes) && (
@@ -570,7 +545,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
 
                     return (
                       <View key={`${activity.id}-${set.id}`}>
-                        <View
+                        <Pressable
+                          onLongPress={() => showSetOptions(activity.id, set)}
+                          delayLongPress={300}
                           className={`p-4 rounded-lg ${
                             isDark ? 'bg-gray-800' : 'bg-white'
                           } shadow-sm`}
@@ -588,6 +565,24 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 {activity.name}
                               </Text>
                             </View>
+                            <TouchableOpacity
+                              onPress={() => showSetOptions(activity.id, set)}
+                              hitSlop={{
+                                top: 14,
+                                bottom: 14,
+                                left: 14,
+                                right: 14,
+                              }}
+                              className="p-1"
+                              accessibilityRole="button"
+                              accessibilityLabel={`${activity.name} set options`}
+                            >
+                              <Ionicons
+                                name="ellipsis-vertical"
+                                size={20}
+                                color={colors.textSecondary}
+                              />
+                            </TouchableOpacity>
                           </View>
 
                           {/* Set inputs */}
@@ -626,46 +621,208 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       {config.label}
                                       {config.unit ? ` (${config.unit})` : ''}
                                     </Text>
+                                    {isWeightField && (
+                                      <TouchableOpacity
+                                        onPress={() => {
+                                          setActiveSetInfo({
+                                            activityId: activity.id,
+                                            setId: set.id,
+                                          });
+                                          setShowPlateCalculator(true);
+                                        }}
+                                        hitSlop={{
+                                          top: 16,
+                                          bottom: 16,
+                                          left: 16,
+                                          right: 16,
+                                        }}
+                                        style={{ marginLeft: 8 }}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Open plate calculator"
+                                      >
+                                        <PlateIcon variant="tooltip" />
+                                      </TouchableOpacity>
+                                    )}
                                   </View>
-                                  {(() => {
-                                    const displayValue =
-                                      field === 'time'
-                                        ? typeof value === 'number'
-                                          ? secondsToTimeString(value)
-                                          : null
-                                        : field === 'band'
-                                          ? set.band || null
-                                          : value != null
-                                            ? value.toString()
-                                            : null;
-                                    return (
-                                      <View
+                                  {field === 'time' ? (
+                                    <TouchableOpacity
+                                      onPress={() =>
+                                        setDurationPickerInfo({
+                                          activityId: activity.id,
+                                          setId: set.id,
+                                        })
+                                      }
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600'
+                                          : 'bg-white border-gray-300'
+                                      }`}
+                                      style={{
+                                        minHeight: 42,
+                                        justifyContent: 'center',
+                                      }}
+                                    >
+                                      <Text
                                         style={{
-                                          minHeight: 42,
-                                          paddingHorizontal: 12,
-                                          paddingVertical: 8,
-                                          justifyContent: 'center',
+                                          color: value
+                                            ? colors.text
+                                            : colors.textSecondary,
+                                          fontSize: 16,
                                         }}
                                       >
-                                        <Text
-                                          style={{
-                                            fontSize: 16,
-                                            fontWeight: '500',
-                                            color: displayValue
+                                        {typeof value === 'number'
+                                          ? secondsToTimeString(value)
+                                          : '0:00'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : field === 'band' ? (
+                                    <TextInput
+                                      value={set.band || ''}
+                                      onChangeText={text =>
+                                        handleUpdateSet(activity.id, set.id, {
+                                          band: text || undefined,
+                                        })
+                                      }
+                                      keyboardType="default"
+                                      autoCapitalize="words"
+                                      placeholder="e.g. Red Heavy"
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600 text-white'
+                                          : 'bg-white border-gray-300 text-gray-900'
+                                      }`}
+                                      placeholderTextColor={
+                                        colors.textSecondary
+                                      }
+                                      returnKeyType="done"
+                                      onSubmitEditing={() => Keyboard.dismiss()}
+                                    />
+                                  ) : field === 'reps' || field === 'weight' ? (
+                                    <TouchableOpacity
+                                      onPress={() =>
+                                        setNumericWheelInfo({
+                                          activityId: activity.id,
+                                          setId: set.id,
+                                          field,
+                                        })
+                                      }
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600'
+                                          : 'bg-white border-gray-300'
+                                      }`}
+                                      style={{
+                                        minHeight: 42,
+                                        justifyContent: 'center',
+                                      }}
+                                      accessibilityRole="button"
+                                      accessibilityLabel={`Edit ${config.label.toLowerCase()} for ${activity.name}`}
+                                    >
+                                      <Text
+                                        style={{
+                                          color:
+                                            value != null
                                               ? colors.text
                                               : colors.textSecondary,
-                                          }}
-                                        >
-                                          {displayValue || '\u2014'}
-                                        </Text>
-                                      </View>
-                                    );
-                                  })()}
+                                          fontSize: 16,
+                                        }}
+                                      >
+                                        {value != null ? value.toString() : '0'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <TextInput
+                                      ref={ref => {
+                                        setInputRefs.current[
+                                          `${set.id}-${field}`
+                                        ] = ref;
+                                      }}
+                                      value={
+                                        field === 'distance' &&
+                                        distanceText[set.id] != null
+                                          ? distanceText[set.id]
+                                          : value != null
+                                            ? value.toString()
+                                            : ''
+                                      }
+                                      onChangeText={text => {
+                                        if (field === 'distance') {
+                                          if (
+                                            text &&
+                                            !/^\d*\.?\d{0,2}$/.test(text)
+                                          )
+                                            return;
+                                          setDistanceText(prev => ({
+                                            ...prev,
+                                            [set.id]: text,
+                                          }));
+                                          return;
+                                        }
+                                        handleUpdateSet(activity.id, set.id, {
+                                          [field]: text
+                                            ? parseFloat(text)
+                                            : undefined,
+                                        });
+                                      }}
+                                      onBlur={() => {
+                                        if (field === 'distance') {
+                                          const text = distanceText[set.id];
+                                          if (text != null) {
+                                            handleUpdateSet(
+                                              activity.id,
+                                              set.id,
+                                              {
+                                                distance: text
+                                                  ? parseFloat(text)
+                                                  : undefined,
+                                              }
+                                            );
+                                            setDistanceText(prev => {
+                                              const next = { ...prev };
+                                              delete next[set.id];
+                                              return next;
+                                            });
+                                          }
+                                        }
+                                      }}
+                                      keyboardType={
+                                        field === 'distance'
+                                          ? 'decimal-pad'
+                                          : 'numeric'
+                                      }
+                                      className={`px-3 py-2 border rounded-lg ${
+                                        isDark
+                                          ? 'bg-gray-700 border-gray-600 text-white'
+                                          : 'bg-white border-gray-300 text-gray-900'
+                                      }`}
+                                      placeholderTextColor={
+                                        colors.textSecondary
+                                      }
+                                      returnKeyType="done"
+                                      onSubmitEditing={() => Keyboard.dismiss()}
+                                      onFocus={() => {
+                                        if (field === 'distance') {
+                                          setDistanceText(prev => ({
+                                            ...prev,
+                                            [set.id]:
+                                              value != null
+                                                ? value.toString()
+                                                : '',
+                                          }));
+                                        }
+                                        setTimeout(() => {
+                                          scrollToSetInput(
+                                            `${set.id}-${field}`
+                                          );
+                                        }, 100);
+                                      }}
+                                    />
+                                  )}
                                 </View>
                               );
                             })}
                           </View>
-                        </View>
+                        </Pressable>
                         {/* Connecting line */}
                         {!isLastActivity && (
                           <View
@@ -768,6 +925,33 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         }}
         onCancel={() => setDurationPickerInfo(null)}
       />
+
+      {/* Numeric Wheel Modal (reps / weight) */}
+      {numericWheelInfo && (
+        <NumericWheelModal
+          visible={numericWheelInfo !== null}
+          title={numericWheelInfo.field === 'reps' ? 'Reps' : 'Weight'}
+          value={
+            localSets
+              .get(numericWheelInfo.activityId)
+              ?.find(s => s.id === numericWheelInfo.setId)?.[
+              numericWheelInfo.field
+            ]
+          }
+          max={numericWheelInfo.field === 'reps' ? 200 : 1000}
+          step={numericWheelInfo.field === 'reps' ? 1 : 5}
+          unit={numericWheelInfo.field === 'weight' ? 'lbs' : undefined}
+          onConfirm={nextValue => {
+            handleUpdateSet(
+              numericWheelInfo.activityId,
+              numericWheelInfo.setId,
+              { [numericWheelInfo.field]: nextValue }
+            );
+            setNumericWheelInfo(null);
+          }}
+          onCancel={() => setNumericWheelInfo(null)}
+        />
+      )}
     </View>
   );
 }

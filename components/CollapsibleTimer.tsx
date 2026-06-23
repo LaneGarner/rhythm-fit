@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Keyboard,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,6 +17,11 @@ interface CollapsibleTimerProps {
   activityName: string;
   defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  restToggle?: {
+    enabled: boolean;
+    onToggle: (value: boolean) => void;
+    globalEnabled: boolean;
+  };
 }
 
 export default function CollapsibleTimer({
@@ -23,6 +29,7 @@ export default function CollapsibleTimer({
   activityName,
   defaultExpanded = false,
   onExpandedChange,
+  restToggle,
 }: CollapsibleTimerProps) {
   const { colors } = useTheme();
 
@@ -525,6 +532,48 @@ export default function CollapsibleTimer({
               </Text>
             </TouchableOpacity>
           </View>
+
+          {restToggle && (
+            <View
+              className="mt-4 pt-4"
+              style={{ borderTopWidth: 1, borderTopColor: colors.border }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: colors.text }}
+                  >
+                    Auto rest countdown
+                  </Text>
+                  <Text
+                    className="text-sm"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Start automatically after completed sets
+                  </Text>
+                </View>
+                <Switch
+                  value={restToggle.enabled}
+                  onValueChange={restToggle.onToggle}
+                  disabled={!restToggle.globalEnabled}
+                  trackColor={{
+                    false: colors.border,
+                    true: colors.primary.main,
+                  }}
+                  accessibilityLabel="Auto rest countdown"
+                />
+              </View>
+              {!restToggle.globalEnabled && (
+                <Text
+                  className="text-sm mt-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Enable global auto rest timer in Settings to use this.
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       )}
     </View>

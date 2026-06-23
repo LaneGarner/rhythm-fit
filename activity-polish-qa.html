@@ -383,9 +383,9 @@
           <tbody>
             <tr>
               <td>Activity library scrolling</td>
-              <td>Full list reachability without secondary "show more" state.</td>
-              <td>Create or seed 15+ custom activities. Open Settings -> Activity Library. Scroll to the bottom on small and large devices.</td>
-              <td>Every activity is reachable; the floating add button does not cover the final rows.</td>
+              <td>Full list reachability without secondary "show more" state. Scroll container now matches the proven app pattern and the floating add button no longer intercepts touches.</td>
+              <td>Create or seed 15+ custom activities. Open Settings -> Activity Library. Scroll all the way to the bottom on small and large devices, including the area near the floating add button.</td>
+              <td>The list scrolls smoothly to the last row every time; the floating add button neither blocks scrolling nor covers the final rows.</td>
             </tr>
             <tr>
               <td>Activity icons removed</td>
@@ -394,40 +394,34 @@
               <td>No activity-type glyphs appear. Functional icons like check, menu, trash, arrows, and plate calculator remain.</td>
             </tr>
             <tr>
-              <td>Superset set duplication</td>
-              <td>Set options operate on the selected exercise only.</td>
-              <td>Open a superset, use a set's options, tap Duplicate.</td>
-              <td>Only that exercise gets a copied set; field values match; the copied set is incomplete.</td>
+              <td>Superset set duplication (long press)</td>
+              <td>Superset sets get the same options affordance as regular sets, opened the same way.</td>
+              <td>Open a superset. Long-press a set card (or tap its ⋮ button) and choose Duplicate. Try the same with Delete.</td>
+              <td>Long-press opens the set options sheet including Duplicate; only that exercise gets a copied (incomplete) set inserted right after the source, with matching field values.</td>
             </tr>
             <tr>
-              <td>Wheel reps and weight</td>
-              <td>Fast, bounded picking for common numeric fields.</td>
-              <td>Open regular activity execution. Tap reps and pick 6, 8, and 12. Tap weight and pick several values.</td>
-              <td>Reps increments by 1; weight increments by 5; distance remains decimal input; time remains duration picker; plate calculator still opens.</td>
+              <td>Wheel reps and weight everywhere</td>
+              <td>Fast, bounded picking for numeric fields in every place weight/reps are entered — no raw text boxes — using themed controls.</td>
+              <td>Open the wheel in: regular execution, superset execution cards, and the new/edit activity form. Pick several reps and weight values. Check the modal's Cancel/Done button color.</td>
+              <td>Reps step by 1, weight by 5, in all three places. Distance stays decimal input; time stays duration picker; plate calculator still opens. The wheel modal Cancel/Done use the app theme color (no off-theme blue).</td>
             </tr>
             <tr>
-              <td>Per-activity rest countdown</td>
-              <td>Auto behavior is local and reversible, while manual timer controls stay available.</td>
-              <td>Enable global auto rest timer in Settings. In activity execution, turn Auto Rest Countdown off and complete a set. Turn it on and complete another set.</td>
-              <td>Off prevents auto-start only. On starts the rest countdown. Manual timer controls remain usable either way.</td>
+              <td>Auto rest countdown in timer dropdown</td>
+              <td>The per-activity auto rest control is subtle and lives with the other timer controls, on both regular and superset screens.</td>
+              <td>Open the Timer dropdown in regular execution and in a superset. Toggle "Auto rest countdown" with global auto rest on, then off. Complete a set with it on.</td>
+              <td>The toggle appears inside the expanded Timer on both screens (no separate big card). With it on, the rest countdown auto-starts after a completed set; when global auto rest is off it is disabled with a hint. Manual timer controls remain usable.</td>
             </tr>
             <tr>
-              <td>Superset rest countdown gate</td>
-              <td>A superset should not auto-start if any included activity opted out.</td>
-              <td>Disable rest countdown for one activity in a superset. Complete a superset round.</td>
-              <td>No auto rest countdown starts until every superset activity has rest countdown enabled and global auto rest is enabled.</td>
+              <td>Superset auto rest (single toggle)</td>
+              <td>One superset-wide switch controls auto rest for the whole group — no confusing per-activity gating.</td>
+              <td>Open a superset's Timer dropdown. Toggle "Auto rest countdown" off, complete a round (no auto rest). Toggle on, complete a round.</td>
+              <td>The single toggle sets rest enablement for every activity in the superset at once. Off = no auto rest starts; On (with global auto rest on) = rest countdown starts after a completed round.</td>
             </tr>
             <tr>
               <td>Superset visual cleanup</td>
               <td>Superset execution cards should feel like regular execution cards.</td>
               <td>Open a superset execution flow and compare card styling to regular activity execution.</td>
               <td>Cards use neutral card styling without blue rails; connectors are neutral.</td>
-            </tr>
-            <tr>
-              <td>Unlink superset</td>
-              <td>Destructive group change has a clear confirmation and preserves data.</td>
-              <td>Open a superset, tap Unlink Superset, cancel once, then confirm.</td>
-              <td>Cancel does nothing. Confirm splits activities, preserves sets/order/completion, and returns to the prior screen.</td>
             </tr>
             <tr>
               <td>Completion feedback</td>
@@ -554,7 +548,7 @@
 
     <script>
       (function () {
-        var STORAGE_PREFIX = "qa:activity-polish:v1:";
+        var STORAGE_PREFIX = "qa:activity-polish:v2:";
         var hasStorage = (function () {
           try {
             var k = "__qa_test__";

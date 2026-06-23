@@ -72,7 +72,8 @@ export default function NumericWheelModal({
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={onCancel}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg"
+                  style={{ color: colors.primary.main }}
                 >
                   Cancel
                 </Text>
@@ -84,7 +85,8 @@ export default function NumericWheelModal({
               </Text>
               <TouchableOpacity onPress={handleDone}>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold"
+                  style={{ color: colors.primary.main }}
                 >
                   Done
                 </Text>
