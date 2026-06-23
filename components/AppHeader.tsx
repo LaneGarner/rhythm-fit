@@ -1,9 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
-import { RootStackParamList } from '../App';
+import { View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
@@ -20,12 +16,6 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const { colors } = useTheme();
   const { insets, isLandscape } = useResponsiveLayout();
-
-  // Use the navigation prop from React Navigation
-  // This requires the component to receive navigation as a prop, or use the useNavigation hook.
-  // We'll use the useNavigation hook for functional components.
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <View
@@ -45,19 +35,8 @@ export default function AppHeader({
       {/* Center: Children */}
       <View className="flex-1 items-center justify-center">{children}</View>
 
-      {/* Right: Settings Cog */}
-      <TouchableOpacity
-        hitSlop={14}
-        onPress={() => navigation.navigate('Settings')}
-        className="p-2"
-        accessibilityLabel="Settings & Preferences"
-      >
-        <Ionicons
-          name="person-circle-outline"
-          size={28}
-          color={colors.textSecondary}
-        />
-      </TouchableOpacity>
+      {/* Right: Optional action (settings now lives in the footer tab bar) */}
+      {rightAction ? rightAction : <View style={{ width: 40 }} />}
     </View>
   );
 }

@@ -12,6 +12,10 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 const Tab = createBottomTabNavigator();
 
+// Settings lives in the root stack; this tab only acts as a launcher for it,
+// so it never renders its own screen.
+const SettingsTabPlaceholder = () => null;
+
 // Custom tab bar button component with tutorial target registration
 const CustomTabBarButton = ({
   children,
@@ -177,6 +181,27 @@ export default function TabNavigator() {
             <CustomTabBarButton {...props} targetId="coach-tab-button" />
           ),
         }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        component={SettingsTabPlaceholder}
+        options={{
+          tabBarLabel: 'Settings',
+          tabBarAccessibilityLabel: 'Settings & Preferences',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-circle-outline" size={26} color={color} />
+          ),
+          tabBarButton: props => (
+            <CustomTabBarButton {...props} targetId="settings-tab-button" />
+          ),
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: e => {
+            // Don't switch to the placeholder tab — open the Settings screen.
+            e.preventDefault();
+            navigation.navigate('Settings');
+          },
+        })}
       />
     </Tab.Navigator>
   );

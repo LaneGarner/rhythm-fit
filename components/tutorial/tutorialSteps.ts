@@ -91,9 +91,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Settings & Preferences',
     description:
       'Tap the profile icon to access settings. Customize your week start day, toggle dark mode, manage your account, or replay this tutorial.',
-    targetId: 'settings-button',
+    targetId: 'settings-tab-button',
     navigateTo: { type: 'tab', screen: 'Weekly' },
-    tooltipPosition: 'bottom',
+    tooltipPosition: 'top',
   },
   {
     id: 'auth',

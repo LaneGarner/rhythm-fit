@@ -54,7 +54,6 @@ export default function WeeklyScreen({ navigation }: any) {
   // Refs for tutorial targets
   const weekHeaderRef = useRef<View>(null);
   const addButtonRef = useRef<View>(null);
-  const settingsButtonRef = useRef<View>(null);
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -250,21 +249,6 @@ export default function WeeklyScreen({ navigation }: any) {
     }
   }, [registerTarget]);
 
-  const registerSettingsButton = useCallback(() => {
-    if (settingsButtonRef.current) {
-      settingsButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
-        registerTarget('settings-button', {
-          x,
-          y,
-          width,
-          height,
-          pageX,
-          pageY,
-        });
-      });
-    }
-  }, [registerTarget]);
-
   // Register targets when tutorial becomes active
   useEffect(() => {
     if (tutorialActive) {
@@ -272,7 +256,6 @@ export default function WeeklyScreen({ navigation }: any) {
         registerWeekHeader();
         registerAddButton();
         registerTodayCard();
-        registerSettingsButton();
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -280,14 +263,12 @@ export default function WeeklyScreen({ navigation }: any) {
       unregisterTarget('week-header');
       unregisterTarget('floating-add-button');
       unregisterTarget('today-card');
-      unregisterTarget('settings-button');
     };
   }, [
     tutorialActive,
     registerWeekHeader,
     registerAddButton,
     registerTodayCard,
-    registerSettingsButton,
     unregisterTarget,
   ]);
 
@@ -717,25 +698,7 @@ export default function WeeklyScreen({ navigation }: any) {
           paddingRight: Math.max(16, insets.right),
         }}
       >
-        {/* Settings Button - right positioned */}
-        <TouchableOpacity
-          ref={settingsButtonRef}
-          id="settings-button"
-          onPress={() => navigation.navigate('Settings')}
-          className="p-2"
-          accessibilityLabel="Settings & Preferences"
-          style={{
-            position: 'absolute',
-            right: Math.max(16, insets.right),
-            top: insets.top + 8,
-          }}
-        >
-          <Ionicons
-            name="person-circle-outline"
-            size={28}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
+        {/* Settings now lives in the footer tab bar (see TabNavigator). */}
 
         {/* Centered week navigation container */}
         <View
