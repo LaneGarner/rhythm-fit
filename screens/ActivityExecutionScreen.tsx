@@ -393,40 +393,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             {/* Notes */}
             <NotesCard notes={activity.notes || ''} />
 
-            {allSetsComplete && (
-              <View
-                className="p-4 rounded-lg"
-                style={{
-                  backgroundColor: isDark
-                    ? 'rgba(34, 197, 94, 0.16)'
-                    : 'rgba(34, 197, 94, 0.10)',
-                  borderWidth: 2,
-                  borderColor: colors.success.main,
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.success.main,
-                    fontSize: 18,
-                    fontWeight: '700',
-                    textAlign: 'center',
-                  }}
-                >
-                  Activity Complete
-                </Text>
-                <Text
-                  className="mt-1 text-center"
-                  style={{
-                    color: isDark ? '#BBF7D0' : colors.success.dark,
-                    fontSize: 14,
-                    fontWeight: '600',
-                  }}
-                >
-                  {completedSetsCount} of {totalSetsCount} sets complete
-                </Text>
-              </View>
-            )}
-
             {/* Sets */}
             <View>
               <View className="flex-row justify-between items-center mb-4">
