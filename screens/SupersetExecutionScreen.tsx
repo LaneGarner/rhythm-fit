@@ -17,7 +17,6 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
-import NumericWheelModal from '../components/NumericWheelModal';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
 import {
@@ -81,11 +80,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const [durationPickerInfo, setDurationPickerInfo] = useState<{
     activityId: string;
     setId: string;
-  } | null>(null);
-  const [numericWheelInfo, setNumericWheelInfo] = useState<{
-    activityId: string;
-    setId: string;
-    field: 'reps' | 'weight';
   } | null>(null);
   const [isTimerExpanded, setIsTimerExpanded] = useState(false);
 
@@ -580,15 +574,16 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                       'weight',
                       'reps',
                     ];
-                    const showPlateIcon =
-                      fields.includes('weight') &&
-                      activity.type === 'weight-training';
 
                     return (
                       <View key={`${activity.id}-${set.id}`}>
-                        <Pressable
-                          onLongPress={() => showSetOptions(activity.id, set)}
-                          delayLongPress={300}
+                        {/*
+                          INTENTIONAL: superset execution is READ-ONLY for set
+                          values — display only, edit on the activity form. Do
+                          NOT add wheel/text inputs or a duplicate/options menu
+                          here. See memory "execution-screens-read-only".
+                        */}
+                        <View
                           className="p-4 rounded-lg shadow-sm"
                           style={{ backgroundColor: colors.cardBackground }}
                         >
@@ -628,27 +623,9 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                 </View>
                               )}
                             </View>
-                            <TouchableOpacity
-                              onPress={() => showSetOptions(activity.id, set)}
-                              hitSlop={{
-                                top: 14,
-                                bottom: 14,
-                                left: 14,
-                                right: 14,
-                              }}
-                              className="p-1"
-                              accessibilityRole="button"
-                              accessibilityLabel={`${activity.name} set options`}
-                            >
-                              <Ionicons
-                                name="ellipsis-vertical"
-                                size={20}
-                                color={colors.textSecondary}
-                              />
-                            </TouchableOpacity>
                           </View>
 
-                          {/* Set inputs */}
+                          {/* Set values */}
                           <View
                             className="flex-row flex-wrap"
                             style={{ gap: 12 }}
@@ -656,9 +633,17 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                             {fields.map(field => {
                               const config = fieldConfig[field];
                               const value = set[field];
-                              const isWeightField =
-                                field === 'weight' &&
-                                activity.type === 'weight-training';
+
+                              const displayValue =
+                                field === 'time'
+                                  ? typeof value === 'number'
+                                    ? secondsToTimeString(value)
+                                    : null
+                                  : field === 'band'
+                                    ? set.band || null
+                                    : value != null
+                                      ? value.toString()
+                                      : null;
 
                               return (
                                 <View
@@ -684,208 +669,32 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                                       {config.label}
                                       {config.unit ? ` (${config.unit})` : ''}
                                     </Text>
-                                    {isWeightField && (
-                                      <TouchableOpacity
-                                        onPress={() => {
-                                          setActiveSetInfo({
-                                            activityId: activity.id,
-                                            setId: set.id,
-                                          });
-                                          setShowPlateCalculator(true);
-                                        }}
-                                        hitSlop={{
-                                          top: 16,
-                                          bottom: 16,
-                                          left: 16,
-                                          right: 16,
-                                        }}
-                                        style={{ marginLeft: 8 }}
-                                        accessibilityRole="button"
-                                        accessibilityLabel="Open plate calculator"
-                                      >
-                                        <PlateIcon variant="tooltip" />
-                                      </TouchableOpacity>
-                                    )}
                                   </View>
-                                  {field === 'time' ? (
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        setDurationPickerInfo({
-                                          activityId: activity.id,
-                                          setId: set.id,
-                                        })
-                                      }
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600'
-                                          : 'bg-white border-gray-300'
-                                      }`}
+                                  <View
+                                    style={{
+                                      minHeight: 42,
+                                      paddingHorizontal: 12,
+                                      paddingVertical: 8,
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Text
                                       style={{
-                                        minHeight: 42,
-                                        justifyContent: 'center',
+                                        fontSize: 16,
+                                        fontWeight: '500',
+                                        color: displayValue
+                                          ? colors.text
+                                          : colors.textSecondary,
                                       }}
                                     >
-                                      <Text
-                                        style={{
-                                          color: value
-                                            ? colors.text
-                                            : colors.textSecondary,
-                                          fontSize: 16,
-                                        }}
-                                      >
-                                        {typeof value === 'number'
-                                          ? secondsToTimeString(value)
-                                          : '0:00'}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  ) : field === 'band' ? (
-                                    <TextInput
-                                      value={set.band || ''}
-                                      onChangeText={text =>
-                                        handleUpdateSet(activity.id, set.id, {
-                                          band: text || undefined,
-                                        })
-                                      }
-                                      keyboardType="default"
-                                      autoCapitalize="words"
-                                      placeholder="e.g. Red Heavy"
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600 text-white'
-                                          : 'bg-white border-gray-300 text-gray-900'
-                                      }`}
-                                      placeholderTextColor={
-                                        colors.textSecondary
-                                      }
-                                      returnKeyType="done"
-                                      onSubmitEditing={() => Keyboard.dismiss()}
-                                    />
-                                  ) : field === 'reps' || field === 'weight' ? (
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        setNumericWheelInfo({
-                                          activityId: activity.id,
-                                          setId: set.id,
-                                          field,
-                                        })
-                                      }
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600'
-                                          : 'bg-white border-gray-300'
-                                      }`}
-                                      style={{
-                                        minHeight: 42,
-                                        justifyContent: 'center',
-                                      }}
-                                      accessibilityRole="button"
-                                      accessibilityLabel={`Edit ${config.label.toLowerCase()} for ${activity.name}`}
-                                    >
-                                      <Text
-                                        style={{
-                                          color:
-                                            value != null
-                                              ? colors.text
-                                              : colors.textSecondary,
-                                          fontSize: 16,
-                                        }}
-                                      >
-                                        {value != null ? value.toString() : '0'}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  ) : (
-                                    <TextInput
-                                      ref={ref => {
-                                        setInputRefs.current[
-                                          `${set.id}-${field}`
-                                        ] = ref;
-                                      }}
-                                      value={
-                                        field === 'distance' &&
-                                        distanceText[set.id] != null
-                                          ? distanceText[set.id]
-                                          : value != null
-                                            ? value.toString()
-                                            : ''
-                                      }
-                                      onChangeText={text => {
-                                        if (field === 'distance') {
-                                          if (
-                                            text &&
-                                            !/^\d*\.?\d{0,2}$/.test(text)
-                                          )
-                                            return;
-                                          setDistanceText(prev => ({
-                                            ...prev,
-                                            [set.id]: text,
-                                          }));
-                                          return;
-                                        }
-                                        handleUpdateSet(activity.id, set.id, {
-                                          [field]: text
-                                            ? parseFloat(text)
-                                            : undefined,
-                                        });
-                                      }}
-                                      onBlur={() => {
-                                        if (field === 'distance') {
-                                          const text = distanceText[set.id];
-                                          if (text != null) {
-                                            handleUpdateSet(
-                                              activity.id,
-                                              set.id,
-                                              {
-                                                distance: text
-                                                  ? parseFloat(text)
-                                                  : undefined,
-                                              }
-                                            );
-                                            setDistanceText(prev => {
-                                              const next = { ...prev };
-                                              delete next[set.id];
-                                              return next;
-                                            });
-                                          }
-                                        }
-                                      }}
-                                      keyboardType={
-                                        field === 'distance'
-                                          ? 'decimal-pad'
-                                          : 'numeric'
-                                      }
-                                      className={`px-3 py-2 border rounded-lg ${
-                                        isDark
-                                          ? 'bg-gray-700 border-gray-600 text-white'
-                                          : 'bg-white border-gray-300 text-gray-900'
-                                      }`}
-                                      placeholderTextColor={
-                                        colors.textSecondary
-                                      }
-                                      returnKeyType="done"
-                                      onSubmitEditing={() => Keyboard.dismiss()}
-                                      onFocus={() => {
-                                        if (field === 'distance') {
-                                          setDistanceText(prev => ({
-                                            ...prev,
-                                            [set.id]:
-                                              value != null
-                                                ? value.toString()
-                                                : '',
-                                          }));
-                                        }
-                                        setTimeout(() => {
-                                          scrollToSetInput(
-                                            `${set.id}-${field}`
-                                          );
-                                        }, 100);
-                                      }}
-                                    />
-                                  )}
+                                      {displayValue || '—'}
+                                    </Text>
+                                  </View>
                                 </View>
                               );
                             })}
                           </View>
-                        </Pressable>
+                        </View>
                         {/* Connecting line */}
                         {!isLastActivity && (
                           <View
@@ -988,33 +797,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         }}
         onCancel={() => setDurationPickerInfo(null)}
       />
-
-      {/* Numeric Wheel Modal (reps / weight) */}
-      {numericWheelInfo && (
-        <NumericWheelModal
-          visible={numericWheelInfo !== null}
-          title={numericWheelInfo.field === 'reps' ? 'Reps' : 'Weight'}
-          value={
-            localSets
-              .get(numericWheelInfo.activityId)
-              ?.find(s => s.id === numericWheelInfo.setId)?.[
-              numericWheelInfo.field
-            ]
-          }
-          max={numericWheelInfo.field === 'reps' ? 200 : 1000}
-          step={numericWheelInfo.field === 'reps' ? 1 : 5}
-          unit={numericWheelInfo.field === 'weight' ? 'lbs' : undefined}
-          onConfirm={nextValue => {
-            handleUpdateSet(
-              numericWheelInfo.activityId,
-              numericWheelInfo.setId,
-              { [numericWheelInfo.field]: nextValue }
-            );
-            setNumericWheelInfo(null);
-          }}
-          onCancel={() => setNumericWheelInfo(null)}
-        />
-      )}
     </View>
   );
 }

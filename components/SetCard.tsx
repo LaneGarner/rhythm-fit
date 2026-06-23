@@ -60,7 +60,13 @@ export default function SetCard({
     numericWheelField === 'reps'
       ? { title: 'Reps', max: 200, step: 1 }
       : numericWheelField === 'weight'
-        ? { title: 'Weight', max: 1000, step: 5, unit: 'lbs' }
+        ? {
+            title: 'Weight',
+            max: 1000,
+            step: 5,
+            unit: 'lbs',
+            stepOptions: [2.5, 5, 10],
+          }
         : null;
 
   return (
@@ -381,6 +387,7 @@ export default function SetCard({
           max={numericWheelConfig.max}
           step={numericWheelConfig.step}
           unit={numericWheelConfig.unit}
+          stepOptions={numericWheelConfig.stepOptions}
           onConfirm={nextValue => {
             if (numericWheelField) {
               onUpdateSet(set.id, { [numericWheelField]: nextValue });

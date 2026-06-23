@@ -449,6 +449,13 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </View>
               </View>
 
+              {/*
+                INTENTIONAL: the execution screen is READ-ONLY for set values.
+                Sets are displayed, not edited, here — editing happens on the
+                Edit/create activity form. Do NOT remove `readOnly` to "enable
+                editing" (that regression happened once in 74da89b). See memory
+                "execution-screens-read-only".
+              */}
               {sets.map((set, index) => (
                 <SetCard
                   key={set.id}
@@ -464,6 +471,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                   }}
                   inputRefs={setInputRefs}
                   onInputFocus={scrollToSetInput}
+                  readOnly
                 />
               ))}
 

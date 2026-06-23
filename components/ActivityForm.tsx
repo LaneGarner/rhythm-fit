@@ -1282,6 +1282,7 @@ function ActivityForm(
         max={wheelTarget?.field === 'weight' ? 1000 : 200}
         step={wheelTarget?.field === 'weight' ? 5 : 1}
         unit={wheelTarget?.field === 'weight' ? 'lbs' : undefined}
+        stepOptions={wheelTarget?.field === 'weight' ? [2.5, 5, 10] : undefined}
         onConfirm={nextValue => {
           if (wheelTarget) {
             handleUpdateSet(wheelTarget.setId, {

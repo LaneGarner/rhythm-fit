@@ -11,9 +11,12 @@ interface NumericWheelModalProps {
   max: number;
   step: number;
   unit?: string;
+  stepOptions?: number[];
   onConfirm: (value: number | undefined) => void;
   onCancel: () => void;
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export default function NumericWheelModal({
   visible,
@@ -23,31 +26,42 @@ export default function NumericWheelModal({
   max,
   step,
   unit,
+  stepOptions,
   onConfirm,
   onCancel,
 }: NumericWheelModalProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const [tempValue, setTempValue] = useState(min);
+  const [selectedStep, setSelectedStep] = useState(step);
 
   const values = useMemo(() => {
-    const count = Math.floor((max - min) / step) + 1;
-    return Array.from({ length: count }, (_, index) => min + index * step);
-  }, [max, min, step]);
+    const count = Math.floor((max - min) / selectedStep) + 1;
+    return Array.from({ length: count }, (_, index) =>
+      round2(min + index * selectedStep)
+    );
+  }, [max, min, selectedStep]);
 
   useEffect(() => {
     if (!visible) return;
+    setSelectedStep(step);
     const fallback = value ?? min;
     const nearest = Math.round((fallback - min) / step) * step + min;
     const clamped = Math.min(max, Math.max(min, nearest));
-    setTempValue(clamped);
+    setTempValue(round2(clamped));
   }, [max, min, step, value, visible]);
+
+  const handleStepChange = (nextStep: number) => {
+    setSelectedStep(nextStep);
+    setTempValue(prev => {
+      const nearest = Math.round((prev - min) / nextStep) * nextStep + min;
+      return round2(Math.min(max, Math.max(min, nearest)));
+    });
+  };
 
   const handleDone = () => {
     onConfirm(tempValue > 0 ? tempValue : undefined);
   };
-
-  const displayValue = `${tempValue}${unit ? ` ${unit}` : ''}`;
 
   return (
     <Modal
@@ -94,35 +108,54 @@ export default function NumericWheelModal({
             </View>
           </View>
 
-          <View
-            className={`flex-row items-center justify-between p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
-          >
-            <Text
-              className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
-            >
-              {displayValue}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setTempValue(min)}
-              style={{
-                marginLeft: 12,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: colors.primary.background,
-              }}
+          {stepOptions && stepOptions.length > 1 && (
+            <View
+              className={`flex-row items-center justify-center p-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+              style={{ gap: 8 }}
             >
               <Text
                 style={{
-                  color: colors.primary.main,
-                  fontWeight: '600',
-                  fontSize: 16,
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                  marginRight: 4,
                 }}
               >
-                Clear
+                Increment
               </Text>
-            </TouchableOpacity>
-          </View>
+              {stepOptions.map(opt => {
+                const active = selectedStep === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => handleStepChange(opt)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      backgroundColor: active
+                        ? colors.primary.main
+                        : colors.backgroundTertiary,
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Increment of ${opt}`}
+                  >
+                    <Text
+                      style={{
+                        color: active
+                          ? colors.textInverse
+                          : colors.textSecondary,
+                        fontWeight: '600',
+                        fontSize: 15,
+                      }}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
           <View style={{ alignItems: 'center', paddingVertical: 12 }}>
             <Picker
