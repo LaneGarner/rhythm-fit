@@ -55,8 +55,11 @@ interface AppHeaderTitleProps {
 export const AppHeaderTitle = ({ title, subtitle }: AppHeaderTitleProps) => {
   const { colors } = useTheme();
 
+  // NOTE: content-height (not flex-1). The header used to get its height from
+  // the settings icon; now that the icon lives in the footer, the title must
+  // define the header's height or the whole bar collapses.
   return (
-    <View className="flex-1 items-center">
+    <View className="items-center">
       <Text className="text-2xl font-bold" style={{ color: colors.text }}>
         {title}
       </Text>
