@@ -35,6 +35,7 @@ import {
   ActivityGroup,
 } from '../utils/supersetUtils';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 
 export default function WeeklyScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
@@ -44,6 +45,9 @@ export default function WeeklyScreen({ navigation }: any) {
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
   const { insets, width: screenWidth, isTablet } = useResponsiveLayout();
+  // Extra room so the last card scrolls clear of the floating + button
+  // (56pt button + the gap it sits above the bar + breathing room).
+  const tabBarInset = useTabBarInset(88);
   const {
     registerTarget,
     unregisterTarget,
@@ -790,7 +794,7 @@ export default function WeeklyScreen({ navigation }: any) {
           <ScrollView
             ref={scrollViewRef}
             className="flex-1 px-4 pt-4"
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: tabBarInset }}
           >
             {weekDays.map((day, index) => {
               const dayActivities = getActivitiesForDate(day.date);

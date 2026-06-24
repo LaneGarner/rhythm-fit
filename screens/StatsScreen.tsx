@@ -27,6 +27,7 @@ import {
   formatTime,
 } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { isActivityComplete } from '../utils/supersetUtils';
 
 type TimeRange = 7 | 30 | 90 | 365 | 0;
@@ -36,6 +37,7 @@ export default function StatsScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
+  const tabBarInset = useTabBarInset();
 
   const [timeRange, setTimeRange] = useState<TimeRange>(30);
   const [refreshing, setRefreshing] = useState(false);
@@ -778,8 +780,8 @@ export default function StatsScreen({ navigation }: any) {
             </View>
           )}
 
-          {/* Spacer for bottom nav */}
-          <View style={{ height: 100 }} />
+          {/* Spacer so content clears the floating tab bar */}
+          <View style={{ height: tabBarInset }} />
         </View>
       </ScrollView>
     </View>

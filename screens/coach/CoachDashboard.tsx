@@ -8,6 +8,7 @@ import { useWeekBoundaries } from '../../hooks/useWeekBoundaries';
 import { RootState } from '../../redux/store';
 import { buildCoachAnalytics } from '../../services/coachAnalyticsService';
 import { useTheme } from '../../theme/ThemeContext';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Activity } from '../../types/activity';
 
 interface Tip {
@@ -37,6 +38,7 @@ export default function CoachDashboard({
   onReconfigure,
 }: Props) {
   const { colors } = useTheme();
+  const tabBarInset = useTabBarInset();
   const navigation = useNavigation<any>();
   const activities = useSelector((s: RootState) => s.activities.data);
   const { getWeekStart, getWeekEnd } = useWeekBoundaries();
@@ -82,7 +84,7 @@ export default function CoachDashboard({
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: tabBarInset }}
       style={{ backgroundColor: colors.background }}
     >
       {/* This week's plan */}

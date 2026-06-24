@@ -45,6 +45,7 @@ import {
   getSupersetCompletedCount,
 } from '../utils/supersetUtils';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ShareWorkoutModal from '../components/ShareWorkoutModal';
 
@@ -161,6 +162,8 @@ export default function DayScreen({ navigation, route }: any) {
 
   const { colorScheme, colors } = useTheme();
   const { insets, width: screenWidth } = useResponsiveLayout();
+  // Extra room so the last card scrolls clear of the floating + button.
+  const tabBarInset = useTabBarInset(88);
   const isDark = colorScheme === 'dark';
 
   // Check if all activities for the day are completed
@@ -1878,7 +1881,7 @@ export default function DayScreen({ navigation, route }: any) {
       return (
         <ScrollView
           className="flex-1 p-4"
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: tabBarInset }}
         >
           {isBulkMode
             ? // In bulk mode, show all activities individually for selection
@@ -1921,7 +1924,7 @@ export default function DayScreen({ navigation, route }: any) {
           renderItem={renderDraggableGroup}
           onDragEnd={handleGroupDragEnd}
           containerStyle={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: tabBarInset }}
           activationDistance={0}
         />
       );
@@ -1931,7 +1934,7 @@ export default function DayScreen({ navigation, route }: any) {
     return (
       <ScrollView
         className="flex-1 p-4"
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
       >
         {groupActivitiesWithSupersets(dayActivities).map((group, index) =>
           group.type === 'superset' ? (

@@ -49,6 +49,7 @@ import { createActivitiesFromRequest } from '../services/activityScheduler';
 import { generateAndSchedulePlan } from '../services/planGenerationService';
 import { AppDispatch, RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
 import { useCoachProfile } from '../context/CoachProfileContext';
@@ -96,6 +97,23 @@ export default function CoachScreen({ navigation, route }: any) {
 
   const HISTORY_PREVIEW_COUNT = 5;
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
+
+  // The native tab bar floats over content; lift the input composer above it,
+  // but collapse that inset while the keyboard is open so there's no gap.
+  const tabBarInset = useTabBarInset();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () =>
+      setKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener('keyboardWillHide', () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Add ref for ScrollView, last bot message, and last user message
   const scrollViewRef = useRef<ScrollView>(null);
@@ -856,7 +874,14 @@ export default function CoachScreen({ navigation, route }: any) {
 
   // Premium gate: sign-in now, paywall-ready via EntitlementContext.
   if (!hasCoachAccess) {
-    return <CoachGate>{null}</CoachGate>;
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
+          <AppHeaderTitle title="Coach" />
+        </AppHeader>
+        <CoachGate>{null}</CoachGate>
+      </View>
+    );
   }
 
   // Dashboard | Chat switch. Rendered in its own full-width row below the
@@ -1185,6 +1210,7 @@ export default function CoachScreen({ navigation, route }: any) {
             style={{
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
+              paddingBottom: keyboardVisible ? 16 : tabBarInset,
             }}
             className="p-4 border-t"
           >

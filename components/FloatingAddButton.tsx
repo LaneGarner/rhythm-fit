@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useContext } from 'react';
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native';
+import { BottomTabBarHeightContext } from 'react-native-bottom-tabs';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -14,6 +15,10 @@ const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
   ({ onPress, accessibilityLabel = 'Add', onLayout }, ref) => {
     const { colors } = useTheme();
     const { insets } = useResponsiveLayout();
+    // With the native (floating) tab bar, content runs full-height under the
+    // bar, so lift the button above it. The classic docked bar reserves its own
+    // space (context is undefined → 0), so keep the original low position there.
+    const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
 
     return (
       <View
@@ -22,7 +27,10 @@ const FloatingAddButton = forwardRef<View, FloatingAddButtonProps>(
         pointerEvents="box-none"
         style={{
           position: 'absolute',
-          bottom: Math.max(6, insets.bottom - 14),
+          bottom:
+            tabBarHeight > 0
+              ? tabBarHeight + insets.bottom + 12
+              : Math.max(6, insets.bottom - 14),
           right: Math.max(34, insets.right + 10),
         }}
       >
