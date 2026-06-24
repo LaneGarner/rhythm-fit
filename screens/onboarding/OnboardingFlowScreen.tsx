@@ -36,11 +36,14 @@ import {
   MAX_DAYS_PER_WEEK,
   MIN_DAYS_PER_WEEK,
   SESSION_LENGTH_OPTIONS,
+  SEX_LABELS,
+  Sex,
 } from '../../types/coachProfile';
 
 type QuestionStep =
   | 'goals'
   | 'experience'
+  | 'sex'
   | 'days'
   | 'session'
   | 'equipment'
@@ -58,6 +61,7 @@ type Step =
 const QUESTION_ORDER: QuestionStep[] = [
   'goals',
   'experience',
+  'sex',
   'days',
   'session',
   'equipment',
@@ -79,6 +83,9 @@ const EXPERIENCE_DESCRIPTIONS: Record<ExperienceLevel, string> = {
   intermediate: 'Training consistently for 6+ months; know the main lifts.',
   advanced: 'Years of training; comfortable programming your own work.',
 };
+
+// Order shown in the optional sex step.
+const SEX_ORDER: Sex[] = ['female', 'male', 'unspecified'];
 
 const PICKABLE_EQUIPMENT: Equipment[] = [
   'barbell',
@@ -120,6 +127,7 @@ export default function OnboardingFlowScreen({
   const [experience, setExperience] = useState<ExperienceLevel | null>(
     coachProfile?.experience ?? null
   );
+  const [sex, setSex] = useState<Sex | null>(coachProfile?.sex ?? null);
   const [daysPerWeek, setDaysPerWeek] = useState<number>(
     coachProfile?.daysPerWeek ?? 4
   );
@@ -158,6 +166,7 @@ export default function OnboardingFlowScreen({
   const buildProfile = (): CoachProfile => ({
     goals,
     experience: experience ?? 'intermediate',
+    sex: sex ?? undefined,
     daysPerWeek,
     sessionLengthMin,
     equipment,
@@ -590,6 +599,37 @@ export default function OnboardingFlowScreen({
           </>
         )}
 
+        {step === 'sex' && (
+          <>
+            <StepTitle
+              title="Anything I should know about your body?"
+              subtitle="Optional. I'll use this to fine-tune recovery, volume, and exercise emphasis. It changes nothing else."
+            />
+            {SEX_ORDER.map(option => (
+              <SelectCard
+                key={option}
+                label={SEX_LABELS[option]}
+                selected={sex === option}
+                onPress={() => setSex(option)}
+              />
+            ))}
+            <View style={{ marginTop: 10, gap: 12 }}>
+              <PrimaryButton
+                label="Continue"
+                icon="arrow-forward"
+                onPress={next}
+              />
+              <SkipLink
+                label="Skip — prefer not to say"
+                onPress={() => {
+                  setSex(null);
+                  next();
+                }}
+              />
+            </View>
+          </>
+        )}
+
         {step === 'days' && (
           <>
             <StepTitle
@@ -807,6 +847,12 @@ export default function OnboardingFlowScreen({
                 label="Experience"
                 value={experience ? EXPERIENCE_LABELS[experience] : 'Not set'}
                 onPress={() => setStep('experience')}
+              />
+              <ReviewRow
+                icon="person"
+                label="Sex"
+                value={sex ? SEX_LABELS[sex] : 'Prefer not to say'}
+                onPress={() => setStep('sex')}
               />
               <ReviewRow
                 icon="calendar"

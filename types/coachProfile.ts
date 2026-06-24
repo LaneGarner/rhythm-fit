@@ -15,11 +15,18 @@ export type Equipment =
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 
+// Optional, self-reported. Used only to tailor recovery, volume, and exercise
+// emphasis in generated plans. 'unspecified' is the explicit "prefer not to
+// say" value and applies no sex-specific adjustments.
+export type Sex = 'female' | 'male' | 'unspecified';
+
 // The answers gathered during onboarding, used to generate and schedule a plan.
 // Persisted as one JSONB blob on profiles.coach_profile and cached locally.
 export interface CoachProfile {
   goals: string[];
   experience: ExperienceLevel;
+  // Optional. Omitted or 'unspecified' means no sex-specific tailoring.
+  sex?: Sex;
   daysPerWeek: number;
   sessionLengthMin: number;
   // null means the equipment step was skipped: no filtering, anything is on the
@@ -52,6 +59,12 @@ export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {
   beginner: 'Beginner',
   intermediate: 'Intermediate',
   advanced: 'Advanced',
+};
+
+export const SEX_LABELS: Record<Sex, string> = {
+  female: 'Female',
+  male: 'Male',
+  unspecified: 'Prefer not to say',
 };
 
 export const EQUIPMENT_LABELS: Record<Equipment, string> = {
