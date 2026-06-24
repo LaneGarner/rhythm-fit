@@ -311,6 +311,53 @@ export default function SettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Tools Section */}
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            fontWeight: '500',
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
+        >
+          Tools
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            marginBottom: 32,
+            overflow: 'hidden',
+          }}
+        >
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={() => navigation.navigate('Calculator')}
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                Weight Calculator
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Find which plates to load for a target weight
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
+        </View>
+
         {/* Preferences Section */}
         <Text
           style={{

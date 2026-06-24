@@ -72,9 +72,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'calculator-tab',
     title: 'Plate Calculator',
     description:
-      'Enter or select a weight, choose your barbell, and see exactly which plates to load on each side.',
-    targetId: 'calculator-tab-button',
-    navigateTo: { type: 'tab', screen: 'Calculator' },
+      'Open Settings to find the Plate Calculator under Tools — enter a weight and your barbell to see exactly which plates to load on each side.',
+    targetId: 'settings-tab-button',
+    navigateTo: { type: 'tab', screen: 'Weekly' },
     tooltipPosition: 'top',
   },
   {
@@ -83,7 +83,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     description:
       'Add custom barbells and set your available plates for accurate calculations.',
     targetId: 'configure-equipment-link',
-    navigateTo: { type: 'tab', screen: 'Calculator' },
+    navigateTo: { type: 'stack', screen: 'Calculator' },
     tooltipPosition: 'bottom',
   },
   {

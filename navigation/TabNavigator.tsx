@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { useCallback, useRef } from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import CalculatorScreen from '../screens/CalculatorScreen';
 import CoachScreen from '../screens/CoachScreen';
 import StatsScreen from '../screens/StatsScreen';
 import WeeklyStackNavigator from './WeeklyStackNavigator';
@@ -145,23 +144,6 @@ export default function TabNavigator() {
           ),
           tabBarButton: props => (
             <CustomTabBarButton {...props} targetId="stats-tab-button" />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Calculator"
-        component={CalculatorScreen}
-        options={{
-          tabBarLabel: 'Calculator',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'barbell' : 'barbell-outline'}
-              size={26}
-              color={color}
-            />
-          ),
-          tabBarButton: props => (
-            <CustomTabBarButton {...props} targetId="calculator-tab-button" />
           ),
         }}
       />
