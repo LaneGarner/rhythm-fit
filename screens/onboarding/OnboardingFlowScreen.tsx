@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -360,21 +360,16 @@ export default function OnboardingFlowScreen({
               marginTop: 24,
             }}
           >
-            <View
+            <Text
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 12,
+                color: colors.text,
+                fontSize: 17,
+                fontWeight: '600',
+                marginBottom: 6,
               }}
             >
-              <ActivityIndicator color={colors.primary.main} />
-              <Text
-                style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}
-              >
-                Building your plan…
-              </Text>
-            </View>
+              Building your plan…
+            </Text>
             <Text
               style={{
                 color: colors.textSecondary,
@@ -383,9 +378,9 @@ export default function OnboardingFlowScreen({
                 marginBottom: 20,
               }}
             >
-              Matching exercises to your equipment and goals. This usually takes
-              under a minute.
+              This usually takes under a minute.
             </Text>
+            <GeneratingSteps />
             <SkipLink label="Cancel" onPress={cancelGeneration} />
           </View>
         </ScrollView>
@@ -955,6 +950,90 @@ export default function OnboardingFlowScreen({
           </>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+// Cosmetic progress steps shown while the plan generates. They advance on a
+// timer (not tied to real backend stages) so a ~minute-long wait reads as
+// steady progress instead of a single frozen spinner. The list holds on the
+// last step until the parent swaps the screen to 'done'/'error'.
+const GENERATION_STEPS = [
+  'Reviewing your goals and equipment',
+  'Selecting exercises that fit',
+  'Balancing your weekly split',
+  'Scheduling it on your calendar',
+];
+
+const GENERATION_STEP_MS = 4500;
+
+function GeneratingSteps() {
+  const { colors } = useTheme();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (activeIndex >= GENERATION_STEPS.length - 1) return;
+    const timer = setTimeout(
+      () => setActiveIndex(i => Math.min(i + 1, GENERATION_STEPS.length - 1)),
+      GENERATION_STEP_MS
+    );
+    return () => clearTimeout(timer);
+  }, [activeIndex]);
+
+  return (
+    <View
+      style={{ gap: 16, marginBottom: 24 }}
+      accessibilityLiveRegion="polite"
+    >
+      {GENERATION_STEPS.map((label, i) => {
+        const done = i < activeIndex;
+        const current = i === activeIndex;
+        return (
+          <View
+            key={label}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+            accessibilityRole="text"
+            accessibilityLabel={`${label}${
+              done ? ', done' : current ? ', in progress' : ', pending'
+            }`}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {done ? (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color={colors.success.main}
+                />
+              ) : current ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              ) : (
+                <Ionicons
+                  name="ellipse-outline"
+                  size={20}
+                  color={colors.textTertiary}
+                />
+              )}
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 15,
+                color: done || current ? colors.text : colors.textTertiary,
+                fontWeight: current ? '600' : '400',
+              }}
+            >
+              {label}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
