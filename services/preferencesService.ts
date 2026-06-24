@@ -1,4 +1,5 @@
 import { API_URL } from '../config/api';
+import { CoachProfile } from '../types/coachProfile';
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   NotificationSettings,
@@ -8,11 +9,15 @@ import {
 interface PreferencesResponse {
   first_day_of_week: number;
   notification_settings?: Partial<NotificationSettings> | null;
+  coach_profile?: CoachProfile | null;
+  has_completed_onboarding?: boolean;
 }
 
 export interface ServerPreferences {
   firstDayOfWeek: WeekStartDay;
   notificationSettings: NotificationSettings;
+  coachProfile: CoachProfile | null;
+  hasCompletedOnboarding: boolean;
 }
 
 export async function fetchPreferences(
@@ -40,6 +45,8 @@ export async function fetchPreferences(
       return {
         firstDayOfWeek: firstDayOfWeek as WeekStartDay,
         notificationSettings,
+        coachProfile: data.coach_profile ?? null,
+        hasCompletedOnboarding: data.has_completed_onboarding ?? false,
       };
     }
 
@@ -55,6 +62,8 @@ export async function updatePreferences(
   updates: {
     firstDayOfWeek?: WeekStartDay;
     notificationSettings?: NotificationSettings;
+    coachProfile?: CoachProfile | null;
+    hasCompletedOnboarding?: boolean;
   }
 ): Promise<boolean> {
   if (!API_URL) {
@@ -68,6 +77,12 @@ export async function updatePreferences(
     }
     if (updates.notificationSettings !== undefined) {
       body.notification_settings = updates.notificationSettings;
+    }
+    if (updates.coachProfile !== undefined) {
+      body.coach_profile = updates.coachProfile;
+    }
+    if (updates.hasCompletedOnboarding !== undefined) {
+      body.has_completed_onboarding = updates.hasCompletedOnboarding;
     }
 
     const response = await fetch(`${API_URL}/api/preferences`, {
