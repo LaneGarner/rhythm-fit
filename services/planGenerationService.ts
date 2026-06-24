@@ -1,7 +1,12 @@
+import dayjs from 'dayjs';
+import { deleteActivity } from '../redux/activitySlice';
 import { AppDispatch } from '../redux/store';
 import { Activity } from '../types/activity';
 import { CoachProfile } from '../types/coachProfile';
-import { createActivitiesFromRequest } from './activityScheduler';
+import {
+  createActivitiesFromRequest,
+  isCoachActivity,
+} from './activityScheduler';
 import { ParsedActivity, streamChatMessage } from './chatApi';
 
 export interface PlanGenerationResult {
@@ -20,6 +25,21 @@ interface GenerateParams {
   activityContext: string;
   dispatch: AppDispatch;
   onToken?: (text: string) => void;
+  // The current activity list. When provided, any upcoming (today onward),
+  // not-yet-completed coach-created activities are cleared once the new plan is
+  // successfully scheduled — so regenerating replaces the old plan instead of
+  // stacking on top of it. Completed/past workouts and manual entries are kept.
+  existingActivities?: Activity[];
+}
+
+// Upcoming, not-yet-completed activities the coach previously scheduled. These
+// are what a regenerate should replace. Captured before generation so the newly
+// created activities (fresh ids) are never included.
+function staleCoachActivityIds(activities: Activity[]): string[] {
+  const today = dayjs().format('YYYY-MM-DD');
+  return activities
+    .filter(a => !a.completed && a.date >= today && isCoachActivity(a))
+    .map(a => a.id);
 }
 
 /**
@@ -37,11 +57,18 @@ export function generateAndSchedulePlan({
   activityContext,
   dispatch,
   onToken,
+  existingActivities,
 }: GenerateParams): {
   abort: () => void;
   result: Promise<PlanGenerationResult>;
 } {
   let handle: { abort: () => void } | null = null;
+
+  // Snapshot the old plan to replace BEFORE generating, so the freshly created
+  // activities (new ids) are never swept up by the clear.
+  const idsToClear = existingActivities
+    ? staleCoachActivityIds(existingActivities)
+    : [];
 
   const result = new Promise<PlanGenerationResult>((resolve, reject) => {
     // The plan request is a synthetic user message; the real instruction lives
@@ -65,6 +92,14 @@ export function generateAndSchedulePlan({
               parsed,
               dispatch
             );
+            // Only clear the previous plan once the new one is in place. A
+            // failed/empty generation leaves the existing plan untouched. Uses
+            // the soft-delete action so the removals tombstone and sync.
+            if (createdActivities.length > 0) {
+              for (const id of idsToClear) {
+                dispatch(deleteActivity(id));
+              }
+            }
             const scheduledDays = new Set(parsed.map(p => p.date)).size;
             resolve({
               createdActivities,

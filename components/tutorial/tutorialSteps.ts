@@ -63,9 +63,18 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'coach-tab',
     title: 'AI Coach',
     description:
-      'Ask the coach to create workouts, get exercise tips, or schedule activities using natural language.',
+      'Answer a few quick questions and the coach builds a personalized, multi-week plan around your goals, equipment, and schedule. Or just chat to add workouts, get exercise tips, and adjust your plan anytime.',
     targetId: 'coach-tab-button',
     navigateTo: { type: 'tab', screen: 'Coach' },
+    tooltipPosition: 'top',
+  },
+  {
+    id: 'settings',
+    title: 'Settings & Preferences',
+    description:
+      'Tap the profile icon to access settings. Customize your week start day, toggle dark mode, manage your account, or replay this tutorial.',
+    targetId: 'settings-tab-button',
+    navigateTo: { type: 'tab', screen: 'Weekly' },
     tooltipPosition: 'top',
   },
   {
@@ -85,15 +94,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     targetId: 'configure-equipment-link',
     navigateTo: { type: 'stack', screen: 'Calculator' },
     tooltipPosition: 'bottom',
-  },
-  {
-    id: 'settings',
-    title: 'Settings & Preferences',
-    description:
-      'Tap the profile icon to access settings. Customize your week start day, toggle dark mode, manage your account, or replay this tutorial.',
-    targetId: 'settings-tab-button',
-    navigateTo: { type: 'tab', screen: 'Weekly' },
-    tooltipPosition: 'top',
   },
   {
     id: 'auth',

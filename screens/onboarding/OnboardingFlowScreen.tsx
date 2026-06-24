@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -26,6 +26,7 @@ import { generateAndSchedulePlan } from '../../services/planGenerationService';
 import { useTheme } from '../../theme/ThemeContext';
 import {
   CoachProfile,
+  DEFAULT_PLAN_WEEKS,
   EQUIPMENT_LABELS,
   EQUIPMENT_PRESETS,
   Equipment,
@@ -35,16 +36,20 @@ import {
   Goal,
   MAX_DAYS_PER_WEEK,
   MIN_DAYS_PER_WEEK,
+  PLAN_WEEK_OPTIONS,
   SESSION_LENGTH_OPTIONS,
+  SEX_LABELS,
+  Sex,
 } from '../../types/coachProfile';
 
 type QuestionStep =
   | 'goals'
   | 'experience'
+  | 'sex'
   | 'days'
   | 'session'
+  | 'plan'
   | 'equipment'
-  | 'injuries'
   | 'refine';
 
 type Step =
@@ -58,10 +63,11 @@ type Step =
 const QUESTION_ORDER: QuestionStep[] = [
   'goals',
   'experience',
+  'sex',
   'days',
   'session',
+  'plan',
   'equipment',
-  'injuries',
   'refine',
 ];
 
@@ -79,6 +85,9 @@ const EXPERIENCE_DESCRIPTIONS: Record<ExperienceLevel, string> = {
   intermediate: 'Training consistently for 6+ months; know the main lifts.',
   advanced: 'Years of training; comfortable programming your own work.',
 };
+
+// Order shown in the optional sex step.
+const SEX_ORDER: Sex[] = ['female', 'male', 'unspecified'];
 
 const PICKABLE_EQUIPMENT: Equipment[] = [
   'barbell',
@@ -120,19 +129,31 @@ export default function OnboardingFlowScreen({
   const [experience, setExperience] = useState<ExperienceLevel | null>(
     coachProfile?.experience ?? null
   );
+  const [sex, setSex] = useState<Sex | null>(coachProfile?.sex ?? null);
   const [daysPerWeek, setDaysPerWeek] = useState<number>(
     coachProfile?.daysPerWeek ?? 4
   );
   const [sessionLengthMin, setSessionLengthMin] = useState<number>(
     coachProfile?.sessionLengthMin ?? 45
   );
+  const [planWeeks, setPlanWeeks] = useState<number>(
+    coachProfile?.planWeeks ?? DEFAULT_PLAN_WEEKS
+  );
+  const [startThisWeek, setStartThisWeek] = useState<boolean>(
+    coachProfile?.startThisWeek ?? true
+  );
   const [equipment, setEquipment] = useState<Equipment[] | null>(
     coachProfile?.equipment ?? null
   );
-  const [injuries, setInjuries] = useState<string>(
-    coachProfile?.injuries ?? ''
+  // Single free-text box at the end of the flow. Prefilled from any prior
+  // injuries + notes (older profiles stored them separately) so reconfigure
+  // doesn't drop what the user already wrote.
+  const [notes, setNotes] = useState<string>(
+    [coachProfile?.injuries, coachProfile?.notes]
+      .map(s => s?.trim())
+      .filter(Boolean)
+      .join('\n\n')
   );
-  const [notes, setNotes] = useState<string>(coachProfile?.notes ?? '');
 
   const [genError, setGenError] = useState<string | null>(null);
   const [partialNote, setPartialNote] = useState<string | null>(null);
@@ -158,10 +179,13 @@ export default function OnboardingFlowScreen({
   const buildProfile = (): CoachProfile => ({
     goals,
     experience: experience ?? 'intermediate',
+    sex: sex ?? undefined,
     daysPerWeek,
     sessionLengthMin,
+    planWeeks,
+    startThisWeek,
     equipment,
-    injuries: injuries.trim(),
+    injuries: '',
     preferredActivityTypes: [],
     notes: notes.trim() || undefined,
   });
@@ -193,6 +217,9 @@ export default function OnboardingFlowScreen({
       coachProfile: profile,
       activityContext,
       dispatch,
+      // Replace any prior coach plan (upcoming, not-yet-done) instead of
+      // stacking a second plan on top of it.
+      existingActivities: activities,
     });
     abortRef.current = abort;
 
@@ -339,21 +366,16 @@ export default function OnboardingFlowScreen({
               marginTop: 24,
             }}
           >
-            <View
+            <Text
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 12,
+                color: colors.text,
+                fontSize: 17,
+                fontWeight: '600',
+                marginBottom: 6,
               }}
             >
-              <ActivityIndicator color={colors.primary.main} />
-              <Text
-                style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}
-              >
-                Building your plan…
-              </Text>
-            </View>
+              Building your plan…
+            </Text>
             <Text
               style={{
                 color: colors.textSecondary,
@@ -362,9 +384,9 @@ export default function OnboardingFlowScreen({
                 marginBottom: 20,
               }}
             >
-              Matching exercises to your equipment and goals. This usually takes
-              under a minute.
+              This usually takes under a minute.
             </Text>
+            <GeneratingSteps />
             <SkipLink label="Cancel" onPress={cancelGeneration} />
           </View>
         </ScrollView>
@@ -590,6 +612,37 @@ export default function OnboardingFlowScreen({
           </>
         )}
 
+        {step === 'sex' && (
+          <>
+            <StepTitle
+              title="Anything I should know about your body?"
+              subtitle="Optional. I'll use this to fine-tune recovery, volume, and exercise emphasis. It changes nothing else."
+            />
+            {SEX_ORDER.map(option => (
+              <SelectCard
+                key={option}
+                label={SEX_LABELS[option]}
+                selected={sex === option}
+                onPress={() => setSex(option)}
+              />
+            ))}
+            <View style={{ marginTop: 10, gap: 12 }}>
+              <PrimaryButton
+                label="Continue"
+                icon="arrow-forward"
+                onPress={next}
+              />
+              <SkipLink
+                label="Skip — prefer not to say"
+                onPress={() => {
+                  setSex(null);
+                  next();
+                }}
+              />
+            </View>
+          </>
+        )}
+
         {step === 'days' && (
           <>
             <StepTitle
@@ -648,6 +701,55 @@ export default function OnboardingFlowScreen({
                 />
               ))}
             </View>
+            <View style={{ marginTop: 18 }}>
+              <PrimaryButton
+                label="Continue"
+                icon="arrow-forward"
+                onPress={next}
+              />
+            </View>
+          </>
+        )}
+
+        {step === 'plan' && (
+          <>
+            <StepTitle
+              title="How long should your plan run?"
+              subtitle="The plan repeats your weekly split for this many weeks. You can always extend it later."
+            />
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 28,
+              }}
+            >
+              {PLAN_WEEK_OPTIONS.map(w => (
+                <SelectChip
+                  key={w}
+                  label={`${w} weeks`}
+                  selected={planWeeks === w}
+                  onPress={() => setPlanWeeks(w)}
+                />
+              ))}
+            </View>
+            <StepTitle
+              title="When do you want to start?"
+              subtitle="Begin today so you have a workout right away, or start fresh on Monday."
+            />
+            <SelectCard
+              label="Start this week"
+              description="Adds a workout for today and builds the week around it."
+              selected={startThisWeek}
+              onPress={() => setStartThisWeek(true)}
+            />
+            <SelectCard
+              label="Start next Monday"
+              description="Your first workout lands at the start of next week."
+              selected={!startThisWeek}
+              onPress={() => setStartThisWeek(false)}
+            />
             <View style={{ marginTop: 18 }}>
               <PrimaryButton
                 label="Continue"
@@ -727,50 +829,29 @@ export default function OnboardingFlowScreen({
           </>
         )}
 
-        {step === 'injuries' && (
-          <>
-            <StepTitle
-              title="Anything I should work around?"
-              subtitle="I'll avoid movements that could aggravate these. Optional."
-            />
-            <OnboardingTextArea
-              value={injuries}
-              onChangeText={setInjuries}
-              placeholder="e.g. recovering from a knee sprain, avoid deep squats"
-            />
-            <View style={{ marginTop: 20, gap: 12 }}>
-              <PrimaryButton
-                label="Continue"
-                icon="arrow-forward"
-                onPress={next}
-              />
-              <SkipLink
-                label="Nothing to note — skip"
-                onPress={() => {
-                  setInjuries('');
-                  next();
-                }}
-              />
-            </View>
-          </>
-        )}
-
         {step === 'refine' && (
           <>
             <StepTitle
-              title="Anything else before I build it?"
-              subtitle="Tell me in your own words — preferences, a routine you like, days that don't work."
+              title="Anything else I should know?"
+              subtitle="Injuries to work around, preferences, a routine you like, days that don't work — tell me in your own words."
             />
             <OnboardingTextArea
               value={notes}
               onChangeText={setNotes}
-              placeholder="e.g. I'd love a longer session on Saturdays, and I really don't enjoy running"
+              placeholder="e.g. bad left knee so avoid deep squats, I'd love longer sessions on Saturdays, and I don't enjoy running"
             />
-            <View style={{ marginTop: 20 }}>
+            <View style={{ marginTop: 20, gap: 12 }}>
               <PrimaryButton
                 label="Review"
                 icon="arrow-forward"
                 onPress={() => setStep('review')}
+              />
+              <SkipLink
+                label="Nothing to add — skip"
+                onPress={() => {
+                  setNotes('');
+                  setStep('review');
+                }}
               />
             </View>
           </>
@@ -809,10 +890,24 @@ export default function OnboardingFlowScreen({
                 onPress={() => setStep('experience')}
               />
               <ReviewRow
+                icon="person"
+                label="Gender"
+                value={sex ? SEX_LABELS[sex] : 'Prefer not to say'}
+                onPress={() => setStep('sex')}
+              />
+              <ReviewRow
                 icon="calendar"
                 label="Schedule"
                 value={`${daysPerWeek} days / week · ${sessionLengthMin} min`}
                 onPress={() => setStep('days')}
+              />
+              <ReviewRow
+                icon="time"
+                label="Plan length"
+                value={`${planWeeks} weeks · starts ${
+                  startThisWeek ? 'this week' : 'next Monday'
+                }`}
+                onPress={() => setStep('plan')}
               />
               <ReviewRow
                 icon="barbell"
@@ -825,10 +920,10 @@ export default function OnboardingFlowScreen({
                 onPress={() => setStep('equipment')}
               />
               <ReviewRow
-                icon="shield-checkmark"
-                label="Work around"
-                value={injuries.trim() || 'None'}
-                onPress={() => setStep('injuries')}
+                icon="chatbubble-ellipses"
+                label="Anything else"
+                value={notes.trim() || 'None'}
+                onPress={() => setStep('refine')}
                 last
               />
             </View>
@@ -840,6 +935,90 @@ export default function OnboardingFlowScreen({
           </>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+// Cosmetic progress steps shown while the plan generates. They advance on a
+// timer (not tied to real backend stages) so a ~minute-long wait reads as
+// steady progress instead of a single frozen spinner. The list holds on the
+// last step until the parent swaps the screen to 'done'/'error'.
+const GENERATION_STEPS = [
+  'Reviewing your goals and equipment',
+  'Selecting exercises that fit',
+  'Balancing your weekly split',
+  'Scheduling it on your calendar',
+];
+
+const GENERATION_STEP_MS = 4500;
+
+function GeneratingSteps() {
+  const { colors } = useTheme();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (activeIndex >= GENERATION_STEPS.length - 1) return;
+    const timer = setTimeout(
+      () => setActiveIndex(i => Math.min(i + 1, GENERATION_STEPS.length - 1)),
+      GENERATION_STEP_MS
+    );
+    return () => clearTimeout(timer);
+  }, [activeIndex]);
+
+  return (
+    <View
+      style={{ gap: 16, marginBottom: 24 }}
+      accessibilityLiveRegion="polite"
+    >
+      {GENERATION_STEPS.map((label, i) => {
+        const done = i < activeIndex;
+        const current = i === activeIndex;
+        return (
+          <View
+            key={label}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+            accessibilityRole="text"
+            accessibilityLabel={`${label}${
+              done ? ', done' : current ? ', in progress' : ', pending'
+            }`}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {done ? (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color={colors.success.main}
+                />
+              ) : current ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              ) : (
+                <Ionicons
+                  name="ellipse-outline"
+                  size={20}
+                  color={colors.textTertiary}
+                />
+              )}
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 15,
+                color: done || current ? colors.text : colors.textTertiary,
+                fontWeight: current ? '600' : '400',
+              }}
+            >
+              {label}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }

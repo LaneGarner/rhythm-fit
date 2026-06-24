@@ -15,13 +15,25 @@ export type Equipment =
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 
+// Optional, self-reported. Used only to tailor recovery, volume, and exercise
+// emphasis in generated plans. 'unspecified' is the explicit "prefer not to
+// say" value and applies no sex-specific adjustments.
+export type Sex = 'female' | 'male' | 'unspecified';
+
 // The answers gathered during onboarding, used to generate and schedule a plan.
 // Persisted as one JSONB blob on profiles.coach_profile and cached locally.
 export interface CoachProfile {
   goals: string[];
   experience: ExperienceLevel;
+  // Optional. Omitted or 'unspecified' means no sex-specific tailoring.
+  sex?: Sex;
   daysPerWeek: number;
   sessionLengthMin: number;
+  // How many weeks the generated plan should span (the base week repeats).
+  planWeeks: number;
+  // When true, the plan is anchored to today (a workout lands today) instead of
+  // waiting for the upcoming Monday.
+  startThisWeek: boolean;
   // null means the equipment step was skipped: no filtering, anything is on the
   // table. An empty array would mean "no equipment selected" and is avoided.
   equipment: Equipment[] | null;
@@ -52,6 +64,12 @@ export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {
   beginner: 'Beginner',
   intermediate: 'Intermediate',
   advanced: 'Advanced',
+};
+
+export const SEX_LABELS: Record<Sex, string> = {
+  female: 'Female',
+  male: 'Male',
+  unspecified: 'Prefer not to say',
 };
 
 export const EQUIPMENT_LABELS: Record<Equipment, string> = {
@@ -118,6 +136,10 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
 
 // Session length options offered in onboarding (minutes).
 export const SESSION_LENGTH_OPTIONS = [30, 45, 60, 90];
+
+// Plan-length options offered in onboarding (weeks).
+export const PLAN_WEEK_OPTIONS = [2, 4, 6, 8];
+export const DEFAULT_PLAN_WEEKS = 4;
 
 // Days-per-week bounds offered in onboarding.
 export const MIN_DAYS_PER_WEEK = 2;
