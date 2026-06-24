@@ -1,4 +1,5 @@
 import { getApiEndpoint } from '../config/api';
+import { CoachProfile } from '../types/coachProfile';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -80,6 +81,8 @@ export function streamChatMessage(
     activityContext?: string;
     sessionId?: string;
     sessionTitle?: string;
+    mode?: 'plan';
+    coachProfile?: CoachProfile | null;
   }
 ): { abort: () => void } {
   const xhr = new XMLHttpRequest();
@@ -123,6 +126,8 @@ export function streamChatMessage(
       activityContext: options?.activityContext,
       sessionId: options?.sessionId,
       sessionTitle: options?.sessionTitle,
+      mode: options?.mode,
+      coachProfile: options?.coachProfile,
     })
   );
 
