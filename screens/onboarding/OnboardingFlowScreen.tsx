@@ -214,6 +214,9 @@ export default function OnboardingFlowScreen({
       coachProfile: profile,
       activityContext,
       dispatch,
+      // Replace any prior coach plan (upcoming, not-yet-done) instead of
+      // stacking a second plan on top of it.
+      existingActivities: activities,
     });
     abortRef.current = abort;
 

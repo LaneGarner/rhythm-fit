@@ -8,6 +8,15 @@ import { ParsedActivity, ParsedExercise, ParsedSetData } from './chatApi';
 // Shared activity-creation logic used by both the Coach chat and the onboarding
 // plan generator. Lifted verbatim from CoachScreen so there is one code path.
 
+// Marker stamped into the `notes` of every coach-scheduled activity. Used to
+// identify a previously generated plan so a regenerate can clear it.
+export const COACH_NOTE_MARKER = 'Created by AI coach';
+
+// True if an activity was scheduled by the AI coach (plan generator or chat).
+export function isCoachActivity(activity: { notes?: string }): boolean {
+  return Boolean(activity.notes?.includes(COACH_NOTE_MARKER));
+}
+
 export function generateDefaultSets(type: ActivityType): SetData[] {
   const count = type === 'weight-training' || type === 'calisthenics' ? 3 : 1;
   return Array.from({ length: count }, (_, i) => ({
@@ -118,8 +127,8 @@ export function createActivitiesFromRequest(
             completed: false,
             sets: generateSetsFromParsed(detail?.sets, request.type),
             notes: weekLabel
-              ? `${weekLabel} - Created by AI coach`
-              : 'Created by AI coach based on your request',
+              ? `${weekLabel} - ${COACH_NOTE_MARKER}`
+              : `${COACH_NOTE_MARKER} based on your request`,
           };
           dispatch(addActivity(activity));
           weekActivities.push(activity);
