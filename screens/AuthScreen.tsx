@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
@@ -11,15 +10,18 @@ import {
   Keyboard,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function AuthScreen() {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // Navigate to Main when user becomes authenticated
   useEffect(() => {
@@ -89,6 +91,33 @@ export default function AuthScreen() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!email) {
+      setError('Enter your email above to reset your password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error: resetError } = await resetPassword(email);
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setSuccessMessage(
+          'Check your email for a link to reset your password.'
+        );
+      }
+    } catch {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError(null);
@@ -104,17 +133,22 @@ export default function AuthScreen() {
       style={{ backgroundColor: colors.background }}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 48,
+        }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 justify-center px-8 py-12">
+        <View className="flex-1 justify-center px-8 py-8">
           {/* Logo/Title */}
-          <View className="items-center mb-12">
+          <View className="items-center mb-8">
             <View className="mb-2">
-              <Ionicons
-                name="barbell-outline"
-                size={56}
-                color={colors.primary.main}
+              <Image
+                source={require('../assets/icon.png')}
+                style={{ width: 88, height: 88, borderRadius: 20 }}
+                accessibilityLabel="Rhythm app icon"
               />
             </View>
             <Text className="text-3xl font-bold" style={{ color: colors.text }}>
@@ -178,6 +212,27 @@ export default function AuthScreen() {
                 onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
+
+            {isLogin && (
+              <TouchableOpacity
+                className="mt-2 self-end py-1"
+                onPress={handleForgotPassword}
+                disabled={isLoading}
+                hitSlop={14}
+                accessibilityRole="button"
+                accessibilityLabel="Forgot password"
+              >
+                <Text
+                  style={{
+                    color: colors.primary.main,
+                    fontSize: 13,
+                    fontWeight: '600',
+                  }}
+                >
+                  Forgot password?
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {!isLogin && (
               <View className="mt-4">
