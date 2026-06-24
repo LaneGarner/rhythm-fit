@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,6 +16,79 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
+
+type ThemeColors = ReturnType<typeof useTheme>['colors'];
+
+// Password input with a show/hide toggle. Defined at module scope (not inside
+// AuthScreen) so it isn't remounted on every render — remounting would drop the
+// keyboard/focus on each keystroke.
+function PasswordField({
+  colors,
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  visible,
+  onToggleVisible,
+  autoComplete,
+}: {
+  colors: ThemeColors;
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  visible: boolean;
+  onToggleVisible: () => void;
+  autoComplete: 'current-password' | 'new-password';
+}) {
+  return (
+    <View className="mt-4">
+      <Text className="text-sm font-medium mb-2" style={{ color: colors.text }}>
+        {label}
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.inputBackground,
+          borderRadius: 12,
+          paddingHorizontal: 16,
+        }}
+      >
+        <TextInput
+          style={{
+            flex: 1,
+            color: colors.text,
+            fontSize: 16,
+            paddingVertical: 14,
+          }}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSecondary}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          autoComplete={autoComplete}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
+        />
+        <TouchableOpacity
+          onPress={onToggleVisible}
+          hitSlop={14}
+          accessibilityRole="button"
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          style={{ paddingLeft: 12, paddingVertical: 8 }}
+        >
+          <Ionicons
+            name={visible ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function AuthScreen() {
   const { signIn, signUp, resetPassword, user } = useAuth();
@@ -39,6 +113,8 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -124,6 +200,8 @@ export default function AuthScreen() {
     setSuccessMessage(null);
     setPassword('');
     setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   return (
@@ -172,10 +250,13 @@ export default function AuthScreen() {
                 Email
               </Text>
               <TextInput
-                className="rounded-xl px-4 py-4 text-base"
                 style={{
                   backgroundColor: colors.inputBackground,
                   color: colors.text,
+                  fontSize: 16,
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
                 }}
                 placeholder="Enter your email"
                 placeholderTextColor={colors.textSecondary}
@@ -189,29 +270,16 @@ export default function AuthScreen() {
               />
             </View>
 
-            <View className="mt-4">
-              <Text
-                className="text-sm font-medium mb-2"
-                style={{ color: colors.text }}
-              >
-                Password
-              </Text>
-              <TextInput
-                className="rounded-xl px-4 py-4 text-base"
-                style={{
-                  backgroundColor: colors.inputBackground,
-                  color: colors.text,
-                }}
-                placeholder="Enter your password"
-                placeholderTextColor={colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-            </View>
+            <PasswordField
+              colors={colors}
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              visible={showPassword}
+              onToggleVisible={() => setShowPassword(v => !v)}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
+            />
 
             {isLogin && (
               <TouchableOpacity
@@ -235,29 +303,16 @@ export default function AuthScreen() {
             )}
 
             {!isLogin && (
-              <View className="mt-4">
-                <Text
-                  className="text-sm font-medium mb-2"
-                  style={{ color: colors.text }}
-                >
-                  Confirm Password
-                </Text>
-                <TextInput
-                  className="rounded-xl px-4 py-4 text-base"
-                  style={{
-                    backgroundColor: colors.inputBackground,
-                    color: colors.text,
-                  }}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={colors.textSecondary}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoComplete="new-password"
-                  returnKeyType="done"
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                />
-              </View>
+              <PasswordField
+                colors={colors}
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                visible={showConfirmPassword}
+                onToggleVisible={() => setShowConfirmPassword(v => !v)}
+                autoComplete="new-password"
+              />
             )}
 
             {/* Error Message */}
