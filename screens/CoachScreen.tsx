@@ -13,6 +13,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Alert,
   Animated,
@@ -166,6 +167,12 @@ export default function CoachScreen({ navigation, route }: any) {
     if (seed) setInputText(seed);
     setActiveTab('chat');
     setView('chat');
+    AccessibilityInfo.announceForAccessibility('Coach chat opened');
+  }, []);
+
+  const backToDashboard = useCallback(() => {
+    setView('dashboard');
+    AccessibilityInfo.announceForAccessibility('Returned to Coach dashboard');
   }, []);
 
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -884,62 +891,6 @@ export default function CoachScreen({ navigation, route }: any) {
     );
   }
 
-  // Dashboard | Chat switch. Rendered in its own full-width row below the
-  // header so it stays centered regardless of header actions (no shifting).
-  const renderSegmentRow = () => (
-    <View
-      style={{
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        alignItems: 'center',
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: colors.backgroundTertiary,
-          borderRadius: 8,
-          padding: 3,
-          width: 240,
-        }}
-      >
-        {(['dashboard', 'chat'] as const).map(v => {
-          const selected = view === v;
-          return (
-            <TouchableOpacity
-              key={v}
-              hitSlop={10}
-              onPress={() => setView(v)}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={v === 'dashboard' ? 'Dashboard' : 'Chat'}
-              style={{
-                flex: 1,
-                paddingVertical: 7,
-                borderRadius: 6,
-                backgroundColor: selected ? colors.surface : 'transparent',
-              }}
-            >
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: 14,
-                  fontWeight: selected ? '600' : '400',
-                  color: selected ? colors.text : colors.textSecondary,
-                }}
-              >
-                {v === 'dashboard' ? 'Dashboard' : 'Chat'}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   // Onboarding takes over the whole Coach surface.
   if (onboarding) {
     return (
@@ -968,10 +919,9 @@ export default function CoachScreen({ navigation, route }: any) {
   if (view === 'dashboard') {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
+        <AppHeader>
           <AppHeaderTitle title="Coach" />
         </AppHeader>
-        {renderSegmentRow()}
         <CoachDashboard
           hasProfile={Boolean(coachProfile) || hasCompletedOnboarding}
           onStartOnboarding={() => openOnboarding('welcome')}
@@ -998,6 +948,22 @@ export default function CoachScreen({ navigation, route }: any) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <AppHeader
+        leftAction={
+          <TouchableOpacity
+            onPress={backToDashboard}
+            hitSlop={14}
+            accessibilityLabel="Back to Dashboard"
+            accessibilityRole="button"
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+        }
         rightAction={
           <TouchableOpacity
             onPress={startNewChat}
@@ -1021,59 +987,41 @@ export default function CoachScreen({ navigation, route }: any) {
       >
         <AppHeaderTitle title="Coach" />
       </AppHeader>
-      {renderSegmentRow()}
 
-      {/* Tab Navigation */}
+      {/* Chat / History sub-navigation (underline style) */}
       <View
         className="flex-row border-b"
         style={{ borderBottomColor: colors.border }}
       >
-        <TouchableOpacity
-          hitSlop={14}
-          className={`flex-1 py-3 ${activeTab === 'chat' ? '' : ''}`}
-          style={{
-            backgroundColor:
-              activeTab === 'chat' ? colors.primary.main : 'transparent',
-            borderBottomWidth: activeTab === 'chat' ? 2 : 0,
-            borderBottomColor: colors.primary.main,
-          }}
-          onPress={() => setActiveTab('chat')}
-        >
-          <Text
-            className="text-center font-medium"
-            style={{
-              color:
-                activeTab === 'chat'
-                  ? colors.textInverse
-                  : colors.textSecondary,
-            }}
-          >
-            Chat
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          hitSlop={14}
-          className={`flex-1 py-3 ${activeTab === 'history' ? '' : ''}`}
-          style={{
-            backgroundColor:
-              activeTab === 'history' ? colors.primary.main : 'transparent',
-            borderBottomWidth: activeTab === 'history' ? 2 : 0,
-            borderBottomColor: colors.primary.main,
-          }}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text
-            className="text-center font-medium"
-            style={{
-              color:
-                activeTab === 'history'
-                  ? colors.textInverse
-                  : colors.textSecondary,
-            }}
-          >
-            History
-          </Text>
-        </TouchableOpacity>
+        {(['chat', 'history'] as const).map(tab => {
+          const selected = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              hitSlop={14}
+              className="flex-1 py-3"
+              style={{
+                borderBottomWidth: 2,
+                borderBottomColor: selected
+                  ? colors.primary.main
+                  : 'transparent',
+              }}
+              onPress={() => setActiveTab(tab)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              accessibilityLabel={tab === 'chat' ? 'Chat' : 'History'}
+            >
+              <Text
+                className="text-center font-medium"
+                style={{
+                  color: selected ? colors.primary.main : colors.textSecondary,
+                }}
+              >
+                {tab === 'chat' ? 'Chat' : 'History'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {activeTab === 'chat' ? (

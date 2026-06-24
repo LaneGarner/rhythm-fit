@@ -221,27 +221,30 @@ export default function CoachDashboard({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         <QuickAction
           label="Regenerate"
+          description="Build a fresh plan from your profile."
           icon="refresh"
           colors={colors}
           onPress={onRegenerate}
         />
         <QuickAction
           label="Reschedule"
+          description="Shift this week's workouts to other days."
           icon="calendar"
           colors={colors}
           onPress={onReschedule}
         />
         <QuickAction
           label="Reconfigure"
+          description="Update your goals, equipment, or schedule."
           icon="options"
           colors={colors}
           onPress={onReconfigure}
         />
         <QuickAction
           label="Ask coach"
+          description="Chat for tips or one-off changes."
           icon="chatbubble-ellipses"
           colors={colors}
-          highlight
           onPress={() => onOpenChat()}
         />
       </View>
@@ -383,50 +386,61 @@ function TipRow({
 
 function QuickAction({
   label,
+  description,
   icon,
   colors,
   onPress,
-  highlight,
 }: {
   label: string;
+  description: string;
   icon: keyof typeof Ionicons.glyphMap;
   colors: ReturnType<typeof useTheme>['colors'];
   onPress: () => void;
-  highlight?: boolean;
 }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       hitSlop={HIT_SLOP}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={`${label}. ${description}`}
       style={{
         flexBasis: '47%',
         flexGrow: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
         padding: 14,
         minHeight: 48,
         borderRadius: 10,
-        backgroundColor: highlight ? colors.primary.background : colors.surface,
+        backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: highlight ? colors.primary.main : colors.border,
+        borderColor: colors.border,
       }}
     >
-      <Ionicons
-        name={icon}
-        size={18}
-        color={highlight ? colors.primary.main : colors.text}
-      />
-      <Text
+      <View
         style={{
-          color: highlight ? colors.primary.main : colors.text,
-          fontSize: 13,
-          fontWeight: '600',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 6,
         }}
       >
-        {label}
+        <Ionicons name={icon} size={18} color={colors.text} />
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: 13,
+            fontWeight: '600',
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+      <Text
+        style={{
+          color: colors.textSecondary,
+          fontSize: 12,
+          lineHeight: 16,
+        }}
+      >
+        {description}
       </Text>
     </TouchableOpacity>
   );

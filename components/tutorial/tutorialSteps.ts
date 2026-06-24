@@ -63,7 +63,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'coach-tab',
     title: 'AI Coach',
     description:
-      'Answer a few quick questions and the coach builds a full plan around your goals, equipment, and schedule — pick how many weeks it runs and start today or next Monday. You can also just chat to add workouts or get tips anytime.',
+      'Answer a few quick questions and the coach builds a personalized, multi-week plan around your goals, equipment, and schedule. Or just chat to add workouts, get exercise tips, and adjust your plan anytime.',
     targetId: 'coach-tab-button',
     navigateTo: { type: 'tab', screen: 'Coach' },
     tooltipPosition: 'top',
