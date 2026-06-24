@@ -34,26 +34,35 @@ export function StepHeader({
       >
         <Ionicons name="chevron-back" size={26} color={colors.text} />
       </TouchableOpacity>
-      <View
-        style={{ flexDirection: 'row', gap: 5 }}
-        accessibilityRole="progressbar"
-        accessibilityLabel={`Step ${step} of ${total}`}
-      >
-        {Array.from({ length: total }, (_, i) => (
+      {/* Step dots + counter only make sense for numbered steps. Screens that
+          reuse this header just for the back affordance pass total={0}. */}
+      {total > 0 && (
+        <>
           <View
-            key={i}
-            style={{
-              width: 18,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: i < step ? colors.text : colors.borderSecondary,
-            }}
-          />
-        ))}
-      </View>
-      <Text style={{ color: colors.textTertiary, fontSize: 13, minWidth: 32 }}>
-        {step}/{total}
-      </Text>
+            style={{ flexDirection: 'row', gap: 5 }}
+            accessibilityRole="progressbar"
+            accessibilityLabel={`Step ${step} of ${total}`}
+          >
+            {Array.from({ length: total }, (_, i) => (
+              <View
+                key={i}
+                style={{
+                  width: 18,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor:
+                    i < step ? colors.text : colors.borderSecondary,
+                }}
+              />
+            ))}
+          </View>
+          <Text
+            style={{ color: colors.textTertiary, fontSize: 13, minWidth: 32 }}
+          >
+            {step}/{total}
+          </Text>
+        </>
+      )}
     </View>
   );
 }

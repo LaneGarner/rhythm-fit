@@ -884,7 +884,7 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
-          <AppHeaderTitle title="Coach" />
+          <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>
       </View>
@@ -896,13 +896,15 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
-          <AppHeaderTitle title="Your coach" />
+          <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <OnboardingFlowScreen
           initialStep={onboardingStart}
           onComplete={() => {
             setOnboarding(false);
             setView('dashboard');
+            // Drop the user onto their calendar to see the freshly built plan.
+            navigation.navigate('Weekly', { screen: 'WeeklyHome' });
           }}
           onDismiss={() => {
             // "Maybe later": don't re-ambush on next launch.
@@ -920,7 +922,7 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
-          <AppHeaderTitle title="Coach" />
+          <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <CoachDashboard
           hasProfile={Boolean(coachProfile) || hasCompletedOnboarding}
@@ -985,7 +987,7 @@ export default function CoachScreen({ navigation, route }: any) {
           </TouchableOpacity>
         }
       >
-        <AppHeaderTitle title="Coach" />
+        <AppHeaderTitle title="AI Coach" />
       </AppHeader>
 
       {/* Chat / History sub-navigation (underline style) */}

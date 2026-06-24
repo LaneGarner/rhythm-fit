@@ -50,7 +50,6 @@ type QuestionStep =
   | 'session'
   | 'plan'
   | 'equipment'
-  | 'injuries'
   | 'refine';
 
 type Step =
@@ -69,7 +68,6 @@ const QUESTION_ORDER: QuestionStep[] = [
   'session',
   'plan',
   'equipment',
-  'injuries',
   'refine',
 ];
 
@@ -147,10 +145,15 @@ export default function OnboardingFlowScreen({
   const [equipment, setEquipment] = useState<Equipment[] | null>(
     coachProfile?.equipment ?? null
   );
-  const [injuries, setInjuries] = useState<string>(
-    coachProfile?.injuries ?? ''
+  // Single free-text box at the end of the flow. Prefilled from any prior
+  // injuries + notes (older profiles stored them separately) so reconfigure
+  // doesn't drop what the user already wrote.
+  const [notes, setNotes] = useState<string>(
+    [coachProfile?.injuries, coachProfile?.notes]
+      .map(s => s?.trim())
+      .filter(Boolean)
+      .join('\n\n')
   );
-  const [notes, setNotes] = useState<string>(coachProfile?.notes ?? '');
 
   const [genError, setGenError] = useState<string | null>(null);
   const [partialNote, setPartialNote] = useState<string | null>(null);
@@ -182,7 +185,7 @@ export default function OnboardingFlowScreen({
     planWeeks,
     startThisWeek,
     equipment,
-    injuries: injuries.trim(),
+    injuries: '',
     preferredActivityTypes: [],
     notes: notes.trim() || undefined,
   });
@@ -826,50 +829,29 @@ export default function OnboardingFlowScreen({
           </>
         )}
 
-        {step === 'injuries' && (
-          <>
-            <StepTitle
-              title="Anything I should work around?"
-              subtitle="I'll avoid movements that could aggravate these. Optional."
-            />
-            <OnboardingTextArea
-              value={injuries}
-              onChangeText={setInjuries}
-              placeholder="e.g. recovering from a knee sprain, avoid deep squats"
-            />
-            <View style={{ marginTop: 20, gap: 12 }}>
-              <PrimaryButton
-                label="Continue"
-                icon="arrow-forward"
-                onPress={next}
-              />
-              <SkipLink
-                label="Nothing to note — skip"
-                onPress={() => {
-                  setInjuries('');
-                  next();
-                }}
-              />
-            </View>
-          </>
-        )}
-
         {step === 'refine' && (
           <>
             <StepTitle
-              title="Anything else before I build it?"
-              subtitle="Tell me in your own words — preferences, a routine you like, days that don't work."
+              title="Anything else I should know?"
+              subtitle="Injuries to work around, preferences, a routine you like, days that don't work — tell me in your own words."
             />
             <OnboardingTextArea
               value={notes}
               onChangeText={setNotes}
-              placeholder="e.g. I'd love a longer session on Saturdays, and I really don't enjoy running"
+              placeholder="e.g. bad left knee so avoid deep squats, I'd love longer sessions on Saturdays, and I don't enjoy running"
             />
-            <View style={{ marginTop: 20 }}>
+            <View style={{ marginTop: 20, gap: 12 }}>
               <PrimaryButton
                 label="Review"
                 icon="arrow-forward"
                 onPress={() => setStep('review')}
+              />
+              <SkipLink
+                label="Nothing to add — skip"
+                onPress={() => {
+                  setNotes('');
+                  setStep('review');
+                }}
               />
             </View>
           </>
@@ -909,7 +891,7 @@ export default function OnboardingFlowScreen({
               />
               <ReviewRow
                 icon="person"
-                label="Sex"
+                label="Gender"
                 value={sex ? SEX_LABELS[sex] : 'Prefer not to say'}
                 onPress={() => setStep('sex')}
               />
@@ -938,10 +920,10 @@ export default function OnboardingFlowScreen({
                 onPress={() => setStep('equipment')}
               />
               <ReviewRow
-                icon="shield-checkmark"
-                label="Work around"
-                value={injuries.trim() || 'None'}
-                onPress={() => setStep('injuries')}
+                icon="chatbubble-ellipses"
+                label="Anything else"
+                value={notes.trim() || 'None'}
+                onPress={() => setStep('refine')}
                 last
               />
             </View>
