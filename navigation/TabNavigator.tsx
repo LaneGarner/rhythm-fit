@@ -154,7 +154,7 @@ export default function TabNavigator() {
           tabBarLabel: 'Coach',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'chatbubble' : 'chatbubble-outline'}
+              name={focused ? 'trophy' : 'trophy-outline'}
               size={26}
               color={color}
             />
@@ -171,7 +171,7 @@ export default function TabNavigator() {
           tabBarLabel: 'Settings',
           tabBarAccessibilityLabel: 'Settings & Preferences',
           tabBarIcon: ({ color }) => (
-            <Ionicons name="person-circle-outline" size={26} color={color} />
+            <Ionicons name="menu-outline" size={28} color={color} />
           ),
           tabBarButton: props => (
             <CustomTabBarButton {...props} targetId="settings-tab-button" />
