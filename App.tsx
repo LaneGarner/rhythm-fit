@@ -20,6 +20,9 @@ import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TimerProvider } from './context/TimerContext';
 import { PreferencesProvider } from './context/PreferencesContext';
+import { CoachProfileProvider } from './context/CoachProfileContext';
+import { EntitlementProvider } from './context/EntitlementContext';
+import { useOnboardingRedirect } from './hooks/useOnboardingRedirect';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { useNotificationScheduler } from './hooks/useNotificationScheduler';
 import { useOrientationLock } from './hooks/useOrientationLock';
@@ -36,6 +39,7 @@ configureNotificationHandler();
 import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
 import ActivityScreen from './screens/ActivityScreen';
 import AuthScreen from './screens/AuthScreen';
+import CalculatorScreen from './screens/CalculatorScreen';
 import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
 import EditActivityScreen from './screens/EditActivityScreen';
 import EquipmentScreen from './screens/EquipmentScreen';
@@ -59,6 +63,7 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   ActivityLibrary: undefined;
   Equipment: undefined;
+  Calculator: undefined;
   ExerciseStats: { exerciseName: string };
   PersonalRecords: undefined;
 };
@@ -73,6 +78,7 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
   const { user, getAccessToken } = useAuth();
 
   useNotificationScheduler();
+  useOnboardingRedirect(navigationRef);
 
   // Register Expo push token with backend once the user is authenticated and
   // notification permission is granted.
@@ -167,6 +173,7 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
             component={ActivityLibraryScreen}
           />
           <Stack.Screen name="Equipment" component={EquipmentScreen} />
+          <Stack.Screen name="Calculator" component={CalculatorScreen} />
           <Stack.Screen name="ExerciseStats" component={ExerciseStatsScreen} />
           <Stack.Screen
             name="PersonalRecords"
@@ -208,11 +215,15 @@ export default function App() {
           <ThemeProvider>
             <AuthProvider>
               <PreferencesProvider>
-                <TimerProvider>
-                  <WeekProvider>
-                    <AppInitializer />
-                  </WeekProvider>
-                </TimerProvider>
+                <CoachProfileProvider>
+                  <EntitlementProvider>
+                    <TimerProvider>
+                      <WeekProvider>
+                        <AppInitializer />
+                      </WeekProvider>
+                    </TimerProvider>
+                  </EntitlementProvider>
+                </CoachProfileProvider>
               </PreferencesProvider>
             </AuthProvider>
           </ThemeProvider>
