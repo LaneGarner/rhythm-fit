@@ -265,6 +265,7 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
+                textContentType="emailAddress"
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
               />
