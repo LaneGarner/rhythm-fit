@@ -26,6 +26,7 @@ import { generateAndSchedulePlan } from '../../services/planGenerationService';
 import { useTheme } from '../../theme/ThemeContext';
 import {
   CoachProfile,
+  DEFAULT_PLAN_WEEKS,
   EQUIPMENT_LABELS,
   EQUIPMENT_PRESETS,
   Equipment,
@@ -35,6 +36,7 @@ import {
   Goal,
   MAX_DAYS_PER_WEEK,
   MIN_DAYS_PER_WEEK,
+  PLAN_WEEK_OPTIONS,
   SESSION_LENGTH_OPTIONS,
   SEX_LABELS,
   Sex,
@@ -46,6 +48,7 @@ type QuestionStep =
   | 'sex'
   | 'days'
   | 'session'
+  | 'plan'
   | 'equipment'
   | 'injuries'
   | 'refine';
@@ -64,6 +67,7 @@ const QUESTION_ORDER: QuestionStep[] = [
   'sex',
   'days',
   'session',
+  'plan',
   'equipment',
   'injuries',
   'refine',
@@ -134,6 +138,12 @@ export default function OnboardingFlowScreen({
   const [sessionLengthMin, setSessionLengthMin] = useState<number>(
     coachProfile?.sessionLengthMin ?? 45
   );
+  const [planWeeks, setPlanWeeks] = useState<number>(
+    coachProfile?.planWeeks ?? DEFAULT_PLAN_WEEKS
+  );
+  const [startThisWeek, setStartThisWeek] = useState<boolean>(
+    coachProfile?.startThisWeek ?? true
+  );
   const [equipment, setEquipment] = useState<Equipment[] | null>(
     coachProfile?.equipment ?? null
   );
@@ -169,6 +179,8 @@ export default function OnboardingFlowScreen({
     sex: sex ?? undefined,
     daysPerWeek,
     sessionLengthMin,
+    planWeeks,
+    startThisWeek,
     equipment,
     injuries: injuries.trim(),
     preferredActivityTypes: [],
@@ -698,6 +710,55 @@ export default function OnboardingFlowScreen({
           </>
         )}
 
+        {step === 'plan' && (
+          <>
+            <StepTitle
+              title="How long should your plan run?"
+              subtitle="The plan repeats your weekly split for this many weeks. You can always extend it later."
+            />
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 28,
+              }}
+            >
+              {PLAN_WEEK_OPTIONS.map(w => (
+                <SelectChip
+                  key={w}
+                  label={`${w} weeks`}
+                  selected={planWeeks === w}
+                  onPress={() => setPlanWeeks(w)}
+                />
+              ))}
+            </View>
+            <StepTitle
+              title="When do you want to start?"
+              subtitle="Begin today so you have a workout right away, or start fresh on Monday."
+            />
+            <SelectCard
+              label="Start this week"
+              description="Adds a workout for today and builds the week around it."
+              selected={startThisWeek}
+              onPress={() => setStartThisWeek(true)}
+            />
+            <SelectCard
+              label="Start next Monday"
+              description="Your first workout lands at the start of next week."
+              selected={!startThisWeek}
+              onPress={() => setStartThisWeek(false)}
+            />
+            <View style={{ marginTop: 18 }}>
+              <PrimaryButton
+                label="Continue"
+                icon="arrow-forward"
+                onPress={next}
+              />
+            </View>
+          </>
+        )}
+
         {step === 'equipment' && (
           <>
             <StepTitle
@@ -859,6 +920,14 @@ export default function OnboardingFlowScreen({
                 label="Schedule"
                 value={`${daysPerWeek} days / week · ${sessionLengthMin} min`}
                 onPress={() => setStep('days')}
+              />
+              <ReviewRow
+                icon="time"
+                label="Plan length"
+                value={`${planWeeks} weeks · starts ${
+                  startThisWeek ? 'this week' : 'next Monday'
+                }`}
+                onPress={() => setStep('plan')}
               />
               <ReviewRow
                 icon="barbell"
