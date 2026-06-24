@@ -155,7 +155,11 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
             headerShown: false,
           }}
         >
-          <Stack.Screen name="Auth" component={AuthScreen} />
+          {/* Auth screen is only part of the stack while signed out. Once the
+              user is authenticated it is removed entirely, so the login screen
+              can't be reached again (e.g. via the swipe-back gesture) until
+              they explicitly sign out. */}
+          {!user && <Stack.Screen name="Auth" component={AuthScreen} />}
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="Activity" component={ActivityScreen} />
           <Stack.Screen

@@ -79,6 +79,22 @@ export default function SettingsScreen({ navigation }: any) {
     }, 100);
   };
 
+  // The Auth screen is only registered in the navigator while signed out, so
+  // we can't reset to it synchronously right after signOut() — `user` only
+  // flips to null on the next render. Flag the intent here and let the effect
+  // below navigate once the Auth screen is actually back in the stack.
+  const pendingSignOutRef = useRef(false);
+
+  useEffect(() => {
+    if (pendingSignOutRef.current && !user) {
+      pendingSignOutRef.current = false;
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    }
+  }, [user, navigation]);
+
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -89,11 +105,8 @@ export default function SettingsScreen({ navigation }: any) {
           await clearUserData();
           await clearSyncData();
           dispatch(clearAllActivities());
+          pendingSignOutRef.current = true;
           await signOut();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Auth' }],
-          });
         },
       },
     ]);
