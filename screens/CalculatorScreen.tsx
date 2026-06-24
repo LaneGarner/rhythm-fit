@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
+import HeaderButton from '../components/HeaderButton';
 import PlateIcon from '../components/PlateIcon';
 import { useTutorial } from '../components/tutorial';
 import {
@@ -183,7 +184,11 @@ export default function CalculatorScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <AppHeader>
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
+      >
         <AppHeaderTitle
           title="Weight Calculator"
           subtitle={

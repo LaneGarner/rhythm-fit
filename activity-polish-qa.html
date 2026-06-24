@@ -29,8 +29,13 @@
         background: var(--bg);
         color: var(--ink);
         font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
         line-height: 1.55;
       }
 
@@ -166,8 +171,8 @@
         background: #eef2f7;
         border-radius: 6px;
         padding: 2px 6px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-          monospace;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.92em;
       }
 
@@ -228,19 +233,19 @@
         outline-offset: 2px;
       }
 
-      .qa-btn.is-pass[aria-pressed="true"] {
+      .qa-btn.is-pass[aria-pressed='true'] {
         background: #e7f6ec;
         border-color: var(--success);
         color: var(--success);
       }
 
-      .qa-btn.is-fail[aria-pressed="true"] {
+      .qa-btn.is-fail[aria-pressed='true'] {
         background: #fdeaea;
         border-color: var(--danger);
         color: var(--danger);
       }
 
-      .qa-btn.is-note[aria-pressed="true"] {
+      .qa-btn.is-note[aria-pressed='true'] {
         background: var(--accent-soft);
         border-color: var(--accent);
         color: var(--accent);
@@ -258,8 +263,7 @@
         border: 1px solid var(--line);
         border-radius: var(--radius);
         padding: 8px 10px;
-        font:
-          inherit;
+        font: inherit;
         font-size: 0.92rem;
         color: var(--ink);
         background: white;
@@ -341,11 +345,16 @@
           </div>
           <div class="principle">
             <strong>Signifiers</strong>
-            <p>Names, type labels, counts, and status text replace decorative activity glyphs.</p>
+            <p>
+              Names, type labels, counts, and status text replace decorative
+              activity glyphs.
+            </p>
           </div>
           <div class="principle">
             <strong>Feedback</strong>
-            <p>Completed sets use stronger color, borders, and explicit labels.</p>
+            <p>
+              Completed sets use stronger color, borders, and explicit labels.
+            </p>
           </div>
           <div class="principle">
             <strong>Mapping</strong>
@@ -353,11 +362,16 @@
           </div>
           <div class="principle">
             <strong>Constraints</strong>
-            <p>Rest auto-start requires both global and per-activity enablement.</p>
+            <p>
+              Rest auto-start requires both global and per-activity enablement.
+            </p>
           </div>
           <div class="principle">
             <strong>Error Prevention</strong>
-            <p>Superset unlink asks for confirmation and preserves existing workout data.</p>
+            <p>
+              Superset unlink asks for confirmation and preserves existing
+              workout data.
+            </p>
           </div>
         </div>
       </section>
@@ -383,51 +397,132 @@
           <tbody>
             <tr>
               <td>Activity library scrolling</td>
-              <td>Full list reachability without secondary "show more" state. Scroll container now matches the proven app pattern and the floating add button no longer intercepts touches.</td>
-              <td>Create or seed 15+ custom activities. Open Settings -> Activity Library. Scroll all the way to the bottom on small and large devices, including the area near the floating add button.</td>
-              <td>The list scrolls smoothly to the last row every time; the floating add button neither blocks scrolling nor covers the final rows.</td>
+              <td>
+                Full list reachability without secondary "show more" state.
+                Scroll container now matches the proven app pattern and the
+                floating add button no longer intercepts touches.
+              </td>
+              <td>
+                Create or seed 15+ custom activities. Open Settings -> Activity
+                Library. Scroll all the way to the bottom on small and large
+                devices, including the area near the floating add button.
+              </td>
+              <td>
+                The list scrolls smoothly to the last row every time; the
+                floating add button neither blocks scrolling nor covers the
+                final rows.
+              </td>
             </tr>
             <tr>
               <td>Activity icons removed</td>
-              <td>Names and type labels become the conceptual model for identity.</td>
-              <td>Review library, weekly/day lists, create/edit forms, execution headers, supersets, and share preview cards.</td>
-              <td>No activity-type glyphs appear. Functional icons like check, menu, trash, arrows, and plate calculator remain.</td>
+              <td>
+                Names and type labels become the conceptual model for identity.
+              </td>
+              <td>
+                Review library, weekly/day lists, create/edit forms, execution
+                headers, supersets, and share preview cards.
+              </td>
+              <td>
+                No activity-type glyphs appear. Functional icons like check,
+                menu, trash, arrows, and plate calculator remain.
+              </td>
             </tr>
             <tr>
               <td>Superset set duplication (long press)</td>
-              <td>Superset sets get the same options affordance as regular sets, opened the same way.</td>
-              <td>Open a superset. Long-press a set card (or tap its ⋮ button) and choose Duplicate. Try the same with Delete.</td>
-              <td>Long-press opens the set options sheet including Duplicate; only that exercise gets a copied (incomplete) set inserted right after the source, with matching field values.</td>
+              <td>
+                Superset sets get the same options affordance as regular sets,
+                opened the same way.
+              </td>
+              <td>
+                Open a superset. Long-press a set card (or tap its ⋮ button) and
+                choose Duplicate. Try the same with Delete.
+              </td>
+              <td>
+                Long-press opens the set options sheet including Duplicate; only
+                that exercise gets a copied (incomplete) set inserted right
+                after the source, with matching field values.
+              </td>
             </tr>
             <tr>
               <td>Wheel reps and weight everywhere</td>
-              <td>Fast, bounded picking for numeric fields in every place weight/reps are entered — no raw text boxes — using themed controls.</td>
-              <td>Open the wheel in: regular execution, superset execution cards, and the new/edit activity form. Pick several reps and weight values. Check the modal's Cancel/Done button color.</td>
-              <td>Reps step by 1, weight by 5, in all three places. Distance stays decimal input; time stays duration picker; plate calculator still opens. The wheel modal Cancel/Done use the app theme color (no off-theme blue).</td>
+              <td>
+                Fast, bounded picking for numeric fields in every place
+                weight/reps are entered — no raw text boxes — using themed
+                controls.
+              </td>
+              <td>
+                Open the wheel in: regular execution, superset execution cards,
+                and the new/edit activity form. Pick several reps and weight
+                values. Check the modal's Cancel/Done button color.
+              </td>
+              <td>
+                Reps step by 1, weight by 5, in all three places. Distance stays
+                decimal input; time stays duration picker; plate calculator
+                still opens. The wheel modal Cancel/Done use the app theme color
+                (no off-theme blue).
+              </td>
             </tr>
             <tr>
               <td>Auto rest countdown in timer dropdown</td>
-              <td>The per-activity auto rest control is subtle and lives with the other timer controls, on both regular and superset screens.</td>
-              <td>Open the Timer dropdown in regular execution and in a superset. Toggle "Auto rest countdown" with global auto rest on, then off. Complete a set with it on.</td>
-              <td>The toggle appears inside the expanded Timer on both screens (no separate big card). With it on, the rest countdown auto-starts after a completed set; when global auto rest is off it is disabled with a hint. Manual timer controls remain usable.</td>
+              <td>
+                The per-activity auto rest control is subtle and lives with the
+                other timer controls, on both regular and superset screens.
+              </td>
+              <td>
+                Open the Timer dropdown in regular execution and in a superset.
+                Toggle "Auto rest countdown" with global auto rest on, then off.
+                Complete a set with it on.
+              </td>
+              <td>
+                The toggle appears inside the expanded Timer on both screens (no
+                separate big card). With it on, the rest countdown auto-starts
+                after a completed set; when global auto rest is off it is
+                disabled with a hint. Manual timer controls remain usable.
+              </td>
             </tr>
             <tr>
               <td>Superset auto rest (single toggle)</td>
-              <td>One superset-wide switch controls auto rest for the whole group — no confusing per-activity gating.</td>
-              <td>Open a superset's Timer dropdown. Toggle "Auto rest countdown" off, complete a round (no auto rest). Toggle on, complete a round.</td>
-              <td>The single toggle sets rest enablement for every activity in the superset at once. Off = no auto rest starts; On (with global auto rest on) = rest countdown starts after a completed round.</td>
+              <td>
+                One superset-wide switch controls auto rest for the whole group
+                — no confusing per-activity gating.
+              </td>
+              <td>
+                Open a superset's Timer dropdown. Toggle "Auto rest countdown"
+                off, complete a round (no auto rest). Toggle on, complete a
+                round.
+              </td>
+              <td>
+                The single toggle sets rest enablement for every activity in the
+                superset at once. Off = no auto rest starts; On (with global
+                auto rest on) = rest countdown starts after a completed round.
+              </td>
             </tr>
             <tr>
               <td>Superset visual cleanup</td>
-              <td>Superset execution cards should feel like regular execution cards.</td>
-              <td>Open a superset execution flow and compare card styling to regular activity execution.</td>
-              <td>Cards use neutral card styling without blue rails; connectors are neutral.</td>
+              <td>
+                Superset execution cards should feel like regular execution
+                cards.
+              </td>
+              <td>
+                Open a superset execution flow and compare card styling to
+                regular activity execution.
+              </td>
+              <td>
+                Cards use neutral card styling without blue rails; connectors
+                are neutral.
+              </td>
             </tr>
             <tr>
               <td>Completion feedback</td>
-              <td>Progress should be visible without interpreting color alone.</td>
+              <td>
+                Progress should be visible without interpreting color alone.
+              </td>
               <td>Complete sets one by one in regular activity execution.</td>
-              <td>The header shows x of y sets complete. Completed sets have success styling and status text. All sets complete shows an Activity Complete banner.</td>
+              <td>
+                The header shows x of y sets complete. Completed sets have
+                success styling and status text. All sets complete shows an
+                Activity Complete banner.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -451,7 +546,10 @@
               <li>Start a short manual countdown while the app is open.</li>
               <li>Wait for completion.</li>
             </ol>
-            <p><strong>Expected:</strong> in-app timer feedback appears; foreground banner may be suppressed by design.</p>
+            <p>
+              <strong>Expected:</strong> in-app timer feedback appears;
+              foreground banner may be suppressed by design.
+            </p>
           </div>
           <div class="qa-card">
             <h3>Background</h3>
@@ -460,17 +558,26 @@
               <li>Send the app to background.</li>
               <li>Wait for completion.</li>
             </ol>
-            <p><strong>Expected:</strong> local notification appears with sound if permissions and OS settings allow it.</p>
+            <p>
+              <strong>Expected:</strong> local notification appears with sound
+              if permissions and OS settings allow it.
+            </p>
           </div>
           <div class="qa-card">
             <h3>iOS Lock Screen</h3>
             <ol>
               <li>Use a physical iPhone, not Simulator.</li>
-              <li>Confirm iOS Settings -> Rhythm -> Notifications allows Lock Screen, Banners, and Sounds.</li>
+              <li>
+                Confirm iOS Settings -> Rhythm -> Notifications allows Lock
+                Screen, Banners, and Sounds.
+              </li>
               <li>Disable Focus modes that silence the app.</li>
               <li>Start an auto-rest countdown, lock the phone, and wait.</li>
             </ol>
-            <p><strong>Expected:</strong> "Rest complete" notification is delivered on the lock screen when iOS permits delivery.</p>
+            <p>
+              <strong>Expected:</strong> "Rest complete" notification is
+              delivered on the lock screen when iOS permits delivery.
+            </p>
           </div>
         </div>
         <table>
@@ -483,23 +590,38 @@
           <tbody>
             <tr>
               <td>Permissions</td>
-              <td>Notifications, lock-screen display, and sounds must be granted at OS level.</td>
+              <td>
+                Notifications, lock-screen display, and sounds must be granted
+                at OS level.
+              </td>
             </tr>
             <tr>
               <td>Focus / Do Not Disturb</td>
-              <td>Focus can delay or hide active notifications unless the app is allowed.</td>
+              <td>
+                Focus can delay or hide active notifications unless the app is
+                allowed.
+              </td>
             </tr>
             <tr>
               <td>Silent mode and volume</td>
-              <td>Local notification sound behavior depends on iOS sound settings; in-app audio uses the app audio mode.</td>
+              <td>
+                Local notification sound behavior depends on iOS sound settings;
+                in-app audio uses the app audio mode.
+              </td>
             </tr>
             <tr>
               <td>Expo Go</td>
-              <td>Use a development or production build for reliable notification validation.</td>
+              <td>
+                Use a development or production build for reliable notification
+                validation.
+              </td>
             </tr>
             <tr>
               <td>Android exactness</td>
-              <td>Android may apply timing variance without exact alarm privileges on some devices.</td>
+              <td>
+                Android may apply timing variance without exact alarm privileges
+                on some devices.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -511,17 +633,29 @@
           <div class="qa-card">
             <h3>Data Integrity</h3>
             <ul>
-              <li>Duplicate regular and superset sets; verify copied values.</li>
-              <li>Unlink a superset; verify activities keep original dates, sets, order, and completion.</li>
-              <li>Edit reps/weight; leave and reopen activity; verify persistence.</li>
+              <li>
+                Duplicate regular and superset sets; verify copied values.
+              </li>
+              <li>
+                Unlink a superset; verify activities keep original dates, sets,
+                order, and completion.
+              </li>
+              <li>
+                Edit reps/weight; leave and reopen activity; verify persistence.
+              </li>
             </ul>
           </div>
           <div class="qa-card">
             <h3>Navigation</h3>
             <ul>
-              <li>Back/Edit controls still work from regular and superset execution.</li>
+              <li>
+                Back/Edit controls still work from regular and superset
+                execution.
+              </li>
               <li>Share preview still renders with check/status icons.</li>
-              <li>Activity library modal save/cancel still works after scrolling.</li>
+              <li>
+                Activity library modal save/cancel still works after scrolling.
+              </li>
             </ul>
           </div>
           <div class="qa-card">
@@ -529,7 +663,10 @@
             <ul>
               <li>Switch exposes checked state for Auto Rest Countdown.</li>
               <li>Set complete buttons announce complete/incomplete state.</li>
-              <li>Icon removal does not remove the text label needed to identify any activity.</li>
+              <li>
+                Icon removal does not remove the text label needed to identify
+                any activity.
+              </li>
             </ul>
           </div>
         </div>
@@ -538,8 +675,8 @@
       <section>
         <h2>Verification</h2>
         <p>
-          Static verification command: <code>npm run typecheck</code>.
-          Manual verification should prioritize small iPhone viewports, iOS
+          Static verification command: <code>npm run typecheck</code>. Manual
+          verification should prioritize small iPhone viewports, iOS
           physical-device notification delivery, and real workout flows with
           multiple set types.
         </p>
@@ -549,69 +686,69 @@
     <script>
       (function () {
         // Session-only QA state — intentionally NOT persisted.
-        var table = document.getElementById("qa-matrix");
+        var table = document.getElementById('qa-matrix');
         if (!table) return;
         var rows = Array.prototype.slice.call(
-          table.querySelectorAll("tbody tr")
+          table.querySelectorAll('tbody tr')
         );
         var entries = [];
 
-        var progressText = document.getElementById("qa-progress-text");
+        var progressText = document.getElementById('qa-progress-text');
 
         function updateProgress() {
           if (!progressText) return;
           var pass = 0;
           var fail = 0;
           entries.forEach(function (e) {
-            if (e.state.status === "pass") pass++;
-            else if (e.state.status === "fail") fail++;
+            if (e.state.status === 'pass') pass++;
+            else if (e.state.status === 'fail') fail++;
           });
           var total = entries.length;
           var done = pass + fail;
           progressText.textContent =
             done +
-            " of " +
+            ' of ' +
             total +
-            " tested — " +
+            ' tested — ' +
             pass +
-            " pass, " +
+            ' pass, ' +
             fail +
-            " fail";
+            ' fail';
         }
 
         rows.forEach(function (row) {
-          var firstCell = row.querySelector("td");
+          var firstCell = row.querySelector('td');
           if (!firstCell) return;
           var label = firstCell.textContent.trim();
 
-          var state = { status: null, note: "", noteOpen: false };
+          var state = { status: null, note: '', noteOpen: false };
 
-          var cell = document.createElement("td");
-          cell.className = "result-cell";
+          var cell = document.createElement('td');
+          cell.className = 'result-cell';
 
-          var controls = document.createElement("div");
-          controls.className = "result-controls";
+          var controls = document.createElement('div');
+          controls.className = 'result-controls';
 
-          var passBtn = document.createElement("button");
-          passBtn.type = "button";
-          passBtn.className = "qa-btn is-pass";
-          passBtn.textContent = "✓";
-          passBtn.setAttribute("title", "Mark pass");
-          passBtn.setAttribute("aria-label", "Mark " + label + " as pass");
+          var passBtn = document.createElement('button');
+          passBtn.type = 'button';
+          passBtn.className = 'qa-btn is-pass';
+          passBtn.textContent = '✓';
+          passBtn.setAttribute('title', 'Mark pass');
+          passBtn.setAttribute('aria-label', 'Mark ' + label + ' as pass');
 
-          var failBtn = document.createElement("button");
-          failBtn.type = "button";
-          failBtn.className = "qa-btn is-fail";
-          failBtn.textContent = "✗";
-          failBtn.setAttribute("title", "Mark fail");
-          failBtn.setAttribute("aria-label", "Mark " + label + " as fail");
+          var failBtn = document.createElement('button');
+          failBtn.type = 'button';
+          failBtn.className = 'qa-btn is-fail';
+          failBtn.textContent = '✗';
+          failBtn.setAttribute('title', 'Mark fail');
+          failBtn.setAttribute('aria-label', 'Mark ' + label + ' as fail');
 
-          var noteBtn = document.createElement("button");
-          noteBtn.type = "button";
-          noteBtn.className = "qa-btn is-note";
-          noteBtn.textContent = "✎";
-          noteBtn.setAttribute("title", "Add notes");
-          noteBtn.setAttribute("aria-label", "Toggle notes for " + label);
+          var noteBtn = document.createElement('button');
+          noteBtn.type = 'button';
+          noteBtn.className = 'qa-btn is-note';
+          noteBtn.textContent = '✎';
+          noteBtn.setAttribute('title', 'Add notes');
+          noteBtn.setAttribute('aria-label', 'Toggle notes for ' + label);
 
           controls.appendChild(passBtn);
           controls.appendChild(failBtn);
@@ -620,14 +757,14 @@
           row.appendChild(cell);
 
           // Notes row (sits directly beneath the feature row)
-          var noteRow = document.createElement("tr");
-          noteRow.className = "qa-note-row";
-          var noteTd = document.createElement("td");
+          var noteRow = document.createElement('tr');
+          noteRow.className = 'qa-note-row';
+          var noteTd = document.createElement('td');
           noteTd.colSpan = 5;
-          var noteField = document.createElement("textarea");
-          noteField.className = "qa-note-field";
-          noteField.placeholder = "Notes for " + label + "…";
-          noteField.setAttribute("aria-label", "Notes for " + label);
+          var noteField = document.createElement('textarea');
+          noteField.className = 'qa-note-field';
+          noteField.placeholder = 'Notes for ' + label + '…';
+          noteField.setAttribute('aria-label', 'Notes for ' + label);
           noteField.value = state.note;
           noteTd.appendChild(noteField);
           noteRow.appendChild(noteTd);
@@ -635,20 +772,20 @@
 
           function render() {
             passBtn.setAttribute(
-              "aria-pressed",
-              state.status === "pass" ? "true" : "false"
+              'aria-pressed',
+              state.status === 'pass' ? 'true' : 'false'
             );
             failBtn.setAttribute(
-              "aria-pressed",
-              state.status === "fail" ? "true" : "false"
+              'aria-pressed',
+              state.status === 'fail' ? 'true' : 'false'
             );
             noteBtn.setAttribute(
-              "aria-pressed",
-              state.noteOpen ? "true" : "false"
+              'aria-pressed',
+              state.noteOpen ? 'true' : 'false'
             );
-            noteRow.style.display = state.noteOpen ? "" : "none";
-            row.classList.toggle("row-pass", state.status === "pass");
-            row.classList.toggle("row-fail", state.status === "fail");
+            noteRow.style.display = state.noteOpen ? '' : 'none';
+            row.classList.toggle('row-pass', state.status === 'pass');
+            row.classList.toggle('row-fail', state.status === 'fail');
           }
 
           function commit() {
@@ -656,31 +793,31 @@
             updateProgress();
           }
 
-          passBtn.addEventListener("click", function () {
-            state.status = state.status === "pass" ? null : "pass";
+          passBtn.addEventListener('click', function () {
+            state.status = state.status === 'pass' ? null : 'pass';
             commit();
           });
 
-          failBtn.addEventListener("click", function () {
-            state.status = state.status === "fail" ? null : "fail";
+          failBtn.addEventListener('click', function () {
+            state.status = state.status === 'fail' ? null : 'fail';
             commit();
           });
 
-          noteBtn.addEventListener("click", function () {
+          noteBtn.addEventListener('click', function () {
             state.noteOpen = !state.noteOpen;
             commit();
             if (state.noteOpen) noteField.focus();
           });
 
-          noteField.addEventListener("input", function () {
+          noteField.addEventListener('input', function () {
             state.note = noteField.value;
           });
 
           function reset() {
             state.status = null;
-            state.note = "";
+            state.note = '';
             state.noteOpen = false;
-            noteField.value = "";
+            noteField.value = '';
             render();
           }
 
@@ -689,11 +826,11 @@
           render();
         });
 
-        var resetBtn = document.getElementById("qa-reset");
+        var resetBtn = document.getElementById('qa-reset');
         if (resetBtn) {
-          resetBtn.addEventListener("click", function () {
+          resetBtn.addEventListener('click', function () {
             if (
-              !window.confirm("Clear all QA results and notes on this page?")
+              !window.confirm('Clear all QA results and notes on this page?')
             ) {
               return;
             }

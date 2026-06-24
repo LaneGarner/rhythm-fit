@@ -38,6 +38,7 @@ export default {
     },
     plugins: [
       'expo-audio',
+      'react-native-bottom-tabs',
       [
         'expo-notifications',
         {

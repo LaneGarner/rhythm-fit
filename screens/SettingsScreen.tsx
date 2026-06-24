@@ -79,6 +79,22 @@ export default function SettingsScreen({ navigation }: any) {
     }, 100);
   };
 
+  // The Auth screen is only registered in the navigator while signed out, so
+  // we can't reset to it synchronously right after signOut() — `user` only
+  // flips to null on the next render. Flag the intent here and let the effect
+  // below navigate once the Auth screen is actually back in the stack.
+  const pendingSignOutRef = useRef(false);
+
+  useEffect(() => {
+    if (pendingSignOutRef.current && !user) {
+      pendingSignOutRef.current = false;
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    }
+  }, [user, navigation]);
+
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -89,11 +105,8 @@ export default function SettingsScreen({ navigation }: any) {
           await clearUserData();
           await clearSyncData();
           dispatch(clearAllActivities());
+          pendingSignOutRef.current = true;
           await signOut();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Auth' }],
-          });
         },
       },
     ]);
@@ -301,6 +314,53 @@ export default function SettingsScreen({ navigation }: any) {
                 style={{ color: colors.textSecondary }}
               >
                 Manage activities you've created
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Tools Section */}
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            fontWeight: '500',
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
+        >
+          Tools
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            marginBottom: 32,
+            overflow: 'hidden',
+          }}
+        >
+          <TouchableOpacity
+            hitSlop={14}
+            className="p-4 flex-row items-center justify-between"
+            onPress={() => navigation.navigate('Calculator')}
+          >
+            <View className="flex-1">
+              <Text
+                className="text-base font-medium"
+                style={{ color: colors.text }}
+              >
+                Weight Calculator
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary }}
+              >
+                Find which plates to load for a target weight
               </Text>
             </View>
             <Ionicons

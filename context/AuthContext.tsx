@@ -27,6 +27,7 @@ interface AuthContextType extends AuthState {
     password: string
   ) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   getAccessToken: () => string | null;
 }
 
@@ -106,6 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    return { error };
+  }, []);
+
   const getAccessToken = useCallback(() => {
     return state.session?.access_token ?? null;
   }, [state.session]);
@@ -115,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
+    resetPassword,
     getAccessToken,
   };
 

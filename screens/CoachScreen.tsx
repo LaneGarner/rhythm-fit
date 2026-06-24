@@ -43,22 +43,20 @@ import {
   getChatSessions,
   getChatSession,
   deleteChatSession,
-  ParsedSetData,
-  ParsedExercise,
 } from '../services/chatApi';
-import {
-  buildCoachAnalytics,
-  formatAnalyticsForPrompt,
-  buildRecentWorkoutDetails,
-  buildWeeklySummaries,
-  buildExerciseProgression,
-} from '../services/coachAnalyticsService';
-import { addActivity, createSuperset } from '../redux/activitySlice';
-import { RootState } from '../redux/store';
+import { buildCoachActivityContext } from '../services/coachAnalyticsService';
+import { createActivitiesFromRequest } from '../services/activityScheduler';
+import { generateAndSchedulePlan } from '../services/planGenerationService';
+import { AppDispatch, RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
-import { Activity, ActivityType, SetData } from '../types/activity';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
-import { toTitleCase } from '../utils/storage';
+import { useEntitlements } from '../context/EntitlementContext';
+import { useCoachProfile } from '../context/CoachProfileContext';
+import CoachGate from '../components/coach/CoachGate';
+import RescheduleSheet from '../components/coach/RescheduleSheet';
+import CoachDashboard from './coach/CoachDashboard';
+import OnboardingFlowScreen from './onboarding/OnboardingFlowScreen';
 
 import { palette } from '../theme/colors';
 
@@ -75,7 +73,14 @@ interface ChatSession {
   timestamp: Date;
 }
 
-export default function CoachScreen({ navigation }: any) {
+export default function CoachScreen({ navigation, route }: any) {
+  // Top-level Coach view: dashboard (default landing) vs the chat below.
+  const [view, setView] = useState<'dashboard' | 'chat'>('dashboard');
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [onboarding, setOnboarding] = useState(false);
+  const [onboardingStart, setOnboardingStart] = useState<'welcome' | 'review'>(
+    'welcome'
+  );
   const [activeTab, setActiveTab] = useState<'chat' | 'history'>('chat');
   const [messages, setMessages] = useState([
     {
@@ -92,6 +97,23 @@ export default function CoachScreen({ navigation }: any) {
 
   const HISTORY_PREVIEW_COUNT = 5;
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
+
+  // The native tab bar floats over content; lift the input composer above it,
+  // but collapse that inset while the keyboard is open so there's no gap.
+  const tabBarInset = useTabBarInset();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () =>
+      setKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener('keyboardWillHide', () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Add ref for ScrollView, last bot message, and last user message
   const scrollViewRef = useRef<ScrollView>(null);
@@ -112,13 +134,39 @@ export default function CoachScreen({ navigation }: any) {
   );
   const userScrolledRef = useRef(false);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   const isAuthenticated = Boolean(user) && isBackendConfigured();
   const { getWeekStart, getWeekEnd } = useWeekBoundaries();
+  const { hasCoachAccess } = useEntitlements();
+  const { coachProfile, hasCompletedOnboarding, deferOnboarding } =
+    useCoachProfile();
+
+  // First-login / explicit redirect can request onboarding via route param.
+  useEffect(() => {
+    if (route?.params?.startOnboarding) {
+      setOnboardingStart('welcome');
+      setOnboarding(true);
+      navigation.setParams?.({ startOnboarding: undefined });
+    }
+  }, [route?.params?.startOnboarding, navigation]);
+
+  const openOnboarding = useCallback(
+    (start: 'welcome' | 'review') => {
+      setOnboardingStart(coachProfile ? start : 'welcome');
+      setOnboarding(true);
+    },
+    [coachProfile]
+  );
+
+  const openChatWith = useCallback((seed?: string) => {
+    if (seed) setInputText(seed);
+    setActiveTab('chat');
+    setView('chat');
+  }, []);
 
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -276,89 +324,10 @@ export default function CoachScreen({ navigation }: any) {
   }, [messages, currentSessionId]);
 
   // Memoize the activity context to prevent unnecessary recalculations
-  const activityContext = useMemo(() => {
-    const recentActivities = activities.filter(a =>
-      dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
-    );
-    const upcomingActivities = activities
-      .filter(a => dayjs(a.date).isSameOrAfter(dayjs(), 'day'))
-      .slice(0, 5);
-
-    // Get this week's activities (based on user's first day preference)
-    const startOfWeek = getWeekStart();
-    const endOfWeek = getWeekEnd();
-    const thisWeekActivities = activities.filter(a => {
-      const activityDate = dayjs(a.date);
-      return (
-        activityDate.isSameOrAfter(startOfWeek, 'day') &&
-        activityDate.isSameOrBefore(endOfWeek, 'day')
-      );
-    });
-
-    // Add today's date at the start for explicit date calculations
-    const today = dayjs();
-    const formattedToday = today.format('dddd, MMMM D, YYYY');
-
-    // Build analytics from activity data
-    const analytics = buildCoachAnalytics(activities);
-    const analyticsContext = formatAnalyticsForPrompt(analytics);
-
-    // Build workout history sections
-    const recentDetails = buildRecentWorkoutDetails(activities, 7);
-    const weeklySummaries = buildWeeklySummaries(activities, 12);
-    const exerciseProgression = buildExerciseProgression(activities, 8);
-
-    let context = `Today's date: ${formattedToday}\n\n`;
-
-    // Add user analytics section
-    context += `User analytics (last 30 days):\n${analyticsContext}\n\n`;
-
-    // Add activity context
-    context += `Current activity context:\n`;
-    context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
-    context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
-    context += `- This week's activities: ${thisWeekActivities.length}\n`;
-    context += `- Upcoming activities: ${upcomingActivities.length}\n`;
-
-    if (thisWeekActivities.length > 0) {
-      context += `\nThis week's activities:\n`;
-      const groupedByDay = thisWeekActivities.reduce(
-        (acc, activity) => {
-          const day = dayjs(activity.date).format('dddd');
-          if (!acc[day]) acc[day] = [];
-          acc[day].push(activity);
-          return acc;
-        },
-        {} as { [key: string]: Activity[] }
-      );
-
-      Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
-        context += `- ${day}: ${dayActivities.map(a => a.name).join(', ')}\n`;
-      });
-    }
-
-    if (upcomingActivities.length > 0) {
-      context += `\nUpcoming activities:\n`;
-      upcomingActivities.forEach(activity => {
-        const date = dayjs(activity.date).format('MMM D');
-        context += `- ${date}: ${activity.name}\n`;
-      });
-    }
-
-    if (recentDetails) {
-      context += `\n${recentDetails}\n`;
-    }
-
-    if (weeklySummaries) {
-      context += `\n${weeklySummaries}\n`;
-    }
-
-    if (exerciseProgression) {
-      context += `\n${exerciseProgression}\n`;
-    }
-
-    return context;
-  }, [activities, getWeekStart, getWeekEnd]);
+  const activityContext = useMemo(
+    () => buildCoachActivityContext(activities, getWeekStart(), getWeekEnd()),
+    [activities, getWeekStart, getWeekEnd]
+  );
 
   const loadSession = async (session: ChatSession) => {
     // If authenticated and session has no messages (loaded from server), fetch them
@@ -460,154 +429,6 @@ export default function CoachScreen({ navigation }: any) {
         },
       ]
     );
-  };
-
-  const generateDefaultSets = (type: ActivityType): SetData[] => {
-    const count = type === 'weight-training' || type === 'calisthenics' ? 3 : 1;
-    return Array.from({ length: count }, (_, i) => ({
-      id: `${Date.now().toString()}-${Math.random().toString(36).substr(2, 6)}-${i}`,
-      completed: false,
-    }));
-  };
-
-  const generateSetsFromParsed = (
-    parsedSets: ParsedSetData[] | undefined,
-    type: ActivityType
-  ): SetData[] => {
-    if (parsedSets && parsedSets.length > 0) {
-      return parsedSets.map((s, i) => ({
-        id: `${Date.now().toString()}-${Math.random().toString(36).substr(2, 6)}-${i}`,
-        reps: s.reps,
-        weight: s.weight,
-        time: s.time,
-        distance: s.distance,
-        completed: false,
-      }));
-    }
-    return generateDefaultSets(type);
-  };
-
-  const createActivitiesFromRequest = (activityRequests: any[]) => {
-    const createdActivities: Activity[] = [];
-
-    for (const request of activityRequests) {
-      try {
-        if (!request.date || !request.exercises || !request.exercises.length) {
-          continue;
-        }
-
-        const isGenericExercise = (exercise: string): boolean => {
-          const lowerExercise = exercise.toLowerCase().trim();
-          const genericTerms = [
-            'workout',
-            'workouts',
-            'exercise',
-            'exercises',
-            'activity',
-            'activities',
-            'routine',
-            'routines',
-            'training',
-            'session',
-            'sessions',
-            'the following',
-            'following',
-            'pull workout',
-            'push workout',
-            'leg workout',
-            'chest workout',
-            'back workout',
-            'full body workout',
-            'arm workout',
-            'shoulder workout',
-            'it to my schedule',
-            'my schedule',
-            'to my schedule',
-          ];
-          return genericTerms.some(term => lowerExercise.includes(term));
-        };
-
-        const hasGenericExercises = request.exercises.some((exercise: string) =>
-          isGenericExercise(exercise)
-        );
-        if (hasGenericExercises) continue;
-
-        const exercises: string[] =
-          request.exercises.length > 1
-            ? request.exercises
-            : [request.exercises[0]];
-
-        const createActivitiesForWeek = (
-          weekOffset: number,
-          weekLabel?: string
-        ): Activity[] => {
-          const weekActivities: Activity[] = [];
-          const activityDate = dayjs(request.date)
-            .add(weekOffset * 7, 'day')
-            .format('YYYY-MM-DD');
-
-          for (const exercise of exercises) {
-            if (!exercise || typeof exercise !== 'string') continue;
-
-            // Look up structured set data for this exercise
-            const detail = request.exerciseDetails?.find(
-              (d: ParsedExercise) =>
-                d.name.toLowerCase() === exercise.toLowerCase()
-            );
-
-            const activity: Activity = {
-              id:
-                Date.now().toString() +
-                Math.random().toString(36).substr(2, 9) +
-                weekOffset +
-                weekActivities.length,
-              date: activityDate,
-              type: request.type,
-              name: toTitleCase(exercise),
-              completed: false,
-              sets: generateSetsFromParsed(detail?.sets, request.type),
-              notes: weekLabel
-                ? `${weekLabel} - Created by AI coach`
-                : 'Created by AI coach based on your request',
-            };
-            dispatch(addActivity(activity));
-            weekActivities.push(activity);
-          }
-
-          // Create supersets for this week's activities
-          if (request.supersetGroups?.length) {
-            for (const group of request.supersetGroups) {
-              if (group.length >= 2) {
-                const ids = group
-                  .filter((i: number) => i < weekActivities.length)
-                  .map((i: number) => weekActivities[i].id);
-                if (ids.length >= 2) {
-                  dispatch(createSuperset({ activityIds: ids }));
-                }
-              }
-            }
-          }
-
-          return weekActivities;
-        };
-
-        if (request.isRecurring) {
-          for (let week = 0; week < request.weeksToRepeat; week++) {
-            const weekActivities = createActivitiesForWeek(
-              week,
-              `Recurring activity (week ${week + 1}/${request.weeksToRepeat})`
-            );
-            createdActivities.push(...weekActivities);
-          }
-        } else {
-          const weekActivities = createActivitiesForWeek(0);
-          createdActivities.push(...weekActivities);
-        }
-      } catch (error) {
-        console.error('Error creating activity from request:', request, error);
-      }
-    }
-    return createdActivities;
   };
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -774,7 +595,10 @@ export default function CoachScreen({ navigation }: any) {
 
             // Create activities if any were parsed
             if (activities.length > 0) {
-              const createdActivities = createActivitiesFromRequest(activities);
+              const createdActivities = createActivitiesFromRequest(
+                activities,
+                dispatch
+              );
               if (createdActivities.length === 0) {
                 finalContent =
                   "I'm sorry, I wasn't able to create the activities you requested. Please try again with a different format or check your request.";
@@ -1048,53 +872,120 @@ export default function CoachScreen({ navigation }: any) {
     );
   };
 
-  // Show login wall for unauthenticated users
-  if (!isAuthenticated) {
+  // Premium gate: sign-in now, paywall-ready via EntitlementContext.
+  if (!hasCoachAccess) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
+          <AppHeaderTitle title="Coach" />
+        </AppHeader>
+        <CoachGate>{null}</CoachGate>
+      </View>
+    );
+  }
+
+  // Dashboard | Chat switch. Rendered in its own full-width row below the
+  // header so it stays centered regardless of header actions (no shifting).
+  const renderSegmentRow = () => (
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        alignItems: 'center',
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          backgroundColor: colors.backgroundTertiary,
+          borderRadius: 8,
+          padding: 3,
+          width: 240,
+        }}
+      >
+        {(['dashboard', 'chat'] as const).map(v => {
+          const selected = view === v;
+          return (
+            <TouchableOpacity
+              key={v}
+              hitSlop={10}
+              onPress={() => setView(v)}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              accessibilityLabel={v === 'dashboard' ? 'Dashboard' : 'Chat'}
+              style={{
+                flex: 1,
+                paddingVertical: 7,
+                borderRadius: 6,
+                backgroundColor: selected ? colors.surface : 'transparent',
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 14,
+                  fontWeight: selected ? '600' : '400',
+                  color: selected ? colors.text : colors.textSecondary,
+                }}
+              >
+                {v === 'dashboard' ? 'Dashboard' : 'Chat'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  // Onboarding takes over the whole Coach surface.
+  if (onboarding) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader>
-          <AppHeaderTitle title="AI Coach" />
+          <AppHeaderTitle title="Your coach" />
         </AppHeader>
-        <View className="flex-1 px-6 pt-4">
-          <View
-            className="items-center p-8 rounded-2xl"
-            style={{
-              backgroundColor: colors.cardBackground,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDark ? 0.3 : 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Ionicons
-              name="chatbubbles-outline"
-              size={64}
-              color={colors.primary.main}
-            />
-            <Text
-              className="text-xl font-bold mt-4 text-center"
-              style={{ color: colors.text }}
-            >
-              Sign In to Get Started
-            </Text>
-            <Text
-              className="text-center mt-2 mb-6"
-              style={{ color: colors.textSecondary }}
-            >
-              Create an account or sign in to chat with your AI fitness coach
-            </Text>
-            <TouchableOpacity
-              className="px-8 py-3 rounded-full"
-              style={{ backgroundColor: colors.primary.main }}
-              onPress={() => navigation.navigate('Auth')}
-            >
-              <Text className="text-white font-semibold text-base">
-                Sign In
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <OnboardingFlowScreen
+          initialStep={onboardingStart}
+          onComplete={() => {
+            setOnboarding(false);
+            setView('dashboard');
+          }}
+          onDismiss={() => {
+            // "Maybe later": don't re-ambush on next launch.
+            if (!hasCompletedOnboarding) deferOnboarding();
+            setOnboarding(false);
+            setView('dashboard');
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Dashboard is the default landing view.
+  if (view === 'dashboard') {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
+          <AppHeaderTitle title="Coach" />
+        </AppHeader>
+        {renderSegmentRow()}
+        <CoachDashboard
+          hasProfile={Boolean(coachProfile) || hasCompletedOnboarding}
+          onStartOnboarding={() => openOnboarding('welcome')}
+          onOpenChat={openChatWith}
+          onRegenerate={() =>
+            coachProfile ? openOnboarding('review') : openOnboarding('welcome')
+          }
+          onReschedule={() => setRescheduleOpen(true)}
+          onReconfigure={() => openOnboarding('review')}
+        />
+        <RescheduleSheet
+          visible={rescheduleOpen}
+          onClose={() => setRescheduleOpen(false)}
+        />
       </View>
     );
   }
@@ -1107,33 +998,30 @@ export default function CoachScreen({ navigation }: any) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <AppHeader
-        leftAction={
+        rightAction={
           <TouchableOpacity
             onPress={startNewChat}
             hitSlop={14}
-            className="p-2 items-center"
             accessibilityLabel="Start new chat"
             accessibilityRole="button"
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             <Ionicons
               name="create-outline"
               size={24}
               color={colors.textSecondary}
             />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 10,
-                marginTop: 2,
-              }}
-            >
-              New Chat
-            </Text>
           </TouchableOpacity>
         }
       >
-        <AppHeaderTitle title="AI Coach" />
+        <AppHeaderTitle title="Coach" />
       </AppHeader>
+      {renderSegmentRow()}
 
       {/* Tab Navigation */}
       <View
@@ -1322,6 +1210,7 @@ export default function CoachScreen({ navigation }: any) {
             style={{
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
+              paddingBottom: keyboardVisible ? 16 : tabBarInset,
             }}
             className="p-4 border-t"
           >

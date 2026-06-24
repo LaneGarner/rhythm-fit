@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dayjs from 'dayjs';
 import { Activity } from '../types/activity';
+import { CoachProfile } from '../types/coachProfile';
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   NotificationSettings,
@@ -250,6 +251,89 @@ export const clearTutorialCompleted = async (): Promise<void> => {
   }
 };
 
+// --- Coach onboarding (mirrors the tutorial-completed pattern) ---
+
+export const saveCoachProfile = async (
+  profile: CoachProfile | null
+): Promise<void> => {
+  try {
+    if (profile === null) {
+      await AsyncStorage.removeItem('coach_profile');
+    } else {
+      await AsyncStorage.setItem('coach_profile', JSON.stringify(profile));
+    }
+  } catch (error) {
+    console.error('Error saving coach profile:', error);
+  }
+};
+
+export const loadCoachProfile = async (): Promise<CoachProfile | null> => {
+  try {
+    const data = await AsyncStorage.getItem('coach_profile');
+    return data ? (JSON.parse(data) as CoachProfile) : null;
+  } catch (error) {
+    console.error('Error loading coach profile:', error);
+    return null;
+  }
+};
+
+export const saveOnboardingCompleted = async (
+  completed: boolean
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(
+      'onboarding_completed',
+      JSON.stringify(completed)
+    );
+  } catch (error) {
+    console.error('Error saving onboarding completed:', error);
+  }
+};
+
+export const loadOnboardingCompleted = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('onboarding_completed');
+    return data ? JSON.parse(data) : false;
+  } catch (error) {
+    console.error('Error loading onboarding completed:', error);
+    return false;
+  }
+};
+
+// Set when the user dismisses the first-login onboarding nudge ("Maybe later"),
+// so we don't re-ambush them every launch. Distinct from onboarding_completed.
+export const saveOnboardingDeferred = async (
+  deferred: boolean
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem('onboarding_deferred', JSON.stringify(deferred));
+  } catch (error) {
+    console.error('Error saving onboarding deferred:', error);
+  }
+};
+
+export const loadOnboardingDeferred = async (): Promise<boolean> => {
+  try {
+    const data = await AsyncStorage.getItem('onboarding_deferred');
+    return data ? JSON.parse(data) : false;
+  } catch (error) {
+    console.error('Error loading onboarding deferred:', error);
+    return false;
+  }
+};
+
+export const clearCoachOnboarding = async (): Promise<void> => {
+  try {
+    await AsyncStorage.multiRemove([
+      'coach_profile',
+      'onboarding_completed',
+      'onboarding_deferred',
+    ]);
+  } catch (error) {
+    console.error('Error clearing coach onboarding:', error);
+  }
+};
+
 // Clear user-specific data on sign out
 // Preserves: exercises cache, activity types cache, theme (not user-specific)
 export const clearUserData = async (): Promise<void> => {
@@ -264,6 +348,7 @@ export const clearUserData = async (): Promise<void> => {
       clearAllActivities(),
       clearLibraryCache(),
       clearEquipmentCache(),
+      clearCoachOnboarding(),
       AsyncStorage.multiRemove(chatHistoryKeys),
     ]);
   } catch (error) {

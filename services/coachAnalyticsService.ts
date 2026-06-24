@@ -653,3 +653,76 @@ function sampleRepsProgression(history: { maxReps: number }[]): number[] {
 
   return milestones;
 }
+
+/**
+ * Build the full activity + analytics context string fed to the AI coach.
+ * Shared by the Coach chat and the onboarding plan generator so both send the
+ * model the same picture. weekStart/weekEnd bound "this week" per the user's
+ * first-day-of-week preference.
+ */
+export function buildCoachActivityContext(
+  activities: Activity[],
+  weekStart: dayjs.Dayjs | string,
+  weekEnd: dayjs.Dayjs | string
+): string {
+  const recentActivities = activities.filter(a =>
+    dayjs(a.date).isAfter(dayjs().subtract(30, 'day'))
+  );
+  const upcomingActivities = activities
+    .filter(a => dayjs(a.date).isSameOrAfter(dayjs(), 'day'))
+    .slice(0, 5);
+
+  const thisWeekActivities = activities.filter(a => {
+    const activityDate = dayjs(a.date);
+    return (
+      activityDate.isSameOrAfter(weekStart, 'day') &&
+      activityDate.isSameOrBefore(weekEnd, 'day')
+    );
+  });
+
+  const formattedToday = dayjs().format('dddd, MMMM D, YYYY');
+
+  const analytics = buildCoachAnalytics(activities);
+  const analyticsContext = formatAnalyticsForPrompt(analytics);
+  const recentDetails = buildRecentWorkoutDetails(activities, 7);
+  const weeklySummaries = buildWeeklySummaries(activities, 12);
+  const exerciseProgression = buildExerciseProgression(activities, 8);
+
+  let context = `Today's date: ${formattedToday}\n\n`;
+  context += `User analytics (last 30 days):\n${analyticsContext}\n\n`;
+  context += `Current activity context:\n`;
+  context += `- Recent activities (last 30 days): ${recentActivities.length}\n`;
+  context += `- Completed: ${recentActivities.filter(a => a.completed).length}\n`;
+  context += `- This week's activities: ${thisWeekActivities.length}\n`;
+  context += `- Upcoming activities: ${upcomingActivities.length}\n`;
+
+  if (thisWeekActivities.length > 0) {
+    context += `\nThis week's activities:\n`;
+    const groupedByDay = thisWeekActivities.reduce(
+      (acc, activity) => {
+        const day = dayjs(activity.date).format('dddd');
+        if (!acc[day]) acc[day] = [];
+        acc[day].push(activity);
+        return acc;
+      },
+      {} as { [key: string]: Activity[] }
+    );
+    Object.entries(groupedByDay).forEach(([day, dayActivities]) => {
+      context += `- ${day}: ${dayActivities.map(a => a.name).join(', ')}\n`;
+    });
+  }
+
+  if (upcomingActivities.length > 0) {
+    context += `\nUpcoming activities:\n`;
+    upcomingActivities.forEach(activity => {
+      const date = dayjs(activity.date).format('MMM D');
+      context += `- ${date}: ${activity.name}\n`;
+    });
+  }
+
+  if (recentDetails) context += `\n${recentDetails}\n`;
+  if (weeklySummaries) context += `\n${weeklySummaries}\n`;
+  if (exerciseProgression) context += `\n${exerciseProgression}\n`;
+
+  return context;
+}

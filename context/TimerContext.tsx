@@ -74,8 +74,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
-  const { timerVibration, timerSound, notificationSettings } =
-    usePreferences();
+  const { timerVibration, timerSound, notificationSettings } = usePreferences();
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
   const notificationSettingsRef = useRef(notificationSettings);
@@ -125,7 +124,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     notificationSettingsRef.current = notificationSettings;
-    if (!notificationSettings.enabled || !notificationSettings.timerCompletion) {
+    if (
+      !notificationSettings.enabled ||
+      !notificationSettings.timerCompletion
+    ) {
       Promise.all([
         cancelTimerCompletion('timer-completion'),
         cancelTimerCompletion('rest-timer'),
@@ -204,12 +206,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const endLiveActivity = useCallback(
-    async (dismissAfterSeconds = 4) => {
-      void dismissAfterSeconds;
-    },
-    []
-  );
+  const endLiveActivity = useCallback(async (dismissAfterSeconds = 4) => {
+    void dismissAfterSeconds;
+  }, []);
 
   const endLiveActivityImmediate = useCallback(async () => {
     return;

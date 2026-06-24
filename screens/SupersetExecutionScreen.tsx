@@ -129,13 +129,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const supersetRounds = buildSupersetRounds(supersetActivities);
   const maxSets = getMaxSetCount(supersetActivities);
 
-  const totalRounds = supersetRounds.length;
-  const completedRounds = supersetRounds.filter(round => {
-    const roundSets = round.sets.filter(s => s.set !== null);
-    return roundSets.length > 0 && roundSets.every(s => s.set!.completed);
-  }).length;
-  const supersetComplete = totalRounds > 0 && completedRounds === totalRounds;
-
   const handleUpdateSet = (
     activityId: string,
     setId: string,
@@ -486,40 +479,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                   .map(a => `${a.name}: ${a.notes}`)
                   .join('\n\n')}
               />
-            )}
-
-            {supersetComplete && (
-              <View
-                className="p-4 rounded-lg"
-                style={{
-                  backgroundColor: isDark
-                    ? 'rgba(34, 197, 94, 0.16)'
-                    : 'rgba(34, 197, 94, 0.10)',
-                  borderWidth: 2,
-                  borderColor: colors.success.main,
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.success.main,
-                    fontSize: 18,
-                    fontWeight: '700',
-                    textAlign: 'center',
-                  }}
-                >
-                  Superset Complete
-                </Text>
-                <Text
-                  className="mt-1 text-center"
-                  style={{
-                    color: isDark ? '#BBF7D0' : colors.success.dark,
-                    fontSize: 14,
-                    fontWeight: '600',
-                  }}
-                >
-                  {completedRounds} of {totalRounds} sets complete
-                </Text>
-              </View>
             )}
 
             {/* Superset Rounds */}
