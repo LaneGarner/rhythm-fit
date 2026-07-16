@@ -15,7 +15,7 @@ import { useTutorial } from '../components/tutorial';
 import { ThemePreference, useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
-import { clearSyncData } from '../services/syncService';
+import { clearSyncData, flushPendingSync } from '../services/syncService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
@@ -24,7 +24,7 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 export default function SettingsScreen({ navigation }: any) {
   const { themePreference, setThemePreference, colorScheme, colors } =
     useTheme();
-  const { user, signOut, isConfigured } = useAuth();
+  const { user, signOut, isConfigured, getAccessToken } = useAuth();
   const {
     firstDayOfWeek,
     setFirstDayOfWeek,
@@ -95,6 +95,14 @@ export default function SettingsScreen({ navigation }: any) {
     }
   }, [user, navigation]);
 
+  const performSignOut = async () => {
+    await clearUserData();
+    await clearSyncData();
+    dispatch(clearAllActivities());
+    pendingSignOutRef.current = true;
+    await signOut();
+  };
+
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -102,11 +110,26 @@ export default function SettingsScreen({ navigation }: any) {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await clearUserData();
-          await clearSyncData();
-          dispatch(clearAllActivities());
-          pendingSignOutRef.current = true;
-          await signOut();
+          // Sign-out wipes local data and the pending sync queue — push any
+          // unsynced changes first so they aren't silently discarded.
+          const token = await getAccessToken();
+          const flushed = token ? await flushPendingSync(token) : true;
+          if (flushed) {
+            await performSignOut();
+            return;
+          }
+          Alert.alert(
+            'Some changes haven’t synced',
+            'Recent workout changes could not be uploaded. Signing out now will permanently discard them.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Sign Out Anyway',
+                style: 'destructive',
+                onPress: performSignOut,
+              },
+            ]
+          );
         },
       },
     ]);
