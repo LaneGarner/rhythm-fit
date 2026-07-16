@@ -1,5 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import type {
   CustomerInfo,
   PurchasesOffering,
@@ -10,17 +10,24 @@ import { REVENUECAT_IOS_KEY } from '../config/api';
 // RevenueCat entitlement identifier that unlocks the Coach.
 export const COACH_ENTITLEMENT_ID = 'coach';
 
-// react-native-purchases is a native module that isn't present in Expo Go.
-// Like the native tab bar (TabNavigator.tsx), every call here no-ops in Expo
-// Go and reports "not subscribed"; dev/EAS builds get the real SDK.
+// react-native-purchases is a native module that isn't present in Expo Go —
+// and also missing from dev clients built before the SDK was added. Like the
+// native tab bar (TabNavigator.tsx), every call here no-ops when the module
+// is absent and reports "not subscribed"; up-to-date dev/EAS builds get the
+// real SDK.
 const isExpoGo =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 export function isPurchasesAvailable(): boolean {
-  return !isExpoGo && Platform.OS === 'ios' && Boolean(REVENUECAT_IOS_KEY);
+  return (
+    !isExpoGo &&
+    Platform.OS === 'ios' &&
+    Boolean(REVENUECAT_IOS_KEY) &&
+    NativeModules.RNPurchases != null
+  );
 }
 
-// Lazy require so Expo Go never loads the missing native module.
+// Lazy require so builds without the native module never load it.
 function getPurchases() {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   return require('react-native-purchases').default;
@@ -30,8 +37,13 @@ let configured = false;
 
 export function initPurchases(): void {
   if (!isPurchasesAvailable() || configured) return;
-  getPurchases().configure({ apiKey: REVENUECAT_IOS_KEY });
-  configured = true;
+  try {
+    getPurchases().configure({ apiKey: REVENUECAT_IOS_KEY });
+    configured = true;
+  } catch (err) {
+    // Belt and suspenders: never let SDK init take down the app.
+    console.error('RevenueCat configure error:', err);
+  }
 }
 
 export async function loginPurchases(
