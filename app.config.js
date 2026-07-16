@@ -62,6 +62,7 @@ export default {
       API_URL: process.env.EXPO_PUBLIC_API_URL || '',
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+      REVENUECAT_IOS_KEY: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || '',
       eas: {
         projectId: 'ec09ca85-b109-41d4-bb48-b4caadaea1a6',
       },

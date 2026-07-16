@@ -69,13 +69,47 @@ export type StreamEvent =
   | { type: 'done'; content: string; activities: ParsedActivity[] }
   | { type: 'error'; message: string };
 
+// Server-enforced access errors: 402 = paywall (drop back to Paywall via
+// refreshEntitlements), 429 monthly_limit = fair-use cap reached.
+export type ChatErrorCode = 'subscription_required' | 'monthly_limit';
+
+export function mapAccessError(
+  status: number,
+  body: unknown
+): { message: string; code: ChatErrorCode } | null {
+  const errorTag =
+    body && typeof body === 'object' ? (body as any).error : undefined;
+  if (status === 402) {
+    return {
+      message: 'An active subscription is required to use the coach.',
+      code: 'subscription_required',
+    };
+  }
+  if (status === 429 && errorTag === 'monthly_limit') {
+    const resetsAt = (body as any)?.resetsAt;
+    const resetDate = resetsAt ? new Date(resetsAt) : null;
+    const when =
+      resetDate && !isNaN(resetDate.getTime())
+        ? resetDate.toLocaleDateString(undefined, {
+            month: 'long',
+            day: 'numeric',
+          })
+        : 'next month';
+    return {
+      message: `You've reached this month's coaching limit — resets ${when}.`,
+      code: 'monthly_limit',
+    };
+  }
+  return null;
+}
+
 export function streamChatMessage(
   accessToken: string,
   messages: ChatMessage[],
   callbacks: {
     onToken: (text: string) => void;
     onDone: (content: string, activities: ParsedActivity[]) => void;
-    onError: (message: string) => void;
+    onError: (message: string, code?: ChatErrorCode) => void;
   },
   options?: {
     activityContext?: string;
@@ -93,7 +127,25 @@ export function streamChatMessage(
   xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
 
   xhr.onreadystatechange = () => {
-    if (xhr.readyState >= 3 && xhr.responseText) {
+    // Error responses (paywall 402, rate/usage limits 429, ...) are plain
+    // JSON, not NDJSON — surface them instead of feeding the line parser.
+    if (xhr.readyState === 4 && xhr.status >= 400) {
+      let body: unknown = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        // Non-JSON error body
+      }
+      const accessError = mapAccessError(xhr.status, body);
+      if (accessError) {
+        callbacks.onError(accessError.message, accessError.code);
+      } else {
+        callbacks.onError((body as any)?.error || 'Failed to send message');
+      }
+      return;
+    }
+
+    if (xhr.readyState >= 3 && xhr.status < 400 && xhr.responseText) {
       const newText = xhr.responseText.substring(lastProcessedIndex);
       lastProcessedIndex = xhr.responseText.length;
 
@@ -166,8 +218,11 @@ export async function sendChatMessage(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to send message');
+    const error = await response.json().catch(() => null);
+    const accessError = mapAccessError(response.status, error);
+    throw new Error(
+      accessError?.message || error?.error || 'Failed to send message'
+    );
   }
 
   return response.json();

@@ -36,6 +36,12 @@ export const SUPABASE_ANON_KEY =
   (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string | undefined) ||
   '';
 
+// RevenueCat configuration (iOS in-app purchases)
+export const REVENUECAT_IOS_KEY =
+  (Constants.expoConfig?.extra?.REVENUECAT_IOS_KEY as string | undefined) ||
+  (process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY as string | undefined) ||
+  '';
+
 // Check if backend is configured
 export function isBackendConfigured(): boolean {
   return Boolean(API_URL);
