@@ -95,9 +95,18 @@ function mergeActivities(
 
   // Merge server activities (server wins if newer)
   for (const serverActivity of serverActivities) {
-    // Skip deleted activities
+    // Server tombstone: honor it only when it's newer than the local copy —
+    // the same last-write-wins rule as everything else. An unconditional
+    // delete here let stale tombstones destroy newer local edits.
     if (serverActivity.deleted_at) {
-      merged.delete(serverActivity.id);
+      const local = merged.get(serverActivity.id);
+      const localTime = (local as SyncableActivity | undefined)?.updated_at
+        ? new Date((local as SyncableActivity).updated_at).getTime()
+        : 0;
+      const serverTime = new Date(serverActivity.updated_at).getTime();
+      if (serverTime > localTime) {
+        merged.delete(serverActivity.id);
+      }
       continue;
     }
 
@@ -225,6 +234,44 @@ export async function pushActivityChange(
   };
 
   await addToPendingSync(syncableActivity);
+}
+
+// Push any queued local changes to the server. Returns true when the queue is
+// fully drained. Call before sign-out — clearing sync data with a non-empty
+// queue permanently discards those changes.
+export async function flushPendingSync(accessToken: string): Promise<boolean> {
+  if (!API_URL) return true;
+
+  try {
+    const pendingActivities = await getPendingActivities();
+    if (pendingActivities.length === 0) return true;
+
+    const lastSyncTime = await getLastSyncTime();
+    const response = await fetch(getApiEndpoint('/api/activities'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        activities: pendingActivities,
+        lastSyncTime,
+      }),
+    });
+
+    if (!response.ok) return false;
+
+    const data: SyncResponse = await response.json();
+    const conflictIds = new Set(data.conflicts || []);
+    const acknowledgedIds = pendingActivities
+      .map(a => a.id)
+      .filter(id => !conflictIds.has(id));
+    await removePendingSync(acknowledgedIds);
+    return conflictIds.size === 0;
+  } catch (err) {
+    console.error('Failed to flush pending sync:', err);
+    return false;
+  }
 }
 
 // Clear all sync data (call on logout)
