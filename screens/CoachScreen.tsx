@@ -44,6 +44,7 @@ import {
   getChatSessions,
   getChatSession,
   deleteChatSession,
+  ChatErrorCode,
 } from '../services/chatApi';
 import { buildCoachActivityContext } from '../services/coachAnalyticsService';
 import { createActivitiesFromRequest } from '../services/activityScheduler';
@@ -142,7 +143,7 @@ export default function CoachScreen({ navigation, route }: any) {
   const { user, getAccessToken } = useAuth();
   const isAuthenticated = Boolean(user) && isBackendConfigured();
   const { getWeekStart, getWeekEnd } = useWeekBoundaries();
-  const { hasCoachAccess } = useEntitlements();
+  const { hasCoachAccess, refreshEntitlements } = useEntitlements();
   const { coachProfile, hasCompletedOnboarding, deferOnboarding } =
     useCoachProfile();
 
@@ -640,7 +641,12 @@ export default function CoachScreen({ navigation, route }: any) {
               loadChatHistory();
             }, 100);
           },
-          onError: (message: string) => {
+          onError: (message: string, code?: ChatErrorCode) => {
+            if (code === 'subscription_required') {
+              // Server says the subscription lapsed — re-sync so CoachGate
+              // drops back to the Paywall.
+              refreshEntitlements();
+            }
             if (streamFlushTimerRef.current) {
               clearTimeout(streamFlushTimerRef.current);
               streamFlushTimerRef.current = null;

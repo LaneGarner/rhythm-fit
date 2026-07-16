@@ -2,6 +2,24 @@
 
 A React Native / Expo mobile app for tracking workouts, building consistency, and planning training with an AI coach. Works fully offline and optionally syncs to a private backend.
 
+## Why it's interesting
+
+Rhythm is built offline-first for real gym conditions: every mutation lands in AsyncStorage instantly, a sync middleware queues changes and reconciles with the server when a connection returns, and the app is fully usable with no backend at all. The AI coach streams responses (NDJSON) for planning workouts and generating multi-week programs. And accessibility is treated as a feature, not a checkbox — WCAG 2.2 AA touch targets, labels, and roles across the app's interactive elements.
+
+## Screenshots
+
+<!-- TODO: capture and add screenshots
+  - Weekly planner (7-day view)
+  - Day view with activities and supersets
+  - Workout execution with the set-by-set timer
+  - Stats / PRs screen
+  - AI Coach streaming a program
+  - Plate calculator
+  - Light and dark theme side by side
+-->
+
+_Screenshots coming soon._
+
 ## Features
 
 - **Weekly view**: 7-day planner with drag-to-reorder activities and quick day navigation
