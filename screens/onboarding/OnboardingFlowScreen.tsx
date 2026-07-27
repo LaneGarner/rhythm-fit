@@ -23,6 +23,7 @@ import { useWeekBoundaries } from '../../hooks/useWeekBoundaries';
 import { AppDispatch, RootState } from '../../redux/store';
 import { buildCoachActivityContext } from '../../services/coachAnalyticsService';
 import { generateAndSchedulePlan } from '../../services/planGenerationService';
+import { hasAIDataConsent } from '../../services/aiConsentService';
 import { useTheme } from '../../theme/ThemeContext';
 import {
   CoachProfile,
@@ -114,7 +115,7 @@ export default function OnboardingFlowScreen({
 }: Props) {
   const { colors } = useTheme();
   const dispatch = useDispatch<AppDispatch>();
-  const { getAccessToken } = useAuth();
+  const { getAccessToken, user } = useAuth();
   const { setCoachProfile, markOnboardingComplete, coachProfile } =
     useCoachProfile();
   const activities = useSelector((s: RootState) => s.activities.data);
@@ -193,6 +194,15 @@ export default function OnboardingFlowScreen({
   const startGeneration = async () => {
     setGenError(null);
     setPartialNote(null);
+
+    if (!user || !(await hasAIDataConsent(user.id).catch(() => false))) {
+      setGenError(
+        'AI Coach data sharing is off. Allow it in Settings before generating a plan.'
+      );
+      setStep('error');
+      return;
+    }
+
     setStep('generating');
 
     const token = getAccessToken();
@@ -227,7 +237,8 @@ export default function OnboardingFlowScreen({
       const res = await result;
       if (res.createdActivities.length === 0) {
         setGenError(
-          "I couldn't put together a plan from that. Let's try again."
+          res.content.trim() ||
+            "I couldn't put together a plan from that. Let's try again."
         );
         setStep('error');
         return;

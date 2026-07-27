@@ -7,7 +7,7 @@ import SignInPrompt from './SignInPrompt';
 
 // Single premium boundary for the Coach section:
 // - signed out            -> SignInPrompt
-// - signed in, no access  -> Paywall (subscribe / restore / redeem a code)
+// - signed in, no access  -> Paywall (subscribe / restore)
 // - entitled              -> the Coach
 // Wrap every Coach surface in this. The backend enforces the same entitlement
 // on /api/chat, so this gate is UX — not the security boundary.

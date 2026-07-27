@@ -111,7 +111,8 @@ export function streamChatMessage(
     onDone: (content: string, activities: ParsedActivity[]) => void;
     onError: (message: string, code?: ChatErrorCode) => void;
   },
-  options?: {
+  options: {
+    aiDataConsent: true;
     activityContext?: string;
     sessionId?: string;
     sessionTitle?: string;
@@ -175,11 +176,12 @@ export function streamChatMessage(
     JSON.stringify({
       messages,
       stream: true,
-      activityContext: options?.activityContext,
-      sessionId: options?.sessionId,
-      sessionTitle: options?.sessionTitle,
-      mode: options?.mode,
-      coachProfile: options?.coachProfile,
+      aiDataConsent: options.aiDataConsent,
+      activityContext: options.activityContext,
+      sessionId: options.sessionId,
+      sessionTitle: options.sessionTitle,
+      mode: options.mode,
+      coachProfile: options.coachProfile,
     })
   );
 
@@ -197,7 +199,8 @@ export function streamChatMessage(
 export async function sendChatMessage(
   accessToken: string,
   messages: ChatMessage[],
-  options?: {
+  options: {
+    aiDataConsent: true;
     activityContext?: string;
     sessionId?: string;
     sessionTitle?: string;
@@ -211,9 +214,10 @@ export async function sendChatMessage(
     },
     body: JSON.stringify({
       messages,
-      activityContext: options?.activityContext,
-      sessionId: options?.sessionId,
-      sessionTitle: options?.sessionTitle,
+      aiDataConsent: options.aiDataConsent,
+      activityContext: options.activityContext,
+      sessionId: options.sessionId,
+      sessionTitle: options.sessionTitle,
     }),
   });
 

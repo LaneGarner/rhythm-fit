@@ -9,6 +9,10 @@ import { REVENUECAT_IOS_KEY } from '../config/api';
 
 // RevenueCat entitlement identifier that unlocks the Coach.
 export const COACH_ENTITLEMENT_ID = 'coach';
+export const EXPECTED_COACH_PRODUCT_IDS = [
+  'coach_monthly',
+  'coach_annual',
+] as const;
 
 // react-native-purchases is a native module that isn't present in Expo Go —
 // and also missing from dev clients built before the SDK was added. Like the
@@ -88,8 +92,25 @@ export async function getCurrentOffering(): Promise<PurchasesOffering | null> {
     return offerings.current ?? null;
   } catch (err) {
     console.error('RevenueCat offerings error:', err);
-    return null;
+    throw err;
   }
+}
+
+export function getCoachPackages(
+  offering: PurchasesOffering | null
+): PurchasesPackage[] {
+  if (!offering) return [];
+  const packages = offering.availablePackages.filter(pkg =>
+    pkg.product.identifier === 'coach_monthly'
+      ? pkg.packageType === 'MONTHLY'
+      : pkg.product.identifier === 'coach_annual'
+        ? pkg.packageType === 'ANNUAL'
+        : false
+  );
+  const foundIds = new Set(packages.map(pkg => pkg.product.identifier));
+  return EXPECTED_COACH_PRODUCT_IDS.every(id => foundIds.has(id))
+    ? packages
+    : [];
 }
 
 /**
