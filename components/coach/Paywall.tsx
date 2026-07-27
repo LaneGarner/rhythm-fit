@@ -1,24 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementContext';
-import { redeemCompCode } from '../../services/entitlementApi';
 import {
+  getCoachPackages,
   getCurrentOffering,
+  hasCoachEntitlement,
   isPurchasesAvailable,
   purchaseCoachPackage,
   restorePurchases,
 } from '../../services/purchases';
+import {
+  MANAGE_SUBSCRIPTIONS_URL,
+  PRIVACY_POLICY_URL,
+  TERMS_OF_USE_URL,
+} from '../../services/legalLinks';
 import { useTheme } from '../../theme/ThemeContext';
 import type { PurchasesPackage } from 'react-native-purchases';
 
@@ -34,67 +39,98 @@ const BENEFITS = [
 // flips the gate to the Coach with no navigation.
 export default function Paywall() {
   const { colors } = useTheme();
-  const { getAccessToken } = useAuth();
   const { refreshEntitlements } = useEntitlements();
 
   const purchasesAvailable = isPurchasesAvailable();
-  const scrollRef = useRef<ScrollView>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isLoadingOffering, setIsLoadingOffering] =
     useState(purchasesAvailable);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [showRedeem, setShowRedeem] = useState(false);
-  const [code, setCode] = useState('');
-  const [isRedeeming, setIsRedeeming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadOffering = useCallback(async () => {
     if (!purchasesAvailable) return;
-    let cancelled = false;
-    (async () => {
+    setIsLoadingOffering(true);
+    setError(null);
+    setMessage(null);
+    try {
       const offering = await getCurrentOffering();
-      if (cancelled) return;
-      const available = offering?.availablePackages ?? [];
+      const available = getCoachPackages(offering);
+      if (available.length === 0) {
+        throw new Error('Coach products are missing from the current offering');
+      }
       setPackages(available);
       // Default to annual (best value) when present.
       const annual = available.find(p => p.packageType === 'ANNUAL');
       setSelectedId((annual ?? available[0])?.identifier ?? null);
+    } catch {
+      setPackages([]);
+      setSelectedId(null);
+      setError('Subscriptions are temporarily unavailable. Please try again.');
+    } finally {
       setIsLoadingOffering(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    }
   }, [purchasesAvailable]);
 
+  useEffect(() => {
+    loadOffering();
+  }, [loadOffering]);
+
   const selectedPackage = packages.find(p => p.identifier === selectedId);
+  const isStoreBusy = isPurchasing || isRestoring;
 
   const handlePurchase = async () => {
-    if (!selectedPackage || isPurchasing) return;
+    if (!selectedPackage || isStoreBusy) return;
     setError(null);
+    setMessage(null);
     setIsPurchasing(true);
     try {
       const customerInfo = await purchaseCoachPackage(selectedPackage);
-      if (customerInfo) {
+      if (!customerInfo) return;
+      if (!hasCoachEntitlement(customerInfo)) {
+        setError(
+          'The purchase completed, but Coach access has not updated. Please restore purchases.'
+        );
+        return;
+      }
+      try {
         await refreshEntitlements();
+      } catch {
+        setMessage(
+          'Your purchase completed. If Coach access does not appear, restore purchases or reopen the app.'
+        );
       }
     } catch {
-      setError(
-        'Purchase failed. You have not been charged — please try again.'
-      );
+      setError('The purchase could not be completed. Please try again.');
     } finally {
       setIsPurchasing(false);
     }
   };
 
   const handleRestore = async () => {
-    if (isRestoring) return;
+    if (isStoreBusy) return;
     setError(null);
+    setMessage(null);
     setIsRestoring(true);
     try {
-      await restorePurchases();
-      await refreshEntitlements();
+      const customerInfo = await restorePurchases();
+      if (hasCoachEntitlement(customerInfo)) {
+        try {
+          await refreshEntitlements();
+          setMessage('Your Coach subscription was restored.');
+        } catch {
+          setMessage(
+            'Your subscription was restored. If Coach access does not appear, reopen the app.'
+          );
+        }
+      } else {
+        setMessage(
+          'No active Coach subscription was found for this Apple Account.'
+        );
+      }
     } catch {
       setError('Restore failed. Please try again.');
     } finally {
@@ -102,23 +138,12 @@ export default function Paywall() {
     }
   };
 
-  const handleRedeem = async () => {
-    const trimmed = code.trim();
-    if (!trimmed || isRedeeming) return;
+  const openLink = async (url: string) => {
     setError(null);
-    setIsRedeeming(true);
     try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError('Sign in again to redeem a code.');
-        return;
-      }
-      await redeemCompCode(trimmed, token);
-      await refreshEntitlements();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not redeem code.');
-    } finally {
-      setIsRedeeming(false);
+      await Linking.openURL(url);
+    } catch {
+      setError('This link could not be opened. Please try again.');
     }
   };
 
@@ -144,7 +169,6 @@ export default function Paywall() {
       style={{ flex: 1, backgroundColor: colors.background }}
     >
       <ScrollView
-        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 24 }}
         keyboardShouldPersistTaps="handled"
@@ -194,7 +218,7 @@ export default function Paywall() {
               marginBottom: 16,
             }}
           >
-            Start with a 7-day free trial. Cancel anytime.
+            Choose the plan that fits your training. Cancel anytime.
           </Text>
 
           <View style={{ alignSelf: 'stretch', marginBottom: 20 }}>
@@ -241,14 +265,35 @@ export default function Paywall() {
                 }}
               >
                 Subscriptions aren't available in this build. Install the App
-                Store version to subscribe, or redeem an access code below.
+                Store version to subscribe.
               </Text>
             </View>
           ) : isLoadingOffering ? (
             <ActivityIndicator
               color={colors.primary.main}
               style={{ marginBottom: 16 }}
+              accessibilityLabel="Loading subscriptions"
             />
+          ) : packages.length === 0 ? (
+            <TouchableOpacity
+              onPress={loadOffering}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading subscriptions"
+              style={{
+                minHeight: 48,
+                paddingHorizontal: 18,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.primary.main,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+                Retry
+              </Text>
+            </TouchableOpacity>
           ) : (
             <>
               <View style={{ alignSelf: 'stretch', marginBottom: 16 }}>
@@ -258,8 +303,12 @@ export default function Paywall() {
                     <TouchableOpacity
                       key={pkg.identifier}
                       onPress={() => setSelectedId(pkg.identifier)}
+                      disabled={isStoreBusy}
                       accessibilityRole="radio"
-                      accessibilityState={{ selected }}
+                      accessibilityState={{
+                        selected,
+                        disabled: isStoreBusy,
+                      }}
                       accessibilityLabel={`${packageLabel(pkg)}, ${packageDetail(pkg)}`}
                       style={{
                         flexDirection: 'row',
@@ -300,11 +349,11 @@ export default function Paywall() {
 
               <TouchableOpacity
                 onPress={handlePurchase}
-                disabled={!selectedPackage || isPurchasing}
+                disabled={!selectedPackage || isStoreBusy}
                 accessibilityRole="button"
-                accessibilityLabel="Start free trial"
+                accessibilityLabel="Continue with selected subscription"
                 accessibilityState={{
-                  disabled: !selectedPackage || isPurchasing,
+                  disabled: !selectedPackage || isStoreBusy,
                 }}
                 style={{
                   width: '100%',
@@ -312,13 +361,16 @@ export default function Paywall() {
                   borderRadius: 12,
                   backgroundColor: colors.primary.main,
                   alignItems: 'center',
-                  opacity: !selectedPackage || isPurchasing ? 0.6 : 1,
+                  opacity: !selectedPackage || isStoreBusy ? 0.6 : 1,
                   minHeight: 48,
                   justifyContent: 'center',
                 }}
               >
                 {isPurchasing ? (
-                  <ActivityIndicator color={colors.textInverse} />
+                  <ActivityIndicator
+                    color={colors.textInverse}
+                    accessibilityLabel="Completing purchase"
+                  />
                 ) : (
                   <Text
                     style={{
@@ -327,14 +379,30 @@ export default function Paywall() {
                       fontWeight: '600',
                     }}
                   >
-                    Start free trial
+                    Continue
                   </Text>
                 )}
               </TouchableOpacity>
 
+              <Text
+                style={{
+                  color: colors.textTertiary,
+                  fontSize: 12,
+                  lineHeight: 17,
+                  textAlign: 'center',
+                  marginTop: 12,
+                }}
+              >
+                Payment is charged to your Apple Account at confirmation.
+                Subscriptions renew automatically at the displayed price and
+                period unless canceled at least 24 hours before the current
+                period ends. Your Apple Account is charged for renewal within 24
+                hours before that period ends.
+              </Text>
+
               <TouchableOpacity
                 onPress={handleRestore}
-                disabled={isRestoring}
+                disabled={isStoreBusy}
                 accessibilityRole="button"
                 accessibilityLabel="Restore purchases"
                 hitSlop={14}
@@ -345,7 +413,10 @@ export default function Paywall() {
                 }}
               >
                 {isRestoring ? (
-                  <ActivityIndicator color={colors.primary.main} />
+                  <ActivityIndicator
+                    color={colors.primary.main}
+                    accessibilityLabel="Restoring purchases"
+                  />
                 ) : (
                   <Text style={{ color: colors.primary.main, fontSize: 14 }}>
                     Restore purchases
@@ -353,83 +424,6 @@ export default function Paywall() {
                 )}
               </TouchableOpacity>
             </>
-          )}
-
-          {showRedeem ? (
-            <View style={{ alignSelf: 'stretch', marginTop: 8 }}>
-              <TextInput
-                value={code}
-                onChangeText={setCode}
-                placeholder="Access code"
-                placeholderTextColor={colors.textTertiary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                accessibilityLabel="Access code"
-                // The input sits at the bottom of the card — keep it visible
-                // above the keyboard (KeyboardAvoidingView shrinks the scroll
-                // area; this scrolls the input into it).
-                onFocus={() =>
-                  setTimeout(
-                    () => scrollRef.current?.scrollToEnd({ animated: true }),
-                    100
-                  )
-                }
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 12,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  color: colors.text,
-                  fontSize: 15,
-                  marginBottom: 10,
-                  minHeight: 48,
-                }}
-              />
-              <TouchableOpacity
-                onPress={handleRedeem}
-                disabled={!code.trim() || isRedeeming}
-                accessibilityRole="button"
-                accessibilityLabel="Redeem access code"
-                accessibilityState={{ disabled: !code.trim() || isRedeeming }}
-                style={{
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.primary.main,
-                  alignItems: 'center',
-                  opacity: !code.trim() || isRedeeming ? 0.6 : 1,
-                  minHeight: 48,
-                  justifyContent: 'center',
-                }}
-              >
-                {isRedeeming ? (
-                  <ActivityIndicator color={colors.primary.main} />
-                ) : (
-                  <Text
-                    style={{
-                      color: colors.primary.main,
-                      fontSize: 15,
-                      fontWeight: '600',
-                    }}
-                  >
-                    Redeem
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setShowRedeem(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Redeem an access code"
-              hitSlop={14}
-              style={{ marginTop: 12, minHeight: 44, justifyContent: 'center' }}
-            >
-              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                Have a code?
-              </Text>
-            </TouchableOpacity>
           )}
 
           {error && (
@@ -446,6 +440,52 @@ export default function Paywall() {
               {error}
             </Text>
           )}
+
+          {message && (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={{
+                color: colors.textSecondary,
+                fontSize: 13,
+                lineHeight: 18,
+                textAlign: 'center',
+                marginTop: 12,
+              }}
+            >
+              {message}
+            </Text>
+          )}
+
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              marginTop: 10,
+            }}
+          >
+            {[
+              ['Privacy Policy', PRIVACY_POLICY_URL],
+              ['Terms of Use', TERMS_OF_USE_URL],
+              ['Manage Subscription', MANAGE_SUBSCRIPTIONS_URL],
+            ].map(([label, url]) => (
+              <TouchableOpacity
+                key={label}
+                onPress={() => openLink(url)}
+                accessibilityRole="link"
+                accessibilityLabel={label}
+                style={{
+                  minHeight: 44,
+                  paddingHorizontal: 8,
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: colors.primary.main, fontSize: 13 }}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text
             style={{

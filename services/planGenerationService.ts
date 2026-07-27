@@ -115,6 +115,7 @@ export function generateAndSchedulePlan({
         onError: message => reject(new Error(message)),
       },
       {
+        aiDataConsent: true,
         activityContext,
         mode: 'plan',
         coachProfile,

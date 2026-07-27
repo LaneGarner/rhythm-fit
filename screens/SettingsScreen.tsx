@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Linking,
   ScrollView,
   Switch,
   Text,
@@ -20,6 +21,19 @@ import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { deleteAccount } from '../services/accountService';
+import {
+  AI_DATA_DISCLOSURE,
+  grantAIDataConsent,
+  hasAIDataConsent,
+  revokeAIDataConsent,
+} from '../services/aiConsentService';
+import {
+  MANAGE_SUBSCRIPTIONS_URL,
+  PRIVACY_POLICY_URL,
+  SUPPORT_URL,
+  TERMS_OF_USE_URL,
+} from '../services/legalLinks';
 
 export default function SettingsScreen({ navigation }: any) {
   const { themePreference, setThemePreference, colorScheme, colors } =
@@ -44,6 +58,28 @@ export default function SettingsScreen({ navigation }: any) {
   const dispatch = useDispatch();
   const { insets, isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [aiDataSharingEnabled, setAIDataSharingEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setAIDataSharingEnabled(false);
+      return () => {
+        active = false;
+      };
+    }
+    hasAIDataConsent(user.id)
+      .then(enabled => {
+        if (active) setAIDataSharingEnabled(enabled);
+      })
+      .catch(() => {
+        if (active) setAIDataSharingEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const registerEquipment = useCallback(() => {
     if (equipmentRef.current) {
@@ -135,6 +171,105 @@ export default function SettingsScreen({ navigation }: any) {
     ]);
   };
 
+  const openLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Unable to Open Link', 'Please try again in a moment.');
+    }
+  };
+
+  const performAccountDeletion = async () => {
+    if (!user || isDeletingAccount) return;
+    setIsDeletingAccount(true);
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error('Your session has expired. Sign in and try again.');
+      }
+      await deleteAccount(token);
+    } catch (error) {
+      Alert.alert(
+        'Account Not Deleted',
+        error instanceof Error
+          ? error.message
+          : 'The account could not be deleted. Please try again.'
+      );
+      setIsDeletingAccount(false);
+      return;
+    }
+
+    // Remote deletion is irreversible. Local cleanup is best-effort and must
+    // never make the UI claim the account still exists.
+    await Promise.allSettled([
+      revokeAIDataConsent(user.id),
+      clearUserData(),
+      clearSyncData(),
+    ]);
+    dispatch(clearAllActivities());
+    pendingSignOutRef.current = true;
+    await signOut();
+    setIsDeletingAccount(false);
+  };
+
+  const confirmAccountDeletion = () => {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your profile, workouts, preferences, and AI coach history. It does not cancel an Apple subscription.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Manage Subscription',
+          onPress: () => openLink(MANAGE_SUBSCRIPTIONS_URL),
+        },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Delete Account Permanently?',
+              'This action cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Permanently',
+                  style: 'destructive',
+                  onPress: performAccountDeletion,
+                },
+              ]
+            ),
+        },
+      ]
+    );
+  };
+
+  const changeAIDataSharing = async (enabled: boolean) => {
+    if (!user) return;
+    if (!enabled) {
+      await revokeAIDataConsent(user.id);
+      setAIDataSharingEnabled(false);
+      return;
+    }
+
+    Alert.alert('Allow AI coach data sharing?', AI_DATA_DISCLOSURE, [
+      { text: 'Not Now', style: 'cancel' },
+      {
+        text: 'Allow',
+        onPress: async () => {
+          try {
+            await grantAIDataConsent(user.id);
+            setAIDataSharingEnabled(true);
+          } catch {
+            Alert.alert(
+              'Choice Not Saved',
+              'Please try again before using the AI coach.'
+            );
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
@@ -216,6 +351,49 @@ export default function SettingsScreen({ navigation }: any) {
                       Sign Out
                     </Text>
                   </TouchableOpacity>
+                  <View
+                    style={{
+                      height: 0.5,
+                      backgroundColor: colors.border,
+                      marginLeft: 16,
+                    }}
+                  />
+                  <TouchableOpacity
+                    hitSlop={14}
+                    className="p-4"
+                    onPress={() => openLink(MANAGE_SUBSCRIPTIONS_URL)}
+                    accessibilityRole="link"
+                  >
+                    <Text
+                      className="text-center font-medium"
+                      style={{ color: colors.primary.main }}
+                    >
+                      Manage Apple Subscription
+                    </Text>
+                  </TouchableOpacity>
+                  <View
+                    style={{
+                      height: 0.5,
+                      backgroundColor: colors.border,
+                      marginLeft: 16,
+                    }}
+                  />
+                  <TouchableOpacity
+                    hitSlop={14}
+                    className="p-4"
+                    onPress={confirmAccountDeletion}
+                    disabled={isDeletingAccount}
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete account"
+                    accessibilityState={{ disabled: isDeletingAccount }}
+                    style={{ opacity: isDeletingAccount ? 0.6 : 1 }}
+                  >
+                    <Text className="text-red-500 text-center font-medium">
+                      {isDeletingAccount
+                        ? 'Deleting Account…'
+                        : 'Delete Account'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
@@ -262,6 +440,62 @@ export default function SettingsScreen({ navigation }: any) {
                 </View>
               </View>
             )}
+          </>
+        )}
+
+        {user && (
+          <>
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 15,
+                fontWeight: '500',
+                marginBottom: 8,
+                marginLeft: 16,
+              }}
+            >
+              AI Coach Privacy
+            </Text>
+            <View
+              style={{
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: 10,
+                marginBottom: 32,
+                overflow: 'hidden',
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="flex-row items-center justify-between p-4"
+                onPress={() => changeAIDataSharing(!aiDataSharingEnabled)}
+                accessibilityRole="switch"
+                accessibilityLabel="Share data with OpenAI for AI Coach"
+                accessibilityState={{ checked: aiDataSharingEnabled }}
+              >
+                <View className="flex-1 mr-3">
+                  <Text className="text-base" style={{ color: colors.text }}>
+                    AI Coach Data Sharing
+                  </Text>
+                  <Text
+                    className="text-sm mt-1"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Allow coach messages and relevant fitness context to be
+                    processed by OpenAI. Turning this off disables AI Coach
+                    requests.
+                  </Text>
+                </View>
+                <Switch
+                  value={aiDataSharingEnabled}
+                  onValueChange={changeAIDataSharing}
+                  trackColor={{
+                    false: colors.toggleTrack,
+                    true: colors.primary.main,
+                  }}
+                  thumbColor="#ffffff"
+                />
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
@@ -694,6 +928,61 @@ export default function SettingsScreen({ navigation }: any) {
               color={colors.primary.main}
             />
           </TouchableOpacity>
+        </View>
+
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            fontWeight: '500',
+            marginBottom: 8,
+            marginLeft: 16,
+            marginTop: 32,
+          }}
+        >
+          Legal &amp; Support
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          {[
+            ['Privacy Policy', PRIVACY_POLICY_URL],
+            ['Terms of Use', TERMS_OF_USE_URL],
+            ['Support', SUPPORT_URL],
+            ['Manage Subscription', MANAGE_SUBSCRIPTIONS_URL],
+          ].map(([label, url], index) => (
+            <React.Fragment key={label}>
+              {index > 0 && (
+                <View
+                  style={{
+                    height: 0.5,
+                    backgroundColor: colors.border,
+                    marginLeft: 16,
+                  }}
+                />
+              )}
+              <TouchableOpacity
+                hitSlop={14}
+                className="p-4 flex-row items-center justify-between"
+                onPress={() => openLink(url)}
+                accessibilityRole="link"
+                accessibilityLabel={label}
+              >
+                <Text className="text-base" style={{ color: colors.text }}>
+                  {label}
+                </Text>
+                <Ionicons
+                  name="open-outline"
+                  size={18}
+                  color={colors.textTertiary}
+                />
+              </TouchableOpacity>
+            </React.Fragment>
+          ))}
         </View>
       </ScrollView>
     </View>

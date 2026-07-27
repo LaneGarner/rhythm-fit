@@ -56,9 +56,11 @@ import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
 import { useCoachProfile } from '../context/CoachProfileContext';
 import CoachGate from '../components/coach/CoachGate';
+import AIDataConsent from '../components/coach/AIDataConsent';
 import RescheduleSheet from '../components/coach/RescheduleSheet';
 import CoachDashboard from './coach/CoachDashboard';
 import OnboardingFlowScreen from './onboarding/OnboardingFlowScreen';
+import { hasAIDataConsent } from '../services/aiConsentService';
 
 import { palette } from '../theme/colors';
 
@@ -142,10 +144,29 @@ export default function CoachScreen({ navigation, route }: any) {
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   const isAuthenticated = Boolean(user) && isBackendConfigured();
+  const [aiConsent, setAIConsent] = useState<boolean | null>(null);
   const { getWeekStart, getWeekEnd } = useWeekBoundaries();
   const { hasCoachAccess, refreshEntitlements } = useEntitlements();
   const { coachProfile, hasCompletedOnboarding, deferOnboarding } =
     useCoachProfile();
+
+  const loadAIConsent = useCallback(async () => {
+    if (!user) {
+      setAIConsent(null);
+      return;
+    }
+    try {
+      setAIConsent(await hasAIDataConsent(user.id));
+    } catch {
+      setAIConsent(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadAIConsent();
+    const unsubscribe = navigation.addListener?.('focus', loadAIConsent);
+    return unsubscribe;
+  }, [loadAIConsent, navigation]);
 
   // First-login / explicit redirect can request onboarding via route param.
   useEffect(() => {
@@ -465,6 +486,18 @@ export default function CoachScreen({ navigation, route }: any) {
   const handleSend = async () => {
     if (!inputText.trim() || isProcessing) return;
 
+    if (user && isAuthenticated) {
+      try {
+        if (!(await hasAIDataConsent(user.id))) {
+          setAIConsent(false);
+          return;
+        }
+      } catch {
+        setAIConsent(false);
+        return;
+      }
+    }
+
     setIsProcessing(true);
     userScrolledRef.current = false;
 
@@ -681,6 +714,7 @@ export default function CoachScreen({ navigation, route }: any) {
           },
         },
         {
+          aiDataConsent: true,
           activityContext,
           sessionId: currentSessionId,
           sessionTitle,
@@ -893,6 +927,27 @@ export default function CoachScreen({ navigation, route }: any) {
           <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>
+      </View>
+    );
+  }
+
+  if (!user || aiConsent === null) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
+  if (!aiConsent) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <AppHeader>
+          <AppHeaderTitle title="AI Coach" />
+        </AppHeader>
+        <AIDataConsent
+          userId={user.id}
+          onAllowed={() => setAIConsent(true)}
+          onNotNow={() =>
+            navigation.navigate('Weekly', { screen: 'WeeklyHome' })
+          }
+        />
       </View>
     );
   }
