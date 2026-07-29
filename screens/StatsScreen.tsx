@@ -205,7 +205,7 @@ export default function StatsScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <AppHeader>
+      <AppHeader clearsTopTabBar>
         <AppHeaderTitle
           title="Your Stats"
           subtitle={timeRange === 0 ? 'All Time' : `Last ${timeRange} Days`}

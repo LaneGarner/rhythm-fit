@@ -161,7 +161,8 @@ export default function DayScreen({ navigation, route }: any) {
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
-  const { insets, width: screenWidth } = useResponsiveLayout();
+  const { insets, width: screenWidth, hasTopTabBar } = useResponsiveLayout();
+  const topTabBarClearance = hasTopTabBar ? 56 : 0;
   // Extra room so the last card scrolls clear of the floating + button.
   const tabBarInset = useTabBarInset(88);
   const isDark = colorScheme === 'dark';
@@ -1959,7 +1960,7 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'relative',
           flexDirection: 'row',
           alignItems: 'center',
-          height: insets.top + 52,
+          height: insets.top + topTabBarClearance + 52,
           paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
@@ -1980,7 +1981,7 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             position: 'absolute',
             left: 16,
-            top: insets.top + 4,
+            top: insets.top + topTabBarClearance + 4,
             height: 44,
             justifyContent: 'center',
             zIndex: 2,
@@ -2002,7 +2003,7 @@ export default function DayScreen({ navigation, route }: any) {
             position: 'absolute',
             left: 0,
             right: 0,
-            top: insets.top + 4,
+            top: insets.top + topTabBarClearance + 4,
             height: 44,
             alignItems: 'center',
             justifyContent: 'center',
@@ -2025,7 +2026,7 @@ export default function DayScreen({ navigation, route }: any) {
             style={{
               position: 'absolute',
               right: 16,
-              top: insets.top + 4,
+              top: insets.top + topTabBarClearance + 4,
               height: 44,
               flexDirection: 'row',
               alignItems: 'center',

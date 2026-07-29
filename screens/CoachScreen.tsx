@@ -923,7 +923,10 @@ export default function CoachScreen({ navigation, route }: any) {
   if (!hasCoachAccess) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader rightAction={<View style={{ width: 44, height: 44 }} />}>
+        <AppHeader
+          clearsTopTabBar
+          rightAction={<View style={{ width: 44, height: 44 }} />}
+        >
           <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>
@@ -938,7 +941,7 @@ export default function CoachScreen({ navigation, route }: any) {
   if (!aiConsent) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader>
+        <AppHeader clearsTopTabBar>
           <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <AIDataConsent
@@ -956,7 +959,7 @@ export default function CoachScreen({ navigation, route }: any) {
   if (onboarding) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader>
+        <AppHeader clearsTopTabBar>
           <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <OnboardingFlowScreen
@@ -982,7 +985,7 @@ export default function CoachScreen({ navigation, route }: any) {
   if (view === 'dashboard') {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader>
+        <AppHeader clearsTopTabBar>
           <AppHeaderTitle title="AI Coach" />
         </AppHeader>
         <CoachDashboard
@@ -1011,6 +1014,7 @@ export default function CoachScreen({ navigation, route }: any) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <AppHeader
+        clearsTopTabBar
         leftAction={
           <TouchableOpacity
             onPress={backToDashboard}
