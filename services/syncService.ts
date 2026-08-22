@@ -4,6 +4,7 @@ import { Activity } from '../types/activity';
 
 const LAST_SYNC_KEY = 'rhythm_last_sync_time';
 const PENDING_SYNC_KEY = 'rhythm_pending_sync';
+const PENDING_SYNC_BACKFILL_KEY = 'rhythm_pending_sync_backfill_v1';
 
 interface SyncableActivity extends Activity {
   updated_at: string;
@@ -82,6 +83,46 @@ async function readPendingActivities(): Promise<SyncableActivity[]> {
 
 async function getPendingActivities(): Promise<SyncableActivity[]> {
   return withPendingQueueLock(readPendingActivities);
+}
+
+async function backfillPendingActivities(
+  localActivities: Activity[]
+): Promise<void> {
+  await withPendingQueueLock(async () => {
+    const alreadyBackfilled = await AsyncStorage.getItem(
+      PENDING_SYNC_BACKFILL_KEY
+    );
+    if (alreadyBackfilled) return;
+
+    const pendingActivities = await readPendingActivities();
+    const pendingById = new Map(
+      pendingActivities.map(activity => [activity.id, activity])
+    );
+
+    for (const activity of localActivities) {
+      const updatedAt = (activity as SyncableActivity).updated_at;
+      if (!updatedAt) continue;
+
+      const syncableActivity: SyncableActivity = {
+        ...activity,
+        updated_at: updatedAt,
+      };
+      const existingPending = pendingById.get(activity.id);
+      if (
+        !existingPending ||
+        new Date(syncableActivity.updated_at).getTime() >
+          new Date(existingPending.updated_at).getTime()
+      ) {
+        pendingById.set(activity.id, syncableActivity);
+      }
+    }
+
+    await AsyncStorage.setItem(
+      PENDING_SYNC_KEY,
+      JSON.stringify(Array.from(pendingById.values()))
+    );
+    await AsyncStorage.setItem(PENDING_SYNC_BACKFILL_KEY, 'complete');
+  });
 }
 
 // Add an activity to the pending sync queue
@@ -252,6 +293,10 @@ export async function syncActivities(
   }
 
   try {
+    // Builds before automatic upload could lose pending markers when several
+    // activities were queued at once. Reconcile timestamped local workouts one
+    // time so existing plans are backfilled after upgrading.
+    await backfillPendingActivities(localActivities);
     const lastSyncTime = await getLastSyncTime();
 
     // 1. Fetch server activities updated since last sync
@@ -343,7 +388,11 @@ export async function flushPendingSync(accessToken: string): Promise<boolean> {
 export async function clearSyncData(): Promise<void> {
   try {
     await withPendingQueueLock(() =>
-      AsyncStorage.multiRemove([LAST_SYNC_KEY, PENDING_SYNC_KEY])
+      AsyncStorage.multiRemove([
+        LAST_SYNC_KEY,
+        PENDING_SYNC_KEY,
+        PENDING_SYNC_BACKFILL_KEY,
+      ])
     );
   } catch (err) {
     console.error('Failed to clear sync data:', err);
