@@ -1,5 +1,5 @@
 import { Middleware, UnknownAction } from '@reduxjs/toolkit';
-import { addToPendingSync } from '../services/syncService';
+import { addToPendingSync, flushPendingSync } from '../services/syncService';
 import { Activity } from '../types/activity';
 
 // Type guard for actions with payload
@@ -10,10 +10,59 @@ interface ActionWithPayload<T = unknown> extends UnknownAction {
 // Auth token storage - set from AuthContext
 let authToken: string | null = null;
 let isConfigured = false;
+let autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let retryDelayMs = 1000;
+let retryAttempts = 0;
+
+const AUTO_SYNC_DEBOUNCE_MS = 750;
+const AUTO_SYNC_MAX_RETRY_MS = 60_000;
+const AUTO_SYNC_MAX_RETRIES = 5;
+
+function clearAutoSyncTimer() {
+  if (autoSyncTimer) {
+    clearTimeout(autoSyncTimer);
+    autoSyncTimer = null;
+  }
+}
+
+function scheduleAutoSync(delayMs = AUTO_SYNC_DEBOUNCE_MS, isRetry = false) {
+  if (!isRetry) {
+    retryDelayMs = 1000;
+    retryAttempts = 0;
+  }
+
+  clearAutoSyncTimer();
+  autoSyncTimer = setTimeout(async () => {
+    autoSyncTimer = null;
+    const token = authToken;
+    if (!token || !isConfigured) return;
+
+    const drained = await flushPendingSync(token);
+    if (drained) {
+      retryDelayMs = 1000;
+      retryAttempts = 0;
+      return;
+    }
+
+    if (retryAttempts >= AUTO_SYNC_MAX_RETRIES) return;
+
+    const nextDelay = retryDelayMs;
+    retryAttempts += 1;
+    retryDelayMs = Math.min(retryDelayMs * 2, AUTO_SYNC_MAX_RETRY_MS);
+    scheduleAutoSync(nextDelay, true);
+  }, delayMs);
+}
 
 export function setSyncAuth(token: string | null, configured: boolean) {
+  const authChanged = authToken !== token;
   authToken = token;
   isConfigured = configured;
+
+  if (authChanged) {
+    retryDelayMs = 1000;
+    retryAttempts = 0;
+  }
+  if (!token || !configured) clearAutoSyncTimer();
 }
 
 // Queue activity for server sync
@@ -179,6 +228,11 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           if (activity1) await enqueueForSync(activity1);
           if (activity2) await enqueueForSync(activity2);
         }
+
+        // Upload shortly after the burst of activity changes settles. This
+        // keeps the server (and Daily Brief) current without issuing one
+        // request per Redux action.
+        scheduleAutoSync();
       } catch (err) {
         console.error('Background sync failed:', err);
       }
