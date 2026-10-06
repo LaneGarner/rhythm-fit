@@ -46,7 +46,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
   const { supersetId } = route.params;
   const dispatch = useDispatch();
   const { colorScheme, colors } = useTheme();
-  const { insets } = useResponsiveLayout();
+  const { insets, hasTopTabBar } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
   const { autoRestTimer } = usePreferences();
   const { timer, startCountdown } = useTimer();
@@ -377,7 +377,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: insets.top + 16,
+          paddingTop: insets.top + (hasTopTabBar ? 64 : 16),
           paddingBottom: 16,
           paddingLeft: Math.max(16, insets.left),
           paddingRight: Math.max(16, insets.right),

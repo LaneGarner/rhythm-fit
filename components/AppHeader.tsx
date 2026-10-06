@@ -7,22 +7,28 @@ interface AppHeaderProps {
   leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
   children: React.ReactNode;
+  clearsTopTabBar?: boolean;
 }
 
 export default function AppHeader({
   leftAction,
   rightAction,
   children,
+  clearsTopTabBar = false,
 }: AppHeaderProps) {
   const { colors } = useTheme();
-  const { insets, isLandscape } = useResponsiveLayout();
+  const { insets, isLandscape, hasTopTabBar } = useResponsiveLayout();
+  const topTabBarClearance = clearsTopTabBar && hasTopTabBar;
 
   return (
     <View
       className="border-b border-gray-200 flex-row items-center"
       style={{
-        paddingTop: insets.top + 8,
-        paddingBottom: isLandscape ? 8 : 20,
+        // iPadOS promotes the native Liquid Glass tab bar to the top of the
+        // screen. Keep the content title in its own layer below that floating
+        // navigation instead of letting the two headers compete.
+        paddingTop: insets.top + (topTabBarClearance ? 64 : 8),
+        paddingBottom: isLandscape || topTabBarClearance ? 12 : 20,
         paddingLeft: Math.max(16, insets.left),
         paddingRight: Math.max(16, insets.right),
         backgroundColor: colors.surface,

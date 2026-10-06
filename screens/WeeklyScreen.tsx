@@ -44,7 +44,8 @@ export default function WeeklyScreen({ navigation }: any) {
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
-  const { insets, width: screenWidth, isTablet } = useResponsiveLayout();
+  const { insets, width: screenWidth, isTablet, hasTopTabBar } =
+    useResponsiveLayout();
   // Extra room so the last card scrolls clear of the floating + button
   // (56pt button + the gap it sits above the bar + breathing room).
   const tabBarInset = useTabBarInset(88);
@@ -697,7 +698,9 @@ export default function WeeklyScreen({ navigation }: any) {
           backgroundColor: colors.surface,
           borderBottomColor: colors.border,
           marginTop: 2,
-          paddingTop: insets.top,
+          // The native Liquid Glass tab bar floats at the top on iPadOS.
+          // Reserve its visual layer while keeping this content header compact.
+          paddingTop: insets.top + (hasTopTabBar ? 56 : 0),
           paddingLeft: Math.max(16, insets.left),
           paddingRight: Math.max(16, insets.right),
         }}
