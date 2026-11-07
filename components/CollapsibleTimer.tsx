@@ -26,7 +26,7 @@ interface CollapsibleTimerProps {
 export default function CollapsibleTimer({
   activityId,
   activityName,
-  defaultExpanded = false,
+  defaultExpanded = true,
   onExpandedChange,
   restToggle,
 }: CollapsibleTimerProps) {

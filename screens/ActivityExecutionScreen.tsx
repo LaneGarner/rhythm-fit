@@ -62,7 +62,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
-  const [isTimerExpanded, setIsTimerExpanded] = useState(isTimerRunning);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(true);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null
@@ -377,7 +377,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             <CollapsibleTimer
               activityId={activity.id}
               activityName={activity.name}
-              defaultExpanded={isTimerRunning}
               onExpandedChange={setIsTimerExpanded}
               restToggle={{
                 enabled: restTimerEnabled,

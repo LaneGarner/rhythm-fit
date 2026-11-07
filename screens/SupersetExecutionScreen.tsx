@@ -81,7 +81,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
     activityId: string;
     setId: string;
   } | null>(null);
-  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(true);
 
   const scrollViewRef = useRef<typeof Animated.ScrollView.prototype | null>(
     null

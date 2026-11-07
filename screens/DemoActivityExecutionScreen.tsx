@@ -42,7 +42,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
   const { isActive, currentStep } = useTutorial();
 
   const [sets, setSets] = useState<SetData[]>(DEMO_ACTIVITY.sets || []);
-  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
+  const [isTimerExpanded, setIsTimerExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -185,7 +185,6 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
             <CollapsibleTimer
               activityId={DEMO_ACTIVITY.id}
               activityName={DEMO_ACTIVITY.name}
-              defaultExpanded={false}
               onExpandedChange={setIsTimerExpanded}
             />
 
