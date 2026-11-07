@@ -14,6 +14,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import HeaderButton from '../components/HeaderButton';
+import WorkoutSetSummary from '../components/WorkoutSetSummary';
 import NotesCard from '../components/NotesCard';
 import { ProgressionSection } from '../components/ProgressionSection';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
@@ -269,8 +270,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
 
   const completedSetsCount = sets.filter(set => set.completed).length;
   const totalSetsCount = sets.length;
-  const allSetsComplete =
-    totalSetsCount > 0 && completedSetsCount === totalSetsCount;
 
   const scrollToSetInput = (refKey: string) => {
     const inputRef = setInputRefs.current[refKey];
@@ -373,7 +372,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
             scrollY={scrollY}
           />
 
-          <View className="p-4" style={{ gap: 24 }}>
+          <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
             {/* Timer - Collapsible (now hosts the auto rest toggle) */}
             <CollapsibleTimer
               activityId={activity.id}
@@ -387,28 +386,10 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
 
             {/* Sets */}
             <View>
-              <View className="flex-row justify-between items-center mb-4">
-                <View>
-                  <Text
-                    className={`text-lg font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    Sets ({sets.length})
-                  </Text>
-                  <Text
-                    className="text-sm mt-1"
-                    style={{
-                      color: allSetsComplete
-                        ? colors.success.main
-                        : colors.textSecondary,
-                      fontWeight: allSetsComplete ? '700' : '500',
-                    }}
-                  >
-                    {completedSetsCount} of {totalSetsCount} sets complete
-                  </Text>
-                </View>
-              </View>
+              <WorkoutSetSummary
+                completed={completedSetsCount}
+                total={totalSetsCount}
+              />
 
               {/*
                 INTENTIONAL: the execution screen is READ-ONLY for set values.

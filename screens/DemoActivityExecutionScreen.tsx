@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import HeaderButton from '../components/HeaderButton';
+import WorkoutSetSummary from '../components/WorkoutSetSummary';
 import NotesCard from '../components/NotesCard';
 import SetCard from '../components/SetCard';
 import {
@@ -180,7 +181,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
             scrollY={scrollY}
           />
 
-          <View className="p-4" style={{ gap: 24 }}>
+          <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
             {/* Timer - Collapsible (demo mode - won't actually track) */}
             <CollapsibleTimer
               activityId={DEMO_ACTIVITY.id}
@@ -190,23 +191,10 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
 
             {/* Sets */}
             <View>
-              <View className="flex-row justify-between items-center mb-4">
-                <Text
-                  className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Sets ({sets.length})
-                </Text>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 14,
-                  }}
-                >
-                  Demo Mode
-                </Text>
-              </View>
+              <WorkoutSetSummary
+                completed={sets.filter(set => set.completed).length}
+                total={sets.length}
+              />
 
               {sets.map((set, index) => (
                 <SetCard

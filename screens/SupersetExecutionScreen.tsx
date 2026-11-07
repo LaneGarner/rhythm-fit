@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
+import WorkoutSetSummary from '../components/WorkoutSetSummary';
 import NotesCard from '../components/NotesCard';
 import { ProgressionSection } from '../components/ProgressionSection';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
@@ -459,7 +460,7 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
             scrollY={scrollY}
           />
 
-          <View className="p-4" style={{ gap: 24 }}>
+          <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
             {/* Timer - Collapsible (hosts the superset-wide auto rest toggle) */}
             <CollapsibleTimer
               activityId={supersetId}
@@ -471,6 +472,13 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
               }}
             />
 
+            <WorkoutSetSummary
+              label="Rounds"
+              completed={supersetRounds.filter(round =>
+                round.sets.every(({ set }) => !set || set.completed)
+              ).length}
+              total={supersetRounds.length}
+            />
             {/* Superset Rounds */}
             {supersetRounds.map((round, roundIndex) => (
               <View key={round.roundNumber}>

@@ -105,31 +105,34 @@ export function ContentHeader({
   return (
     <Animated.View
       style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         alignItems: 'center',
+        gap: 8,
         opacity: contentOpacity,
-        paddingTop: 16,
+        paddingTop: 8,
         paddingBottom: 8,
+        paddingHorizontal: 16,
       }}
     >
       <Text
         numberOfLines={2}
         style={{
-          fontSize: 24,
+          fontSize: 20,
           fontWeight: 'bold',
-          textAlign: 'center',
+          textAlign: 'left',
           color: colors.text,
-          paddingHorizontal: 16,
+          flexShrink: 1,
         }}
       >
         {title}
       </Text>
       {badge ? (
-        <SupersetBadge label={badge} size="medium" style={{ marginTop: 8 }} />
+        <SupersetBadge label={badge} size="small" />
       ) : (
         <Text
           style={{
-            fontSize: 16,
-            marginTop: 4,
+            fontSize: 13,
             color: colors.textSecondary,
           }}
         >
