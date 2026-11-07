@@ -119,8 +119,7 @@ export default function CollapsibleTimer({
           setIsExpanded(next);
           onExpandedChange?.(next);
         }}
-        className="flex-row items-center justify-between px-4 py-2"
-        style={{ minHeight: 44 }}
+        className="flex-row items-center justify-between p-4"
         accessibilityRole="button"
         accessibilityLabel={`Timer${isPaused ? ', paused' : ''}. ${isExpanded ? 'Collapse' : 'Expand'}`}
         accessibilityState={{ expanded: isExpanded }}
@@ -155,9 +154,9 @@ export default function CollapsibleTimer({
       </TouchableOpacity>
 
       {isExpanded && (
-        <View className="px-4 pb-3">
+        <View className="px-4 pb-4">
           {/* Mode Toggle */}
-          <View className="flex-row justify-center mb-2">
+          <View className="flex-row justify-center mb-4">
             <TouchableOpacity
               onPress={() => setTimerMode('countUp')}
               disabled={timer.isRunning}
@@ -433,7 +432,7 @@ export default function CollapsibleTimer({
             )}
 
           <Text
-            className="text-4xl font-mono text-center mb-2"
+            className="text-4xl font-mono text-center mb-4"
             style={{ color: colors.text }}
           >
             {formatTime(
@@ -535,7 +534,7 @@ export default function CollapsibleTimer({
 
           {restToggle && (
             <View
-              className="mt-3 pt-3"
+              className="mt-4 pt-4"
               style={{ borderTopWidth: 1, borderTopColor: colors.border }}
             >
               <View className="flex-row items-center justify-between">
