@@ -939,3 +939,51 @@ export function calculateActivityTypeBreakdown(
 
   return stats.sort((a, b) => b.count - a.count);
 }
+
+export interface PreviousDay {
+  day: string;
+  sets: SetData[];
+}
+
+/**
+ * Completed sets from the most recent days (newest first) on which an
+ * exercise was logged, excluding the current activity and anything dated
+ * after it. Multiple logs on the same day are merged into one day.
+ */
+export function getPreviousDays(
+  activities: Activity[],
+  current: Pick<Activity, 'id' | 'name' | 'date'>,
+  dayLimit = 5
+): PreviousDay[] {
+  const name = current.name.toLowerCase();
+  const byDay = new Map<string, SetData[]>();
+
+  activities
+    .filter(
+      a =>
+        a.id !== current.id &&
+        a.name.toLowerCase() === name &&
+        !dayjs(a.date).isAfter(current.date, 'day')
+    )
+    .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix())
+    .forEach(a => {
+      const completedSets = (a.sets || []).filter(s => s.completed);
+      if (completedSets.length === 0) return;
+      const day = dayjs(a.date).format('YYYY-MM-DD');
+      byDay.set(day, [...(byDay.get(day) || []), ...completedSets]);
+    });
+
+  return Array.from(byDay.entries())
+    .slice(0, dayLimit)
+    .map(([day, sets]) => ({ day, sets }));
+}
+
+export function formatSetSummary(set: SetData): string {
+  const parts: string[] = [];
+  if (set.weight && set.reps) parts.push(`${set.weight} × ${set.reps}`);
+  else if (set.weight) parts.push(`${set.weight} lbs`);
+  else if (set.reps) parts.push(`${set.reps} reps`);
+  if (set.time) parts.push(formatTime(set.time));
+  if (set.distance) parts.push(formatDistance(set.distance));
+  return parts.join(' · ') || '—';
+}

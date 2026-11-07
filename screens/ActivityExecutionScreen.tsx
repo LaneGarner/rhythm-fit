@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import CollapsibleTimer from '../components/CollapsibleTimer';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
+import { ProgressionSection } from '../components/ProgressionSection';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import SetCard from '../components/SetCard';
 import {
@@ -384,9 +385,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               }}
             />
 
-            {/* Notes */}
-            <NotesCard notes={activity.notes || ''} />
-
             {/* Sets */}
             <View>
               <View className="flex-row justify-between items-center mb-4">
@@ -451,6 +449,11 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
                 </Text>
               )}
             </View>
+
+            {/* Notes */}
+            <NotesCard notes={activity.notes || ''} />
+
+            <ProgressionSection activity={activity} />
           </View>
         </Animated.ScrollView>
       </View>

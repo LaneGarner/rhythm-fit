@@ -188,9 +188,6 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
               onExpandedChange={setIsTimerExpanded}
             />
 
-            {/* Notes */}
-            <NotesCard notes="Demo activity for tutorial. Try tapping 'Mark Complete' on a set!" />
-
             {/* Sets */}
             <View>
               <View className="flex-row justify-between items-center mb-4">
@@ -226,6 +223,9 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
                 />
               ))}
             </View>
+
+            {/* Notes */}
+            <NotesCard notes="Demo activity for tutorial. Try tapping 'Mark Complete' on a set!" />
           </View>
         </Animated.ScrollView>
       </View>

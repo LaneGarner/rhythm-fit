@@ -17,6 +17,7 @@ import CollapsibleTimer from '../components/CollapsibleTimer';
 import DurationPickerModal from '../components/DurationPickerModal';
 import HeaderButton from '../components/HeaderButton';
 import NotesCard from '../components/NotesCard';
+import { ProgressionSection } from '../components/ProgressionSection';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
 import PlateIcon from '../components/PlateIcon';
 import {
@@ -470,16 +471,6 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
               }}
             />
 
-            {/* Notes - combined from all activities */}
-            {supersetActivities.some(a => a.notes) && (
-              <NotesCard
-                notes={supersetActivities
-                  .filter(a => a.notes)
-                  .map(a => `${a.name}: ${a.notes}`)
-                  .join('\n\n')}
-              />
-            )}
-
             {/* Superset Rounds */}
             {supersetRounds.map((round, roundIndex) => (
               <View key={round.roundNumber}>
@@ -712,6 +703,27 @@ export default function SupersetExecutionScreen({ navigation, route }: any) {
                 })()}
               </View>
             ))}
+
+            {/* Notes - combined from all activities */}
+            {supersetActivities.some(a => a.notes) && (
+              <NotesCard
+                notes={supersetActivities
+                  .filter(a => a.notes)
+                  .map(a => `${a.name}: ${a.notes}`)
+                  .join('\n\n')}
+              />
+            )}
+
+            {/* Progression - one per exercise */}
+            <View style={{ gap: 8 }}>
+              {supersetActivities.map(a => (
+                <ProgressionSection
+                  key={a.id}
+                  activity={a}
+                  title={`${a.name} progression`}
+                />
+              ))}
+            </View>
           </View>
         </Animated.ScrollView>
       </View>
