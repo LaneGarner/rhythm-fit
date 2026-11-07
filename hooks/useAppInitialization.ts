@@ -12,7 +12,7 @@ import { initializeExercises } from '../services/exerciseService';
 import { initializeActivityTypes } from '../services/activityTypeService';
 import { fetchEquipment } from '../services/equipmentService';
 import { fetchLibrary } from '../services/libraryService';
-import { AppDispatch, RootState } from '../redux/store';
+import { AppDispatch, RootState, store } from '../redux/store';
 import { Activity } from '../types/activity';
 import { loadTutorialCompleted } from '../utils/storage';
 
@@ -119,7 +119,11 @@ export function useAppInitialization() {
         await syncActivities(
           token,
           activitiesRef.current,
-          handleActivitiesUpdated
+          handleActivitiesUpdated,
+          {
+            userId: user.id,
+            getLatestActivities: () => store.getState().activities.data,
+          }
         );
 
         // Sync user-specific data in parallel (non-blocking)
@@ -161,7 +165,11 @@ export function useAppInitialization() {
             syncActivities(
               token,
               activitiesRef.current,
-              handleActivitiesUpdated
+              handleActivitiesUpdated,
+              {
+                userId: user.id,
+                getLatestActivities: () => store.getState().activities.data,
+              }
             ).catch(err => console.error('Foreground sync failed:', err));
           }
         }
