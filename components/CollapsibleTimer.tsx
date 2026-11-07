@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
@@ -31,6 +32,8 @@ export default function CollapsibleTimer({
   restToggle,
 }: CollapsibleTimerProps) {
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const actionButtonWidth = Math.ceil(52 + 64 * fontScale);
 
   const {
     timer,
@@ -464,7 +467,7 @@ export default function CollapsibleTimer({
                 }
                 className="px-6 py-2 rounded-lg"
                 style={{
-                  minWidth: 102,
+                  width: actionButtonWidth,
                   alignItems: 'center',
                   backgroundColor: colors.surface,
                   borderWidth: 2,
@@ -487,7 +490,7 @@ export default function CollapsibleTimer({
                 onPress={handlePauseTimer}
                 className="px-6 py-2 rounded-lg"
                 style={{
-                  minWidth: 102,
+                  width: actionButtonWidth,
                   alignItems: 'center',
                   backgroundColor: colors.surface,
                   borderWidth: 2,

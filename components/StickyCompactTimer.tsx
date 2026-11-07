@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -22,6 +29,8 @@ export default function StickyCompactTimer({
   isExpanded,
 }: StickyCompactTimerProps) {
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const actionButtonWidth = Math.ceil(32 + 56 * fontScale);
   const {
     timer,
     startTimer,
@@ -152,6 +161,8 @@ export default function StickyCompactTimer({
               borderWidth: 2,
               borderColor: colors.success.main,
               paddingHorizontal: 14,
+              width: actionButtonWidth,
+              alignItems: 'center',
               paddingVertical: 6,
               borderRadius: 6,
             }}
@@ -176,6 +187,8 @@ export default function StickyCompactTimer({
               borderWidth: 2,
               borderColor: colors.warning.main,
               paddingHorizontal: 14,
+              width: actionButtonWidth,
+              alignItems: 'center',
               paddingVertical: 6,
               borderRadius: 6,
             }}
