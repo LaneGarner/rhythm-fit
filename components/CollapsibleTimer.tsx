@@ -20,7 +20,6 @@ interface CollapsibleTimerProps {
   restToggle?: {
     enabled: boolean;
     onToggle: (value: boolean) => void;
-    globalEnabled: boolean;
   };
 }
 
@@ -556,7 +555,6 @@ export default function CollapsibleTimer({
                 <Switch
                   value={restToggle.enabled}
                   onValueChange={restToggle.onToggle}
-                  disabled={!restToggle.globalEnabled}
                   trackColor={{
                     false: colors.border,
                     true: colors.primary.main,
@@ -564,14 +562,6 @@ export default function CollapsibleTimer({
                   accessibilityLabel="Auto rest countdown"
                 />
               </View>
-              {!restToggle.globalEnabled && (
-                <Text
-                  className="text-sm mt-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Enable global auto rest timer in Settings to use this.
-                </Text>
-              )}
             </View>
           )}
         </View>

@@ -53,7 +53,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
   const { timer, startCountdown } = useTimer();
   const { autoRestTimer } = usePreferences();
   const isTimerRunning = timer.activityId === activityId && timer.isRunning;
-  const restTimerEnabled = activity?.restTimerEnabled ?? true;
+  const restTimerEnabled = activity?.restTimerEnabled ?? autoRestTimer;
 
   const [sets, setSets] = useState<SetData[]>(activity?.sets || []);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -188,11 +188,7 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
         Alert.alert('🎉 Nice Work!', 'All sets complete. Activity finished!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
-      } else if (
-        autoRestTimer &&
-        restTimerEnabled &&
-        updates.completed === true
-      ) {
+      } else if (restTimerEnabled && updates.completed === true) {
         const duration = timer.targetSeconds > 0 ? timer.targetSeconds : 120;
         startCountdown(activityId, activity.name, duration);
       }
@@ -386,7 +382,6 @@ export default function ActivityExecutionScreen({ navigation, route }: any) {
               restToggle={{
                 enabled: restTimerEnabled,
                 onToggle: handleRestTimerToggle,
-                globalEnabled: autoRestTimer,
               }}
             />
 

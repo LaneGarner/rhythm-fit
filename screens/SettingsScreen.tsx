@@ -771,7 +771,7 @@ export default function SettingsScreen({ navigation }: any) {
                 className="text-sm mt-1"
                 style={{ color: colors.textSecondary }}
               >
-                Automatically starts a countdown timer after completing a set.
+                Start rest timers automatically by default.
               </Text>
             </View>
             <Switch
