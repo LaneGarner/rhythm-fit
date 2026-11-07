@@ -10,7 +10,8 @@ function consentKey(userId: string): string {
 }
 
 export async function hasAIDataConsent(userId: string): Promise<boolean> {
-  return (await AsyncStorage.getItem(consentKey(userId))) === 'granted';
+  // New users default to sharing; an explicit opt-out stays off.
+  return (await AsyncStorage.getItem(consentKey(userId))) !== 'denied';
 }
 
 export async function grantAIDataConsent(userId: string): Promise<void> {
@@ -18,5 +19,5 @@ export async function grantAIDataConsent(userId: string): Promise<void> {
 }
 
 export async function revokeAIDataConsent(userId: string): Promise<void> {
-  await AsyncStorage.removeItem(consentKey(userId));
+  await AsyncStorage.setItem(consentKey(userId), 'denied');
 }
