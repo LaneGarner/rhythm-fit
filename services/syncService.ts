@@ -57,15 +57,6 @@ async function withPendingQueueLock<T>(
   }
 }
 
-// Get the last sync time from storage
-async function getLastSyncTime(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(LAST_SYNC_KEY);
-  } catch {
-    return null;
-  }
-}
-
 // Get pending activities that need to sync
 async function readPendingActivities(): Promise<SyncableActivity[]> {
   try {
@@ -294,8 +285,9 @@ interface SyncOptions {
 
 let activeHistorySync: Promise<void> | null = null;
 
-// Full recovery runs once per account, even if the old app already saved a
-// cursor after downloading only the first page. Never replace local history
+// Reconcile full history on every sync. Recovered workouts keep their original
+// edit timestamps, so a timestamp cursor could miss old records uploaded today.
+// Never replace local history
 // with the server list: reconcile versions and preserve pending edits/deletes.
 export function syncActivities(
   accessToken: string,
@@ -335,8 +327,6 @@ async function performHistorySync(
     );
   }
   await backfillPendingActivities(localActivities, options.userId);
-  const recovered = await AsyncStorage.getItem(recoveryKey);
-  const lastSyncTime = recovered ? await getLastSyncTime() : null;
   let latestActivities = localActivities;
   const applyServerChanges = async (serverActivities: SyncableActivity[]) => {
     const pending = await getPendingActivities();
@@ -355,11 +345,7 @@ async function performHistorySync(
 
   let downloadError: unknown;
   try {
-    const url = lastSyncTime
-      ? getApiEndpoint(
-          `/api/activities?since=${encodeURIComponent(lastSyncTime)}`
-        )
-      : getApiEndpoint('/api/activities');
+    const url = getApiEndpoint('/api/activities');
     const response = await fetch(url, {
       method: 'GET',
       headers: { Authorization: `Bearer ${accessToken}` },

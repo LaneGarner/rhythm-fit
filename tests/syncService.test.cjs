@@ -137,7 +137,10 @@ test('repairs a previously advanced cursor and retains years of local history', 
   );
   assert.equal(JSON.parse(h.storage.get('activities')).length, 2502);
   await h.sync();
-  assert.ok(h.requests.find(r => r.url.includes('?since=')));
+  assert.equal(
+    h.requests.some(r => r.url.includes('?since=')),
+    false
+  );
 });
 test('uploads history in batches and resumes after a failure without dropping remaining workouts', async () => {
   const h = harness({
@@ -192,4 +195,20 @@ test('sign-out resets recovery so signing in downloads full history again, but r
   assert.equal(h.storage.has('rhythm_history_recovery_v2:owner'), false);
   assert.equal(h.storage.has('rhythm_pending_sync_backfill_v2:owner'), false);
   assert.equal(h.storage.has('rhythm_recovery_backup_v2:owner'), true);
+});
+
+// Backfilled records retain their historical edit timestamps. A second device
+// must discover them even after it has previously completed a full download.
+test('later syncs discover old workouts backfilled by another device', async () => {
+  const remote = [activity('initial')];
+  const h = harness({ remote });
+  await h.sync();
+  remote.push(activity('years-old-recovered', '2020-01-01T00:00:00.000Z'));
+  await h.sync();
+  assert.equal(h.current.length, 2);
+  assert.ok(h.current.some(a => a.id === 'years-old-recovered'));
+  assert.equal(
+    h.requests.some(r => r.url.includes('?since=')),
+    false
+  );
 });
