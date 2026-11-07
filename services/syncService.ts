@@ -4,6 +4,7 @@ import { Activity } from '../types/activity';
 
 const LAST_SYNC_KEY = 'rhythm_last_sync_time';
 const PENDING_SYNC_KEY = 'rhythm_pending_sync';
+const UPLOAD_BATCH_SIZE = 50;
 const PENDING_SYNC_BACKFILL_KEY = 'rhythm_pending_sync_backfill_v1';
 
 interface SyncableActivity extends Activity {
@@ -177,58 +178,63 @@ async function removePendingSync(
 }
 
 async function performPendingPush(
-  accessToken: string,
-  lastSyncTime?: string | null
+  accessToken: string
 ): Promise<PendingPushResult> {
   const pendingActivities = await getPendingActivities();
-  if (pendingActivities.length === 0) {
-    return { attempted: false, ok: true };
-  }
+  if (pendingActivities.length === 0) return { attempted: false, ok: true };
 
+  const combined: SyncResponse = {
+    synced: 0,
+    conflicts: [],
+    serverActivities: [],
+    syncTime: '',
+  };
   try {
-    const response = await fetch(getApiEndpoint('/api/activities'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        activities: pendingActivities,
-        lastSyncTime,
-      }),
-    });
-
-    if (!response.ok) {
-      return { attempted: true, ok: false };
+    for (
+      let offset = 0;
+      offset < pendingActivities.length;
+      offset += UPLOAD_BATCH_SIZE
+    ) {
+      const batch = pendingActivities.slice(offset, offset + UPLOAD_BATCH_SIZE);
+      const response = await fetch(getApiEndpoint('/api/activities'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // Downloads own the sync cursor. Uploads only acknowledge these records.
+        body: JSON.stringify({ activities: batch }),
+      });
+      if (!response.ok)
+        throw new Error(`Workout upload failed (${response.status})`);
+      const data: SyncResponse = await response.json();
+      const conflicts = new Set(data.conflicts || []);
+      await removePendingSync(
+        batch.filter(activity => !conflicts.has(activity.id))
+      );
+      combined.synced += data.synced;
+      combined.conflicts.push(...(data.conflicts || []));
+      combined.serverActivities.push(...(data.serverActivities || []));
+      // Keep rejected records queued; earlier acknowledged batches stay saved.
+      if (conflicts.size) return { attempted: true, ok: false, data: combined };
     }
-
-    const data: SyncResponse = await response.json();
-    const conflictIds = new Set(data.conflicts || []);
-    const acknowledgedActivities = pendingActivities.filter(
-      activity => !conflictIds.has(activity.id)
-    );
-    await removePendingSync(acknowledgedActivities);
-
-    return { attempted: true, ok: true, data };
+    return { attempted: true, ok: true, data: combined };
   } catch (err) {
     console.error('Failed to push activities to server:', err);
-    return { attempted: true, ok: false };
+    return { attempted: true, ok: false, data: combined };
   }
 }
 
 function pushPendingActivities(
-  accessToken: string,
-  lastSyncTime?: string | null
+  accessToken: string
 ): Promise<PendingPushResult> {
   // Foreground initialization and the debounced background uploader can fire
   // close together. Share the same request instead of posting the queue twice.
   if (activePendingPush) return activePendingPush;
 
-  activePendingPush = performPendingPush(accessToken, lastSyncTime).finally(
-    () => {
-      activePendingPush = null;
-    }
-  );
+  activePendingPush = performPendingPush(accessToken).finally(() => {
+    activePendingPush = null;
+  });
   return activePendingPush;
 }
 
@@ -332,7 +338,7 @@ export async function syncActivities(
     onActivitiesUpdated(merged);
 
     // 4. Push pending local changes to server
-    const pushResult = await pushPendingActivities(accessToken, lastSyncTime);
+    const pushResult = await pushPendingActivities(accessToken);
     if (pushResult.ok && pushResult.data) {
       // If there are newer server activities, merge them too
       if (pushResult.data.serverActivities?.length > 0) {
@@ -375,7 +381,7 @@ export async function flushPendingSync(accessToken: string): Promise<boolean> {
   if (!API_URL) return true;
 
   const lastSyncTime = await getLastSyncTime();
-  const result = await pushPendingActivities(accessToken, lastSyncTime);
+  const result = await pushPendingActivities(accessToken);
   if (!result.ok) return false;
 
   // New edits may have arrived while the request was in flight. The queue is
