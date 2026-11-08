@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from '../redux/store';
 import { batchUpdateActivities } from '../redux/activitySlice';
 import { usePreferences } from '../context/PreferencesContext';
+import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 import { useUnfinishedWorkoutNotifications } from '../hooks/useUnfinishedWorkoutNotification';
@@ -33,6 +34,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { autoRestTimer } = usePreferences();
   const { timer, startCountdown } = useTimer();
+  const sessionControls = useWorkoutSession();
   const [plateTarget, setPlateTarget] = useState<{
     activityId: string;
     setId: string;
@@ -54,6 +56,12 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     activity => activity.restTimerEnabled ?? autoRestTimer
   );
 
+  const inSession = sessionControls.current?.id === timerId;
+  const moveNext = () => {
+    const next = sessionControls.advance();
+    if (next) navigation.replace(next.route, next.params);
+    return next;
+  };
   const handleChanges = (changes: ExecutionSetChange[]) => {
     const latest = store
       .getState()
@@ -63,7 +71,22 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     const outcome = getExecutionOutcome(latest, changes);
     if (!outcome.updated.length) return;
     dispatch(batchUpdateActivities(outcome.updated));
-    if (outcome.finished) {
+    if (outcome.finished && inSession) {
+      const next = moveNext();
+      if (next) {
+        if (restEnabled)
+          sessionControls.startRest(
+            next,
+            sessionControls.session?.restDuration || 120
+          );
+      } else {
+        Alert.alert(
+          'Session complete',
+          'Your workouts are saved. Anything left for later is still on your day.',
+          [{ text: 'Done', onPress: () => navigation.goBack() }]
+        );
+      }
+    } else if (outcome.finished) {
       Alert.alert(
         'Nice Work!',
         grouped
@@ -72,11 +95,17 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } else if (outcome.startRest && restEnabled) {
-      startCountdown(
-        timerId,
-        timerName,
-        timer.targetSeconds > 0 ? timer.targetSeconds : 120
-      );
+      if (inSession && sessionControls.current)
+        sessionControls.startRest(
+          sessionControls.current,
+          sessionControls.session?.restDuration || 120
+        );
+      else
+        startCountdown(
+          timerId,
+          timerName,
+          timer.targetSeconds > 0 ? timer.targetSeconds : 120
+        );
     }
   };
   if (!activities.length)
@@ -140,6 +169,58 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           </View>
         }
       >
+        {inSession && sessionControls.session && (
+          <View style={{ gap: 8 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
+            >
+              <Text style={{ flex: 1, color: colors.textSecondary }}>
+                Session · {sessionControls.session.index + 1} of{' '}
+                {sessionControls.session.items.length}
+              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => {
+                  if (!moveNext()) navigation.goBack();
+                }}
+                style={{ paddingVertical: 8 }}
+              >
+                <Text style={{ color: colors.primary.main }}>Do later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() =>
+                  Alert.alert(
+                    'End session?',
+                    'Your completed sets stay saved.',
+                    [
+                      { text: 'Keep Going', style: 'cancel' },
+                      { text: 'End Session', onPress: sessionControls.end },
+                    ]
+                  )
+                }
+                style={{ paddingVertical: 8 }}
+              >
+                <Text style={{ color: colors.textSecondary }}>End</Text>
+              </TouchableOpacity>
+            </View>
+            {timer.activityId === timerId &&
+              timer.mode === 'countDown' &&
+              timer.seconds > 0 && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={sessionControls.skipRest}
+                  style={{ paddingVertical: 8 }}
+                >
+                  <Text
+                    style={{ color: colors.primary.main, textAlign: 'center' }}
+                  >
+                    Skip rest
+                  </Text>
+                </TouchableOpacity>
+              )}
+          </View>
+        )}
         <WorkoutExecutionSets
           activities={activities}
           grouped={grouped}

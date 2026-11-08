@@ -34,6 +34,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
+import DaySessionControl from '../components/DaySessionControl';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
 import {
@@ -2209,6 +2210,8 @@ export default function DayScreen({ navigation, route }: any) {
               />
             </View>
           )}
+
+          {!isBulkMode && <DaySessionControl date={date} navigation={navigation} />}
 
           {/* Activities List */}
           {renderActivitiesList()}
