@@ -1,3 +1,7 @@
+import {
+  buildHistoryOverview,
+  lookupWorkoutHistory,
+} from '../services/coachHistoryService';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -694,7 +698,11 @@ export default function CoachScreen({ navigation, route }: any) {
         },
         {
           aiDataConsent: true,
-          activityContext,
+          activityContext:
+            activityContext +
+            '\nAll-history overview:\n' +
+            buildHistoryOverview(activities),
+          historyLookup: query => lookupWorkoutHistory(activities, query),
           sessionId: currentSessionId,
           sessionTitle,
         }

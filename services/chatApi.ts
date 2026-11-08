@@ -1,3 +1,4 @@
+import { HistoryQuery } from './coachHistoryService';
 import { getApiEndpoint } from '../config/api';
 import { CoachProfile } from '../types/coachProfile';
 
@@ -65,6 +66,7 @@ interface ChatHistoryResponse {
 }
 
 export type StreamEvent =
+  | { type: 'history_request'; query: HistoryQuery }
   | { type: 'token'; content: string }
   | { type: 'done'; content: string; activities: ParsedActivity[] }
   | { type: 'error'; message: string };
@@ -118,9 +120,14 @@ export function streamChatMessage(
     sessionTitle?: string;
     mode?: 'plan';
     coachProfile?: CoachProfile | null;
+    historyLookup?: (query: HistoryQuery) => unknown;
+    historyResults?: unknown[];
+    historyRound?: number;
   }
 ): { abort: () => void } {
   const xhr = new XMLHttpRequest();
+  let continuation: { abort: () => void } | null = null;
+  let handledHistory = false;
   let lastProcessedIndex = 0;
   let partialLine = '';
 
@@ -161,7 +168,24 @@ export function streamChatMessage(
       for (const line of lines) {
         try {
           const event: StreamEvent = JSON.parse(line);
-          if (event.type === 'token') {
+          if (
+            event.type === 'history_request' &&
+            !handledHistory &&
+            options.historyLookup &&
+            (options.historyRound || 0) < 2
+          ) {
+            handledHistory = true;
+            const result = options.historyLookup(event.query);
+            continuation = streamChatMessage(accessToken, messages, callbacks, {
+              ...options,
+              historyRound: (options.historyRound || 0) + 1,
+              historyResults: [...(options.historyResults || []), result],
+            });
+          } else if (event.type === 'history_request') {
+            callbacks.onError(
+              'Coach history lookup limit reached. Try a narrower exercise or date range.'
+            );
+          } else if (event.type === 'token') {
             callbacks.onToken(event.content);
           } else if (event.type === 'done') {
             callbacks.onDone(event.content, event.activities);
@@ -187,6 +211,9 @@ export function streamChatMessage(
       activityContext: options.activityContext,
       sessionId: options.sessionId,
       sessionTitle: options.sessionTitle,
+      historyAvailable:
+        !!options.historyLookup && (options.historyRound || 0) < 2,
+      historyResults: options.historyResults,
       mode: options.mode,
       coachProfile: options.coachProfile,
     })
@@ -195,6 +222,7 @@ export function streamChatMessage(
   return {
     abort: () => {
       try {
+        continuation?.abort();
         xhr.abort();
       } catch {
         // Already aborted or completed
