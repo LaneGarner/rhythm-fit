@@ -2,6 +2,8 @@ import { Activity } from '../types/activity';
 
 export interface HistoryQuery {
   exercise?: string;
+  exercises?: string[];
+  all?: boolean;
   from?: string;
   to?: string;
   offset?: number;
@@ -49,6 +51,13 @@ export function lookupWorkoutHistory(
     typeof query.exercise === 'string'
       ? query.exercise.trim().toLowerCase()
       : '';
+  const exerciseNames = Array.isArray(query.exercises)
+    ? query.exercises
+        .filter((n): n is string => typeof n === 'string')
+        .map(n => n.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  if (exercise) exerciseNames.push(exercise);
   const validDate = (s: unknown): s is string =>
     typeof s === 'string' &&
     /^\d{4}-\d{2}-\d{2}$/.test(s) &&
@@ -64,11 +73,25 @@ export function lookupWorkoutHistory(
     .filter(
       a =>
         !(a as any).deleted_at &&
-        (!exercise || a.name.toLowerCase().includes(exercise)) &&
+        (!exerciseNames.length ||
+          exerciseNames.some(name => a.name.toLowerCase().includes(name))) &&
         (!query.from || a.date >= query.from) &&
         (!query.to || a.date <= query.to)
     )
     .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  if (query.all === true)
+    return {
+      query,
+      complete: true,
+      totalActivities: matching.length,
+      totalSets: matching.reduce((sum, a) => sum + (a.sets?.length || 0), 0),
+      firstDate: matching.at(-1)?.date || null,
+      lastDate: matching[0]?.date || null,
+      records: matching,
+      nextOffset: null,
+      source:
+        'All matching current phone records, including unsynced data. Not proof of cloud backup.',
+    };
   const offset =
     Number.isInteger(query.offset) && query.offset! >= 0 ? query.offset! : 0;
   // Budget is explicit; never imply a page represents the whole history.

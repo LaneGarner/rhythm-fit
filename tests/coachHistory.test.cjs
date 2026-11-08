@@ -19,3 +19,10 @@ test('inclusive date filters exclude deleted records and report empty matches',(
  assert.equal(a.totalActivities,2);assert.equal(lookupWorkoutHistory(records,{exercise:'bench'}).totalActivities,0);
  assert.ok(lookupWorkoutHistory(records,{from:'2026-02-01',to:'2020-01-01'}).error);
 });
+test('explicit all returns every match without trimming any sets or notes, including multiple exercises',()=>{
+ const many=Array.from({length:1000},(_,i)=>({...records[i%45],id:String(i),name:i%3===0?'Running':i%2?'Bench Press':'Squat',notes:'n'.repeat(3000),sets:Array.from({length:110},()=>records[0].sets[0])}));
+ const result=lookupWorkoutHistory(many,{all:true,exercises:['bench press','squat'],from:'2020-01-01',to:'2020-01-28'});
+ assert.equal(result.complete,true);assert.equal(result.totalActivities,666);assert.equal(result.records.length,666);assert.equal(result.nextOffset,null);
+ assert.equal(result.records[0].notes.length,3000);assert.equal(result.records[0].sets.length,110);
+ assert.equal(lookupWorkoutHistory(many,{all:true}).records.length,1000);
+});
