@@ -56,37 +56,46 @@ export default function DaySessionControl({
   };
   return (
     <>
-      <TouchableOpacity
-        disabled={!controls.ready}
-        onPress={() => {
-          if (sameDay && controls.current) {
-            const item = controls.resume();
-            if (item) navigate(item);
-          } else {
-            setSelected(new Set(items.map(item => item.id)));
-            setOpen(true);
-          }
-        }}
-        accessibilityRole="button"
-        style={{
-          marginHorizontal: 16,
-          marginVertical: 12,
-          padding: 14,
-          borderRadius: 12,
-          backgroundColor: colors.primary.main,
-        }}
-      >
-        <Text
-          style={{
-            color: colors.textInverse,
-            fontWeight: '600',
-            textAlign: 'center',
-            fontSize: 16,
-          }}
-        >
-          {sameDay ? 'Resume session' : 'Start session'}
+      <View style={{ marginHorizontal: 16, marginVertical: 12, gap: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Text
+            style={{
+              flex: 1,
+              color: colors.text,
+              fontSize: 17,
+              fontWeight: '600',
+            }}
+          >
+            Session {sameDay ? 'on' : 'off'}
+          </Text>
+          <TouchableOpacity
+            disabled={!controls.ready}
+            accessibilityRole="button"
+            accessibilityLabel={sameDay ? 'Turn session off' : 'Start session'}
+            onPress={() => {
+              if (sameDay) controls.end();
+              else {
+                setSelected(new Set(items.map(item => item.id)));
+                setOpen(true);
+              }
+            }}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 10,
+            }}
+          >
+            <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+              {sameDay ? 'Turn off' : 'Start session'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+          Do workouts in order. Rest timers start automatically.
         </Text>
-      </TouchableOpacity>
+      </View>
       <Modal
         visible={open}
         animationType="slide"

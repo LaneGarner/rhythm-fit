@@ -19,7 +19,6 @@ import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutSessionProvider } from './context/WorkoutSessionContext';
-import WorkoutSessionBar from './components/WorkoutSessionBar';
 import { TimerProvider } from './context/TimerContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { CoachProfileProvider } from './context/CoachProfileContext';
@@ -186,7 +185,6 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
             component={PersonalRecordsScreen}
           />
         </Stack.Navigator>
-        <WorkoutSessionBar navigationRef={navigationRef} />
       </NavigationContainer>
 
       {/* Dev mode button */}

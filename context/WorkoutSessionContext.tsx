@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useAuth } from './AuthContext';
-import { useTimer } from './TimerContext';
+import { useTimerActions, useTimerMetadata } from './TimerContext';
 import { store } from '../redux/store';
 import {
   nextSessionIndex,
@@ -27,6 +27,7 @@ interface SessionControls {
   startRest: (item: SessionItem, seconds: number) => void;
   skipRest: () => void;
   resume: () => SessionItem | null;
+  activate: (id: string) => void;
 }
 const Context = createContext<SessionControls | null>(null);
 
@@ -36,7 +37,9 @@ export function WorkoutSessionProvider({
   children: React.ReactNode;
 }) {
   const { user, isLoading: authLoading } = useAuth();
-  const { timer, startCountdown, pauseTimer, stopTimer } = useTimer();
+  const timer = useTimerMetadata();
+  const { startCountdown, pauseTimer, stopTimer, getTimerState } =
+    useTimerActions();
   const key = `rhythm_workout_session_v1:${user?.id || 'local'}`;
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -112,13 +115,12 @@ export function WorkoutSessionProvider({
       restoring.current = false;
       return;
     }
+    const seconds = getTimerState().seconds;
     const rest =
-      timer.mode === 'countDown' && timer.seconds > 0
+      timer.mode === 'countDown' && seconds > 0
         ? {
-            remaining: timer.seconds,
-            ...(timer.isRunning
-              ? { endsAt: Date.now() + timer.seconds * 1000 }
-              : {}),
+            remaining: seconds,
+            ...(timer.isRunning ? { endsAt: Date.now() + seconds * 1000 } : {}),
           }
         : undefined;
     commit({ ...value, rest });
@@ -130,6 +132,35 @@ export function WorkoutSessionProvider({
     loadedKey,
     key,
     commit,
+  ]);
+
+  // Editing an idle countdown changes the session's rest duration too. A
+  // restored remainder or a finished countdown must not shorten future rests.
+  useEffect(() => {
+    const value = sessionRef.current;
+    if (
+      loadedKey !== key ||
+      !value ||
+      value.rest ||
+      timer.isRunning ||
+      timer.mode !== 'countDown'
+    )
+      return;
+    const seconds = getTimerState().seconds;
+    if (
+      timer.targetSeconds > 0 &&
+      seconds === timer.targetSeconds &&
+      value.restDuration !== timer.targetSeconds
+    )
+      commit({ ...value, restDuration: timer.targetSeconds });
+  }, [
+    timer.targetSeconds,
+    timer.isRunning,
+    timer.mode,
+    loadedKey,
+    key,
+    commit,
+    getTimerState,
   ]);
 
   const start = (date: string, items: SessionItem[]) => {
@@ -164,6 +195,14 @@ export function WorkoutSessionProvider({
     if (timer.activityId === value.items[value.index]?.id) stopTimer();
     commit({ ...value, index, rest: undefined });
     return value.items[index];
+  };
+  const activate = (id: string) => {
+    const value = sessionRef.current;
+    if (!value) return;
+    const index = value.items.findIndex(item => item.id === id);
+    if (index < 0 || index === value.index) return;
+    if (timer.activityId === value.items[value.index]?.id) stopTimer();
+    commit({ ...value, index, rest: undefined });
   };
   const advance = () => goToNext();
   const resume = () => goToNext(true);
@@ -202,6 +241,7 @@ export function WorkoutSessionProvider({
         startRest,
         skipRest,
         resume,
+        activate,
       }}
     >
       {children}
