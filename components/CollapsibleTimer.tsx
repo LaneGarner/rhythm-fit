@@ -251,9 +251,12 @@ export default function CollapsibleTimer({
           </View>
 
           {/* Countdown Duration Input */}
-          {timer.mode === 'countDown' && !timer.isRunning && (
+          {timer.mode === 'countDown' && (
             <View className="flex-row justify-center items-center mb-4">
               <TextInput
+                accessibilityLabel="Countdown minutes"
+                editable={!timer.isRunning}
+                accessibilityState={{ disabled: timer.isRunning }}
                 value={
                   Math.floor(timer.targetSeconds / 60) > 0
                     ? Math.floor(timer.targetSeconds / 60).toString()
@@ -285,6 +288,9 @@ export default function CollapsibleTimer({
                 min
               </Text>
               <TextInput
+                accessibilityLabel="Countdown seconds"
+                editable={!timer.isRunning}
+                accessibilityState={{ disabled: timer.isRunning }}
                 value={
                   timer.targetSeconds % 60 > 0
                     ? (timer.targetSeconds % 60).toString()
@@ -319,10 +325,12 @@ export default function CollapsibleTimer({
           )}
 
           {/* EMOM Duration + Rounds Input */}
-          {timer.mode === 'emom' && !timer.isRunning && (
+          {timer.mode === 'emom' && (
             <View className="mb-4">
               <View className="flex-row justify-center items-center mb-3">
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     Math.floor(timer.emomIntervalSeconds / 60) > 0
                       ? Math.floor(timer.emomIntervalSeconds / 60).toString()
@@ -355,6 +363,8 @@ export default function CollapsibleTimer({
                   min
                 </Text>
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     timer.emomIntervalSeconds % 60 > 0
                       ? (timer.emomIntervalSeconds % 60).toString()
@@ -389,6 +399,8 @@ export default function CollapsibleTimer({
               </View>
               <View className="flex-row justify-center items-center">
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     timer.emomTotalRounds > 0
                       ? String(timer.emomTotalRounds)
