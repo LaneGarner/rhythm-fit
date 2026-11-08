@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import TimerDigits from './TimerDigits';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -110,23 +111,18 @@ export default function StickyCompactTimer({
       }}
       pointerEvents={isSticky ? 'auto' : 'none'}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}
+      >
         <Ionicons
           name="timer-outline"
           size={24}
           color={colors.textSecondary}
           style={{ marginRight: 6 }}
         />
-        <Text
-          className="font-mono"
-          style={{
-            fontSize: 32,
-            fontWeight: '600',
-            fontVariant: ['tabular-nums'],
-            color: colors.text,
-          }}
-        >
-          {formatTime(
+        <TimerDigits
+          compact
+          value={formatTime(
             isTimerOwner
               ? timerSeconds
               : timer.mode === 'countDown'
@@ -135,7 +131,7 @@ export default function StickyCompactTimer({
                   ? timer.emomIntervalSeconds
                   : 0
           )}
-        </Text>
+        />
         {timer.mode === 'emom' &&
           isTimerOwner &&
           timer.emomCurrentRound > 0 && (

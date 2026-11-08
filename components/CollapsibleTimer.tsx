@@ -10,6 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import TimerDigits from './TimerDigits';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -434,11 +435,8 @@ export default function CollapsibleTimer({
               </Text>
             )}
 
-          <Text
-            className="text-4xl font-mono text-center mb-4"
-            style={{ color: colors.text }}
-          >
-            {formatTime(
+          <TimerDigits
+            value={formatTime(
               isTimerOwner
                 ? timerSeconds
                 : timer.mode === 'countDown'
@@ -447,7 +445,7 @@ export default function CollapsibleTimer({
                     ? timer.emomIntervalSeconds
                     : 0
             )}
-          </Text>
+          />
 
           {/* Show notice if timer is running on another activity */}
           {timer.isRunning && !isTimerOwner && (
