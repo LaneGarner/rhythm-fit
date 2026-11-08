@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Text, View, LayoutChangeEvent } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
 
@@ -10,6 +10,7 @@ interface StickyActivityHeaderProps {
   subtitle: string;
   badge?: string;
   scrollY: Animated.Value;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 const COLLAPSE_THRESHOLD = 80;
@@ -20,6 +21,7 @@ const COLLAPSE_THRESHOLD = 80;
 export function StickyCompactHeader({
   title,
   scrollY,
+  onLayout,
 }: StickyActivityHeaderProps) {
   const { colors } = useTheme();
 
@@ -31,6 +33,7 @@ export function StickyCompactHeader({
 
   return (
     <Animated.View
+      onLayout={onLayout}
       style={{
         position: 'absolute',
         top: 0,

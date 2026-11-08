@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Animated, Keyboard, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
@@ -42,6 +42,19 @@ export default function WorkoutExecutionLayout({
   const [expanded, setExpanded] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const contentRef = useRef<View>(null);
+  const clockRef = useRef<View | null>(null);
+  const [clockBottom, setClockBottom] = useState<number | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(42);
+  const measureClock = useCallback(() => {
+    const content = contentRef.current;
+    if (!content || !clockRef.current) return;
+    clockRef.current.measureLayout(
+      content,
+      (_x, y, _width, height) => setClockBottom(y + height),
+      () => setClockBottom(null)
+    );
+  }, []);
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', event =>
       setKeyboardHeight(event.endCoordinates.height)
@@ -87,12 +100,19 @@ export default function WorkoutExecutionLayout({
         <HeaderButton label="Edit" onPress={onEdit} />
       </View>
       <View style={{ flex: 1, position: 'relative' }}>
-        <StickyCompactHeader title={title} subtitle="" scrollY={scrollY} />
+        <StickyCompactHeader
+          title={title}
+          subtitle=""
+          scrollY={scrollY}
+          onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
+        />
         <StickyCompactTimer
           activityId={timerId}
           activityName={timerName}
           scrollY={scrollY}
           isExpanded={expanded}
+          clockBottom={clockBottom}
+          headerHeight={headerHeight}
         />
         <Animated.ScrollView
           ref={scrollRef}
@@ -107,18 +127,24 @@ export default function WorkoutExecutionLayout({
           )}
           scrollEventThrottle={16}
         >
-          <ContentHeader title={title} subtitle="" scrollY={scrollY} />
-          <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
-            <CollapsibleTimer
-              key={timerId}
-              activityId={timerId}
-              activityName={timerName}
-              onExpandedChange={setExpanded}
-              restToggle={restToggle}
-            />
-            {children}
-            <NotesCard notes={notes || ''} />
-            {progression}
+          <View ref={contentRef} collapsable={false} onLayout={measureClock}>
+            <ContentHeader title={title} subtitle="" scrollY={scrollY} />
+            <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
+              <CollapsibleTimer
+                key={timerId}
+                activityId={timerId}
+                activityName={timerName}
+                onExpandedChange={setExpanded}
+                onClockLayout={clock => {
+                  clockRef.current = clock;
+                  measureClock();
+                }}
+                restToggle={restToggle}
+              />
+              {children}
+              <NotesCard notes={notes || ''} />
+              {progression}
+            </View>
           </View>
         </Animated.ScrollView>
       </View>

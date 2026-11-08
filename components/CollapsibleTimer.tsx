@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Alert,
   Keyboard,
@@ -19,6 +19,7 @@ interface CollapsibleTimerProps {
   activityName: string;
   defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  onClockLayout?: (clock: View) => void;
   restToggle?: {
     enabled: boolean;
     onToggle: (value: boolean) => void;
@@ -30,8 +31,10 @@ export default function CollapsibleTimer({
   activityName,
   defaultExpanded = true,
   onExpandedChange,
+  onClockLayout,
   restToggle,
 }: CollapsibleTimerProps) {
+  const clockRef = useRef<View>(null);
   const { colors } = useTheme();
   const { fontScale } = useWindowDimensions();
   const actionButtonWidth = Math.ceil(52 + 64 * fontScale);
@@ -447,17 +450,25 @@ export default function CollapsibleTimer({
               </Text>
             )}
 
-          <TimerDigits
-            value={formatTime(
-              isTimerOwner
-                ? timerSeconds
-                : timer.mode === 'countDown'
-                  ? timer.targetSeconds
-                  : timer.mode === 'emom'
-                    ? timer.emomIntervalSeconds
-                    : 0
-            )}
-          />
+          <View
+            ref={clockRef}
+            collapsable={false}
+            onLayout={() => {
+              if (clockRef.current) onClockLayout?.(clockRef.current);
+            }}
+          >
+            <TimerDigits
+              value={formatTime(
+                isTimerOwner
+                  ? timerSeconds
+                  : timer.mode === 'countDown'
+                    ? timer.targetSeconds
+                    : timer.mode === 'emom'
+                      ? timer.emomIntervalSeconds
+                      : 0
+              )}
+            />
+          </View>
 
           {/* Show notice if timer is running on another activity */}
           {timer.isRunning && !isTimerOwner && (
