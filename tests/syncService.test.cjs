@@ -21,6 +21,9 @@ function harness({
   legacy = false,
   failDownload = false,
   onDownload,
+  timeoutMs,
+  etag,
+  notModified = false,
 } = {}) {
   const storage = new Map(Object.entries(initial));
   const requests = [];
@@ -39,11 +42,18 @@ function harness({
     ok,
     status: ok ? 200 : 503,
     json: async () => data,
+    headers: { get: () => etag || null },
   });
   const fetch = async (url, options) => {
     const body = options.body ? JSON.parse(options.body) : null;
-    requests.push({ url, method: options.method, body });
+    requests.push({
+      url,
+      method: options.method,
+      body,
+      headers: options.headers,
+    });
     if (options.method === 'GET') {
+      if (notModified) return { ...response(false, null), status: 304 };
       if (onDownload)
         await onDownload(
           exports,
@@ -81,13 +91,21 @@ function harness({
       exports,
       console: { error() {} },
       fetch,
+      AbortController,
+      setTimeout: (callback, ms) => setTimeout(callback, timeoutMs || ms),
+      clearTimeout,
       require: name =>
-        name.includes('async-storage')
-          ? { __esModule: true, default: asyncStorage }
-          : {
-              API_URL: 'https://test.invalid',
-              getApiEndpoint: p => `https://test.invalid${p}`,
-            },
+        name === '../utils/storage'
+          ? {
+              saveActivities: async data =>
+                storage.set('activities', JSON.stringify(data)),
+            }
+          : name.includes('async-storage')
+            ? { __esModule: true, default: asyncStorage }
+            : {
+                API_URL: 'https://test.invalid',
+                getApiEndpoint: p => `https://test.invalid${p}`,
+              },
     }
   );
   return {
@@ -211,4 +229,56 @@ test('later syncs discover old workouts backfilled by another device', async () 
     h.requests.some(r => r.url.includes('?since=')),
     false
   );
+});
+
+test('a stalled download times out, uploads phone-only history, and permits a later retry', async () => {
+  const h = harness({
+    local: [activity('unsynced')],
+    timeoutMs: 5,
+    onDownload: () => new Promise(() => {}),
+  });
+  await assert.rejects(h.sync(), /timed out/);
+  assert.equal(h.requests.filter(r => r.method === 'POST').length, 1);
+  assert.equal(h.storage.get('rhythm_last_sync_time'), undefined);
+  assert.equal(
+    JSON.parse(h.storage.get('rhythm_recovery_backup_v2:owner')).activities[0]
+      .id,
+    'unsynced'
+  );
+  await assert.rejects(h.sync(), /timed out/);
+  assert.equal(h.requests.filter(r => r.method === 'GET').length, 2);
+});
+
+test('a bulk enqueue retains existing entries and coalesces changed versions', async () => {
+  const h = harness();
+  await h.exports.addToPendingSync(activity('existing'));
+  await h.exports.addManyToPendingSync([
+    activity('new'),
+    { ...activity('existing'), notes: 'edited' },
+  ]);
+  const queue = JSON.parse(h.storage.get('rhythm_pending_sync'));
+  assert.equal(queue.length, 2);
+  assert.equal(queue.find(a => a.id === 'existing').notes, 'edited');
+});
+
+test('unchanged cloud history avoids a body download without dropping queued local edits', async () => {
+  const local = activity('phone-edit');
+  const h = harness({
+    local: [local],
+    notModified: true,
+    initial: { 'rhythm_history_etag_v1:owner': '"known"' },
+  });
+  await h.sync();
+  assert.equal(h.requests[0].headers['If-None-Match'], '"known"');
+  assert.equal(h.requests.filter(r => r.method === 'POST').length, 1);
+  assert.equal(h.current[0].id, 'phone-edit');
+});
+
+test('a complete recovery stores its fingerprint; sign-out clears it but keeps the snapshot', async () => {
+  const h = harness({ local: [activity('a')], etag: '"cloud-v1"' });
+  await h.sync();
+  assert.equal(h.storage.get('rhythm_history_etag_v1:owner'), '"cloud-v1"');
+  await h.exports.clearSyncData();
+  assert.equal(h.storage.get('rhythm_history_etag_v1:owner'), undefined);
+  assert.ok(h.storage.get('rhythm_recovery_backup_v2:owner'));
 });

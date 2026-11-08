@@ -134,8 +134,8 @@ export default function SettingsScreen({ navigation }: any) {
   }, [user, navigation]);
 
   const performSignOut = async () => {
-    await clearUserData();
     await clearSyncData();
+    await clearUserData();
     dispatch(clearAllActivities());
     pendingSignOutRef.current = true;
     await signOut();
