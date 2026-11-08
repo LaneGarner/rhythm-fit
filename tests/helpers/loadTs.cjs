@@ -12,6 +12,7 @@ module.exports = function loader(mocks = {}) {
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
         esModuleInterop: true,
       },
     }).outputText;
