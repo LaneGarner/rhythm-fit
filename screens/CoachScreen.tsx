@@ -906,7 +906,7 @@ export default function CoachScreen({ navigation, route }: any) {
           clearsTopTabBar
           rightAction={<View style={{ width: 44, height: 44 }} />}
         >
-          <AppHeaderTitle title="AI Coach" />
+          <AppHeaderTitle title="Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>
       </View>
@@ -921,7 +921,7 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader clearsTopTabBar>
-          <AppHeaderTitle title="AI Coach" />
+          <AppHeaderTitle title="Coach" />
         </AppHeader>
         <AIDataConsent
           userId={user.id}
@@ -939,7 +939,7 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader clearsTopTabBar>
-          <AppHeaderTitle title="AI Coach" />
+          <AppHeaderTitle title="Coach" />
         </AppHeader>
         <OnboardingFlowScreen
           initialStep={onboardingStart}
@@ -965,7 +965,7 @@ export default function CoachScreen({ navigation, route }: any) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <AppHeader clearsTopTabBar>
-          <AppHeaderTitle title="AI Coach" />
+          <AppHeaderTitle title="Coach" />
         </AppHeader>
         <CoachDashboard
           hasProfile={Boolean(coachProfile) || hasCompletedOnboarding}
@@ -1031,7 +1031,7 @@ export default function CoachScreen({ navigation, route }: any) {
           </TouchableOpacity>
         }
       >
-        <AppHeaderTitle title="AI Coach" />
+        <AppHeaderTitle title="Coach" />
       </AppHeader>
 
       {/* Chat / History sub-navigation (underline style) */}
