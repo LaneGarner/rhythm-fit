@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
 } from 'react';
 import { Alert, AppState, AppStateStatus, Vibration } from 'react-native';
 import type { AudioPlayer } from 'expo-audio';
@@ -52,6 +53,17 @@ interface TimerContextValue {
   ) => void;
   formatTime: (seconds: number) => string;
 }
+
+type TimerActions = Omit<TimerContextValue, 'timer'> & {
+  getTimerState: () => TimerState;
+};
+type TimerMetadata = Omit<TimerState, 'seconds'> & {
+  hasTimeRemaining: boolean;
+};
+const TimerActionsContext = createContext<TimerActions | undefined>(undefined);
+const TimerMetadataContext = createContext<TimerMetadata | undefined>(
+  undefined
+);
 
 const initialState: TimerState = {
   activityId: null,
@@ -851,8 +863,47 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     formatTime,
   };
 
+  const latest = useRef(value);
+  latest.current = value;
+  const actions = useMemo<TimerActions>(
+    () => ({
+      startTimer: (...args) => latest.current.startTimer(...args),
+      switchTimer: (...args) => latest.current.switchTimer(...args),
+      pauseTimer: (...args) => latest.current.pauseTimer(...args),
+      resumeTimer: (...args) => latest.current.resumeTimer(...args),
+      resetTimer: (...args) => latest.current.resetTimer(...args),
+      stopTimer: (...args) => latest.current.stopTimer(...args),
+      setTimerMode: (...args) => latest.current.setTimerMode(...args),
+      setTargetSeconds: (...args) => latest.current.setTargetSeconds(...args),
+      setEmomInterval: (...args) => latest.current.setEmomInterval(...args),
+      setEmomRounds: (...args) => latest.current.setEmomRounds(...args),
+      startCountdown: (...args) => latest.current.startCountdown(...args),
+      formatTime: (...args) => latest.current.formatTime(...args),
+      getTimerState: () => latest.current.timer,
+    }),
+    []
+  );
+  const metadata = useMemo<TimerMetadata>(() => {
+    const { seconds, ...rest } = timer;
+    return { ...rest, hasTimeRemaining: seconds > 0 };
+  }, [
+    timer.activityId,
+    timer.activityName,
+    timer.isRunning,
+    timer.startedAt,
+    timer.mode,
+    timer.targetSeconds,
+    timer.emomIntervalSeconds,
+    timer.emomTotalRounds,
+    timer.emomCurrentRound,
+    timer.seconds > 0,
+  ]);
   return (
-    <TimerContext.Provider value={value}>{children}</TimerContext.Provider>
+    <TimerActionsContext.Provider value={actions}>
+      <TimerMetadataContext.Provider value={metadata}>
+        <TimerContext.Provider value={value}>{children}</TimerContext.Provider>
+      </TimerMetadataContext.Provider>
+    </TimerActionsContext.Provider>
   );
 }
 
@@ -862,4 +913,15 @@ export function useTimer(): TimerContextValue {
     throw new Error('useTimer must be used within a TimerProvider');
   }
   return context;
+}
+
+export function useTimerActions(): TimerActions {
+  const value = useContext(TimerActionsContext);
+  if (!value) throw new Error('TimerProvider is required');
+  return value;
+}
+export function useTimerMetadata(): TimerMetadata {
+  const value = useContext(TimerMetadataContext);
+  if (!value) throw new Error('TimerProvider is required');
+  return value;
 }
