@@ -390,3 +390,17 @@ export function formatPlateResult(result: PlateResult): string {
 
   return `${parts.join(', ')} on each side`;
 }
+
+// Coach must not mistake the calculator's fallback defaults for owned equipment.
+export async function getSavedCoachEquipment(): Promise<EquipmentConfig | null> {
+  try {
+    const saved = await AsyncStorage.getItem(EQUIPMENT_KEY);
+    if (!saved) return null;
+    const config = JSON.parse(saved);
+    return Array.isArray(config?.barbells) && Array.isArray(config?.plates)
+      ? config
+      : null;
+  } catch {
+    return null;
+  }
+}

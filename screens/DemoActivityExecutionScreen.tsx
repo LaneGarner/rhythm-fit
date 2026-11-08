@@ -1,24 +1,10 @@
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import CollapsibleTimer from '../components/CollapsibleTimer';
-import HeaderButton from '../components/HeaderButton';
-import NotesCard from '../components/NotesCard';
-import SetCard from '../components/SetCard';
-import {
-  ContentHeader,
-  StickyCompactHeader,
-} from '../components/StickyActivityHeader';
-import StickyCompactTimer from '../components/StickyCompactTimer';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import WorkoutExecutionLayout from '../components/WorkoutExecutionLayout';
+import WorkoutExecutionSets from '../components/WorkoutExecutionSets';
 import { useTutorial } from '../components/tutorial/TutorialProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Activity, SetData } from '../types/activity';
 
 const DEMO_ACTIVITY: Activity = {
@@ -36,16 +22,10 @@ const DEMO_ACTIVITY: Activity = {
 };
 
 export default function DemoActivityExecutionScreen({ navigation }: any) {
-  const { colorScheme, colors } = useTheme();
-  const { insets } = useResponsiveLayout();
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
   const { isActive, currentStep } = useTutorial();
-
   const [sets, setSets] = useState<SetData[]>(DEMO_ACTIVITY.sets || []);
-  const [isTimerExpanded, setIsTimerExpanded] = useState(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
-
   // Auto-scroll during tutorial to showcase the sets section
   useEffect(() => {
     if (isActive && currentStep?.id === 'activity-execution') {
@@ -93,166 +73,51 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
     );
   };
 
-  const handleShowOptions = () => {
-    // No-op in demo mode - just show the options menu exists
-  };
-
-  const handleDone = () => {
-    navigation.goBack();
-  };
-
   return (
-    <View
-      style={{ flex: 1, backgroundColor: colors.background }}
+    <WorkoutExecutionLayout
       testID="demo-activity-content"
-    >
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
-      >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+      title={DEMO_ACTIVITY.name}
+      screenTitle="Demo Activity"
+      timerId={DEMO_ACTIVITY.id}
+      scrollRef={scrollViewRef}
+      onBack={() => navigation.goBack()}
+      onEdit={() => {}}
+      notes="Demo activity for tutorial. Try tapping 'Mark Complete' on a set!"
+      footer={
         <View
           style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: 16,
+            paddingBottom: 34,
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
           }}
         >
-          <Text
-            style={{
-              fontSize: 17,
-              fontWeight: '600',
-              color: colors.text,
-              textAlign: 'center',
-            }}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="bg-green-500 py-3 px-6 rounded-lg"
+            accessibilityRole="button"
+            accessibilityLabel="Done with demo"
           >
-            Demo Activity
-          </Text>
+            <Text className="text-white text-center font-semibold text-lg">
+              Done
+            </Text>
+          </TouchableOpacity>
         </View>
-        <HeaderButton label="Edit" onPress={() => {}} />
-      </View>
-
-      {/* Content area wrapper for sticky header positioning */}
-      <View style={{ flex: 1, position: 'relative' }}>
-        {/* Sticky compact header - positioned at top of content area */}
-        <StickyCompactHeader
-          activityType={DEMO_ACTIVITY.type}
-          title={DEMO_ACTIVITY.name}
-          subtitle="Weight Training"
-          scrollY={scrollY}
-        />
-
-        {/* Sticky compact timer - appears below sticky header when scrolled */}
-        <StickyCompactTimer
-          activityId={DEMO_ACTIVITY.id}
-          activityName={DEMO_ACTIVITY.name}
-          scrollY={scrollY}
-          isExpanded={isTimerExpanded}
-        />
-
-        <Animated.ScrollView
-          ref={scrollViewRef}
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 200 }}
-          showsVerticalScrollIndicator={true}
-          keyboardShouldPersistTaps="handled"
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
-          )}
-          scrollEventThrottle={16}
-        >
-          {/* Large content header - fades out on scroll */}
-          <ContentHeader
-            activityType={DEMO_ACTIVITY.type}
-            title={DEMO_ACTIVITY.name}
-            subtitle="Weight Training"
-            scrollY={scrollY}
-          />
-
-          <View className="p-4" style={{ gap: 24 }}>
-            {/* Timer - Collapsible (demo mode - won't actually track) */}
-            <CollapsibleTimer
-              activityId={DEMO_ACTIVITY.id}
-              activityName={DEMO_ACTIVITY.name}
-              defaultExpanded={false}
-              onExpandedChange={setIsTimerExpanded}
-            />
-
-            {/* Notes */}
-            <NotesCard notes="Demo activity for tutorial. Try tapping 'Mark Complete' on a set!" />
-
-            {/* Sets */}
-            <View>
-              <View className="flex-row justify-between items-center mb-4">
-                <Text
-                  className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Sets ({sets.length})
-                </Text>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 14,
-                  }}
-                >
-                  Demo Mode
-                </Text>
-              </View>
-
-              {sets.map((set, index) => (
-                <SetCard
-                  key={set.id}
-                  set={set}
-                  index={index}
-                  trackingFields={
-                    DEMO_ACTIVITY.trackingFields || ['weight', 'reps']
-                  }
-                  activityType={DEMO_ACTIVITY.type}
-                  onUpdateSet={handleUpdateSet}
-                  onShowOptions={handleShowOptions}
-                  readOnly
-                />
-              ))}
-            </View>
-          </View>
-        </Animated.ScrollView>
-      </View>
-
-      {/* Sticky Action Button */}
-      <View
-        className={`absolute left-0 right-0 p-4 border-t ${
-          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-        }`}
-        style={{
-          bottom: 0,
-          paddingBottom: 34,
-          zIndex: 1000,
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleDone}
-          className="bg-green-500 py-3 px-6 rounded-lg"
-          accessibilityRole="button"
-          accessibilityLabel="Done with demo"
-        >
-          <Text className="text-white text-center font-semibold text-lg">
-            Done
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      }
+    >
+      <WorkoutExecutionSets
+        activities={[{ ...DEMO_ACTIVITY, sets }]}
+        onChange={changes =>
+          changes.forEach(change =>
+            handleUpdateSet(change.setId, change.updates)
+          )
+        }
+      />
+    </WorkoutExecutionLayout>
   );
 }

@@ -2,6 +2,97 @@ import dayjs from 'dayjs';
 import { Activity, ActivityType, SetData } from '../types/activity';
 import { isActivityComplete } from '../utils/supersetUtils';
 
+// Redux preserves unchanged activity objects; these caches can be shared by
+// Stats, Coach and progression without retaining discarded histories.
+const dateCache = new WeakMap<Activity, ReturnType<typeof dayjs>>();
+function getCachedActivityDate(activity: Activity) {
+  let date = dateCache.get(activity);
+  if (!date) {
+    date = dayjs(activity.date);
+    dateCache.set(activity, date);
+  }
+  return date;
+}
+const exerciseIndexCache = new WeakMap<Activity[], Map<string, Activity[]>>();
+function exerciseIndex(activities: Activity[]) {
+  let index = exerciseIndexCache.get(activities);
+  if (!index) {
+    index = new Map();
+    for (const activity of activities) {
+      if (!activity.completed) continue;
+      const key = activity.name.toLowerCase();
+      const group = index.get(key) || [];
+      group.push(activity);
+      index.set(key, group);
+    }
+    exerciseIndexCache.set(activities, index);
+  }
+  return index;
+}
+
+export function calculateTopExercises(activities: Activity[], limit = 5) {
+  const index = exerciseIndex(activities);
+  return getUniqueExercises(activities)
+    .map(name => ({
+      name,
+      sessions: index.get(name.toLowerCase())?.length || 0,
+    }))
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, limit)
+    .map(item => ({
+      ...item,
+      stats: calculateExerciseStats(activities, item.name),
+    }));
+}
+
+export function calculateVolumeBuckets(
+  activities: Activity[],
+  timeRange: number,
+  now = dayjs()
+) {
+  const count =
+    timeRange === 7
+      ? 7
+      : timeRange === 0
+        ? 12
+        : Math.min(Math.floor(timeRange / 7), 12);
+  const buckets = Array.from({ length: count }, (_, index) => {
+    const i = count - index - 1;
+    const start =
+      timeRange === 7
+        ? now.subtract(i, 'day').startOf('day')
+        : timeRange === 0
+          ? now.subtract(i, 'month').startOf('month')
+          : now.subtract(i * 7 + 6, 'day');
+    const end =
+      timeRange === 7
+        ? start.endOf('day')
+        : timeRange === 0
+          ? now.subtract(i, 'month').endOf('month')
+          : now.subtract(i * 7, 'day');
+    return {
+      label: start.format(timeRange === 0 ? 'MMM' : 'M/D'),
+      value: 0,
+      low:
+        timeRange === 7
+          ? start.valueOf() - 1
+          : start.subtract(1, 'day').valueOf(),
+      high: timeRange === 7 ? end.valueOf() + 1 : end.add(1, 'day').valueOf(),
+    };
+  });
+  for (const activity of activities) {
+    if (!isActivityComplete(activity) || !activity.sets) continue;
+    const date = getCachedActivityDate(activity).valueOf();
+    let volume = 0;
+    for (const set of activity.sets)
+      if (set.completed && set.weight && set.reps)
+        volume += set.weight * set.reps;
+    for (const bucket of buckets)
+      if (date > bucket.low && date < bucket.high) bucket.value += volume;
+  }
+  return buckets.map(({ label, value }) => ({ label, value }));
+}
+
 // Mirror the BodyPart type from backend
 export type BodyPart =
   | 'chest'
@@ -281,9 +372,8 @@ export function calculateExerciseStats(
   activities: Activity[],
   exerciseName: string
 ): ExerciseStats | null {
-  const matchingActivities = activities.filter(
-    a => a.completed && a.name.toLowerCase() === exerciseName.toLowerCase()
-  );
+  const matchingActivities =
+    exerciseIndex(activities).get(exerciseName.toLowerCase()) || [];
 
   if (matchingActivities.length === 0) return null;
 
@@ -348,7 +438,7 @@ export function calculateExerciseStats(
     });
   }
 
-  history.sort((a, b) => dayjs(a.date).unix() - dayjs(b.date).unix());
+  history.sort((a, b) => a.date.localeCompare(b.date));
 
   return {
     exerciseName,
@@ -452,15 +542,14 @@ export function calculateOverallStats(
 ): OverallStats {
   const now = dayjs();
   const isAllTime = daysRange === 0;
+  const cutoff = now.subtract(daysRange, 'day');
+  const tomorrow = now.add(1, 'day');
 
   const recentActivities = isAllTime
     ? activities
     : activities.filter(a => {
-        const date = dayjs(a.date);
-        return (
-          date.isAfter(now.subtract(daysRange, 'day')) &&
-          date.isBefore(now.add(1, 'day'))
-        );
+        const date = getCachedActivityDate(a);
+        return date.isAfter(cutoff) && date.isBefore(tomorrow);
       });
 
   const completedActivities = recentActivities.filter(a =>
@@ -491,10 +580,19 @@ export function calculateOverallStats(
   // For all-time, compute span from earliest activity to now
   let effectiveDays = daysRange;
   if (isAllTime && completedActivities.length > 0) {
-    const sortedDates = completedActivities
-      .map(a => dayjs(a.date))
-      .sort((a, b) => a.unix() - b.unix());
-    effectiveDays = Math.max(now.diff(sortedDates[0], 'day'), 1);
+    const sortedDates = completedActivities.map(a =>
+      getCachedActivityDate(a).valueOf()
+    );
+    effectiveDays = Math.max(
+      now.diff(
+        sortedDates.reduce(
+          (earliest, value) => Math.min(earliest, value),
+          Infinity
+        ),
+        'day'
+      ),
+      1
+    );
   }
 
   return {
@@ -690,7 +788,7 @@ export function calculatePersonalRecords(
   for (const activity of activities) {
     if (!isActivityComplete(activity) || !activity.sets) continue;
 
-    const activityDate = dayjs(activity.date);
+    const activityDate = getCachedActivityDate(activity);
     const isRecent = isAllTime || activityDate.isAfter(recentCutoff);
     const exerciseName = activity.name;
 
@@ -792,15 +890,16 @@ export function calculateConsistencyStats(
 ): ConsistencyStats {
   const now = dayjs();
   const isAllTime = daysRange === 0;
+  const cutoff = now.subtract(daysRange, 'day');
+  const tomorrow = now.add(1, 'day');
 
   const completedDates = new Set<string>();
   for (const activity of activities) {
     if (isActivityComplete(activity)) {
-      const activityDate = dayjs(activity.date);
+      const activityDate = getCachedActivityDate(activity);
       if (
         isAllTime ||
-        (activityDate.isAfter(now.subtract(daysRange, 'day')) &&
-          activityDate.isBefore(now.add(1, 'day')))
+        (activityDate.isAfter(cutoff) && activityDate.isBefore(tomorrow))
       ) {
         completedDates.add(activity.date);
       }
@@ -845,11 +944,10 @@ export function calculateConsistencyStats(
   for (const activity of activities) {
     if (!isActivityComplete(activity)) continue;
 
-    const activityDate = dayjs(activity.date);
+    const activityDate = getCachedActivityDate(activity);
     if (
       !isAllTime &&
-      (!activityDate.isAfter(now.subtract(daysRange, 'day')) ||
-        !activityDate.isBefore(now.add(1, 'day')))
+      (!activityDate.isAfter(cutoff) || !activityDate.isBefore(tomorrow))
     ) {
       continue;
     }
@@ -938,4 +1036,52 @@ export function calculateActivityTypeBreakdown(
   }
 
   return stats.sort((a, b) => b.count - a.count);
+}
+
+export interface PreviousDay {
+  day: string;
+  sets: SetData[];
+}
+
+/**
+ * Completed sets from the most recent days (newest first) on which an
+ * exercise was logged, excluding the current activity and anything dated
+ * after it. Multiple logs on the same day are merged into one day.
+ */
+export function getPreviousDays(
+  activities: Activity[],
+  current: Pick<Activity, 'id' | 'name' | 'date'>,
+  dayLimit = 5
+): PreviousDay[] {
+  const name = current.name.toLowerCase();
+  const byDay = new Map<string, SetData[]>();
+
+  activities
+    .filter(
+      a =>
+        a.id !== current.id &&
+        a.name.toLowerCase() === name &&
+        !getCachedActivityDate(a).isAfter(current.date, 'day')
+    )
+    .sort((a, b) => dayjs(b.date).unix() - getCachedActivityDate(a).unix())
+    .forEach(a => {
+      const completedSets = (a.sets || []).filter(s => s.completed);
+      if (completedSets.length === 0) return;
+      const day = getCachedActivityDate(a).format('YYYY-MM-DD');
+      byDay.set(day, [...(byDay.get(day) || []), ...completedSets]);
+    });
+
+  return Array.from(byDay.entries())
+    .slice(0, dayLimit)
+    .map(([day, sets]) => ({ day, sets }));
+}
+
+export function formatSetSummary(set: SetData): string {
+  const parts: string[] = [];
+  if (set.weight && set.reps) parts.push(`${set.weight} × ${set.reps}`);
+  else if (set.weight) parts.push(`${set.weight} lbs`);
+  else if (set.reps) parts.push(`${set.reps} reps`);
+  if (set.time) parts.push(formatTime(set.time));
+  if (set.distance) parts.push(formatDistance(set.distance));
+  return parts.join(' · ') || '—';
 }

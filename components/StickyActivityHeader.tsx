@@ -1,8 +1,7 @@
 import React from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Text, View, LayoutChangeEvent } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity } from '../types/activity';
-import SupersetBadge from './SupersetBadge';
 
 interface StickyActivityHeaderProps {
   activityType?: string | null;
@@ -11,6 +10,7 @@ interface StickyActivityHeaderProps {
   subtitle: string;
   badge?: string;
   scrollY: Animated.Value;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 const COLLAPSE_THRESHOLD = 80;
@@ -20,9 +20,8 @@ const COLLAPSE_THRESHOLD = 80;
  */
 export function StickyCompactHeader({
   title,
-  subtitle,
-  badge,
   scrollY,
+  onLayout,
 }: StickyActivityHeaderProps) {
   const { colors } = useTheme();
 
@@ -34,6 +33,7 @@ export function StickyCompactHeader({
 
   return (
     <Animated.View
+      onLayout={onLayout}
       style={{
         position: 'absolute',
         top: 0,
@@ -62,24 +62,11 @@ export function StickyCompactHeader({
             fontSize: 16,
             fontWeight: '600',
             color: colors.text,
-            maxWidth: '60%',
+            flexShrink: 1,
           }}
         >
           {title}
         </Text>
-        {badge ? (
-          <SupersetBadge label={badge} style={{ marginLeft: 8 }} />
-        ) : (
-          <Text
-            style={{
-              fontSize: 14,
-              color: colors.textSecondary,
-              marginLeft: 8,
-            }}
-          >
-            {subtitle}
-          </Text>
-        )}
       </View>
     </Animated.View>
   );
@@ -88,12 +75,7 @@ export function StickyCompactHeader({
 /**
  * Large content header - renders INSIDE the ScrollView, fades out on scroll
  */
-export function ContentHeader({
-  title,
-  subtitle,
-  badge,
-  scrollY,
-}: StickyActivityHeaderProps) {
+export function ContentHeader({ title, scrollY }: StickyActivityHeaderProps) {
   const { colors } = useTheme();
 
   const contentOpacity = scrollY.interpolate({
@@ -107,35 +89,23 @@ export function ContentHeader({
       style={{
         alignItems: 'center',
         opacity: contentOpacity,
-        paddingTop: 16,
-        paddingBottom: 8,
+        paddingTop: 12,
+        paddingBottom: 4,
+        paddingHorizontal: 16,
       }}
     >
       <Text
-        numberOfLines={2}
+        accessibilityRole="header"
         style={{
-          fontSize: 24,
+          fontSize: 30,
           fontWeight: 'bold',
           textAlign: 'center',
           color: colors.text,
-          paddingHorizontal: 16,
+          width: '100%',
         }}
       >
         {title}
       </Text>
-      {badge ? (
-        <SupersetBadge label={badge} size="medium" style={{ marginTop: 8 }} />
-      ) : (
-        <Text
-          style={{
-            fontSize: 16,
-            marginTop: 4,
-            color: colors.textSecondary,
-          }}
-        >
-          {subtitle}
-        </Text>
-      )}
     </Animated.View>
   );
 }

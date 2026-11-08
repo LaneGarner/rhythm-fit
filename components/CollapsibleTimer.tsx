@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Alert,
   Keyboard,
@@ -8,7 +8,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import TimerDigits from './TimerDigits';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -17,21 +19,25 @@ interface CollapsibleTimerProps {
   activityName: string;
   defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  onClockLayout?: (clock: View) => void;
   restToggle?: {
     enabled: boolean;
     onToggle: (value: boolean) => void;
-    globalEnabled: boolean;
   };
 }
 
 export default function CollapsibleTimer({
   activityId,
   activityName,
-  defaultExpanded = false,
+  defaultExpanded = true,
   onExpandedChange,
+  onClockLayout,
   restToggle,
 }: CollapsibleTimerProps) {
+  const clockRef = useRef<View>(null);
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const actionButtonWidth = Math.ceil(52 + 64 * fontScale);
 
   const {
     timer,
@@ -248,9 +254,12 @@ export default function CollapsibleTimer({
           </View>
 
           {/* Countdown Duration Input */}
-          {timer.mode === 'countDown' && !timer.isRunning && (
+          {timer.mode === 'countDown' && (
             <View className="flex-row justify-center items-center mb-4">
               <TextInput
+                accessibilityLabel="Countdown minutes"
+                editable={!timer.isRunning}
+                accessibilityState={{ disabled: timer.isRunning }}
                 value={
                   Math.floor(timer.targetSeconds / 60) > 0
                     ? Math.floor(timer.targetSeconds / 60).toString()
@@ -282,6 +291,9 @@ export default function CollapsibleTimer({
                 min
               </Text>
               <TextInput
+                accessibilityLabel="Countdown seconds"
+                editable={!timer.isRunning}
+                accessibilityState={{ disabled: timer.isRunning }}
                 value={
                   timer.targetSeconds % 60 > 0
                     ? (timer.targetSeconds % 60).toString()
@@ -316,10 +328,12 @@ export default function CollapsibleTimer({
           )}
 
           {/* EMOM Duration + Rounds Input */}
-          {timer.mode === 'emom' && !timer.isRunning && (
+          {timer.mode === 'emom' && (
             <View className="mb-4">
               <View className="flex-row justify-center items-center mb-3">
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     Math.floor(timer.emomIntervalSeconds / 60) > 0
                       ? Math.floor(timer.emomIntervalSeconds / 60).toString()
@@ -352,6 +366,8 @@ export default function CollapsibleTimer({
                   min
                 </Text>
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     timer.emomIntervalSeconds % 60 > 0
                       ? (timer.emomIntervalSeconds % 60).toString()
@@ -386,6 +402,8 @@ export default function CollapsibleTimer({
               </View>
               <View className="flex-row justify-center items-center">
                 <TextInput
+                  editable={!timer.isRunning}
+                  accessibilityState={{ disabled: timer.isRunning }}
                   value={
                     timer.emomTotalRounds > 0
                       ? String(timer.emomTotalRounds)
@@ -432,20 +450,25 @@ export default function CollapsibleTimer({
               </Text>
             )}
 
-          <Text
-            className="text-4xl font-mono text-center mb-4"
-            style={{ color: colors.text }}
+          <View
+            ref={clockRef}
+            collapsable={false}
+            onLayout={() => {
+              if (clockRef.current) onClockLayout?.(clockRef.current);
+            }}
           >
-            {formatTime(
-              isTimerOwner
-                ? timerSeconds
-                : timer.mode === 'countDown'
-                  ? timer.targetSeconds
-                  : timer.mode === 'emom'
-                    ? timer.emomIntervalSeconds
-                    : 0
-            )}
-          </Text>
+            <TimerDigits
+              value={formatTime(
+                isTimerOwner
+                  ? timerSeconds
+                  : timer.mode === 'countDown'
+                    ? timer.targetSeconds
+                    : timer.mode === 'emom'
+                      ? timer.emomIntervalSeconds
+                      : 0
+              )}
+            />
+          </View>
 
           {/* Show notice if timer is running on another activity */}
           {timer.isRunning && !isTimerOwner && (
@@ -465,7 +488,7 @@ export default function CollapsibleTimer({
                 }
                 className="px-6 py-2 rounded-lg"
                 style={{
-                  minWidth: 102,
+                  width: actionButtonWidth,
                   alignItems: 'center',
                   backgroundColor: colors.surface,
                   borderWidth: 2,
@@ -488,7 +511,7 @@ export default function CollapsibleTimer({
                 onPress={handlePauseTimer}
                 className="px-6 py-2 rounded-lg"
                 style={{
-                  minWidth: 102,
+                  width: actionButtonWidth,
                   alignItems: 'center',
                   backgroundColor: colors.surface,
                   borderWidth: 2,
@@ -556,7 +579,6 @@ export default function CollapsibleTimer({
                 <Switch
                   value={restToggle.enabled}
                   onValueChange={restToggle.onToggle}
-                  disabled={!restToggle.globalEnabled}
                   trackColor={{
                     false: colors.border,
                     true: colors.primary.main,
@@ -564,14 +586,6 @@ export default function CollapsibleTimer({
                   accessibilityLabel="Auto rest countdown"
                 />
               </View>
-              {!restToggle.globalEnabled && (
-                <Text
-                  className="text-sm mt-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Enable global auto rest timer in Settings to use this.
-                </Text>
-              )}
             </View>
           )}
         </View>

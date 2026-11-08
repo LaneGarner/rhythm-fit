@@ -1,7 +1,5 @@
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import React, { useEffect } from 'react';
-import CoachScreen from '../screens/CoachScreen';
-import StatsScreen from '../screens/StatsScreen';
 import WeeklyStackNavigator from './WeeklyStackNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useTutorial } from '../components/tutorial';
@@ -86,7 +84,7 @@ export default function TabNavigatorNative() {
       />
       <Tab.Screen
         name="Stats"
-        component={StatsScreen}
+        getComponent={() => require('../screens/StatsScreen').default}
         options={{
           tabBarLabel: 'Stats',
           tabBarIcon: ({ focused }) => ({
@@ -96,7 +94,7 @@ export default function TabNavigatorNative() {
       />
       <Tab.Screen
         name="Coach"
-        component={CoachScreen}
+        getComponent={() => require('../screens/CoachScreen').default}
         options={{
           tabBarLabel: 'Coach',
           tabBarIcon: ({ focused }) => ({

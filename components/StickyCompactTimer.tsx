@@ -1,18 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  Alert,
+  Animated,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import TimerDigits from './TimerDigits';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
-
-const STICKY_HEADER_HEIGHT = 42;
-const APPEAR_START = 160;
-const APPEAR_END = 180;
 
 interface StickyCompactTimerProps {
   activityId: string;
   activityName: string;
   scrollY: Animated.Value;
   isExpanded: boolean;
+  clockBottom: number | null;
+  headerHeight: number;
 }
 
 export default function StickyCompactTimer({
@@ -20,8 +26,12 @@ export default function StickyCompactTimer({
   activityName,
   scrollY,
   isExpanded,
+  clockBottom,
+  headerHeight,
 }: StickyCompactTimerProps) {
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const actionButtonWidth = Math.ceil(32 + 56 * fontScale);
   const {
     timer,
     startTimer,
@@ -32,16 +42,21 @@ export default function StickyCompactTimer({
     formatTime,
   } = useTimer();
 
+  const threshold =
+    clockBottom === null ? 1 : Math.max(1, clockBottom - headerHeight);
   const [isSticky, setIsSticky] = useState(false);
+  const lastScroll = useRef(0);
 
   useEffect(() => {
+    setIsSticky(lastScroll.current >= threshold);
     const id = scrollY.addListener(({ value }) => {
-      setIsSticky(value >= APPEAR_END);
+      lastScroll.current = value;
+      setIsSticky(value >= threshold);
     });
     return () => scrollY.removeListener(id);
-  }, [scrollY]);
+  }, [scrollY, threshold]);
 
-  if (!isExpanded) return null;
+  if (!isExpanded || clockBottom === null) return null;
 
   const isTimerOwner = timer.activityId === activityId;
   const isTimerRunning = isTimerOwner && timer.isRunning;
@@ -59,7 +74,7 @@ export default function StickyCompactTimer({
         timerSeconds > 0));
 
   const opacity = scrollY.interpolate({
-    inputRange: [APPEAR_START, APPEAR_END],
+    inputRange: [threshold - 0.001, threshold],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
@@ -85,7 +100,7 @@ export default function StickyCompactTimer({
     <Animated.View
       style={{
         position: 'absolute',
-        top: STICKY_HEADER_HEIGHT - 2,
+        top: headerHeight - 2,
         left: 0,
         right: 0,
         zIndex: 99,
@@ -99,25 +114,22 @@ export default function StickyCompactTimer({
         alignItems: 'center',
         justifyContent: 'space-between',
       }}
+      accessibilityElementsHidden={!isSticky}
+      importantForAccessibility={isSticky ? 'auto' : 'no-hide-descendants'}
       pointerEvents={isSticky ? 'auto' : 'none'}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}
+      >
         <Ionicons
           name="timer-outline"
           size={24}
           color={colors.textSecondary}
           style={{ marginRight: 6 }}
         />
-        <Text
-          className="font-mono"
-          style={{
-            fontSize: 32,
-            fontWeight: '600',
-            fontVariant: ['tabular-nums'],
-            color: colors.text,
-          }}
-        >
-          {formatTime(
+        <TimerDigits
+          compact
+          value={formatTime(
             isTimerOwner
               ? timerSeconds
               : timer.mode === 'countDown'
@@ -126,7 +138,7 @@ export default function StickyCompactTimer({
                   ? timer.emomIntervalSeconds
                   : 0
           )}
-        </Text>
+        />
         {timer.mode === 'emom' &&
           isTimerOwner &&
           timer.emomCurrentRound > 0 && (
@@ -152,6 +164,8 @@ export default function StickyCompactTimer({
               borderWidth: 2,
               borderColor: colors.success.main,
               paddingHorizontal: 14,
+              width: actionButtonWidth,
+              alignItems: 'center',
               paddingVertical: 6,
               borderRadius: 6,
             }}
@@ -176,6 +190,8 @@ export default function StickyCompactTimer({
               borderWidth: 2,
               borderColor: colors.warning.main,
               paddingHorizontal: 14,
+              width: actionButtonWidth,
+              alignItems: 'center',
               paddingVertical: 6,
               borderRadius: 6,
             }}

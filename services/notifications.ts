@@ -273,12 +273,12 @@ async function scheduleWeeklySummary(completedLastWeek: number, time: string) {
 }
 
 function daysSinceLastCompletedActivity(activities: Activity[]): number {
-  const completedDates = activities
-    .filter(a => a.completed)
-    .map(a => dayjs(a.date));
-  if (completedDates.length === 0) return Infinity;
-  const latest = completedDates.sort((a, b) => b.valueOf() - a.valueOf())[0];
-  return dayjs().startOf('day').diff(latest.startOf('day'), 'day');
+  let latest = '';
+  for (const activity of activities)
+    if (activity.completed && activity.date > latest) latest = activity.date;
+  return latest
+    ? dayjs().startOf('day').diff(dayjs(latest).startOf('day'), 'day')
+    : Infinity;
 }
 
 function countCompletedThisWeek(activities: Activity[]): number {
@@ -292,7 +292,7 @@ function countCompletedThisWeek(activities: Activity[]): number {
 }
 
 // Master orchestrator: cancels stale, reschedules based on current state.
-export async function evaluateAndScheduleNotifications(
+async function performNotificationEvaluation(
   settings: NotificationSettings,
   activities: Activity[],
   hasPermission: boolean
@@ -332,4 +332,34 @@ export async function evaluateAndScheduleNotifications(
   } else {
     await cancelById(NOTIFICATION_IDS.weeklySummary);
   }
+}
+
+// Serialize native scheduling and skip unchanged plans after history syncs.
+let notificationWork: Promise<void> = Promise.resolve();
+let lastPlan: string | null = null;
+export function evaluateAndScheduleNotifications(
+  settings: NotificationSettings,
+  activities: Activity[],
+  hasPermission: boolean
+): Promise<void> {
+  const run = notificationWork
+    .catch(() => {})
+    .then(async () => {
+      const today = dayjs().format('YYYY-MM-DD');
+      const plan = JSON.stringify({
+        settings,
+        hasPermission,
+        today,
+        todayActivities: activities
+          .filter(a => a.date === today)
+          .map(a => [a.id, a.name, a.completed]),
+        inactivity: daysSinceLastCompletedActivity(activities),
+        weekly: countCompletedThisWeek(activities),
+      });
+      if (plan === lastPlan) return;
+      await performNotificationEvaluation(settings, activities, hasPermission);
+      lastPlan = plan;
+    });
+  notificationWork = run;
+  return run;
 }

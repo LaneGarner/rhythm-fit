@@ -1,3 +1,4 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,12 +8,16 @@ export function useResponsiveLayout() {
 
   const isLandscape = width > height;
   const isTablet = Math.min(width, height) >= 600;
+  const hasTopTabBar =
+    isTablet &&
+    Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
   return {
     width,
     height,
     isLandscape,
     isTablet,
+    hasTopTabBar,
     insets,
   };
 }

@@ -1,5 +1,8 @@
 import { Middleware, UnknownAction } from '@reduxjs/toolkit';
-import { addToPendingSync, flushPendingSync } from '../services/syncService';
+import {
+  addManyToPendingSync,
+  flushPendingSync,
+} from '../services/syncService';
 import { Activity } from '../types/activity';
 
 // Type guard for actions with payload
@@ -65,20 +68,6 @@ export function setSyncAuth(token: string | null, configured: boolean) {
   if (!token || !configured) clearAutoSyncTimer();
 }
 
-// Queue activity for server sync
-async function enqueueForSync(
-  activity: Activity,
-  deleted: boolean = false
-): Promise<void> {
-  const syncableActivity = {
-    ...activity,
-    updated_at: new Date().toISOString(),
-    deleted_at: deleted ? new Date().toISOString() : undefined,
-  };
-
-  await addToPendingSync(syncableActivity);
-}
-
 // Activity action types to sync
 const SYNC_ACTIONS = [
   'activities/addActivity',
@@ -106,6 +95,17 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
   // Then sync in background if authenticated
   if (SYNC_ACTIONS.includes(action.type) && authToken && isConfigured) {
     const state = store.getState();
+
+    const queued: (Activity & { updated_at: string; deleted_at?: string })[] =
+      [];
+    const enqueueForSync = async (activity: Activity, deleted = false) => {
+      const now = new Date().toISOString();
+      queued.push({
+        ...activity,
+        updated_at: now,
+        deleted_at: deleted ? now : undefined,
+      });
+    };
 
     // Fire and forget - don't block the UI
     (async () => {
@@ -232,6 +232,7 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
         // Upload shortly after the burst of activity changes settles. This
         // keeps the server (and Daily Brief) current without issuing one
         // request per Redux action.
+        await addManyToPendingSync(queued);
         scheduleAutoSync();
       } catch (err) {
         console.error('Background sync failed:', err);

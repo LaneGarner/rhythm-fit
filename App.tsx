@@ -18,6 +18,7 @@ import { store } from './redux/store';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { WeekProvider } from './WeekContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WorkoutSessionProvider } from './context/WorkoutSessionContext';
 import { TimerProvider } from './context/TimerContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { CoachProfileProvider } from './context/CoachProfileContext';
@@ -36,17 +37,6 @@ import { registerAndSavePushToken } from './services/pushToken';
 configureNotificationHandler();
 
 // Import screens
-import ActivityLibraryScreen from './screens/ActivityLibraryScreen';
-import ActivityScreen from './screens/ActivityScreen';
-import AuthScreen from './screens/AuthScreen';
-import CalculatorScreen from './screens/CalculatorScreen';
-import DemoActivityExecutionScreen from './screens/DemoActivityExecutionScreen';
-import EditActivityScreen from './screens/EditActivityScreen';
-import EquipmentScreen from './screens/EquipmentScreen';
-import ExerciseStatsScreen from './screens/ExerciseStatsScreen';
-import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
-import PersonalRecordsScreen from './screens/PersonalRecordsScreen';
-import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -60,6 +50,7 @@ export type RootStackParamList = {
   DemoActivityExecution: undefined;
   EditActivity: { activityId: string; supersetId?: string };
   Settings: undefined;
+  ExportWorkout: undefined;
   NotificationSettings: undefined;
   ActivityLibrary: undefined;
   Equipment: undefined;
@@ -159,29 +150,68 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
               user is authenticated it is removed entirely, so the login screen
               can't be reached again (e.g. via the swipe-back gesture) until
               they explicitly sign out. */}
-          {!user && <Stack.Screen name="Auth" component={AuthScreen} />}
+          {!user && (
+            <Stack.Screen
+              name="Auth"
+              getComponent={() => require('./screens/AuthScreen').default}
+            />
+          )}
           <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="Activity" component={ActivityScreen} />
+          <Stack.Screen
+            name="Activity"
+            getComponent={() => require('./screens/ActivityScreen').default}
+          />
           <Stack.Screen
             name="DemoActivityExecution"
-            component={DemoActivityExecutionScreen}
+            getComponent={() =>
+              require('./screens/DemoActivityExecutionScreen').default
+            }
           />
-          <Stack.Screen name="EditActivity" component={EditActivityScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen
+            name="EditActivity"
+            getComponent={() => require('./screens/EditActivityScreen').default}
+          />
+          <Stack.Screen
+            name="Settings"
+            getComponent={() => require('./screens/SettingsScreen').default}
+          />
+          <Stack.Screen
+            name="ExportWorkout"
+            getComponent={() =>
+              require('./screens/ExportWorkoutScreen').default
+            }
+          />
           <Stack.Screen
             name="NotificationSettings"
-            component={NotificationSettingsScreen}
+            getComponent={() =>
+              require('./screens/NotificationSettingsScreen').default
+            }
           />
           <Stack.Screen
             name="ActivityLibrary"
-            component={ActivityLibraryScreen}
+            getComponent={() =>
+              require('./screens/ActivityLibraryScreen').default
+            }
           />
-          <Stack.Screen name="Equipment" component={EquipmentScreen} />
-          <Stack.Screen name="Calculator" component={CalculatorScreen} />
-          <Stack.Screen name="ExerciseStats" component={ExerciseStatsScreen} />
+          <Stack.Screen
+            name="Equipment"
+            getComponent={() => require('./screens/EquipmentScreen').default}
+          />
+          <Stack.Screen
+            name="Calculator"
+            getComponent={() => require('./screens/CalculatorScreen').default}
+          />
+          <Stack.Screen
+            name="ExerciseStats"
+            getComponent={() =>
+              require('./screens/ExerciseStatsScreen').default
+            }
+          />
           <Stack.Screen
             name="PersonalRecords"
-            component={PersonalRecordsScreen}
+            getComponent={() =>
+              require('./screens/PersonalRecordsScreen').default
+            }
           />
         </Stack.Navigator>
       </NavigationContainer>
@@ -222,9 +252,11 @@ export default function App() {
                 <CoachProfileProvider>
                   <EntitlementProvider>
                     <TimerProvider>
-                      <WeekProvider>
-                        <AppInitializer />
-                      </WeekProvider>
+                      <WorkoutSessionProvider>
+                        <WeekProvider>
+                          <AppInitializer />
+                        </WeekProvider>
+                      </WorkoutSessionProvider>
                     </TimerProvider>
                   </EntitlementProvider>
                 </CoachProfileProvider>

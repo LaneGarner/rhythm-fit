@@ -1,10 +1,41 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, getApiEndpoint } from '../config/api';
 import { Activity } from '../types/activity';
+import { saveActivities } from '../utils/storage';
 
 const LAST_SYNC_KEY = 'rhythm_last_sync_time';
 const PENDING_SYNC_KEY = 'rhythm_pending_sync';
-const PENDING_SYNC_BACKFILL_KEY = 'rhythm_pending_sync_backfill_v1';
+const PENDING_SYNC_BACKFILL_KEY = 'rhythm_pending_sync_backfill_v2';
+const HISTORY_RECOVERY_KEY = 'rhythm_history_recovery_v2:';
+const RECOVERY_BACKUP_KEY = 'rhythm_recovery_backup_v2:';
+const UPLOAD_BATCH_SIZE = 50;
+const HISTORY_ETAG_KEY = 'rhythm_history_etag_v1:';
+
+const REQUEST_TIMEOUT_MS = 30_000;
+const requests = new Set<AbortController>();
+let syncGeneration = 0;
+const displayedHistoryDays = new Map<string, string>();
+async function syncFetch(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  requests.add(controller);
+  const cancelled = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener(
+      'abort',
+      () => reject(new Error('Workout sync request cancelled or timed out')),
+      { once: true }
+    );
+  });
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await Promise.race([
+      fetch(url, { ...options, signal: controller.signal }),
+      cancelled,
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    requests.delete(controller);
+  }
+}
 
 interface SyncableActivity extends Activity {
   updated_at: string;
@@ -21,6 +52,7 @@ interface SyncResponse {
 interface FetchResponse {
   activities: SyncableActivity[];
   syncTime: string;
+  historyComplete?: boolean;
 }
 
 interface PendingPushResult {
@@ -53,24 +85,6 @@ async function withPendingQueueLock<T>(
   }
 }
 
-// Get the last sync time from storage
-async function getLastSyncTime(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(LAST_SYNC_KEY);
-  } catch {
-    return null;
-  }
-}
-
-// Save the last sync time
-async function setLastSyncTime(time: string): Promise<void> {
-  try {
-    await AsyncStorage.setItem(LAST_SYNC_KEY, time);
-  } catch (err) {
-    console.error('Failed to save last sync time:', err);
-  }
-}
-
 // Get pending activities that need to sync
 async function readPendingActivities(): Promise<SyncableActivity[]> {
   try {
@@ -86,12 +100,16 @@ async function getPendingActivities(): Promise<SyncableActivity[]> {
 }
 
 async function backfillPendingActivities(
-  localActivities: Activity[]
+  localActivities: Activity[],
+  userId: string,
+  generation = syncGeneration
 ): Promise<void> {
   await withPendingQueueLock(async () => {
     const alreadyBackfilled = await AsyncStorage.getItem(
-      PENDING_SYNC_BACKFILL_KEY
+      `${PENDING_SYNC_BACKFILL_KEY}:${userId}`
     );
+    if (generation !== syncGeneration)
+      throw new Error('Account changed during recovery');
     if (alreadyBackfilled) return;
 
     const pendingActivities = await readPendingActivities();
@@ -100,8 +118,9 @@ async function backfillPendingActivities(
     );
 
     for (const activity of localActivities) {
-      const updatedAt = (activity as SyncableActivity).updated_at;
-      if (!updatedAt) continue;
+      // Preserve legacy workouts without timestamps too. An old fallback
+      // date allows insertion without overwriting a newer server version.
+      const updatedAt = activity.updated_at || '1970-01-01T00:00:00.000Z';
 
       const syncableActivity: SyncableActivity = {
         ...activity,
@@ -117,11 +136,16 @@ async function backfillPendingActivities(
       }
     }
 
+    if (generation !== syncGeneration)
+      throw new Error('Account changed during recovery');
     await AsyncStorage.setItem(
       PENDING_SYNC_KEY,
       JSON.stringify(Array.from(pendingById.values()))
     );
-    await AsyncStorage.setItem(PENDING_SYNC_BACKFILL_KEY, 'complete');
+    await AsyncStorage.setItem(
+      `${PENDING_SYNC_BACKFILL_KEY}:${userId}`,
+      'complete'
+    );
   });
 }
 
@@ -129,21 +153,21 @@ async function backfillPendingActivities(
 export async function addToPendingSync(
   activity: SyncableActivity
 ): Promise<void> {
-  try {
-    await withPendingQueueLock(async () => {
-      const pending = await readPendingActivities();
-      // Replace existing or add new
-      const index = pending.findIndex(a => a.id === activity.id);
-      if (index >= 0) {
-        pending[index] = activity;
-      } else {
-        pending.push(activity);
-      }
-      await AsyncStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pending));
-    });
-  } catch (err) {
-    console.error('Failed to add to pending sync:', err);
-  }
+  return addManyToPendingSync([activity]);
+}
+
+export async function addManyToPendingSync(
+  activities: SyncableActivity[]
+): Promise<void> {
+  await withPendingQueueLock(async () => {
+    const pending = await readPendingActivities();
+    const byId = new Map(pending.map(activity => [activity.id, activity]));
+    for (const activity of activities) byId.set(activity.id, activity);
+    await AsyncStorage.setItem(
+      PENDING_SYNC_KEY,
+      JSON.stringify(Array.from(byId.values()))
+    );
+  });
 }
 
 async function removePendingSync(
@@ -177,59 +201,70 @@ async function removePendingSync(
 }
 
 async function performPendingPush(
-  accessToken: string,
-  lastSyncTime?: string | null
+  accessToken: string
 ): Promise<PendingPushResult> {
+  const generation = syncGeneration;
   const pendingActivities = await getPendingActivities();
-  if (pendingActivities.length === 0) {
-    return { attempted: false, ok: true };
-  }
+  if (pendingActivities.length === 0) return { attempted: false, ok: true };
 
+  const combined: SyncResponse = {
+    synced: 0,
+    conflicts: [],
+    serverActivities: [],
+    syncTime: '',
+  };
   try {
-    const response = await fetch(getApiEndpoint('/api/activities'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        activities: pendingActivities,
-        lastSyncTime,
-      }),
-    });
-
-    if (!response.ok) {
-      return { attempted: true, ok: false };
+    for (
+      let offset = 0;
+      offset < pendingActivities.length;
+      offset += UPLOAD_BATCH_SIZE
+    ) {
+      if (generation !== syncGeneration)
+        throw new Error('Account changed during upload');
+      const batch = pendingActivities.slice(offset, offset + UPLOAD_BATCH_SIZE);
+      const response = await syncFetch(getApiEndpoint('/api/activities'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // Downloads own the sync cursor. Uploads only acknowledge these records.
+        body: JSON.stringify({ activities: batch }),
+      });
+      if (!response.ok)
+        throw new Error(`Workout upload failed (${response.status})`);
+      const data: SyncResponse = await response.json();
+      if (generation !== syncGeneration)
+        throw new Error('Account changed during upload');
+      const conflicts = new Set(data.conflicts || []);
+      await removePendingSync(
+        batch.filter(activity => !conflicts.has(activity.id))
+      );
+      combined.synced += data.synced;
+      combined.conflicts.push(...(data.conflicts || []));
+      combined.serverActivities.push(...(data.serverActivities || []));
+      // Keep rejected records queued; earlier acknowledged batches stay saved.
+      if (conflicts.size) return { attempted: true, ok: false, data: combined };
     }
-
-    const data: SyncResponse = await response.json();
-    const conflictIds = new Set(data.conflicts || []);
-    const acknowledgedActivities = pendingActivities.filter(
-      activity => !conflictIds.has(activity.id)
-    );
-    await removePendingSync(acknowledgedActivities);
-
-    return { attempted: true, ok: true, data };
+    return { attempted: true, ok: true, data: combined };
   } catch (err) {
     console.error('Failed to push activities to server:', err);
-    return { attempted: true, ok: false };
+    return { attempted: true, ok: false, data: combined };
   }
 }
 
 function pushPendingActivities(
-  accessToken: string,
-  lastSyncTime?: string | null
+  accessToken: string
 ): Promise<PendingPushResult> {
   // Foreground initialization and the debounced background uploader can fire
   // close together. Share the same request instead of posting the queue twice.
   if (activePendingPush) return activePendingPush;
 
-  activePendingPush = performPendingPush(accessToken, lastSyncTime).finally(
-    () => {
-      activePendingPush = null;
-    }
-  );
-  return activePendingPush;
+  const operation = performPendingPush(accessToken).finally(() => {
+    if (activePendingPush === operation) activePendingPush = null;
+  });
+  activePendingPush = operation;
+  return operation;
 }
 
 // Merge local and server activities
@@ -282,75 +317,143 @@ function mergeActivities(
   return Array.from(merged.values());
 }
 
-// Main sync function - call this on app open (after login)
-export async function syncActivities(
+interface SyncOptions {
+  userId: string;
+  getLatestActivities?: () => Activity[];
+}
+
+let activeHistorySync: Promise<void> | null = null;
+
+// Reconcile full history on every sync. Recovered workouts keep their original
+// edit timestamps, so a timestamp cursor could miss old records uploaded today.
+// Never replace local history
+// with the server list: reconcile versions and preserve pending edits/deletes.
+export function syncActivities(
   accessToken: string,
   localActivities: Activity[],
-  onActivitiesUpdated: (activities: Activity[]) => void
+  onActivitiesUpdated: (activities: Activity[]) => void,
+  options: SyncOptions
 ): Promise<void> {
-  if (!API_URL) {
-    return;
+  if (!API_URL) return Promise.resolve();
+  if (activeHistorySync) return activeHistorySync;
+  const operation = performHistorySync(
+    accessToken,
+    localActivities,
+    onActivitiesUpdated,
+    options
+  ).finally(() => {
+    if (activeHistorySync === operation) activeHistorySync = null;
+  });
+  activeHistorySync = operation;
+  return operation;
+}
+
+async function performHistorySync(
+  accessToken: string,
+  localActivities: Activity[],
+  onActivitiesUpdated: (activities: Activity[]) => void,
+  options: SyncOptions
+): Promise<void> {
+  const generation = syncGeneration;
+  const checkAccount = () => {
+    if (generation !== syncGeneration)
+      throw new Error('Account changed during sync');
+  };
+  const recoveryKey = `${HISTORY_RECOVERY_KEY}${options.userId}`;
+  const backupKey = `${RECOVERY_BACKUP_KEY}${options.userId}`;
+  if (!(await AsyncStorage.getItem(backupKey))) {
+    await AsyncStorage.setItem(
+      backupKey,
+      JSON.stringify({
+        savedAt: new Date().toISOString(),
+        activities: localActivities,
+        pending: await getPendingActivities(),
+      })
+    );
   }
+  checkAccount();
+  await backfillPendingActivities(localActivities, options.userId, generation);
+  checkAccount();
+  let latestActivities = localActivities;
+  const applyServerChanges = async (serverActivities: SyncableActivity[]) => {
+    const pending = await getPendingActivities();
+    checkAccount();
+    latestActivities = mergeActivities(
+      mergeActivities(
+        options.getLatestActivities?.() || latestActivities,
+        serverActivities
+      ),
+      pending
+    );
+    onActivitiesUpdated(latestActivities);
+    displayedHistoryDays.set(options.userId, new Date().toDateString());
+    // Persist history before marking a download complete. The Redux storage
+    // middleware is debounced and cannot acknowledge durability for us.
+    await saveActivities(latestActivities);
+  };
 
+  let downloadError: unknown;
   try {
-    // Builds before automatic upload could lose pending markers when several
-    // activities were queued at once. Reconcile timestamped local workouts one
-    // time so existing plans are backfilled after upgrading.
-    await backfillPendingActivities(localActivities);
-    const lastSyncTime = await getLastSyncTime();
-
-    // 1. Fetch server activities updated since last sync
-    let serverActivities: SyncableActivity[] = [];
-    let fetchSyncTime: string | null = null;
-    try {
-      const url = lastSyncTime
-        ? getApiEndpoint(
-            `/api/activities?since=${encodeURIComponent(lastSyncTime)}`
-          )
-        : getApiEndpoint('/api/activities');
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data: FetchResponse = await response.json();
-        serverActivities = data.activities;
-        fetchSyncTime = data.syncTime;
+    const url = getApiEndpoint('/api/activities');
+    const etag = await AsyncStorage.getItem(
+      `${HISTORY_ETAG_KEY}${options.userId}`
+    );
+    const response = await syncFetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(etag ? { 'If-None-Match': etag } : {}),
+      },
+    });
+    if (response.status === 304) {
+      checkAccount();
+      const today = new Date().toDateString();
+      // A day rollover still invalidates date-sensitive selectors even when
+      // cloud rows are unchanged. Avoid a full-history write for this refresh.
+      if (displayedHistoryDays.get(options.userId) !== today) {
+        onActivitiesUpdated([
+          ...(options.getLatestActivities?.() || localActivities),
+        ]);
+        displayedHistoryDays.set(options.userId, today);
       }
-    } catch (err) {
-      console.error('Failed to fetch server activities:', err);
-    }
-
-    // 2. Merge local and server activities
-    const merged = mergeActivities(localActivities, serverActivities);
-
-    // 3. Update Redux + AsyncStorage with merged data
-    onActivitiesUpdated(merged);
-
-    // 4. Push pending local changes to server
-    const pushResult = await pushPendingActivities(accessToken, lastSyncTime);
-    if (pushResult.ok && pushResult.data) {
-      // If there are newer server activities, merge them too
-      if (pushResult.data.serverActivities?.length > 0) {
-        const finalMerged = mergeActivities(
-          merged,
-          pushResult.data.serverActivities
-        );
-        onActivitiesUpdated(finalMerged);
+    } else {
+      if (!response.ok)
+        throw new Error(`Workout download failed (${response.status})`);
+      const data: FetchResponse = await response.json();
+      if (
+        !Array.isArray(data.activities) ||
+        !Number.isFinite(Date.parse(data.syncTime))
+      ) {
+        throw new Error('Invalid workout sync response');
       }
-
-      await setLastSyncTime(pushResult.data.syncTime);
-    } else if (!pushResult.attempted && fetchSyncTime) {
-      // Use server-provided sync time to avoid client/server clock drift
-      await setLastSyncTime(fetchSyncTime);
+      await applyServerChanges(data.activities);
+      // Older servers may still truncate. Keep retrying full recovery until the
+      // server explicitly confirms it read every page.
+      if (data.historyComplete === true) {
+        await AsyncStorage.setItem(LAST_SYNC_KEY, data.syncTime);
+        await AsyncStorage.setItem(recoveryKey, 'complete');
+        const nextEtag = response.headers?.get('ETag');
+        if (nextEtag)
+          await AsyncStorage.setItem(
+            `${HISTORY_ETAG_KEY}${options.userId}`,
+            nextEtag
+          );
+      }
     }
   } catch (err) {
-    console.error('Sync failed:', err);
+    downloadError = err;
+    console.error('Failed to download workout history:', err);
   }
+
+  checkAccount();
+  // An unavailable download must not prevent uploading the phone's local data.
+  const pushResult = await pushPendingActivities(accessToken);
+  if (pushResult.data?.serverActivities.length) {
+    await applyServerChanges(pushResult.data.serverActivities);
+  }
+  if (downloadError) throw downloadError;
+  if (!pushResult.ok)
+    throw new Error('Some workouts have not uploaded; they remain queued');
 }
 
 // Queue a single activity change for the next sync flush.
@@ -374,8 +477,7 @@ export async function pushActivityChange(
 export async function flushPendingSync(accessToken: string): Promise<boolean> {
   if (!API_URL) return true;
 
-  const lastSyncTime = await getLastSyncTime();
-  const result = await pushPendingActivities(accessToken, lastSyncTime);
+  const result = await pushPendingActivities(accessToken);
   if (!result.ok) return false;
 
   // New edits may have arrived while the request was in flight. The queue is
@@ -386,14 +488,25 @@ export async function flushPendingSync(accessToken: string): Promise<boolean> {
 
 // Clear all sync data (call on logout)
 export async function clearSyncData(): Promise<void> {
+  syncGeneration++;
+  activeHistorySync = null;
+  activePendingPush = null;
+  for (const controller of requests) controller.abort();
   try {
-    await withPendingQueueLock(() =>
-      AsyncStorage.multiRemove([
+    await withPendingQueueLock(async () => {
+      const keys = await AsyncStorage.getAllKeys();
+      await AsyncStorage.multiRemove([
         LAST_SYNC_KEY,
         PENDING_SYNC_KEY,
-        PENDING_SYNC_BACKFILL_KEY,
-      ])
-    );
+        'rhythm_pending_sync_backfill_v1',
+        ...keys.filter(
+          key =>
+            key.startsWith(PENDING_SYNC_BACKFILL_KEY) ||
+            key.startsWith(HISTORY_RECOVERY_KEY) ||
+            key.startsWith(HISTORY_ETAG_KEY)
+        ),
+      ]);
+    });
   } catch (err) {
     console.error('Failed to clear sync data:', err);
   }

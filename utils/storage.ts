@@ -15,13 +15,21 @@ import {
 } from '../services/activityTypeService';
 import { clearEquipmentCache } from '../services/equipmentService';
 
-// Activity storage functions
-export const saveActivities = async (activities: Activity[]) => {
-  try {
-    await AsyncStorage.setItem('activities', JSON.stringify(activities));
-  } catch (error) {
-    console.error('Error saving activities:', error);
-  }
+// Serialize complete-history writes so a slower earlier write cannot overwrite
+// a newer edit. Identical snapshots need no extra native write.
+let lastSavedActivities: string | null = null;
+let activityWrite: Promise<void> = Promise.resolve();
+export const saveActivities = (activities: Activity[]): Promise<void> => {
+  const serialized = JSON.stringify(activities);
+  const next = activityWrite
+    .catch(() => {})
+    .then(async () => {
+      if (lastSavedActivities === serialized) return;
+      await AsyncStorage.setItem('activities', serialized);
+      lastSavedActivities = serialized;
+    });
+  activityWrite = next;
+  return next;
 };
 
 export const loadActivities = async (): Promise<Activity[]> => {
@@ -83,6 +91,8 @@ export function toTitleCase(str: string): string {
 // Clear all data functions
 export const clearAllActivities = async (): Promise<void> => {
   try {
+    await activityWrite.catch(() => {});
+    lastSavedActivities = null;
     await AsyncStorage.removeItem('activities');
   } catch (error) {
     console.error('Error clearing activities:', error);
@@ -106,6 +116,8 @@ export const clearThemeMode = async (): Promise<void> => {
 };
 
 export const clearAllAppData = async (): Promise<void> => {
+  await activityWrite.catch(() => {});
+  lastSavedActivities = null;
   try {
     await Promise.all([
       clearAllActivities(),
@@ -337,6 +349,8 @@ export const clearCoachOnboarding = async (): Promise<void> => {
 // Clear user-specific data on sign out
 // Preserves: exercises cache, activity types cache, theme (not user-specific)
 export const clearUserData = async (): Promise<void> => {
+  await activityWrite.catch(() => {});
+  lastSavedActivities = null;
   try {
     // Get all keys to find chat_history_* keys (user-specific chat histories)
     const allKeys = await AsyncStorage.getAllKeys();

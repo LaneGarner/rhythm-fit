@@ -1,0 +1,59 @@
+{
+  "runtime": "v22.17.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "method": "Warm-up + median of five iterations. Synthetic records; Node CPU timings, not Hermes/device/UI measurements. No disk or network timing.",
+  "results": [
+    {
+      "activities": 2000,
+      "exerciseNames": 80,
+      "setsPerActivity": 4,
+      "jsonMiB": 0.73,
+      "stringifyMs": 0.81,
+      "parseMs": 1.76,
+      "overall30DayMs": 2.92,
+      "consistency30DayMs": 2.75,
+      "overallAllMs": 2.03,
+      "consistencyAllMs": 3.69,
+      "personalRecordsAllMs": 0.77,
+      "topExercisesAllMs": 0.96,
+      "monthlyVolumeAllMs": 62.85,
+      "optimizedMonthlyVolumeMs": 0.68,
+      "optimizedTopExercisesMs": 0.04
+    },
+    {
+      "activities": 10000,
+      "exerciseNames": 80,
+      "setsPerActivity": 4,
+      "jsonMiB": 3.67,
+      "stringifyMs": 4.22,
+      "parseMs": 7.65,
+      "overall30DayMs": 13.46,
+      "consistency30DayMs": 12.74,
+      "overallAllMs": 7.42,
+      "consistencyAllMs": 17.49,
+      "personalRecordsAllMs": 1.04,
+      "topExercisesAllMs": 0.73,
+      "monthlyVolumeAllMs": 233.73,
+      "optimizedMonthlyVolumeMs": 0.46,
+      "optimizedTopExercisesMs": 0.36
+    },
+    {
+      "activities": 25000,
+      "exerciseNames": 80,
+      "setsPerActivity": 4,
+      "jsonMiB": 9.27,
+      "stringifyMs": 11.31,
+      "parseMs": 23.04,
+      "overall30DayMs": 32.77,
+      "consistency30DayMs": 32.59,
+      "overallAllMs": 19.95,
+      "consistencyAllMs": 45.16,
+      "personalRecordsAllMs": 2.7,
+      "topExercisesAllMs": 2.17,
+      "monthlyVolumeAllMs": 558.69,
+      "optimizedMonthlyVolumeMs": 2,
+      "optimizedTopExercisesMs": 0.33
+    }
+  ]
+}

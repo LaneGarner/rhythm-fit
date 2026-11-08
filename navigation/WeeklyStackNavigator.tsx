@@ -1,8 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import ActivityExecutionScreen from '../screens/ActivityExecutionScreen';
+import WorkoutExecutionScreen from '../screens/WorkoutExecutionScreen';
 import DayScreen from '../screens/DayScreen';
-import SupersetExecutionScreen from '../screens/SupersetExecutionScreen';
 import WeeklyScreen from '../screens/WeeklyScreen';
 
 export type WeeklyStackParamList = {
@@ -21,11 +20,11 @@ export default function WeeklyStackNavigator() {
       <Stack.Screen name="Day" component={DayScreen} />
       <Stack.Screen
         name="ActivityExecution"
-        component={ActivityExecutionScreen}
+        component={WorkoutExecutionScreen}
       />
       <Stack.Screen
         name="SupersetExecution"
-        component={SupersetExecutionScreen}
+        component={WorkoutExecutionScreen}
       />
     </Stack.Navigator>
   );

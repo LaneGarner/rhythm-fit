@@ -132,8 +132,8 @@ export default function SettingsScreen({ navigation }: any) {
   }, [user, navigation]);
 
   const performSignOut = async () => {
-    await clearUserData();
     await clearSyncData();
+    await clearUserData();
     dispatch(clearAllActivities());
     pendingSignOutRef.current = true;
     await signOut();
@@ -288,7 +288,7 @@ export default function SettingsScreen({ navigation }: any) {
             className="text-2xl font-bold mt-0"
             style={{ color: colors.text }}
           >
-            Settings & Preferences
+            Settings
           </Text>
         </View>
         <View style={{ width: 40 }} />
@@ -771,7 +771,7 @@ export default function SettingsScreen({ navigation }: any) {
                 className="text-sm mt-1"
                 style={{ color: colors.textSecondary }}
               >
-                Automatically starts a countdown timer after completing a set.
+                Start rest timers automatically by default.
               </Text>
             </View>
             <Switch
@@ -983,6 +983,41 @@ export default function SettingsScreen({ navigation }: any) {
               </TouchableOpacity>
             </React.Fragment>
           ))}
+        </View>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            fontWeight: '500',
+            marginTop: 32,
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
+        >
+          Data
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          <TouchableOpacity
+            className="p-4 flex-row items-center justify-between"
+            accessibilityRole="button"
+            accessibilityLabel="Export workout data"
+            onPress={() => navigation.navigate('ExportWorkout')}
+          >
+            <Text className="text-base" style={{ color: colors.text }}>
+              Export workout data
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

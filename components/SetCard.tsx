@@ -11,6 +11,7 @@ import {
 import DurationPickerModal from './DurationPickerModal';
 import NumericWheelModal from './NumericWheelModal';
 import PlateIcon from './PlateIcon';
+import SetCompletionButton from './SetCompletionButton';
 import { useTheme } from '../theme/ThemeContext';
 import { ActivityType, SetData, TrackingField } from '../types/activity';
 import { secondsToTimeString } from '../utils/timeFormat';
@@ -26,6 +27,8 @@ export interface SetCardProps {
   inputRefs?: React.MutableRefObject<{ [key: string]: TextInput | null }>;
   onInputFocus?: (refKey: string) => void;
   readOnly?: boolean;
+  title?: string;
+  showCompletionButton?: boolean;
 }
 
 const FIELD_CONFIG: Record<TrackingField, { label: string; unit?: string }> = {
@@ -47,6 +50,8 @@ export default function SetCard({
   inputRefs,
   onInputFocus,
   readOnly,
+  title,
+  showCompletionButton = true,
 }: SetCardProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -71,6 +76,7 @@ export default function SetCard({
 
   return (
     <Pressable
+      accessible={false}
       onLongPress={readOnly ? undefined : () => onShowOptions(set)}
       delayLongPress={300}
       className="p-4 rounded-lg mb-3 shadow-sm"
@@ -83,7 +89,7 @@ export default function SetCard({
               isDark ? 'text-white' : 'text-gray-900'
             }`}
           >
-            Set {index + 1}
+            {title || `Set ${index + 1}`}
           </Text>
           {set.completed && (
             <View
@@ -341,27 +347,13 @@ export default function SetCard({
           );
         })}
       </View>
-      <TouchableOpacity
-        onPress={() => onUpdateSet(set.id, { completed: !set.completed })}
-        className="mt-5 px-4 py-4 rounded-lg"
-        style={{
-          backgroundColor: colors.surface,
-          borderWidth: 2,
-          borderColor: set.completed ? colors.success.main : colors.border,
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Set ${index + 1} ${set.completed ? 'completed' : 'incomplete'}. Tap to ${set.completed ? 'mark incomplete' : 'mark complete'}`}
-        accessibilityState={{ checked: set.completed }}
-      >
-        <Text
-          className={`text-center font-semibold text-lg`}
-          style={{
-            color: set.completed ? colors.success.main : colors.textSecondary,
-          }}
-        >
-          {set.completed ? 'Completed' : 'Mark Complete'}
-        </Text>
-      </TouchableOpacity>
+      {showCompletionButton && (
+        <SetCompletionButton
+          completed={set.completed}
+          onPress={() => onUpdateSet(set.id, { completed: !set.completed })}
+          label={`Set ${index + 1}`}
+        />
+      )}
 
       <DurationPickerModal
         visible={showDurationPicker}

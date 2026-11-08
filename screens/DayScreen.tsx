@@ -34,6 +34,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
 import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
+import DaySessionControl from '../components/DaySessionControl';
 import ProgressBar from '../components/ProgressBar';
 import SupersetBadge from '../components/SupersetBadge';
 import {
@@ -66,6 +67,31 @@ if (!isExpoGo) {
   }
 }
 
+// Stable component types preserve card/modal state when DayScreen changes.
+function DayActivityCard({
+  render,
+  ...data
+}: {
+  render: (data: { activity: Activity; index: number }) => React.ReactNode;
+  activity: Activity;
+  index: number;
+}) {
+  return render(data);
+}
+function DaySupersetCard({
+  render,
+  ...data
+}: {
+  render: (data: { group: ActivityGroup; index: number }) => React.ReactNode;
+  group: ActivityGroup;
+  index: number;
+}) {
+  return render(data);
+}
+function DayModal({ render }: { render: () => React.ReactNode }) {
+  return render();
+}
+
 export default function DayScreen({ navigation, route }: any) {
   const { date } = route.params;
   const dispatch = useDispatch();
@@ -94,28 +120,43 @@ export default function DayScreen({ navigation, route }: any) {
   const isAnimatingRef = useRef(false);
 
   // Sort activities: by custom order if available, then by id (preserve order regardless of completion)
-  const savedActivities: Activity[] = activities
-    .filter(activity => activity.date === date)
-    .sort((a, b) => {
-      // Primary: Use custom order if available
-      const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
-      const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      // Secondary: By ID (timestamp-based, older first)
-      return a.id.localeCompare(b.id);
-    });
+  const savedActivities: Activity[] = React.useMemo(
+    () =>
+      activities
+        .filter(activity => activity.date === date)
+        .sort((a, b) => {
+          // Primary: Use custom order if available
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          // Secondary: By ID (timestamp-based, older first)
+          return a.id.localeCompare(b.id);
+        }),
+    [activities, date]
+  );
 
   // Use pending order if available, otherwise use saved order
-  const dayActivities: Activity[] = pendingOrderIds
-    ? pendingOrderIds
-        .map((id, index) => {
-          const activity = savedActivities.find(a => a.id === id);
-          return activity ? ({ ...activity, order: index } as Activity) : null;
-        })
-        .filter((a): a is Activity => a !== null)
-    : savedActivities;
+  const dayActivities: Activity[] = React.useMemo(
+    () =>
+      pendingOrderIds
+        ? pendingOrderIds
+            .map((id, index) => {
+              const activity = savedActivities.find(a => a.id === id);
+              return activity
+                ? ({ ...activity, order: index } as Activity)
+                : null;
+            })
+            .filter((a): a is Activity => a !== null)
+        : savedActivities,
+    [pendingOrderIds, savedActivities]
+  );
+
+  const groupedDayActivities = React.useMemo(
+    () => groupActivitiesWithSupersets(dayActivities),
+    [dayActivities]
+  );
 
   // Sync pendingOrderIds when activities are deleted or moved away
   useEffect(() => {
@@ -161,7 +202,8 @@ export default function DayScreen({ navigation, route }: any) {
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
-  const { insets, width: screenWidth } = useResponsiveLayout();
+  const { insets, width: screenWidth, hasTopTabBar } = useResponsiveLayout();
+  const topTabBarClearance = hasTopTabBar ? 56 : 0;
   // Extra room so the last card scrolls clear of the floating + button.
   const tabBarInset = useTabBarInset(88);
   const isDark = colorScheme === 'dark';
@@ -759,7 +801,7 @@ export default function DayScreen({ navigation, route }: any) {
   );
 
   // Expo Go version: Arrow-based reordering
-  const ActivityItemWithArrows = ({
+  const renderActivityItemWithArrows = ({
     activity,
     index,
   }: {
@@ -1050,7 +1092,7 @@ export default function DayScreen({ navigation, route }: any) {
   };
 
   // Superset Card component (for non-bulk mode)
-  const SupersetCard = ({
+  const renderSupersetCard = ({
     group,
     index,
   }: {
@@ -1624,7 +1666,7 @@ export default function DayScreen({ navigation, route }: any) {
     []
   );
 
-  const MoveToDateModal = () => (
+  const renderMoveToDateModal = () => (
     <Modal
       visible={showMoveModal}
       transparent={true}
@@ -1682,7 +1724,7 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
-  const CopyToDateModal = () => (
+  const renderCopyToDateModal = () => (
     <Modal
       visible={showCopyToDateModal}
       transparent
@@ -1886,22 +1928,25 @@ export default function DayScreen({ navigation, route }: any) {
           {isBulkMode
             ? // In bulk mode, show all activities individually for selection
               dayActivities.map((activity, index) => (
-                <ActivityItemWithArrows
+                <DayActivityCard
+                  render={renderActivityItemWithArrows}
                   key={activity.id}
                   activity={activity}
                   index={index}
                 />
               ))
             : // In normal mode, group supersets
-              groupActivitiesWithSupersets(dayActivities).map((group, index) =>
+              groupedDayActivities.map((group, index) =>
                 group.type === 'superset' ? (
-                  <SupersetCard
+                  <DaySupersetCard
+                    render={renderSupersetCard}
                     key={group.supersetId}
                     group={group}
                     index={index}
                   />
                 ) : (
-                  <ActivityItemWithArrows
+                  <DayActivityCard
+                    render={renderActivityItemWithArrows}
                     key={group.activities[0].id}
                     activity={group.activities[0]}
                     index={index}
@@ -1914,7 +1959,7 @@ export default function DayScreen({ navigation, route }: any) {
 
     // Production build: Use DraggableFlatList for bulk mode, ScrollView for normal mode
     if (isBulkMode) {
-      const groupedData = groupActivitiesWithSupersets(dayActivities);
+      const groupedData = groupedDayActivities;
       return (
         <DraggableFlatList
           data={groupedData}
@@ -1936,11 +1981,17 @@ export default function DayScreen({ navigation, route }: any) {
         className="flex-1 p-4"
         contentContainerStyle={{ paddingBottom: tabBarInset }}
       >
-        {groupActivitiesWithSupersets(dayActivities).map((group, index) =>
+        {groupedDayActivities.map((group, index) =>
           group.type === 'superset' ? (
-            <SupersetCard key={group.supersetId} group={group} index={index} />
+            <DaySupersetCard
+              render={renderSupersetCard}
+              key={group.supersetId}
+              group={group}
+              index={index}
+            />
           ) : (
-            <ActivityItemWithArrows
+            <DayActivityCard
+              render={renderActivityItemWithArrows}
               key={group.activities[0].id}
               activity={group.activities[0]}
               index={index}
@@ -1959,7 +2010,7 @@ export default function DayScreen({ navigation, route }: any) {
           position: 'relative',
           flexDirection: 'row',
           alignItems: 'center',
-          height: insets.top + 52,
+          height: insets.top + topTabBarClearance + 52,
           paddingHorizontal: Math.max(16, insets.left),
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
@@ -1980,7 +2031,7 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             position: 'absolute',
             left: 16,
-            top: insets.top + 4,
+            top: insets.top + topTabBarClearance + 4,
             height: 44,
             justifyContent: 'center',
             zIndex: 2,
@@ -2002,7 +2053,7 @@ export default function DayScreen({ navigation, route }: any) {
             position: 'absolute',
             left: 0,
             right: 0,
-            top: insets.top + 4,
+            top: insets.top + topTabBarClearance + 4,
             height: 44,
             alignItems: 'center',
             justifyContent: 'center',
@@ -2025,7 +2076,7 @@ export default function DayScreen({ navigation, route }: any) {
             style={{
               position: 'absolute',
               right: 16,
-              top: insets.top + 4,
+              top: insets.top + topTabBarClearance + 4,
               height: 44,
               flexDirection: 'row',
               alignItems: 'center',
@@ -2209,6 +2260,10 @@ export default function DayScreen({ navigation, route }: any) {
             </View>
           )}
 
+          {!isBulkMode && (
+            <DaySessionControl date={date} navigation={navigation} />
+          )}
+
           {/* Activities List */}
           {renderActivitiesList()}
         </Animated.View>
@@ -2219,8 +2274,8 @@ export default function DayScreen({ navigation, route }: any) {
         accessibilityLabel="Add Activity"
       />
 
-      <MoveToDateModal />
-      <CopyToDateModal />
+      <DayModal render={renderMoveToDateModal} />
+      <DayModal render={renderCopyToDateModal} />
       <ShareWorkoutModal
         visible={showShareModal}
         onClose={() => setShowShareModal(false)}

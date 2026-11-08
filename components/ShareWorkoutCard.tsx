@@ -207,7 +207,7 @@ export default function ShareWorkoutCard({
                 lineHeight: 16,
               }}
             >
-              Rhythm Fit
+              Rhythm Fitness
             </Text>
             <Text
               style={{

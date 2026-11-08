@@ -12,7 +12,7 @@ import { initializeExercises } from '../services/exerciseService';
 import { initializeActivityTypes } from '../services/activityTypeService';
 import { fetchEquipment } from '../services/equipmentService';
 import { fetchLibrary } from '../services/libraryService';
-import { AppDispatch, RootState } from '../redux/store';
+import { AppDispatch, RootState, store } from '../redux/store';
 import { Activity } from '../types/activity';
 import { loadTutorialCompleted } from '../utils/storage';
 
@@ -27,12 +27,8 @@ export function useAppInitialization() {
     isConfigured,
   } = useAuth();
   const activities = useSelector((state: RootState) => state.activities.data);
-  const activitiesLoading = useSelector(
-    (state: RootState) => state.activities.loading
-  );
 
   const [activitiesLoaded, setActivitiesLoaded] = useState(false);
-  const [syncComplete, setSyncComplete] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [tutorialReady, setTutorialReady] = useState(false);
   const [shouldShowTutorial, setShouldShowTutorial] = useState(false);
@@ -85,22 +81,13 @@ export function useAppInitialization() {
     })();
   }, [dispatch]);
 
-  // Track when activities finish loading (from thunk state)
-  useEffect(() => {
-    if (!activitiesLoading && activitiesLoaded) {
-      // Already handled by the promise above
-    }
-  }, [activitiesLoading, activitiesLoaded]);
-
   // Auth ready check
   const authReady = !isConfigured || !authLoading;
 
-  // Sync activities when user is authenticated
+  // Sync after local hydration without holding the splash screen open.
   useEffect(() => {
     const performSync = async () => {
-      // If no user or backend not configured, sync is "complete" (nothing to do)
       if (!user || !isConfigured || !isBackendConfigured()) {
-        setSyncComplete(true);
         return;
       }
 
@@ -111,7 +98,6 @@ export function useAppInitialization() {
 
       const token = getAccessToken();
       if (!token) {
-        setSyncComplete(true);
         return;
       }
 
@@ -119,7 +105,11 @@ export function useAppInitialization() {
         await syncActivities(
           token,
           activitiesRef.current,
-          handleActivitiesUpdated
+          handleActivitiesUpdated,
+          {
+            userId: user.id,
+            getLatestActivities: () => store.getState().activities.data,
+          }
         );
 
         // Sync user-specific data in parallel (non-blocking)
@@ -128,8 +118,6 @@ export function useAppInitialization() {
         );
       } catch (err) {
         console.error('Failed to sync activities during initialization:', err);
-      } finally {
-        setSyncComplete(true);
       }
     };
 
@@ -152,6 +140,7 @@ export function useAppInitialization() {
         if (
           appStateRef.current.match(/inactive|background/) &&
           nextAppState === 'active' &&
+          activitiesLoaded &&
           user &&
           isConfigured &&
           isBackendConfigured()
@@ -161,7 +150,11 @@ export function useAppInitialization() {
             syncActivities(
               token,
               activitiesRef.current,
-              handleActivitiesUpdated
+              handleActivitiesUpdated,
+              {
+                userId: user.id,
+                getLatestActivities: () => store.getState().activities.data,
+              }
             ).catch(err => console.error('Foreground sync failed:', err));
           }
         }
@@ -170,21 +163,16 @@ export function useAppInitialization() {
     );
 
     return () => subscription.remove();
-  }, [user, isConfigured, getAccessToken, handleActivitiesUpdated]);
-
-  // Mark sync complete immediately if no backend/user
-  useEffect(() => {
-    if (!isConfigured || !isBackendConfigured()) {
-      setSyncComplete(true);
-    }
-  }, [isConfigured]);
+  }, [
+    user,
+    isConfigured,
+    activitiesLoaded,
+    getAccessToken,
+    handleActivitiesUpdated,
+  ]);
 
   const isReady =
-    activitiesLoaded &&
-    authReady &&
-    syncComplete &&
-    minTimeElapsed &&
-    tutorialReady;
+    activitiesLoaded && authReady && minTimeElapsed && tutorialReady;
 
   return { isReady, shouldShowTutorial };
 }

@@ -2,8 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { useCallback, useRef } from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import CoachScreen from '../screens/CoachScreen';
-import StatsScreen from '../screens/StatsScreen';
 import WeeklyStackNavigator from './WeeklyStackNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useTutorial } from '../components/tutorial';
@@ -132,7 +130,7 @@ export default function TabNavigatorClassic() {
       />
       <Tab.Screen
         name="Stats"
-        component={StatsScreen}
+        getComponent={() => require('../screens/StatsScreen').default}
         options={{
           tabBarLabel: 'Stats',
           tabBarIcon: ({ color, size, focused }) => (
@@ -149,7 +147,7 @@ export default function TabNavigatorClassic() {
       />
       <Tab.Screen
         name="Coach"
-        component={CoachScreen}
+        getComponent={() => require('../screens/CoachScreen').default}
         options={{
           tabBarLabel: 'Coach',
           tabBarIcon: ({ color, size, focused }) => (
