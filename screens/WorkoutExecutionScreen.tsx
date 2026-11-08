@@ -1,5 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from '../redux/store';
@@ -58,16 +57,15 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     activity => activity.restTimerEnabled ?? autoRestTimer
   );
 
-  const inSession = Boolean(
-    sessionControls.session?.items.some(item => item.id === timerId)
-  );
-  useFocusEffect(
-    useCallback(() => {
-      if (inSession) sessionControls.activate(timerId);
-    }, [inSession, timerId, sessionControls.current?.id])
-  );
+  const sessionIndex =
+    sessionControls.session?.items.findIndex(item => item.id === timerId) ?? -1;
+  const sessionItem =
+    sessionIndex >= 0
+      ? sessionControls.session?.items[sessionIndex]
+      : undefined;
+  const inSession = Boolean(sessionItem);
   const moveNext = () => {
-    const next = sessionControls.advance();
+    const next = sessionControls.advance(timerId);
     if (next) navigation.replace(next.route, next.params);
     return next;
   };
@@ -104,9 +102,9 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } else if (outcome.startRest && (inSession || restEnabled)) {
-      if (inSession && sessionControls.current)
+      if (inSession && sessionItem)
         sessionControls.startRest(
-          sessionControls.current,
+          sessionItem,
           sessionControls.session?.restDuration || 120
         );
       else
@@ -188,7 +186,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
             >
               <Text style={{ flex: 1, color: colors.textSecondary }}>
-                Session on · {sessionControls.session.index + 1} of{' '}
+                Session on · {sessionIndex + 1} of{' '}
                 {sessionControls.session.items.length}
               </Text>
               <TouchableOpacity

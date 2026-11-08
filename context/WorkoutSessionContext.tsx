@@ -22,12 +22,11 @@ interface SessionControls {
   ready: boolean;
   current: SessionItem | null;
   start: (date: string, items: SessionItem[]) => void;
-  advance: () => SessionItem | null;
+  advance: (fromId?: string) => SessionItem | null;
   end: () => void;
   startRest: (item: SessionItem, seconds: number) => void;
   skipRest: () => void;
   resume: () => SessionItem | null;
-  activate: (id: string) => void;
 }
 const Context = createContext<SessionControls | null>(null);
 
@@ -178,13 +177,17 @@ export function WorkoutSessionProvider({
       restDuration: timer.targetSeconds > 0 ? timer.targetSeconds : 120,
     });
   };
-  const goToNext = (includeCurrent = false) => {
+  const goToNext = (includeCurrent = false, fromId?: string) => {
     const value = sessionRef.current;
     if (!value) return null;
+    const selectedIndex = fromId
+      ? value.items.findIndex(item => item.id === fromId)
+      : value.index;
+    const startIndex = selectedIndex < 0 ? value.index : selectedIndex;
     const index = nextSessionIndex(
       value,
       store.getState().activities.data,
-      value.index + (includeCurrent ? 0 : 1)
+      startIndex + (includeCurrent ? 0 : 1)
     );
     if (index < 0) {
       commit(null);
@@ -196,15 +199,7 @@ export function WorkoutSessionProvider({
     commit({ ...value, index, rest: undefined });
     return value.items[index];
   };
-  const activate = (id: string) => {
-    const value = sessionRef.current;
-    if (!value) return;
-    const index = value.items.findIndex(item => item.id === id);
-    if (index < 0 || index === value.index) return;
-    if (timer.activityId === value.items[value.index]?.id) stopTimer();
-    commit({ ...value, index, rest: undefined });
-  };
-  const advance = () => goToNext();
+  const advance = (fromId?: string) => goToNext(false, fromId);
   const resume = () => goToNext(true);
   const skipRest = () => {
     const value = sessionRef.current;
@@ -224,6 +219,10 @@ export function WorkoutSessionProvider({
     if (!value) return;
     commit({
       ...value,
+      index: Math.max(
+        0,
+        value.items.findIndex(value => value.id === item.id)
+      ),
       rest: { remaining: seconds, endsAt: Date.now() + seconds * 1000 },
     });
     startCountdown(item.id, item.label, seconds);
@@ -241,7 +240,6 @@ export function WorkoutSessionProvider({
         startRest,
         skipRest,
         resume,
-        activate,
       }}
     >
       {children}
