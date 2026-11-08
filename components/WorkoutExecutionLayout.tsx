@@ -103,7 +103,7 @@ export default function WorkoutExecutionLayout({
           keyboardShouldPersistTaps="handled"
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
+            { useNativeDriver: true }
           )}
           scrollEventThrottle={16}
         >
