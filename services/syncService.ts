@@ -101,12 +101,15 @@ async function getPendingActivities(): Promise<SyncableActivity[]> {
 
 async function backfillPendingActivities(
   localActivities: Activity[],
-  userId: string
+  userId: string,
+  generation = syncGeneration
 ): Promise<void> {
   await withPendingQueueLock(async () => {
     const alreadyBackfilled = await AsyncStorage.getItem(
       `${PENDING_SYNC_BACKFILL_KEY}:${userId}`
     );
+    if (generation !== syncGeneration)
+      throw new Error('Account changed during recovery');
     if (alreadyBackfilled) return;
 
     const pendingActivities = await readPendingActivities();
@@ -133,6 +136,8 @@ async function backfillPendingActivities(
       }
     }
 
+    if (generation !== syncGeneration)
+      throw new Error('Account changed during recovery');
     await AsyncStorage.setItem(
       PENDING_SYNC_KEY,
       JSON.stringify(Array.from(pendingById.values()))
@@ -214,6 +219,8 @@ async function performPendingPush(
       offset < pendingActivities.length;
       offset += UPLOAD_BATCH_SIZE
     ) {
+      if (generation !== syncGeneration)
+        throw new Error('Account changed during upload');
       const batch = pendingActivities.slice(offset, offset + UPLOAD_BATCH_SIZE);
       const response = await syncFetch(getApiEndpoint('/api/activities'), {
         method: 'POST',
@@ -253,10 +260,11 @@ function pushPendingActivities(
   // close together. Share the same request instead of posting the queue twice.
   if (activePendingPush) return activePendingPush;
 
-  activePendingPush = performPendingPush(accessToken).finally(() => {
-    activePendingPush = null;
+  const operation = performPendingPush(accessToken).finally(() => {
+    if (activePendingPush === operation) activePendingPush = null;
   });
-  return activePendingPush;
+  activePendingPush = operation;
+  return operation;
 }
 
 // Merge local and server activities
@@ -328,15 +336,16 @@ export function syncActivities(
 ): Promise<void> {
   if (!API_URL) return Promise.resolve();
   if (activeHistorySync) return activeHistorySync;
-  activeHistorySync = performHistorySync(
+  const operation = performHistorySync(
     accessToken,
     localActivities,
     onActivitiesUpdated,
     options
   ).finally(() => {
-    activeHistorySync = null;
+    if (activeHistorySync === operation) activeHistorySync = null;
   });
-  return activeHistorySync;
+  activeHistorySync = operation;
+  return operation;
 }
 
 async function performHistorySync(
@@ -362,7 +371,9 @@ async function performHistorySync(
       })
     );
   }
-  await backfillPendingActivities(localActivities, options.userId);
+  checkAccount();
+  await backfillPendingActivities(localActivities, options.userId, generation);
+  checkAccount();
   let latestActivities = localActivities;
   const applyServerChanges = async (serverActivities: SyncableActivity[]) => {
     const pending = await getPendingActivities();
@@ -478,6 +489,8 @@ export async function flushPendingSync(accessToken: string): Promise<boolean> {
 // Clear all sync data (call on logout)
 export async function clearSyncData(): Promise<void> {
   syncGeneration++;
+  activeHistorySync = null;
+  activePendingPush = null;
   for (const controller of requests) controller.abort();
   try {
     await withPendingQueueLock(async () => {

@@ -282,3 +282,27 @@ test('a complete recovery stores its fingerprint; sign-out clears it but keeps t
   assert.equal(h.storage.get('rhythm_history_etag_v1:owner'), undefined);
   assert.ok(h.storage.get('rhythm_recovery_backup_v2:owner'));
 });
+
+test('sign-out during a download cannot apply the old account response or upload its history', async () => {
+  let finished;
+  const switched = new Promise(resolve => {
+    finished = resolve;
+  });
+  const h = harness({
+    local: [activity('old-account')],
+    remote: [activity('server')],
+    onDownload: async api => {
+      await api.clearSyncData();
+      await api.addToPendingSync(activity('next-account-edit'));
+      finished();
+    },
+  });
+  await assert.rejects(h.sync(), /Account changed/);
+  await switched;
+  assert.equal(h.requests.filter(r => r.method === 'POST').length, 0);
+  assert.equal(h.current[0].id, 'old-account');
+  assert.equal(
+    JSON.parse(h.storage.get('rhythm_pending_sync'))[0].id,
+    'next-account-edit'
+  );
+});
