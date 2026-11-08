@@ -76,6 +76,7 @@ export default function SetCard({
 
   return (
     <Pressable
+      accessible={false}
       onLongPress={readOnly ? undefined : () => onShowOptions(set)}
       delayLongPress={300}
       className="p-4 rounded-lg mb-3 shadow-sm"
