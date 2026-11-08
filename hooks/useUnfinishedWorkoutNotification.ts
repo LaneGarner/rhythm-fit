@@ -8,83 +8,8 @@ import {
 } from '../services/notifications';
 import { Activity } from '../types/activity';
 
-// While the execution screen is open, cancel any pending unfinished-workout
-// notification for this activity. On unmount or app background, if the user
-// made partial progress (>=1 set completed) but didn't finish the activity,
-// schedule a reminder.
-export function useUnfinishedWorkoutNotification(
-  activity: Activity | undefined
-) {
-  const { notificationSettings } = usePreferences();
-  const activityRef = useRef(activity);
-  const settingsRef = useRef(notificationSettings);
-
-  useEffect(() => {
-    activityRef.current = activity;
-  }, [activity]);
-
-  useEffect(() => {
-    settingsRef.current = notificationSettings;
-  }, [notificationSettings]);
-
-  // Cancel when the activity becomes fully completed.
-  useEffect(() => {
-    if (activity?.id && activity.completed) {
-      cancelUnfinishedWorkout(activity.id);
-    }
-  }, [activity?.id, activity?.completed]);
-
-  const shouldSchedule = (): boolean => {
-    const current = activityRef.current;
-    const settings = settingsRef.current;
-    if (!current) return false;
-    if (current.completed) return false;
-    if (!settings.enabled || !settings.unfinishedWorkout) return false;
-    const sets = current.sets ?? [];
-    const completedCount = sets.filter(s => s.completed).length;
-    return completedCount > 0 && completedCount < sets.length;
-  };
-
-  const scheduleIfEligible = async () => {
-    const current = activityRef.current;
-    if (!current || !shouldSchedule()) return;
-    const status = await getPermissionStatus();
-    if (status !== 'granted') return;
-    const sets = current.sets ?? [];
-    const completed = sets.filter(s => s.completed).length;
-    await scheduleUnfinishedWorkout(current, completed, sets.length, 30);
-  };
-
-  // Schedule on background; clear on foreground return (user is back in the app).
-  useEffect(() => {
-    const stateRef = { current: AppState.currentState as AppStateStatus };
-    const subscription = AppState.addEventListener('change', next => {
-      const was = stateRef.current;
-      stateRef.current = next;
-      if (was === 'active' && next.match(/inactive|background/)) {
-        scheduleIfEligible();
-      } else if (
-        was.match(/inactive|background/) &&
-        next === 'active' &&
-        activityRef.current?.id
-      ) {
-        cancelUnfinishedWorkout(activityRef.current.id);
-      }
-    });
-    return () => subscription.remove();
-  }, []);
-
-  // Schedule on screen unmount (navigating away) — the snapshot in refs is
-  // the latest Redux-backed activity state.
-  useEffect(() => {
-    return () => {
-      scheduleIfEligible();
-    };
-  }, []);
-}
-
-// Variant for supersets: schedule/cancel per activity in the group.
-export function useUnfinishedSupersetNotification(activities: Activity[]) {
+// Shared execution reminder lifecycle for one or several activities.
+export function useUnfinishedWorkoutNotifications(activities: Activity[]) {
   const { notificationSettings } = usePreferences();
   const activitiesRef = useRef(activities);
   const settingsRef = useRef(notificationSettings);
@@ -140,3 +65,12 @@ export function useUnfinishedSupersetNotification(activities: Activity[]) {
     };
   }, []);
 }
+
+// Compatibility wrappers for callers outside the unified execution screen.
+export function useUnfinishedWorkoutNotification(
+  activity: Activity | undefined
+) {
+  useUnfinishedWorkoutNotifications(activity ? [activity] : []);
+}
+export const useUnfinishedSupersetNotification =
+  useUnfinishedWorkoutNotifications;
