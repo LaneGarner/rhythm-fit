@@ -4,6 +4,7 @@ export interface HistoryQuery {
   exercise?: string;
   exercises?: string[];
   all?: boolean;
+  status?: 'planned' | 'completed' | 'incomplete';
   from?: string;
   to?: string;
   offset?: number;
@@ -69,10 +70,15 @@ export function lookupWorkoutHistory(
     (query.from && query.to && query.from > query.to)
   )
     return { error: 'Invalid date range' };
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const matching = activities
     .filter(
       a =>
         !(a as any).deleted_at &&
+        (query.status !== 'planned' || (!a.completed && a.date >= today)) &&
+        (query.status !== 'completed' || a.completed) &&
+        (query.status !== 'incomplete' || !a.completed) &&
         (!exerciseNames.length ||
           exerciseNames.some(name => a.name.toLowerCase().includes(name))) &&
         (!query.from || a.date >= query.from) &&

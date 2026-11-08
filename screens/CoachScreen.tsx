@@ -1,3 +1,5 @@
+import { getSavedCoachEquipment } from '../services/equipmentService';
+import { buildCoachPersonalContext } from '../services/coachPersonalContext';
 import {
   buildHistoryOverview,
   lookupWorkoutHistory,
@@ -573,6 +575,13 @@ export default function CoachScreen({ navigation, route }: any) {
       const botMessageId = (Date.now() + 1).toString();
       streamContentRef.current = '';
 
+      const savedEquipment = await getSavedCoachEquipment();
+      const personalContext = buildCoachPersonalContext(
+        coachProfile,
+        savedEquipment,
+        activities,
+        dayjs().format('YYYY-MM-DD')
+      );
       const streamHandle = streamChatMessage(
         token,
         allMessages,
@@ -701,7 +710,9 @@ export default function CoachScreen({ navigation, route }: any) {
           activityContext:
             activityContext +
             '\nAll-history overview:\n' +
-            buildHistoryOverview(activities),
+            buildHistoryOverview(activities) +
+            '\nSaved profile, equipment and schedule access:\n' +
+            personalContext,
           historyLookup: query => lookupWorkoutHistory(activities, query),
           sessionId: currentSessionId,
           sessionTitle,
