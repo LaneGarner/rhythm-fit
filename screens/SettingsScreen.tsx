@@ -17,7 +17,6 @@ import { ThemePreference, useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
 import { clearSyncData, flushPendingSync } from '../services/syncService';
-import { exportWorkoutBackup } from '../services/workoutBackupService';
 import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
@@ -60,7 +59,6 @@ export default function SettingsScreen({ navigation }: any) {
   const { insets, isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [isExportingBackup, setIsExportingBackup] = useState(false);
   const [aiDataSharingEnabled, setAIDataSharingEnabled] = useState(false);
 
   useEffect(() => {
@@ -300,35 +298,6 @@ export default function SettingsScreen({ navigation }: any) {
         className="flex-1 px-6 pt-8"
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Export workout backup"
-          accessibilityState={{ disabled: isExportingBackup }}
-          disabled={isExportingBackup}
-          onPress={async () => {
-            setIsExportingBackup(true);
-            try {
-              await exportWorkoutBackup(user?.id);
-            } catch (error) {
-              Alert.alert(
-                'Backup Not Exported',
-                error instanceof Error ? error.message : 'Please try again.'
-              );
-            } finally {
-              setIsExportingBackup(false);
-            }
-          }}
-          style={{
-            padding: 16,
-            marginBottom: 24,
-            borderRadius: 10,
-            backgroundColor: colors.surface,
-          }}
-        >
-          <Text style={{ color: colors.primary.main, fontSize: 16 }}>
-            {isExportingBackup ? 'Preparing backup…' : 'Export workout backup'}
-          </Text>
-        </TouchableOpacity>
         {/* Account Section */}
         {showAccountSection && (
           <>
@@ -1014,6 +983,41 @@ export default function SettingsScreen({ navigation }: any) {
               </TouchableOpacity>
             </React.Fragment>
           ))}
+        </View>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            fontWeight: '500',
+            marginTop: 32,
+            marginBottom: 8,
+            marginLeft: 16,
+          }}
+        >
+          Data
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          <TouchableOpacity
+            className="p-4 flex-row items-center justify-between"
+            accessibilityRole="button"
+            accessibilityLabel="Export workout data"
+            onPress={() => navigation.navigate('ExportWorkout')}
+          >
+            <Text className="text-base" style={{ color: colors.text }}>
+              Export workout data
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

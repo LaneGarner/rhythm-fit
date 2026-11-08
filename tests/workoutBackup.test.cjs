@@ -45,6 +45,10 @@ function harness({ corrupt = false, badWrite = false } = {}) {
     {
       exports,
       require: name => {
+        if (name === '../utils/workoutExport')
+          return require('./helpers/loadTs.cjs')()(
+            require.resolve('../utils/workoutExport.ts')
+          );
         if (name.includes('async-storage'))
           return {
             __esModule: true,

@@ -50,6 +50,7 @@ export type RootStackParamList = {
   DemoActivityExecution: undefined;
   EditActivity: { activityId: string; supersetId?: string };
   Settings: undefined;
+  ExportWorkout: undefined;
   NotificationSettings: undefined;
   ActivityLibrary: undefined;
   Equipment: undefined;
@@ -173,6 +174,12 @@ function AppContent({ navigationRef, shouldShowTutorial }: AppContentProps) {
           <Stack.Screen
             name="Settings"
             getComponent={() => require('./screens/SettingsScreen').default}
+          />
+          <Stack.Screen
+            name="ExportWorkout"
+            getComponent={() =>
+              require('./screens/ExportWorkoutScreen').default
+            }
           />
           <Stack.Screen
             name="NotificationSettings"
