@@ -6,7 +6,7 @@ export default {
     description: 'AI-Powered Workout Tracker & Coach',
     slug: 'rhythm',
     scheme: 'rhythm',
-    version: '1.0.0',
+    version: '1.1.0',
     orientation: 'default',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
