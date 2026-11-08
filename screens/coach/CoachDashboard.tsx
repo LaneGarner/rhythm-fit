@@ -87,6 +87,83 @@ export default function CoachDashboard({
       contentContainerStyle={{ padding: 16, paddingBottom: tabBarInset }}
       style={{ backgroundColor: colors.background }}
     >
+      {/* Quick actions */}
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <QuickAction
+          label="Regenerate"
+          description="Build a fresh plan from your profile."
+          icon="refresh"
+          colors={colors}
+          onPress={onRegenerate}
+        />
+        <QuickAction
+          label="Reschedule"
+          description="Shift this week's workouts to other days."
+          icon="calendar"
+          colors={colors}
+          onPress={onReschedule}
+        />
+        <QuickAction
+          label="Reconfigure"
+          description="Update your goals, equipment, or schedule."
+          icon="options"
+          colors={colors}
+          onPress={onReconfigure}
+        />
+        <QuickAction
+          label="Ask coach"
+          description="Chat for tips or one-off changes."
+          icon="chatbubble-ellipses"
+          colors={colors}
+          onPress={() => onOpenChat()}
+        />
+      </View>
+
+      {/* Coach tips */}
+      <Card colors={colors}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <Ionicons name="bulb" size={18} color={colors.text} />
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+            Coach tips
+          </Text>
+        </View>
+        {tips.length === 0 ? (
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Log a few workouts and I'll start spotting patterns — progress,
+            imbalances, and where to push next.
+          </Text>
+        ) : (
+          tips.map((tip, i) => (
+            <TipRow
+              key={i}
+              tip={tip}
+              colors={colors}
+              onPress={() => onOpenChat(tip.title)}
+            />
+          ))
+        )}
+      </Card>
+
       {/* This week's plan */}
       <Card colors={colors}>
         <View
@@ -178,76 +255,6 @@ export default function CoachDashboard({
           })
         )}
       </Card>
-
-      {/* Coach tips */}
-      <Card colors={colors}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 12,
-          }}
-        >
-          <Ionicons name="bulb" size={18} color={colors.text} />
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-            Coach tips
-          </Text>
-        </View>
-        {tips.length === 0 ? (
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 14,
-              lineHeight: 20,
-            }}
-          >
-            Log a few workouts and I'll start spotting patterns — progress,
-            imbalances, and where to push next.
-          </Text>
-        ) : (
-          tips.map((tip, i) => (
-            <TipRow
-              key={i}
-              tip={tip}
-              colors={colors}
-              onPress={() => onOpenChat(tip.title)}
-            />
-          ))
-        )}
-      </Card>
-
-      {/* Quick actions */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        <QuickAction
-          label="Regenerate"
-          description="Build a fresh plan from your profile."
-          icon="refresh"
-          colors={colors}
-          onPress={onRegenerate}
-        />
-        <QuickAction
-          label="Reschedule"
-          description="Shift this week's workouts to other days."
-          icon="calendar"
-          colors={colors}
-          onPress={onReschedule}
-        />
-        <QuickAction
-          label="Reconfigure"
-          description="Update your goals, equipment, or schedule."
-          icon="options"
-          colors={colors}
-          onPress={onReconfigure}
-        />
-        <QuickAction
-          label="Ask coach"
-          description="Chat for tips or one-off changes."
-          icon="chatbubble-ellipses"
-          colors={colors}
-          onPress={() => onOpenChat()}
-        />
-      </View>
     </ScrollView>
   );
 }
