@@ -122,6 +122,7 @@ export function streamChatMessage(
 ): { abort: () => void } {
   const xhr = new XMLHttpRequest();
   let lastProcessedIndex = 0;
+  let partialLine = '';
 
   xhr.open('POST', getApiEndpoint('/api/chat'));
   xhr.setRequestHeader('Content-Type', 'application/json');
@@ -150,7 +151,13 @@ export function streamChatMessage(
       const newText = xhr.responseText.substring(lastProcessedIndex);
       lastProcessedIndex = xhr.responseText.length;
 
-      const lines = newText.split('\n').filter(line => line.trim());
+      const chunks = (partialLine + newText).split('\n');
+      partialLine = chunks.pop() || '';
+      if (xhr.readyState === 4 && partialLine.trim()) {
+        chunks.push(partialLine);
+        partialLine = '';
+      }
+      const lines = chunks.filter(line => line.trim());
       for (const line of lines) {
         try {
           const event: StreamEvent = JSON.parse(line);

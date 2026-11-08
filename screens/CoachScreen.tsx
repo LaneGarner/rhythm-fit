@@ -14,6 +14,7 @@ import React, {
 } from 'react';
 import {
   AccessibilityInfo,
+  FlatList,
   ActivityIndicator,
   Alert,
   Animated,
@@ -120,7 +121,7 @@ export default function CoachScreen({ navigation, route }: any) {
   }, []);
 
   // Add ref for ScrollView, last bot message, and last user message
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<FlatList>(null);
   const lastBotMessageRef = useRef<View>(null);
   const lastUserMessageRef = useRef<View>(null);
 
@@ -583,33 +584,11 @@ export default function CoachScreen({ navigation, route }: any) {
               };
               setMessages(prev => [...prev, botMessage]);
               setStreamingMessageId(botMessageId);
-
-              // Start periodic scroll to pin user's message at the top
-              const targetY = { value: -1 };
-              streamScrollTimerRef.current = setInterval(() => {
-                if (!scrollViewRef.current) return;
-                if (lastUserMessageRef.current) {
-                  lastUserMessageRef.current.measureLayout(
-                    scrollViewRef.current as any,
-                    (x, y) => {
-                      const scrollTarget = Math.max(0, y - 12);
-                      if (targetY.value === -1) {
-                        targetY.value = scrollTarget;
-                      }
-                      scrollViewRef.current?.scrollTo({
-                        y: scrollTarget,
-                        animated: false,
-                      });
-                    },
-                    () => {}
-                  );
-                }
-              }, 200);
             }
 
             streamContentRef.current += text;
 
-            // Throttled flush to state (~50ms)
+            // Flush the response at most ten times per second.
             if (!streamFlushTimerRef.current) {
               streamFlushTimerRef.current = setTimeout(() => {
                 const content = streamContentRef.current;
@@ -619,7 +598,7 @@ export default function CoachScreen({ navigation, route }: any) {
                   )
                 );
                 streamFlushTimerRef.current = null;
-              }, 50);
+              }, 100);
             }
           },
           onDone: (content: string, activities: any[]) => {
@@ -1093,7 +1072,7 @@ export default function CoachScreen({ navigation, route }: any) {
 
       {activeTab === 'chat' ? (
         <View className="flex-1">
-          <ScrollView
+          <FlatList
             className="flex-1 px-4 pt-4"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -1109,8 +1088,25 @@ export default function CoachScreen({ navigation, route }: any) {
                 }
               }
             }}
-          >
-            {messages.map((message, index) => (
+            data={messages}
+            keyExtractor={message => message.id}
+            initialNumToRender={12}
+            windowSize={7}
+            onContentSizeChange={() => {
+              if (!streamingMessageId || userScrolledRef.current) return;
+              if (lastUserMessageRef.current && scrollViewRef.current) {
+                lastUserMessageRef.current.measureLayout(
+                  scrollViewRef.current.getNativeScrollRef() as any,
+                  (_x, y) =>
+                    scrollViewRef.current?.scrollToOffset({
+                      offset: Math.max(0, y - 12),
+                      animated: false,
+                    }),
+                  () => {}
+                );
+              }
+            }}
+            renderItem={({ item: message, index }) => (
               <View
                 key={message.id}
                 ref={
@@ -1180,41 +1176,43 @@ export default function CoachScreen({ navigation, route }: any) {
                   </TouchableOpacity>
                 )}
               </View>
-            ))}
-            {isProcessing && !streamingMessageId && (
-              <Animated.View
-                className="mb-4 items-start"
-                style={{
-                  shadowColor: isDark ? GLOW_COLOR_DARK : GLOW_COLOR_LIGHT,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 1],
-                  }),
-                  shadowRadius: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [8, 20],
-                  }),
-                  elevation: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [2, 10],
-                  }),
-                }}
-              >
-                <View
-                  className={`px-4 py-3 rounded-2xl ${
-                    isDark
-                      ? 'bg-[#18181b] border border-[#333]'
-                      : 'bg-white border border-gray-200'
-                  }`}
-                >
-                  <Text style={{ color: colors.textSecondary }}>
-                    Thinking...
-                  </Text>
-                </View>
-              </Animated.View>
             )}
-          </ScrollView>
+            ListFooterComponent={
+              isProcessing && !streamingMessageId ? (
+                <Animated.View
+                  className="mb-4 items-start"
+                  style={{
+                    shadowColor: isDark ? GLOW_COLOR_DARK : GLOW_COLOR_LIGHT,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                    shadowRadius: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [8, 20],
+                    }),
+                    elevation: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [2, 10],
+                    }),
+                  }}
+                >
+                  <View
+                    className={`px-4 py-3 rounded-2xl ${
+                      isDark
+                        ? 'bg-[#18181b] border border-[#333]'
+                        : 'bg-white border border-gray-200'
+                    }`}
+                  >
+                    <Text style={{ color: colors.textSecondary }}>
+                      Thinking...
+                    </Text>
+                  </View>
+                </Animated.View>
+              ) : null
+            }
+          />
 
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
