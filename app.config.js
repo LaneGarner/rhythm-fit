@@ -22,6 +22,7 @@ export default {
       requireFullScreen: false,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        RCTAsyncStorageExcludeFromBackup: false,
         UIBackgroundModes: ['remote-notification'],
       },
     },
