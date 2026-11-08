@@ -1,3 +1,7 @@
+import {
+  calculateTopExercises,
+  calculateVolumeBuckets,
+} from '../services/statsService';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -83,15 +87,10 @@ export default function StatsScreen({ navigation }: any) {
   );
 
   // Get top exercises by sessions
-  const topExercises = useMemo(() => {
-    return uniqueExercises
-      .map(name => {
-        const stats = calculateExerciseStats(filteredActivities, name);
-        return { name, sessions: stats?.sessions || 0, stats };
-      })
-      .sort((a, b) => b.sessions - a.sessions)
-      .slice(0, 5);
-  }, [uniqueExercises, filteredActivities]);
+  const topExercises = useMemo(
+    () => calculateTopExercises(filteredActivities),
+    [filteredActivities]
+  );
 
   // Personal records
   const personalRecords = useMemo(
@@ -112,88 +111,10 @@ export default function StatsScreen({ navigation }: any) {
   );
 
   // Volume data (daily for 7D, monthly for All, weekly for other ranges)
-  const volumeData = useMemo(() => {
-    const data: { label: string; value: number }[] = [];
-
-    if (timeRange === 7) {
-      // Daily data for 7D view
-      for (let i = 6; i >= 0; i--) {
-        const date = dayjs().subtract(i, 'day');
-        const label = date.format('M/D');
-
-        let volume = 0;
-        for (const activity of activities) {
-          const activityDate = dayjs(activity.date);
-          if (
-            activityDate.isSame(date, 'day') &&
-            isActivityComplete(activity) &&
-            activity.sets
-          ) {
-            for (const set of activity.sets) {
-              if (set.completed && set.weight && set.reps) {
-                volume += set.weight * set.reps;
-              }
-            }
-          }
-        }
-        data.push({ label, value: volume });
-      }
-    } else if (timeRange === 0) {
-      // Monthly data for All Time view
-      for (let i = 11; i >= 0; i--) {
-        const monthStart = dayjs().subtract(i, 'month').startOf('month');
-        const monthEnd = dayjs().subtract(i, 'month').endOf('month');
-        const label = monthStart.format('MMM');
-
-        let volume = 0;
-        for (const activity of activities) {
-          const activityDate = dayjs(activity.date);
-          if (
-            activityDate.isAfter(monthStart.subtract(1, 'day')) &&
-            activityDate.isBefore(monthEnd.add(1, 'day')) &&
-            isActivityComplete(activity) &&
-            activity.sets
-          ) {
-            for (const set of activity.sets) {
-              if (set.completed && set.weight && set.reps) {
-                volume += set.weight * set.reps;
-              }
-            }
-          }
-        }
-        data.push({ label, value: volume });
-      }
-    } else {
-      // Weekly data for longer ranges
-      const weeksToShow = Math.min(Math.floor(timeRange / 7), 12);
-
-      for (let i = weeksToShow - 1; i >= 0; i--) {
-        const weekStart = dayjs().subtract(i * 7 + 6, 'day');
-        const weekEnd = dayjs().subtract(i * 7, 'day');
-        const label = weekStart.format('M/D');
-
-        let volume = 0;
-        for (const activity of activities) {
-          const activityDate = dayjs(activity.date);
-          if (
-            activityDate.isAfter(weekStart.subtract(1, 'day')) &&
-            activityDate.isBefore(weekEnd.add(1, 'day')) &&
-            isActivityComplete(activity) &&
-            activity.sets
-          ) {
-            for (const set of activity.sets) {
-              if (set.completed && set.weight && set.reps) {
-                volume += set.weight * set.reps;
-              }
-            }
-          }
-        }
-        data.push({ label, value: volume });
-      }
-    }
-
-    return data;
-  }, [activities, timeRange]);
+  const volumeData = useMemo(
+    () => calculateVolumeBuckets(activities, timeRange),
+    [activities, timeRange]
+  );
 
   const timeRangeOptions: { value: TimeRange; label: string }[] = [
     { value: 7, label: '7D' },

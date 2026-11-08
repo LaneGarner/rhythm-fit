@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
+import { sampleChartPoints } from '../../utils/chartSampling';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { LineChart } from 'react-native-gifted-charts';
@@ -32,17 +33,95 @@ const Y_AXIS_LABEL_WIDTH = 35;
 const TOOLTIP_WIDTH = 90;
 
 export const ProgressionChart = ({
-  data,
+  data: sourceData,
   title,
   color,
   suffix = '',
   height = 200,
 }: ProgressionChartProps) => {
+  const data = useMemo(() => sampleChartPoints(sourceData), [sourceData]);
   const { colors } = useTheme();
   const chartColor = color || colors.primary.main;
   const { width: screenWidth } = useWindowDimensions();
   const [pointer, setPointer] = useState<PointerState | null>(null);
   const scrollOffsetRef = useRef(0);
+
+  const chartWidth = screenWidth - 120;
+  const minSpacing = 50;
+  const naturalSpacing = chartWidth / Math.max(data.length - 1, 1);
+  const spacing = Math.max(minSpacing, Math.min(naturalSpacing, 80));
+
+  const maxLabels = 5;
+  const labelInterval =
+    data.length <= maxLabels ? 1 : Math.ceil(data.length / maxLabels);
+
+  const chartData = useMemo(
+    () =>
+      data.map((d, i) => {
+        const isYearBoundary =
+          i > 0 &&
+          d.date &&
+          data[i - 1]?.date &&
+          dayjs(d.date).year() !== dayjs(data[i - 1].date).year();
+        const showLabel =
+          i === 0 ||
+          i === data.length - 1 ||
+          i % labelInterval === 0 ||
+          isYearBoundary;
+        return {
+          value: d.value,
+          label: showLabel ? d.label : '',
+          date: d.date,
+        };
+      }),
+    [data]
+  );
+
+  const maxValue = Math.max(...data.map(d => d.value));
+  const minValue = Math.min(...data.map(d => d.value));
+  const adjustedMax = Math.max(1, maxValue * 1.1);
+
+  const updatePointer = useCallback(
+    (gestureX: number) => {
+      const adjustedX = gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
+      const index = Math.round((adjustedX - INITIAL_SPACING) / spacing);
+      const clamped = Math.max(0, Math.min(index, chartData.length - 1));
+      const item = chartData[clamped];
+      if (!item) return;
+      const x =
+        Y_AXIS_LABEL_WIDTH +
+        INITIAL_SPACING +
+        clamped * spacing -
+        scrollOffsetRef.current;
+      const y = height * (1 - item.value / adjustedMax);
+      const dateLabel = item.date
+        ? dayjs(item.date).format('M/D/YY')
+        : item.label || '';
+      setPointer(previous =>
+        previous?.index === clamped && previous.x === x
+          ? previous
+          : { index: clamped, x, y, dateLabel, value: item.value }
+      );
+    },
+    [chartData, spacing, height, adjustedMax]
+  );
+
+  const clearPointer = useCallback(() => {
+    setPointer(null);
+  }, []);
+
+  const pointerGesture = Gesture.Pan()
+    .activateAfterLongPress(300)
+    .runOnJS(true)
+    .onStart(e => {
+      updatePointer(e.x);
+    })
+    .onUpdate(e => {
+      updatePointer(e.x);
+    })
+    .onEnd(() => {
+      clearPointer();
+    });
 
   if (data.length === 0) {
     return (
@@ -69,74 +148,6 @@ export const ProgressionChart = ({
       </View>
     );
   }
-
-  const chartWidth = screenWidth - 120;
-  const minSpacing = 50;
-  const naturalSpacing = chartWidth / Math.max(data.length - 1, 1);
-  const spacing = Math.max(minSpacing, Math.min(naturalSpacing, 80));
-
-  const maxLabels = 5;
-  const labelInterval =
-    data.length <= maxLabels ? 1 : Math.ceil(data.length / maxLabels);
-
-  const chartData = data.map((d, i) => {
-    const isYearBoundary =
-      i > 0 &&
-      d.date &&
-      data[i - 1]?.date &&
-      dayjs(d.date).year() !== dayjs(data[i - 1].date).year();
-    const showLabel =
-      i === 0 ||
-      i === data.length - 1 ||
-      i % labelInterval === 0 ||
-      isYearBoundary;
-    return {
-      value: d.value,
-      label: showLabel ? d.label : '',
-      date: d.date,
-    };
-  });
-
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
-  const adjustedMax = maxValue * 1.1;
-
-  const updatePointer = useCallback(
-    (gestureX: number) => {
-      const adjustedX = gestureX - Y_AXIS_LABEL_WIDTH + scrollOffsetRef.current;
-      const index = Math.round((adjustedX - INITIAL_SPACING) / spacing);
-      const clamped = Math.max(0, Math.min(index, chartData.length - 1));
-      const item = chartData[clamped];
-      const x =
-        Y_AXIS_LABEL_WIDTH +
-        INITIAL_SPACING +
-        clamped * spacing -
-        scrollOffsetRef.current;
-      const y = height * (1 - item.value / adjustedMax);
-      const dateLabel = item.date
-        ? dayjs(item.date).format('M/D/YY')
-        : item.label || '';
-      setPointer({ index: clamped, x, y, dateLabel, value: item.value });
-    },
-    [chartData, spacing, height, adjustedMax]
-  );
-
-  const clearPointer = useCallback(() => {
-    setPointer(null);
-  }, []);
-
-  const pointerGesture = Gesture.Pan()
-    .activateAfterLongPress(300)
-    .runOnJS(true)
-    .onStart(e => {
-      updatePointer(e.x);
-    })
-    .onUpdate(e => {
-      updatePointer(e.x);
-    })
-    .onEnd(() => {
-      clearPointer();
-    });
 
   // Tooltip x position, clamped to stay within the card
   const cardWidth = screenWidth - 32; // screen minus outer margins
@@ -208,6 +219,13 @@ export const ProgressionChart = ({
         </View>
       )}
 
+      {sourceData.length > data.length && (
+        <Text
+          style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}
+        >
+          Overview of {sourceData.length} sessions
+        </Text>
+      )}
       <GestureDetector gesture={pointerGesture}>
         <View style={{ overflow: 'hidden' }}>
           <LineChart
@@ -244,7 +262,7 @@ export const ProgressionChart = ({
             maxValue={adjustedMax}
             noOfSections={4}
             yAxisLabelSuffix={suffix}
-            isAnimated
+            isAnimated={false}
             animationDuration={500}
           />
 

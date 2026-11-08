@@ -32,12 +32,14 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
 
   const sessions = useMemo(
     () =>
-      getPreviousDays(
-        activities,
-        { id: activity.id, name: activity.name, date: activity.date },
-        DAY_LIMIT
-      ),
-    [activities, activity.id, activity.name, activity.date]
+      expanded
+        ? getPreviousDays(
+            activities,
+            { id: activity.id, name: activity.name, date: activity.date },
+            DAY_LIMIT
+          )
+        : [],
+    [expanded, activities, activity.id, activity.name, activity.date]
   );
 
   return (
