@@ -14,6 +14,7 @@ const HISTORY_ETAG_KEY = 'rhythm_history_etag_v1:';
 const REQUEST_TIMEOUT_MS = 30_000;
 const requests = new Set<AbortController>();
 let syncGeneration = 0;
+const displayedHistoryDays = new Map<string, string>();
 async function syncFetch(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   requests.add(controller);
@@ -374,6 +375,7 @@ async function performHistorySync(
       pending
     );
     onActivitiesUpdated(latestActivities);
+    displayedHistoryDays.set(options.userId, new Date().toDateString());
     // Persist history before marking a download complete. The Redux storage
     // middleware is debounced and cannot acknowledge durability for us.
     await saveActivities(latestActivities);
@@ -394,6 +396,15 @@ async function performHistorySync(
     });
     if (response.status === 304) {
       checkAccount();
+      const today = new Date().toDateString();
+      // A day rollover still invalidates date-sensitive selectors even when
+      // cloud rows are unchanged. Avoid a full-history write for this refresh.
+      if (displayedHistoryDays.get(options.userId) !== today) {
+        onActivitiesUpdated([
+          ...(options.getLatestActivities?.() || localActivities),
+        ]);
+        displayedHistoryDays.set(options.userId, today);
+      }
     } else {
       if (!response.ok)
         throw new Error(`Workout download failed (${response.status})`);
