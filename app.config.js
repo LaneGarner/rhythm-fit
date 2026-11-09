@@ -38,6 +38,7 @@ export default {
       favicon: './assets/favicon.png',
     },
     plugins: [
+      './plugins/withDeviceOrientation',
       'expo-audio',
       'react-native-bottom-tabs',
       [
