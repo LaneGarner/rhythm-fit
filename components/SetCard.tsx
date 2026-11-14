@@ -29,6 +29,7 @@ export interface SetCardProps {
   readOnly?: boolean;
   title?: string;
   showCompletionButton?: boolean;
+  timerAction?: React.ReactNode;
 }
 
 const FIELD_CONFIG: Record<TrackingField, { label: string; unit?: string }> = {
@@ -52,6 +53,7 @@ export default function SetCard({
   readOnly,
   title,
   showCompletionButton = true,
+  timerAction,
 }: SetCardProps) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -345,6 +347,7 @@ export default function SetCard({
           );
         })}
       </View>
+      {timerAction}
       {showCompletionButton && (
         <SetCompletionButton
           completed={set.completed}

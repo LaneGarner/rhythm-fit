@@ -68,8 +68,13 @@ export default function DurationPickerModal({
         />
         {/* Bottom Sheet Content */}
         <View
-          className={`rounded-t-3xl ${isDark ? 'bg-gray-900' : 'bg-white'}`}
-          style={{ paddingBottom: 32, paddingTop: 8, paddingHorizontal: 0 }}
+          className="rounded-t-3xl"
+          style={{
+            backgroundColor: isDark ? colors.surface : '#ffffff',
+            paddingBottom: 32,
+            paddingTop: 8,
+            paddingHorizontal: 0,
+          }}
         >
           {/* Header */}
           <View
@@ -113,12 +118,14 @@ export default function DurationPickerModal({
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 8,
-                backgroundColor: colors.primary.background,
+                backgroundColor: isDark
+                  ? colors.inputBackground
+                  : colors.primary.background,
               }}
             >
               <Text
                 style={{
-                  color: colors.primary.main,
+                  color: isDark ? colors.text : colors.primary.main,
                   fontWeight: '600',
                   fontSize: 16,
                 }}
