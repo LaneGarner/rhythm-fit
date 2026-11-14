@@ -8,6 +8,11 @@ interface WorkoutTimerModule {
     event: 'onTimerChoices',
     listener: (event: { devices: TimerChoice[] }) => void
   ): { remove(): void };
+  addListener(
+    event: 'onCountUpStarted',
+    listener: (event: { request: number; startedAt: number; resumed: boolean }) => void
+  ): { remove(): void };
+  syncWorkoutTimer?(deadline: number | null, countUpRequest: number | null, paused: boolean): Promise<void>;
   setWorkoutTimer(deadline: number | null, countUp: boolean): Promise<void>;
   selectTimer(id: string): Promise<void>;
   forgetTimer(): Promise<void>;
