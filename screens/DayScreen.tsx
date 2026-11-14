@@ -1288,8 +1288,6 @@ export default function DayScreen({ navigation, route }: any) {
           backgroundColor: colors.cardBackground,
           borderWidth: hasSelectedActivity ? 2 : 0,
           borderColor: colors.primary.main,
-          borderLeftWidth: 4,
-          borderLeftColor: colors.primary.main,
         }}
       >
         {/* Superset badge */}
@@ -1503,16 +1501,6 @@ export default function DayScreen({ navigation, route }: any) {
                 ? '#10B981'
                 : isSuperset
                   ? colors.primary.main
-                  : '#3B82F6',
-              borderLeftWidth: isSuperset
-                ? 4
-                : hasSelectedActivity || isActive
-                  ? 2
-                  : 0,
-              borderLeftColor: isSuperset
-                ? colors.primary.main
-                : isActive
-                  ? '#10B981'
                   : '#3B82F6',
               backgroundColor: isActive
                 ? colors.surfaceSecondary
