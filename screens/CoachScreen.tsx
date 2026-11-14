@@ -51,15 +51,17 @@ import {
 import { useAuth } from '../context/AuthContext';
 import {
   streamChatMessage,
+  formatCoachReset,
   getChatSessions,
   getChatSession,
   deleteChatSession,
   ChatErrorCode,
 } from '../services/chatApi';
 import { buildCoachActivityContext } from '../services/coachAnalyticsService';
-import { createActivitiesFromRequest } from '../services/activityScheduler';
-import { generateAndSchedulePlan } from '../services/planGenerationService';
-import { AppDispatch, RootState } from '../redux/store';
+import { createActivitiesFromRequest, moveCoachWorkout } from '../services/activityScheduler';
+import { previewCoachCalendar, type CalendarPatch } from '../services/coachCalendar';
+import { applyCoachCalendarPatch } from '../redux/activitySlice';
+import { AppDispatch, RootState, store } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
@@ -103,7 +105,49 @@ export default function CoachScreen({ navigation, route }: any) {
       timestamp: new Date(),
     },
   ]);
+  const [calendarPreview, setCalendarPreview] = useState<CalendarPatch>();
+  const [calendarUndo, setCalendarUndo] = useState<CalendarPatch>();
+
+  const applyCalendarChange = (patch: CalendarPatch) => {
+    const live = new Map(store.getState().activities.data.map(activity => [activity.id, activity]));
+    const previousIds = new Set(patch.before.map(activity => activity.id));
+    if (patch.before.some(activity => live.get(activity.id) !== activity) ||
+        patch.after.some(activity => !previousIds.has(activity.id) && live.has(activity.id))) {
+      Alert.alert('Calendar changed', 'Review your calendar before trying again.');
+      setCalendarPreview(undefined);
+      setCalendarUndo(undefined);
+      return;
+    }
+
+    const afterIds = new Set(patch.after.map(activity => activity.id));
+    store.dispatch(applyCoachCalendarPatch({
+      remove: patch.before.filter(activity => !afterIds.has(activity.id)).map(activity => activity.id),
+      upsert: patch.after,
+    }));
+    const saved = store.getState().activities.data.filter(activity => afterIds.has(activity.id));
+    setCalendarPreview(undefined);
+    setCalendarUndo(patch === calendarUndo ? undefined : { before: saved, after: patch.before, preview: [] });
+  };
+
   const [inputText, setInputText] = useState('');
+  const [limitResetsAt, setLimitResetsAt] = useState<string>();
+  const resetTime = limitResetsAt ? Date.parse(limitResetsAt) : NaN;
+  const coachLimited = resetTime > Date.now();
+
+  useEffect(() => {
+    if (!coachLimited) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const checkReset = () => {
+      const remaining = resetTime - Date.now();
+      if (remaining <= 0) {
+        setLimitResetsAt(undefined);
+      } else {
+        timer = setTimeout(checkReset, Math.min(remaining, 2_147_483_647));
+      }
+    };
+    checkReset();
+    return () => clearTimeout(timer);
+  }, [coachLimited, resetTime]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -159,6 +203,10 @@ export default function CoachScreen({ navigation, route }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
+  useEffect(() => {
+    setCalendarPreview(undefined);
+    setCalendarUndo(undefined);
+  }, [user?.id]);
   const isAuthenticated = Boolean(user) && isBackendConfigured();
   const [aiConsent, setAIConsent] = useState<boolean | null>(null);
   const { getWeekStart, getWeekEnd } = useWeekBoundaries();
@@ -500,7 +548,7 @@ export default function CoachScreen({ navigation, route }: any) {
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || isProcessing) return;
+    if (!inputText.trim() || isProcessing || coachLimited || calendarPreview) return;
 
     if (user && isAuthenticated) {
       try {
@@ -591,6 +639,17 @@ export default function CoachScreen({ navigation, route }: any) {
         activities,
         dayjs().format('YYYY-MM-DD')
       );
+      const weekStart = getWeekStart();
+      const moveCandidates = activities
+        .filter(activity => activity.date >= weekStart.subtract(2, 'week').format('YYYY-MM-DD') &&
+          activity.date <= weekStart.add(5, 'week').format('YYYY-MM-DD'))
+        .slice(0, 200)
+        .map(({ id, date, name, completed, sets }) => ({
+          id, date, name, completed,
+          sets: sets?.map(({ reps, weight, time, distance, completed }) => ({ reps, weight, time, distance, completed })),
+        }));
+      const moveDates = new Map(moveCandidates.map(({ id, date }) => [id, date]));
+      const candidateIds = new Set(moveDates.keys());
       const streamHandle = streamChatMessage(
         token,
         allMessages,
@@ -623,7 +682,8 @@ export default function CoachScreen({ navigation, route }: any) {
               }, 100);
             }
           },
-          onDone: (content: string, activities: any[]) => {
+          onDone: (content: string, activities: any[], resetsAt?: string, move?: unknown, calendarOperations?: unknown) => {
+            if (resetsAt) setLimitResetsAt(resetsAt);
             // Clear timers and do final update
             if (streamFlushTimerRef.current) {
               clearTimeout(streamFlushTimerRef.current);
@@ -634,6 +694,25 @@ export default function CoachScreen({ navigation, route }: any) {
               streamScrollTimerRef.current = null;
             }
             let finalContent = content;
+            if (calendarOperations !== undefined) {
+              const live = store.getState().activities.data;
+              const original = new Map(activities.map(activity => [activity.id, activity]));
+              const currentIds = new Set(live.filter(activity =>
+                candidateIds.has(activity.id) && activity === original.get(activity.id)
+              ).map(activity => activity.id));
+              const patch = previewCoachCalendar(calendarOperations, live, currentIds);
+              if (patch) {
+                setCalendarPreview(patch);
+                finalContent = 'Review the proposed changes below.';
+              } else {
+                finalContent = "I couldn't prepare those calendar changes. Check the workouts and dates, then try again.";
+              }
+            } else if (move !== undefined) {
+              const date = moveCoachWorkout(move, moveDates, dispatch);
+              finalContent = date
+                ? `Moved your workout to ${date}.`
+                : "I couldn't move that workout. Check which workout you want to move and try again.";
+            }
 
             // Create activities if any were parsed
             if (activities.length > 0) {
@@ -675,7 +754,13 @@ export default function CoachScreen({ navigation, route }: any) {
               loadChatHistory();
             }, 100);
           },
-          onError: (message: string, code?: ChatErrorCode) => {
+          onError: (
+            message: string,
+            code?: ChatErrorCode,
+            resetsAt?: string
+          ) => {
+            if (code === 'monthly_limit' && resetsAt)
+              setLimitResetsAt(resetsAt);
             if (code === 'subscription_required') {
               // Server says the subscription lapsed — re-sync so CoachGate
               // drops back to the Paywall.
@@ -722,6 +807,7 @@ export default function CoachScreen({ navigation, route }: any) {
             buildHistoryOverview(activities) +
             '\nSaved profile, equipment and schedule access:\n' +
             personalContext,
+          moveCandidates,
           historyLookup: query => lookupWorkoutHistory(activities, query),
           sessionId: currentSessionId,
           sessionTitle,
@@ -1236,11 +1322,40 @@ export default function CoachScreen({ navigation, route }: any) {
             }
           />
 
+          {calendarPreview && (
+            <View className="px-4 py-3" style={{ backgroundColor: colors.surface }}>
+              <Text accessibilityRole="header" style={{ color: colors.text }}>Review calendar changes</Text>
+              <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled>
+                {calendarPreview.preview.map((line, index) => (
+                  <Text key={index} className="py-1" style={{ color: colors.textSecondary }}>{line}</Text>
+                ))}
+              </ScrollView>
+              <View className="flex-row justify-end gap-4">
+                <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => setCalendarPreview(undefined)}>
+                  <Text style={{ color: colors.text }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarPreview)}>
+                  <Text style={{ color: colors.primary.main }}>Apply changes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {!calendarPreview && calendarUndo && (
+            <View className="flex-row items-center justify-between px-4" accessibilityLiveRegion="polite">
+              <Text style={{ color: colors.text }}>Calendar updated</Text>
+              <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarUndo)}>
+                <Text style={{ color: colors.primary.main }}>Undo</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
             onDismiss={() => setSuggestionsDismissed(true)}
             visible={
-              !suggestionsDismissed && !isProcessing && messages.length <= 1
+              !suggestionsDismissed &&
+              !coachLimited &&
+              !isProcessing &&
+              messages.length <= 1
             }
           />
 
@@ -1252,50 +1367,61 @@ export default function CoachScreen({ navigation, route }: any) {
             }}
             className="p-4 border-t"
           >
-            <View className="flex-row items-center">
-              <TextInput
-                className="flex-1 bg-gray-100 p-3 rounded-2xl mr-3"
-                placeholder="Ask your AI coach anything..."
-                placeholderTextColor={colors.textSecondary}
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                editable={!isProcessing}
-                onSubmitEditing={handleSend}
-                blurOnSubmit={false}
-                returnKeyType="send"
-                style={{
-                  color: colors.text,
-                  backgroundColor: colors.inputBackground,
-                  maxHeight: 120,
-                }}
-              />
-              <TouchableOpacity
-                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                style={{
-                  backgroundColor: isProcessing
-                    ? colors.textSecondary
-                    : colors.primary.main,
-                }}
-                className="w-11 h-11 rounded-full items-center justify-center"
-                onPress={handleSend}
-                disabled={isProcessing}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isProcessing ? 'Processing message' : 'Send message'
-                }
-                accessibilityState={{ disabled: isProcessing }}
-                accessibilityHint={
-                  isProcessing ? 'Please wait for response' : undefined
-                }
-              >
-                {isProcessing ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text className="text-white text-lg">→</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            {coachLimited ? (
+              <View accessibilityLiveRegion="polite">
+                <Text className="font-semibold" style={{ color: colors.text }}>
+                  Monthly Coach limit reached
+                </Text>
+                <Text style={{ color: colors.textSecondary }}>
+                  Resets {formatCoachReset(limitResetsAt)}
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-row items-center">
+                <TextInput
+                  className="flex-1 bg-gray-100 p-3 rounded-2xl mr-3"
+                  placeholder="Ask your AI coach anything..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  multiline
+                  editable={!isProcessing && !calendarPreview}
+                  onSubmitEditing={handleSend}
+                  blurOnSubmit={false}
+                  returnKeyType="send"
+                  style={{
+                    color: colors.text,
+                    backgroundColor: colors.inputBackground,
+                    maxHeight: 120,
+                  }}
+                />
+                <TouchableOpacity
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                  style={{
+                    backgroundColor: isProcessing
+                      ? colors.textSecondary
+                      : colors.primary.main,
+                  }}
+                  className="w-11 h-11 rounded-full items-center justify-center"
+                  onPress={handleSend}
+                  disabled={isProcessing || !!calendarPreview}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isProcessing ? 'Processing message' : 'Send message'
+                  }
+                  accessibilityState={{ disabled: isProcessing }}
+                  accessibilityHint={
+                    isProcessing ? 'Please wait for response' : undefined
+                  }
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-white text-lg">→</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       ) : (

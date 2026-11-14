@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,6 +23,8 @@ import { clearUserData } from '../utils/storage';
 import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useEntitlements } from '../context/EntitlementContext';
+import { fetchCoachUsage, formatCoachReset, type CoachUsage } from '../services/chatApi';
 import { deleteAccount } from '../services/accountService';
 import {
   AI_DATA_DISCLOSURE,
@@ -66,6 +69,33 @@ export default function SettingsScreen({ navigation }: any) {
   const equipmentRef = useRef<View>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [aiDataSharingEnabled, setAIDataSharingEnabled] = useState(false);
+
+  const { hasCoachAccess } = useEntitlements();
+  const userId = user?.id;
+  const [usage, setUsage] = useState<{ userId: string; value: CoachUsage }>();
+  const [usageUnavailable, setUsageUnavailable] = useState(false);
+  const coachUsage = usage?.userId === userId ? usage?.value : undefined;
+
+  useFocusEffect(useCallback(() => {
+    if (!userId || !hasCoachAccess || !isBackendConfigured()) return;
+    const controller = new AbortController();
+    setUsage(undefined);
+    setUsageUnavailable(false);
+
+    async function loadUsage() {
+      try {
+        const token = await getAccessToken();
+        if (!token) throw new Error('Sign-in required');
+        const value = await fetchCoachUsage(token, controller.signal);
+        if (!controller.signal.aborted && userId) setUsage({ userId, value });
+      } catch {
+        if (!controller.signal.aborted) setUsageUnavailable(true);
+      }
+    }
+
+    void loadUsage();
+    return () => controller.abort();
+  }, [userId, hasCoachAccess, getAccessToken]));
 
   useEffect(() => {
     let active = true;
@@ -468,7 +498,7 @@ export default function SettingsScreen({ navigation }: any) {
                 marginLeft: 16,
               }}
             >
-              AI Coach Privacy
+              AI Coach
             </Text>
             <View
               style={{
@@ -508,6 +538,46 @@ export default function SettingsScreen({ navigation }: any) {
                   thumbColor="#ffffff"
                 />
               </TouchableOpacity>
+              {hasCoachAccess && isBackendConfigured() && (
+                <View className="p-4" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-base" style={{ color: colors.text }}>Usage</Text>
+                    {coachUsage && (
+                      <Text className="text-base" style={{ color: colors.text }}>
+                        {coachUsage.percentUsed}%
+                      </Text>
+                    )}
+                  </View>
+                  {coachUsage ? (
+                    <>
+                      <View
+                        className="mt-3 h-2 rounded-full overflow-hidden"
+                        style={{ backgroundColor: colors.toggleTrack }}
+                        accessible
+                        accessibilityRole="progressbar"
+                        accessibilityLabel="Monthly Coach usage"
+                        accessibilityValue={{ min: 0, max: 100, now: coachUsage.percentUsed }}
+                      >
+                        <View
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${coachUsage.percentUsed}%`,
+                            backgroundColor: colors.primary.main,
+                          }}
+                        />
+                      </View>
+                      <Text className="text-sm mt-2" style={{ color: colors.textSecondary }}>
+                        Resets {formatCoachReset(coachUsage.resetsAt)}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text className="text-sm mt-2" style={{ color: colors.textSecondary }}>
+                      {usageUnavailable ? 'Usage unavailable' : 'Loading usage…'}
+                    </Text>
+                  )}
+                </View>
+              )}
+
             </View>
           </>
         )}

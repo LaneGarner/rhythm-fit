@@ -17,6 +17,7 @@ export interface PlanGenerationResult {
   // for the base week vs. how many the profile asked for.
   scheduledDays: number;
   expectedDays: number;
+  limitResetsAt?: string;
 }
 
 interface GenerateParams {
@@ -86,7 +87,7 @@ export function generateAndSchedulePlan({
       messages,
       {
         onToken: text => onToken?.(text),
-        onDone: (content, parsed) => {
+        onDone: (content, parsed, limitResetsAt) => {
           try {
             const createdActivities = createActivitiesFromRequest(
               parsed,
@@ -107,6 +108,7 @@ export function generateAndSchedulePlan({
               content,
               scheduledDays,
               expectedDays: coachProfile.daysPerWeek,
+              limitResetsAt,
             });
           } catch (err) {
             reject(err);

@@ -73,6 +73,7 @@ const SYNC_ACTIONS = [
   'activities/addActivity',
   'activities/updateActivity',
   'activities/batchUpdateActivities',
+  'activities/applyCoachCalendarPatch',
   'activities/deleteActivity',
   'activities/deleteActivitiesForDate',
   'activities/markAllActivitiesCompleteForWeek',
@@ -121,6 +122,13 @@ export const syncMiddleware: Middleware = store => next => unknownAction => {
           for (const activity of updatedActivities) {
             await enqueueForSync(activity);
           }
+        } else if (action.type === 'activities/applyCoachCalendarPatch') {
+          const { remove, upsert } = action.payload as { remove: string[]; upsert: Activity[] };
+          const removed = new Set(remove);
+          for (const activity of previousState.activities.data as Activity[]) {
+            if (removed.has(activity.id)) await enqueueForSync(activity, true);
+          }
+          for (const activity of upsert) await enqueueForSync(activity);
         } else if (action.type === 'activities/deleteActivity') {
           const activityId = action.payload as string;
           const previousActivities = previousState.activities

@@ -11,8 +11,8 @@ them.
 - Client gate: `EntitlementContext.hasCoachAccess` → `CoachGate` renders
   `SignInPrompt` (signed out) / `Paywall` (no subscription) / the Coach.
 - Server enforcement: `/api/chat` returns **402 `subscription_required`** when
-  unentitled and **429 `monthly_limit`** past the fair-use cap
-  (15 plan generations / 300 chat messages per month; comp accounts exempt).
+  unentitled and **429 `monthly_limit`** when the account reaches its monthly spend cutoff or request backstop. The default is $2 for paid, trial, and
+  complimentary accounts. Budgets reset at the start of each UTC month.
 - RevenueCat webhook keeps `profiles.subscription_status` /
   `subscription_expires_at` in sync; `app_user_id` = Supabase user id.
 - `react-native-purchases` is a native module: real purchases work only in
@@ -20,6 +20,17 @@ them.
   redemption still works.
 
 ## A. Database
+
+- Apply the `coach_spend_budget` migration before deploying the metered backend.
+  It assigns the owner's $5 budget to the matching existing Auth user ID.
+  Check that the override row exists at rollout.
+- The backend checks recorded spend and increments the admitted request count
+  atomically. The backup is 300 monthly requests, or 750 for the owner.
+  Each request can finish its last model call after crossing the spend cutoff.
+  The backend writes the accumulated cost at request completion. Missing
+  token usage is estimated conservatively. If the request crashes before the
+  final write, the admission count remains and its claim expires.
+
 
 - [ ] Run `rhythm-backend/migrations/20260715_monetization.sql` in the
       Supabase SQL editor (adds `profiles` columns, `monthly_usage` table,

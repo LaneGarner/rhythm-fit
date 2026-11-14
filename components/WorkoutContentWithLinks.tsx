@@ -112,13 +112,13 @@ export const WorkoutContentWithLinks = React.memo(
       ordered_list: {
         marginBottom: 8,
       },
+      // Coach uses inline backticks for exercise names in prose.
       code_inline: {
-        backgroundColor: colors.backgroundTertiary,
-        color: colors.primary.main,
-        paddingHorizontal: 4,
-        paddingVertical: 2,
-        borderRadius: 3,
-        fontFamily: 'monospace',
+        backgroundColor: 'transparent',
+        color: colors.text,
+        borderWidth: 0,
+        padding: 0,
+        fontFamily: 'System',
       },
       code_block: {
         backgroundColor: colors.backgroundTertiary,
