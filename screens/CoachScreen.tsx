@@ -697,10 +697,12 @@ export default function CoachScreen({ navigation, route }: any) {
             if (calendarOperations !== undefined) {
               const live = store.getState().activities.data;
               const original = new Map(activities.map(activity => [activity.id, activity]));
-              const currentIds = new Set(live.filter(activity =>
-                candidateIds.has(activity.id) && JSON.stringify(activity) === JSON.stringify(original.get(activity.id))
+              const unchangedIds = new Set(live.filter(activity =>
+                activity === original.get(activity.id) ||
+                JSON.stringify(activity) === JSON.stringify(original.get(activity.id))
               ).map(activity => activity.id));
-              const patch = previewCoachCalendar(calendarOperations, live, currentIds);
+              const currentIds = new Set([...candidateIds].filter(id => unchangedIds.has(id)));
+              const patch = previewCoachCalendar(calendarOperations, live, currentIds, unchangedIds);
               if (patch) {
                 setCalendarPreview(patch);
                 finalContent = 'Review the proposed changes below.';
@@ -803,6 +805,7 @@ export default function CoachScreen({ navigation, route }: any) {
           aiDataConsent: true,
           activityContext:
             activityContext +
+            `\nCalendar week boundaries (inclusive): this week ${weekStart.format('YYYY-MM-DD')} through ${weekStart.add(6, 'day').format('YYYY-MM-DD')}; next week ${weekStart.add(7, 'day').format('YYYY-MM-DD')} through ${weekStart.add(13, 'day').format('YYYY-MM-DD')}.\n` +
             '\nAll-history overview:\n' +
             buildHistoryOverview(activities) +
             '\nSaved profile, equipment and schedule access:\n' +
