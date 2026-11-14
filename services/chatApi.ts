@@ -224,6 +224,7 @@ export function streamChatMessage(
       historyResults: options.historyResults,
       moveCandidates: options.moveCandidates,
       calendarEdits: !!options.moveCandidates,
+      calendarCopyRanges: !!options.moveCandidates,
       mode: options.mode,
       coachProfile: options.coachProfile,
     })

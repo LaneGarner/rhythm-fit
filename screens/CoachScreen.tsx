@@ -698,7 +698,7 @@ export default function CoachScreen({ navigation, route }: any) {
               const live = store.getState().activities.data;
               const original = new Map(activities.map(activity => [activity.id, activity]));
               const currentIds = new Set(live.filter(activity =>
-                candidateIds.has(activity.id) && activity === original.get(activity.id)
+                candidateIds.has(activity.id) && JSON.stringify(activity) === JSON.stringify(original.get(activity.id))
               ).map(activity => activity.id));
               const patch = previewCoachCalendar(calendarOperations, live, currentIds);
               if (patch) {
