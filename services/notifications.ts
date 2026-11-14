@@ -166,27 +166,77 @@ export async function cancelTimerCompletion(
   );
 }
 
-export async function scheduleUnfinishedWorkout(
-  activity: Activity,
-  completedSetsCount: number,
-  totalSetsCount: number,
-  delayMinutes: number = 30
+let unfinishedWorkoutWork: Promise<void> = Promise.resolve();
+
+function queueUnfinishedWorkoutWork(work: () => Promise<void>) {
+  unfinishedWorkoutWork = unfinishedWorkoutWork.then(work).catch(() => {});
+  return unfinishedWorkoutWork;
+}
+
+export function getUnfinishedWorkoutProgress(activity: Activity | undefined) {
+  if (!activity || activity.completed) return;
+  const sets = activity.sets ?? [];
+  const completed = sets.filter(set => set.completed).length;
+  if (completed > 0 && completed < sets.length) {
+    return { completed, total: sets.length };
+  }
+}
+
+export function scheduleUnfinishedWorkout(
+  getActivity: () => Activity | undefined
 ) {
-  const identifier = `${NOTIFICATION_IDS.unfinishedWorkoutPrefix}${activity.id}`;
-  await schedule(
-    identifier,
-    'Finish your workout',
-    `${activity.name} — ${completedSetsCount} of ${totalSetsCount} sets done.`,
-    {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: Math.max(60, delayMinutes * 60),
-    },
-    { kind: 'unfinished-workout', activityId: activity.id, date: activity.date }
+  return queueUnfinishedWorkoutWork(async () => {
+    const activity = getActivity();
+    const progress = getUnfinishedWorkoutProgress(activity);
+    if (!activity || !progress) return;
+
+    await schedule(
+      `${NOTIFICATION_IDS.unfinishedWorkoutPrefix}${activity.id}`,
+      'Finish your workout',
+      `${activity.name} — ${progress.completed} of ${progress.total} sets done.`,
+      {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 30 * 60,
+      },
+      {
+        kind: 'unfinished-workout',
+        activityId: activity.id,
+        date: activity.date,
+      }
+    );
+  });
+}
+
+export function cancelUnfinishedWorkout(activityId: string) {
+  return queueUnfinishedWorkoutWork(() =>
+    cancelById(`${NOTIFICATION_IDS.unfinishedWorkoutPrefix}${activityId}`)
   );
 }
 
-export async function cancelUnfinishedWorkout(activityId: string) {
-  await cancelById(`${NOTIFICATION_IDS.unfinishedWorkoutPrefix}${activityId}`);
+export function reconcileUnfinishedWorkouts(
+  getActivities: () => Activity[],
+  enabled: boolean
+) {
+  return queueUnfinishedWorkoutWork(async () => {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const activities = new Map(
+      getActivities().map(activity => [activity.id, activity])
+    );
+    const prefix = NOTIFICATION_IDS.unfinishedWorkoutPrefix;
+
+    await Promise.all(
+      scheduled
+        .filter(
+          ({ identifier }) =>
+            identifier.startsWith(prefix) &&
+            (!enabled ||
+              !getUnfinishedWorkoutProgress(
+                activities.get(identifier.slice(prefix.length))
+              ))
+        )
+        .map(({ identifier }) => cancelById(identifier))
+    );
+  });
 }
 
 function parseHHMM(value: string): { hour: number; minute: number } {
