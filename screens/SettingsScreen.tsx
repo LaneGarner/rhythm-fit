@@ -1,3 +1,4 @@
+import { rogueTimer } from '../modules/rogue-timer';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -24,7 +25,11 @@ import { clearAllActivities } from '../redux/activitySlice';
 import { isBackendConfigured } from '../config/api';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useEntitlements } from '../context/EntitlementContext';
-import { fetchCoachUsage, formatCoachReset, type CoachUsage } from '../services/chatApi';
+import {
+  fetchCoachUsage,
+  formatCoachReset,
+  type CoachUsage,
+} from '../services/chatApi';
 import { deleteAccount } from '../services/accountService';
 import {
   AI_DATA_DISCLOSURE,
@@ -57,6 +62,8 @@ export default function SettingsScreen({ navigation }: any) {
     setTimerVibration,
     timerSound,
     setTimerSound,
+    rogueTimerEnabled,
+    setRogueTimerEnabled,
   } = usePreferences();
   const {
     startTutorial,
@@ -76,26 +83,28 @@ export default function SettingsScreen({ navigation }: any) {
   const [usageUnavailable, setUsageUnavailable] = useState(false);
   const coachUsage = usage?.userId === userId ? usage?.value : undefined;
 
-  useFocusEffect(useCallback(() => {
-    if (!userId || !hasCoachAccess || !isBackendConfigured()) return;
-    const controller = new AbortController();
-    setUsage(undefined);
-    setUsageUnavailable(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId || !hasCoachAccess || !isBackendConfigured()) return;
+      const controller = new AbortController();
+      setUsage(undefined);
+      setUsageUnavailable(false);
 
-    async function loadUsage() {
-      try {
-        const token = await getAccessToken();
-        if (!token) throw new Error('Sign-in required');
-        const value = await fetchCoachUsage(token, controller.signal);
-        if (!controller.signal.aborted && userId) setUsage({ userId, value });
-      } catch {
-        if (!controller.signal.aborted) setUsageUnavailable(true);
+      async function loadUsage() {
+        try {
+          const token = await getAccessToken();
+          if (!token) throw new Error('Sign-in required');
+          const value = await fetchCoachUsage(token, controller.signal);
+          if (!controller.signal.aborted && userId) setUsage({ userId, value });
+        } catch {
+          if (!controller.signal.aborted) setUsageUnavailable(true);
+        }
       }
-    }
 
-    void loadUsage();
-    return () => controller.abort();
-  }, [userId, hasCoachAccess, getAccessToken]));
+      void loadUsage();
+      return () => controller.abort();
+    }, [userId, hasCoachAccess, getAccessToken])
+  );
 
   useEffect(() => {
     let active = true;
@@ -539,11 +548,19 @@ export default function SettingsScreen({ navigation }: any) {
                 />
               </TouchableOpacity>
               {hasCoachAccess && isBackendConfigured() && (
-                <View className="p-4" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View
+                  className="p-4"
+                  style={{ borderTopWidth: 1, borderTopColor: colors.border }}
+                >
                   <View className="flex-row justify-between items-center">
-                    <Text className="text-base" style={{ color: colors.text }}>Usage</Text>
+                    <Text className="text-base" style={{ color: colors.text }}>
+                      Usage
+                    </Text>
                     {coachUsage && (
-                      <Text className="text-base" style={{ color: colors.text }}>
+                      <Text
+                        className="text-base"
+                        style={{ color: colors.text }}
+                      >
                         {coachUsage.percentUsed}%
                       </Text>
                     )}
@@ -556,7 +573,11 @@ export default function SettingsScreen({ navigation }: any) {
                         accessible
                         accessibilityRole="progressbar"
                         accessibilityLabel="Monthly Coach usage"
-                        accessibilityValue={{ min: 0, max: 100, now: coachUsage.percentUsed }}
+                        accessibilityValue={{
+                          min: 0,
+                          max: 100,
+                          now: coachUsage.percentUsed,
+                        }}
                       >
                         <View
                           className="h-full rounded-full"
@@ -566,18 +587,25 @@ export default function SettingsScreen({ navigation }: any) {
                           }}
                         />
                       </View>
-                      <Text className="text-sm mt-2" style={{ color: colors.textSecondary }}>
+                      <Text
+                        className="text-sm mt-2"
+                        style={{ color: colors.textSecondary }}
+                      >
                         Resets {formatCoachReset(coachUsage.resetsAt)}
                       </Text>
                     </>
                   ) : (
-                    <Text className="text-sm mt-2" style={{ color: colors.textSecondary }}>
-                      {usageUnavailable ? 'Usage unavailable' : 'Loading usage…'}
+                    <Text
+                      className="text-sm mt-2"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {usageUnavailable
+                        ? 'Usage unavailable'
+                        : 'Loading usage…'}
                     </Text>
                   )}
                 </View>
               )}
-
             </View>
           </>
         )}
@@ -933,6 +961,50 @@ export default function SettingsScreen({ navigation }: any) {
               thumbColor="#ffffff"
             />
           </TouchableOpacity>
+          {rogueTimer && (
+            <>
+              <View
+                style={{
+                  height: 0.5,
+                  backgroundColor: colors.border,
+                  marginLeft: 16,
+                }}
+              />
+              <View
+                className="p-4 flex-row items-center justify-between"
+                style={{ gap: 12 }}
+              >
+                <View className="flex-1">
+                  <Text className="text-base" style={{ color: colors.text }}>
+                    Use a nearby workout timer
+                  </Text>
+                  <Text
+                    className="mt-1 text-sm"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Works with Rogue Home Timer 2.0
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="Use a nearby workout timer"
+                  value={rogueTimerEnabled}
+                  onValueChange={setRogueTimerEnabled}
+                />
+              </View>
+            </>
+          )}
+          {rogueTimer && rogueTimerEnabled && (
+            <TouchableOpacity
+              className="px-4 pb-4"
+              accessibilityRole="button"
+              onPress={() => {
+                setRogueTimerEnabled(false);
+                rogueTimer?.forgetTimer().catch(console.warn);
+              }}
+            >
+              <Text style={{ color: actionColor }}>Forget workout timer</Text>
+            </TouchableOpacity>
+          )}
           <View
             style={{
               height: 0.5,
