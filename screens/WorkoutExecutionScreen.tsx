@@ -167,6 +167,15 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
                   ),
               }
         }
+        onSkipRest={
+          inSession &&
+          sessionControls.session &&
+          timer.activityId === timerId &&
+          timer.mode === 'countDown' &&
+          timer.hasTimeRemaining
+            ? sessionControls.skipRest
+            : undefined
+        }
         notes={notes}
         progression={
           <View style={{ gap: 8 }}>
@@ -181,47 +190,28 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         }
       >
         {inSession && sessionControls.session && (
-          <View style={{ gap: 8 }}>
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Text style={{ flex: 1, color: colors.textSecondary }}>
+              Session on · {sessionIndex + 1} of{' '}
+              {sessionControls.session.items.length}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => {
+                if (!moveNext()) navigation.goBack();
+              }}
+              style={{ paddingVertical: 8 }}
             >
-              <Text style={{ flex: 1, color: colors.textSecondary }}>
-                Session on · {sessionIndex + 1} of{' '}
-                {sessionControls.session.items.length}
-              </Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                onPress={() => {
-                  if (!moveNext()) navigation.goBack();
-                }}
-                style={{ paddingVertical: 8 }}
-              >
-                <Text style={{ color: colors.primary.main }}>Skip for now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Turn session off"
-                onPress={sessionControls.end}
-                style={{ paddingVertical: 8 }}
-              >
-                <Text style={{ color: colors.textSecondary }}>Turn off</Text>
-              </TouchableOpacity>
-            </View>
-            {timer.activityId === timerId &&
-              timer.mode === 'countDown' &&
-              timer.hasTimeRemaining && (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  onPress={sessionControls.skipRest}
-                  style={{ paddingVertical: 8 }}
-                >
-                  <Text
-                    style={{ color: colors.primary.main, textAlign: 'center' }}
-                  >
-                    Skip rest
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <Text style={{ color: colors.primary.main }}>Skip for now</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Turn session off"
+              onPress={sessionControls.end}
+              style={{ paddingVertical: 8 }}
+            >
+              <Text style={{ color: colors.textSecondary }}>Turn off</Text>
+            </TouchableOpacity>
           </View>
         )}
         <WorkoutExecutionSets

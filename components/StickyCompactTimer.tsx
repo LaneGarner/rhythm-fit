@@ -16,8 +16,8 @@ interface StickyCompactTimerProps {
   activityId: string;
   activityName: string;
   scrollY: Animated.Value;
-  isExpanded: boolean;
-  clockBottom: number | null;
+  onSkipRest?: () => void;
+  clockTop: number | null;
   headerHeight: number;
 }
 
@@ -25,8 +25,8 @@ export default function StickyCompactTimer({
   activityId,
   activityName,
   scrollY,
-  isExpanded,
-  clockBottom,
+  onSkipRest,
+  clockTop,
   headerHeight,
 }: StickyCompactTimerProps) {
   const { colors } = useTheme();
@@ -43,7 +43,7 @@ export default function StickyCompactTimer({
   } = useTimer();
 
   const threshold =
-    clockBottom === null ? 1 : Math.max(1, clockBottom - headerHeight);
+    clockTop === null ? 1 : Math.max(1, clockTop - headerHeight);
   const [isSticky, setIsSticky] = useState(false);
   const lastScroll = useRef(0);
 
@@ -56,7 +56,7 @@ export default function StickyCompactTimer({
     return () => scrollY.removeListener(id);
   }, [scrollY, threshold]);
 
-  if (!isExpanded || clockBottom === null) return null;
+  if (clockTop === null) return null;
 
   const isTimerOwner = timer.activityId === activityId;
   const isTimerRunning = isTimerOwner && timer.isRunning;
@@ -210,18 +210,19 @@ export default function StickyCompactTimer({
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          onPress={resetTimer}
+          onPress={onSkipRest ?? resetTimer}
           disabled={!isTimerOwner}
           style={{
             backgroundColor: colors.surface,
             borderWidth: 2,
             borderColor: isTimerOwner ? colors.error.main : colors.border,
-            paddingHorizontal: 14,
+            width: actionButtonWidth,
+            alignItems: 'center',
             paddingVertical: 6,
             borderRadius: 6,
           }}
           accessibilityRole="button"
-          accessibilityLabel="Reset timer"
+          accessibilityLabel={onSkipRest ? 'Skip rest' : 'Reset timer'}
           accessibilityState={{ disabled: !isTimerOwner }}
         >
           <Text
@@ -231,7 +232,7 @@ export default function StickyCompactTimer({
               fontSize: 13,
             }}
           >
-            Reset
+            {onSkipRest ? 'Skip' : 'Reset'}
           </Text>
         </TouchableOpacity>
       </View>

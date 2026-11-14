@@ -15,6 +15,7 @@ export default function WorkoutExecutionLayout({
   onBack,
   onEdit,
   restToggle,
+  onSkipRest,
   children,
   notes,
   progression,
@@ -29,6 +30,7 @@ export default function WorkoutExecutionLayout({
   onBack: () => void;
   onEdit: () => void;
   restToggle?: { enabled: boolean; onToggle: (value: boolean) => void };
+  onSkipRest?: () => void;
   children: React.ReactNode;
   notes?: string;
   progression?: React.ReactNode;
@@ -43,15 +45,15 @@ export default function WorkoutExecutionLayout({
   const scrollY = useRef(new Animated.Value(0)).current;
   const contentRef = useRef<View>(null);
   const clockRef = useRef<View | null>(null);
-  const [clockBottom, setClockBottom] = useState<number | null>(null);
+  const [clockTop, setClockTop] = useState<number | null>(null);
   const [headerHeight, setHeaderHeight] = useState(42);
   const measureClock = useCallback(() => {
     const content = contentRef.current;
     if (!content || !clockRef.current) return;
     clockRef.current.measureLayout(
       content,
-      (_x, y, _width, height) => setClockBottom(y + height),
-      () => setClockBottom(null)
+      (_x, y) => setClockTop(y),
+      () => setClockTop(null)
     );
   }, []);
   useEffect(() => {
@@ -109,8 +111,8 @@ export default function WorkoutExecutionLayout({
           activityId={timerId}
           activityName={timerName}
           scrollY={scrollY}
-          isExpanded={true}
-          clockBottom={clockBottom}
+          onSkipRest={onSkipRest}
+          clockTop={clockTop}
           headerHeight={headerHeight}
         />
         <Animated.ScrollView
@@ -143,6 +145,7 @@ export default function WorkoutExecutionLayout({
                   measureClock();
                 }}
                 restToggle={restToggle}
+                onSkipRest={onSkipRest}
               />
             </View>
             <View className="px-4 pt-4 pb-4" style={{ gap: 16 }}>

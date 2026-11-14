@@ -15,6 +15,7 @@ import { useTheme } from '../theme/ThemeContext';
 
 interface CollapsibleTimerProps {
   activityId: string;
+  onSkipRest?: () => void;
   activityName: string;
   onClockLayout?: (clock: View) => void;
   restToggle?: {
@@ -28,6 +29,7 @@ export default function CollapsibleTimer({
   activityName,
   onClockLayout,
   restToggle,
+  onSkipRest,
 }: CollapsibleTimerProps) {
   const clockRef = useRef<View>(null);
   const { colors } = useTheme();
@@ -467,18 +469,18 @@ export default function CollapsibleTimer({
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          onPress={handleResetTimer}
+          onPress={onSkipRest ?? handleResetTimer}
           disabled={!isTimerOwner}
           className="px-6 py-2 rounded-lg"
           style={{
-            minWidth: 80,
+            width: actionButtonWidth,
             alignItems: 'center',
             backgroundColor: colors.surface,
             borderWidth: 2,
             borderColor: isTimerOwner ? colors.error.main : colors.border,
           }}
           accessibilityRole="button"
-          accessibilityLabel="Reset timer"
+          accessibilityLabel={onSkipRest ? 'Skip rest' : 'Reset timer'}
           accessibilityState={{ disabled: !isTimerOwner }}
         >
           <Text
@@ -489,7 +491,7 @@ export default function CollapsibleTimer({
                 : colors.textSecondary,
             }}
           >
-            Reset
+            {onSkipRest ? 'Skip' : 'Reset'}
           </Text>
         </TouchableOpacity>
       </View>
