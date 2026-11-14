@@ -130,11 +130,20 @@ export default function WorkoutExecutionSets({
                           Math.ceil(duration)
                         )
                       }
-                      style={{ paddingVertical: 12, alignItems: 'center' }}
+                      style={{
+                        alignSelf: 'center',
+                        justifyContent: 'center',
+                        minHeight: 44,
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        backgroundColor: colors.inputBackground,
+                      }}
                     >
                       <Text
                         style={{
-                          color: colors.primary.main,
+                          color: colors.text,
+                          textAlign: 'center',
                           fontWeight: '600',
                         }}
                       >

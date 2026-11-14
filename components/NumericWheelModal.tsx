@@ -77,8 +77,12 @@ export default function NumericWheelModal({
           onPress={onCancel}
         />
         <View
-          className={`rounded-t-3xl ${isDark ? 'bg-gray-900' : 'bg-white'}`}
-          style={{ paddingBottom: 32, paddingTop: 8 }}
+          className="rounded-t-3xl"
+          style={{
+            backgroundColor: isDark ? colors.surface : '#ffffff',
+            paddingBottom: 32,
+            paddingTop: 8,
+          }}
         >
           <View
             className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
@@ -124,6 +128,10 @@ export default function NumericWheelModal({
               </Text>
               {stepOptions.map(opt => {
                 const active = selectedStep === opt;
+                const activeBackground = isDark
+                  ? colors.inputBackground
+                  : colors.primary.main;
+                const activeText = isDark ? colors.text : colors.textInverse;
                 return (
                   <TouchableOpacity
                     key={opt}
@@ -133,7 +141,7 @@ export default function NumericWheelModal({
                       paddingVertical: 6,
                       borderRadius: 8,
                       backgroundColor: active
-                        ? colors.primary.main
+                        ? activeBackground
                         : colors.backgroundTertiary,
                     }}
                     accessibilityRole="button"
@@ -142,9 +150,7 @@ export default function NumericWheelModal({
                   >
                     <Text
                       style={{
-                        color: active
-                          ? colors.textInverse
-                          : colors.textSecondary,
+                        color: active ? activeText : colors.textSecondary,
                         fontWeight: '600',
                         fontSize: 15,
                       }}
