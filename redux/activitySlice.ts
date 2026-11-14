@@ -32,6 +32,22 @@ const activitySlice = createSlice({
   name: 'activities',
   initialState,
   reducers: {
+    applyCoachCalendarPatch(state, action: PayloadAction<{ remove: string[]; upsert: Activity[] }>) {
+      const removed = new Set(action.payload.remove);
+      const now = new Date().toISOString();
+      const updated = new Map(action.payload.upsert.map(activity => [
+        activity.id, { ...activity, updated_at: now },
+      ]));
+      state.data = state.data.flatMap(activity => {
+        const replacement = updated.get(activity.id);
+        if (replacement) {
+          updated.delete(activity.id);
+          return [replacement];
+        }
+        return removed.has(activity.id) ? [] : [activity];
+      });
+      state.data.push(...updated.values());
+    },
     addActivity(state, action: PayloadAction<Activity>) {
       const activityWithTimestamp = {
         ...action.payload,
@@ -310,6 +326,7 @@ export const {
   addActivity,
   updateActivity,
   batchUpdateActivities,
+  applyCoachCalendarPatch,
   deleteActivity,
   setActivities,
   deleteActivitiesForDate,

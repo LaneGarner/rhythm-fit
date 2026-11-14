@@ -22,6 +22,7 @@ import { useCoachProfile } from '../../context/CoachProfileContext';
 import { useWeekBoundaries } from '../../hooks/useWeekBoundaries';
 import { AppDispatch, RootState } from '../../redux/store';
 import { buildCoachActivityContext } from '../../services/coachAnalyticsService';
+import { formatCoachReset } from '../../services/chatApi';
 import { generateAndSchedulePlan } from '../../services/planGenerationService';
 import { hasAIDataConsent } from '../../services/aiConsentService';
 import { useTheme } from '../../theme/ThemeContext';
@@ -157,6 +158,7 @@ export default function OnboardingFlowScreen({
   );
 
   const [genError, setGenError] = useState<string | null>(null);
+  const [limitResetsAt, setLimitResetsAt] = useState<string>();
   const [partialNote, setPartialNote] = useState<string | null>(null);
   const abortRef = useRef<(() => void) | null>(null);
 
@@ -194,6 +196,7 @@ export default function OnboardingFlowScreen({
   const startGeneration = async () => {
     setGenError(null);
     setPartialNote(null);
+    setLimitResetsAt(undefined);
 
     if (!user || !(await hasAIDataConsent(user.id).catch(() => false))) {
       setGenError(
@@ -235,9 +238,12 @@ export default function OnboardingFlowScreen({
 
     try {
       const res = await result;
+      setLimitResetsAt(res.limitResetsAt);
       if (res.createdActivities.length === 0) {
         setGenError(
-          res.content.trim() ||
+          (res.limitResetsAt
+            ? `Monthly Coach limit reached. Resets ${formatCoachReset(res.limitResetsAt)}.`
+            : res.content.trim()) ||
             "I couldn't put together a plan from that. Let's try again."
         );
         setStep('error');
@@ -245,7 +251,7 @@ export default function OnboardingFlowScreen({
       }
       if (res.scheduledDays > 0 && res.scheduledDays < res.expectedDays) {
         setPartialNote(
-          `I scheduled ${res.scheduledDays} of your ${res.expectedDays} days. You can ask the coach to fill in the rest.`
+          `I scheduled ${res.scheduledDays} of your ${res.expectedDays} days. ${res.limitResetsAt ? 'You can ask Coach to fill in the rest after the limit resets.' : 'You can ask Coach to fill in the rest.'}`
         );
       }
       await markOnboardingComplete();
@@ -518,6 +524,16 @@ export default function OnboardingFlowScreen({
               {daysPerWeek} days a week, added to your calendar. Adjust anything
               anytime — just ask the coach.
             </Text>
+            {limitResetsAt ? (
+              <View accessibilityLiveRegion="polite" style={{ marginBottom: 16 }}>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>
+                  Monthly Coach limit reached
+                </Text>
+                <Text style={{ color: colors.textSecondary }}>
+                  Resets {formatCoachReset(limitResetsAt)}
+                </Text>
+              </View>
+            ) : null}
             {partialNote ? (
               <View
                 style={{

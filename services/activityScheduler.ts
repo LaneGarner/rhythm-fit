@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
-import { addActivity, createSuperset } from '../redux/activitySlice';
-import { AppDispatch } from '../redux/store';
+import { addActivity, batchUpdateActivities, createSuperset } from '../redux/activitySlice';
+import { AppDispatch, store } from '../redux/store';
 import { Activity, ActivityType, SetData } from '../types/activity';
 import { toTitleCase } from '../utils/storage';
 import { ParsedActivity, ParsedExercise, ParsedSetData } from './chatApi';
@@ -83,20 +83,28 @@ export function createActivitiesFromRequest(
   dispatch: AppDispatch
 ): Activity[] {
   const createdActivities: Activity[] = [];
+  const supersets: string[][] = [];
+
+  // Validate the whole response before adding any workouts.
+  for (const request of activityRequests) {
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(request.date) ||
+      dayjs(request.date).format('YYYY-MM-DD') !== request.date ||
+      !Array.isArray(request.exercises) ||
+      request.exercises.length === 0 ||
+      request.exercises.some(name => typeof name !== 'string' || !name.trim() || isGenericExercise(name)) ||
+      (request.isRecurring &&
+        (!Number.isInteger(request.weeksToRepeat) || request.weeksToRepeat < 1 || request.weeksToRepeat > 52)) ||
+      request.supersetGroups?.some(group => !Array.isArray(group) ||
+        group.some(index => !Number.isInteger(index) || index < 0 || index >= request.exercises.length))
+    ) {
+      return [];
+    }
+  }
 
   for (const request of activityRequests) {
     try {
-      if (!request.date || !request.exercises || !request.exercises.length) {
-        continue;
-      }
-
-      const hasGenericExercises = request.exercises.some(isGenericExercise);
-      if (hasGenericExercises) continue;
-
-      const exercises: string[] =
-        request.exercises.length > 1
-          ? request.exercises
-          : [request.exercises[0]];
+      const exercises = request.exercises;
 
       const createActivitiesForWeek = (
         weekOffset: number,
@@ -130,7 +138,6 @@ export function createActivitiesFromRequest(
               ? `${weekLabel} - ${COACH_NOTE_MARKER}`
               : `${COACH_NOTE_MARKER} based on your request`,
           };
-          dispatch(addActivity(activity));
           weekActivities.push(activity);
         }
 
@@ -141,7 +148,7 @@ export function createActivitiesFromRequest(
                 .filter((i: number) => i < weekActivities.length)
                 .map((i: number) => weekActivities[i].id);
               if (ids.length >= 2) {
-                dispatch(createSuperset({ activityIds: ids }));
+                supersets.push(ids);
               }
             }
           }
@@ -163,9 +170,48 @@ export function createActivitiesFromRequest(
         createdActivities.push(...weekActivities);
       }
     } catch (error) {
-      console.error('Error creating activity from request:', request, error);
+      console.error('Could not prepare Coach workouts:', error);
+      return [];
     }
   }
 
+  for (const activity of createdActivities) dispatch(addActivity(activity));
+  for (const activityIds of supersets) dispatch(createSuperset({ activityIds }));
   return createdActivities;
+}
+
+export function moveCoachWorkout(
+  proposal: unknown,
+  candidates: ReadonlyMap<string, string>,
+  dispatch: AppDispatch
+): string | undefined {
+  if (!proposal || typeof proposal !== 'object') return;
+  const { ids, date } = proposal as { ids?: unknown; date?: unknown };
+  if (
+    typeof date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    dayjs(date).format('YYYY-MM-DD') !== date ||
+    !Array.isArray(ids) ||
+    !ids.length ||
+    ids.some(id => typeof id !== 'string' || !candidates.has(id))
+  ) return;
+
+  const live = store.getState().activities.data;
+  const selected = new Set(ids);
+  const workouts = live.filter(activity => selected.has(activity.id));
+  if (workouts.length !== selected.size ||
+      new Set(workouts.map(activity => activity.date)).size !== 1 ||
+      workouts.some(activity => activity.completed || activity.date !== candidates.get(activity.id))) return;
+
+  // Preserve complete supersets when moving one of their members.
+  const groups = new Set(workouts.flatMap(activity => activity.supersetId ? [activity.supersetId] : []));
+  const moving = live.filter(activity => selected.has(activity.id) ||
+    (activity.supersetId && groups.has(activity.supersetId)));
+  if (moving.some(activity => activity.completed || activity.date !== workouts[0].date)) return;
+  dispatch(batchUpdateActivities(moving.map(activity => ({ ...activity, date }))));
+  const saved = store.getState().activities.data;
+  const movedIds = new Set(moving.map(activity => activity.id));
+  return saved.filter(activity => movedIds.has(activity.id) && activity.date === date).length === moving.length
+    ? date
+    : undefined;
 }

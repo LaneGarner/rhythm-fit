@@ -65,20 +65,34 @@ interface ChatHistoryResponse {
   messages?: ChatMessage[];
 }
 
+export interface CoachMoveCandidate { id: string; date: string; name: string; completed?: boolean; sets?: unknown }
+
 export type StreamEvent =
   | { type: 'history_request'; query: HistoryQuery }
   | { type: 'token'; content: string }
-  | { type: 'done'; content: string; activities: ParsedActivity[] }
+  | { type: 'done'; content: string; activities: ParsedActivity[]; limitResetsAt?: string; move?: unknown; calendarOperations?: unknown }
   | { type: 'error'; message: string };
 
 // Server-enforced access errors: 402 = paywall (drop back to Paywall via
 // refreshEntitlements), 429 monthly_limit = fair-use cap reached.
 export type ChatErrorCode = 'subscription_required' | 'monthly_limit';
 
+export function formatCoachReset(resetsAt?: string): string {
+  const reset = resetsAt ? new Date(resetsAt) : null;
+  return reset && Number.isFinite(reset.getTime())
+    ? reset.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : 'next month';
+}
+
 export function mapAccessError(
   status: number,
   body: unknown
-): { message: string; code: ChatErrorCode } | null {
+): { message: string; code: ChatErrorCode; resetsAt?: string } | null {
   const errorTag =
     body && typeof body === 'object' ? (body as any).error : undefined;
   if (status === 402) {
@@ -89,17 +103,10 @@ export function mapAccessError(
   }
   if (status === 429 && errorTag === 'monthly_limit') {
     const resetsAt = (body as any)?.resetsAt;
-    const resetDate = resetsAt ? new Date(resetsAt) : null;
-    const when =
-      resetDate && !isNaN(resetDate.getTime())
-        ? resetDate.toLocaleDateString(undefined, {
-            month: 'long',
-            day: 'numeric',
-          })
-        : 'next month';
     return {
-      message: `You've reached this month's coaching limit — resets ${when}.`,
+      message: `You've reached this month's coaching limit — resets ${formatCoachReset(resetsAt)}.`,
       code: 'monthly_limit',
+      resetsAt: typeof resetsAt === 'string' ? resetsAt : undefined,
     };
   }
   return null;
@@ -110,8 +117,8 @@ export function streamChatMessage(
   messages: ChatMessage[],
   callbacks: {
     onToken: (text: string) => void;
-    onDone: (content: string, activities: ParsedActivity[]) => void;
-    onError: (message: string, code?: ChatErrorCode) => void;
+    onDone: (content: string, activities: ParsedActivity[], limitResetsAt?: string, move?: unknown, calendarOperations?: unknown) => void;
+    onError: (message: string, code?: ChatErrorCode, resetsAt?: string) => void;
   },
   options: {
     aiDataConsent: true;
@@ -120,6 +127,7 @@ export function streamChatMessage(
     sessionTitle?: string;
     mode?: 'plan';
     coachProfile?: CoachProfile | null;
+    moveCandidates?: CoachMoveCandidate[];
     historyLookup?: (query: HistoryQuery) => unknown;
     historyResults?: unknown[];
     historyRound?: number;
@@ -147,7 +155,7 @@ export function streamChatMessage(
       }
       const accessError = mapAccessError(xhr.status, body);
       if (accessError) {
-        callbacks.onError(accessError.message, accessError.code);
+        callbacks.onError(accessError.message, accessError.code, accessError.resetsAt);
       } else {
         callbacks.onError((body as any)?.error || 'Failed to send message');
       }
@@ -188,7 +196,7 @@ export function streamChatMessage(
           } else if (event.type === 'token') {
             callbacks.onToken(event.content);
           } else if (event.type === 'done') {
-            callbacks.onDone(event.content, event.activities);
+            callbacks.onDone(event.content, event.activities, event.limitResetsAt, event.move, event.calendarOperations);
           } else if (event.type === 'error') {
             callbacks.onError(event.message);
           }
@@ -214,6 +222,8 @@ export function streamChatMessage(
       historyAvailable:
         !!options.historyLookup && (options.historyRound || 0) < 2,
       historyResults: options.historyResults,
+      moveCandidates: options.moveCandidates,
+      calendarEdits: !!options.moveCandidates,
       mode: options.mode,
       coachProfile: options.coachProfile,
     })
@@ -340,4 +350,26 @@ export async function getChatSuggestions(): Promise<ChatSuggestions> {
     throw new Error('Failed to fetch suggestions');
   }
   return response.json();
+}
+
+export interface CoachUsage {
+  percentUsed: number;
+  resetsAt: string;
+}
+
+export async function fetchCoachUsage(
+  token: string,
+  signal: AbortSignal
+): Promise<CoachUsage> {
+  const response = await fetch(getApiEndpoint('/api/coach-usage'), {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (!response.ok) throw new Error('Coach usage unavailable');
+  const data: CoachUsage = await response.json();
+  if (!Number.isInteger(data.percentUsed) || data.percentUsed < 0 ||
+      data.percentUsed > 100 || !Number.isFinite(Date.parse(data.resetsAt))) {
+    throw new Error('Invalid Coach usage');
+  }
+  return data;
 }
