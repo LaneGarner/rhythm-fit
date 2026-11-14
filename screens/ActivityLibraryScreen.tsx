@@ -229,8 +229,9 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <View
             key={item.id}
-            className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className="p-4 rounded-lg mb-3"
             style={{
+              backgroundColor: colors.cardBackground,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.1,
