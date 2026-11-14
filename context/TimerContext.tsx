@@ -126,15 +126,42 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription?.remove();
   }, []);
 
+  const countUpPaused =
+    rogueTimerEnabled && timer.mode === 'countUp' && !timer.isRunning && timer.seconds > 0;
+  const alignedCountUpStart = useRef<number | null>(null);
+  const countUpOffset = useRef(0);
+  useEffect(() => {
+    if (!rogueTimer?.syncWorkoutTimer) return;
+    const subscription = rogueTimer.addListener(
+      'onCountUpStarted',
+      ({ request, startedAt, resumed }) => {
+        setTimer(prev => {
+          if (!prev.isRunning || prev.mode !== 'countUp' || prev.startedAt !== request) return prev;
+          const seconds = resumed ? countUpOffset.current : 0;
+          const alignedStart = startedAt - seconds * 1000;
+          alignedCountUpStart.current = alignedStart;
+          return { ...prev, startedAt: alignedStart, seconds };
+        });
+      }
+    );
+    return () => subscription.remove();
+  }, []);
+
   const hadExternalTimer = useRef(false);
   useEffect(() => {
     const active = rogueDeadline !== null || rogueCountUpStartedAt !== null;
-    if (!active && !hadExternalTimer.current) return;
-    hadExternalTimer.current = active;
+    if (rogueCountUpStartedAt !== null && rogueCountUpStartedAt === alignedCountUpStart.current) return;
+    alignedCountUpStart.current = null;
+    if (!active && !countUpPaused && !hadExternalTimer.current) return;
+    hadExternalTimer.current = active || countUpPaused;
+    if (rogueTimer?.syncWorkoutTimer) {
+      rogueTimer.syncWorkoutTimer(rogueDeadline, rogueCountUpStartedAt, countUpPaused).catch(console.warn);
+      return;
+    }
     rogueTimer
       ?.setWorkoutTimer(rogueDeadline, rogueCountUpStartedAt !== null)
       .catch(console.warn);
-  }, [rogueDeadline, rogueCountUpStartedAt]);
+  }, [rogueDeadline, rogueCountUpStartedAt, countUpPaused]);
 
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
@@ -468,7 +495,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       intervalRef.current = setInterval(() => {
         setTimer(prev => {
           if (prev.mode === 'countUp') {
-            return { ...prev, seconds: prev.seconds + 1 };
+            if (prev.startedAt === null) return prev;
+            const seconds = Math.max(0, Math.floor((Date.now() - prev.startedAt) / 1000));
+            return seconds === prev.seconds ? prev : { ...prev, seconds };
           } else if (prev.mode === 'emom') {
             if (prev.seconds <= 1) {
               const isLastRound = prev.emomCurrentRound >= prev.emomTotalRounds;
@@ -509,7 +538,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             return { ...prev, seconds: prev.seconds - 1 };
           } else {
             // Countdown mode
-            if (prev.seconds <= 1) {
+            const remaining = prev.startedAt === null
+              ? Math.max(0, prev.seconds - 1)
+              : Math.max(0, prev.targetSeconds - Math.floor((Date.now() - prev.startedAt) / 1000));
+            if (remaining === 0) {
               // Timer finished
               playCompletionFeedback();
               finishAlertRef.current = prev.activityName;
@@ -522,10 +554,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 startedAt: null,
               };
             }
-            return { ...prev, seconds: prev.seconds - 1 };
+            return remaining === prev.seconds ? prev : { ...prev, seconds: remaining };
           }
         });
-      }, 1000);
+      }, timer.mode === 'emom' ? 1000 : 50);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -539,7 +571,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         intervalRef.current = null;
       }
     };
-  }, [timer.isRunning]);
+  }, [timer.isRunning, timer.mode]);
 
   const initialSecondsForMode = (prev: TimerState): number => {
     if (prev.mode === 'countDown') return prev.targetSeconds;
@@ -729,6 +761,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         elapsedBeforePause = timer.emomIntervalSeconds - timer.seconds;
       } else {
         elapsedBeforePause = timer.seconds;
+        countUpOffset.current = timer.seconds;
       }
       const newStartedAt = now - elapsedBeforePause * 1000;
       setTimer(prev => ({

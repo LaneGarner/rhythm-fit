@@ -127,7 +127,7 @@ export default function CollapsibleTimer({
 
       {/* Countdown Duration Input */}
       {timer.mode === 'countDown' && (
-        <View className="flex-row justify-center items-center mb-4">
+        <View className="flex-row justify-center items-center mt-5 mb-1">
           <TextInput
             accessibilityLabel="Countdown minutes"
             editable={!timer.isRunning}
@@ -201,7 +201,7 @@ export default function CollapsibleTimer({
 
       {/* EMOM Duration + Rounds Input */}
       {timer.mode === 'emom' && (
-        <View className="mb-4">
+        <View className="mt-5 mb-1">
           <View className="flex-row justify-center items-center mb-3">
             <TextInput
               editable={!timer.isRunning}

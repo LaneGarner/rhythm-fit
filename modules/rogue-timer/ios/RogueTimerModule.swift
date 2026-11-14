@@ -6,8 +6,13 @@ public final class RogueTimerModule: Module {
 
   public func definition() -> ModuleDefinition {
     Name("RogueTimer")
-    Events("onTimerChoices")
+    Events("onTimerChoices", "onCountUpStarted")
     OnStartObserving {
+      self.remote.onCountUpStarted = { [weak self] request, startedAt, resumed in
+        self?.sendEvent("onCountUpStarted", [
+          "request": request, "startedAt": startedAt, "resumed": resumed
+        ])
+      }
       self.remote.onChoices = { [weak self] choices in
         self?.sendEvent("onTimerChoices", ["devices": choices])
       }
@@ -20,6 +25,10 @@ public final class RogueTimerModule: Module {
     }.runOnQueue(.main)
     AsyncFunction("setWorkoutTimer") { (deadline: Double?, countUp: Bool) in
       self.remote.setWorkoutTimer(deadline, countUp: countUp)
+    }.runOnQueue(.main)
+    AsyncFunction("syncWorkoutTimer") { (deadline: Double?, countUpRequest: Double?, paused: Bool) in
+      self.remote.setWorkoutTimer(deadline, countUp: countUpRequest != nil,
+                                 countUpRequest: countUpRequest, paused: paused)
     }.runOnQueue(.main)
   }
 }
@@ -35,16 +44,25 @@ private final class RogueTimerRemote: NSObject, CBCentralManagerDelegate, CBPeri
   private var timer: CBPeripheral?
   private var command: CBCharacteristic?
   private var deadline: Double?
+  private var countdownStartAt: Double?
+  var onCountUpStarted: ((Double, Double, Bool) -> Void)?
   private var countUp = false
+  private var countUpRequest: Double?
+  private var paused = false
+  private var wallCountUpRunning = false
+  private var wallCountUpPaused = false
+  private var startingCountUp: (request: Double, startedAt: Double, resumed: Bool)?
   private var keys: [UInt8] = []
   private var generation = 0
   private var awaitingResponse = false
   private var readyToWrite = true
 
-  func setWorkoutTimer(_ deadline: Double?, countUp: Bool) {
+  func setWorkoutTimer(_ deadline: Double?, countUp: Bool, countUpRequest: Double? = nil, paused: Bool = false) {
     generation += 1
     self.deadline = deadline
     self.countUp = countUp
+    self.countUpRequest = countUpRequest
+    self.paused = paused
     keys.removeAll()
     central?.stopScan()
     candidates.removeAll()
@@ -150,15 +168,26 @@ private final class RogueTimerRemote: NSObject, CBCentralManagerDelegate, CBPeri
 
   private func prepareKeys() {
     keys = [0x11]
+    countdownStartAt = nil
+    if paused {
+      keys = wallCountUpRunning ? [0x0c] : (wallCountUpPaused ? [] : [0x11])
+      return
+    }
     if countUp {
+      if wallCountUpPaused {
+        keys = [0x0c]
+        return
+      }
       // Select count-up, reset its elapsed time, then start.
       keys += [0x0d, 0x0a, 0x0c]
       return
     }
     guard let deadline else { return }
-    // Account for the nine paced writes before Start.
-    let remaining = ceil((deadline - Date().timeIntervalSince1970 * 1000) / 1000 - 2.8)
+    // Leave time for the setup writes, then send Start on Rhythm’s second boundary.
+    let availableSeconds = (deadline - Date().timeIntervalSince1970 * 1000) / 1000
+    let remaining = max(floor(availableSeconds - 3.2), ceil(availableSeconds - 2.8) > 0 ? 1 : 0)
     guard remaining >= 1, remaining <= 5999 else { return }
+    countdownStartAt = deadline - remaining * 1000
     let seconds = Int(remaining)
     let digits = [seconds / 600, seconds / 60 % 10, seconds % 60 / 10, seconds % 10]
     keys += [0x0e, 0x12] + digits.map { 0x13 + UInt8($0) } + [0x12, 0x0c]
@@ -166,11 +195,37 @@ private final class RogueTimerRemote: NSObject, CBCentralManagerDelegate, CBPeri
 
   private func sendNext() {
     guard readyToWrite, !awaitingResponse, let timer, let command, !keys.isEmpty else { return }
+    if keys.first == 0x0c, let countdownStartAt {
+      let delay = (countdownStartAt - Date().timeIntervalSince1970 * 1000) / 1000
+      if delay > 0 {
+        let request = generation
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+          guard let self, self.generation == request else { return }
+          self.sendNext()
+        }
+        return
+      }
+    }
     let key = keys.removeFirst()
     if key == 0x0c, let deadline, deadline <= Date().timeIntervalSince1970 * 1000 {
       keys = [0x11]
       sendNext()
       return
+    }
+    if key == 0x11 {
+      wallCountUpRunning = false
+      wallCountUpPaused = false
+    } else if key == 0x0c {
+      if paused {
+        wallCountUpRunning = false
+        wallCountUpPaused = true
+      } else if countUp {
+        if let countUpRequest {
+          startingCountUp = (countUpRequest, Date().timeIntervalSince1970 * 1000, wallCountUpPaused)
+        }
+        wallCountUpRunning = true
+        wallCountUpPaused = false
+      }
     }
     awaitingResponse = true
     timer.writeValue(Data([0x55, 0xaa, 0x01, key]), for: command, type: .withResponse)
@@ -182,6 +237,12 @@ private final class RogueTimerRemote: NSObject, CBCentralManagerDelegate, CBPeri
     guard error == nil else {
       disconnect()
       return
+    }
+    if let start = startingCountUp {
+      startingCountUp = nil
+      if start.request == countUpRequest {
+        onCountUpStarted?(start.request, start.startedAt, start.resumed)
+      }
     }
     readyToWrite = false
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
@@ -207,6 +268,9 @@ private final class RogueTimerRemote: NSObject, CBCentralManagerDelegate, CBPeri
     if let timer { central?.cancelPeripheralConnection(timer) }
     timer = nil
     command = nil
+    wallCountUpRunning = false
+    wallCountUpPaused = false
+    startingCountUp = nil
     keys.removeAll()
     awaitingResponse = false
     readyToWrite = true
