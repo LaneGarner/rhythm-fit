@@ -1667,9 +1667,8 @@ export default function DayScreen({ navigation, route }: any) {
         }`}
       >
         <View
-          className={`p-6 rounded-lg w-80 ${
-            isDark ? 'bg-gray-800' : 'bg-white'
-          }`}
+          className="p-6 rounded-lg w-80"
+          style={{ backgroundColor: colors.cardBackground }}
         >
           <Text
             className={`text-lg font-semibold mb-4 ${
@@ -1685,7 +1684,7 @@ export default function DayScreen({ navigation, route }: any) {
             placeholderTextColor={colors.textSecondary}
             className={`px-4 py-3 border rounded-lg mb-4 ${
               isDark
-                ? 'bg-gray-700 border-gray-600 text-white'
+                ? 'bg-zinc-700 border-zinc-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
             }`}
             returnKeyType="done"
@@ -2111,11 +2110,11 @@ export default function DayScreen({ navigation, route }: any) {
           {/* Bulk Actions */}
           {isBulkMode && (
             <View
-              className={`p-4 border-b ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-              }`}
+              className="p-4 border-b"
+              style={{
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+              }}
             >
               {/* Selected count and reorder hint */}
               <Text

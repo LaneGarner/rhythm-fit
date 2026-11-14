@@ -679,7 +679,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
                   borderRadius: 20,
                   backgroundColor: isActive
                     ? isDark
-                      ? '#23263a'
+                      ? colors.surfaceSecondary
                       : '#e0e7ff'
                     : colors.surface,
                   borderWidth: 1,
@@ -759,7 +759,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
               borderColor: isAddingNew ? colors.primary.main : colors.border,
               backgroundColor: isAddingNew
                 ? isDark
-                  ? '#23263a'
+                  ? colors.surfaceSecondary
                   : '#e0e7ff'
                 : colors.surface,
               gap: 4,

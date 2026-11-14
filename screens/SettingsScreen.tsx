@@ -565,45 +565,40 @@ export default function SettingsScreen({ navigation }: any) {
                       </Text>
                     )}
                   </View>
-                  {coachUsage ? (
-                    <>
+                  <View
+                    className="mt-3 h-2 rounded-full overflow-hidden"
+                    style={{ backgroundColor: colors.toggleTrack }}
+                    accessible={!!coachUsage}
+                    accessibilityRole={coachUsage ? 'progressbar' : undefined}
+                    accessibilityLabel={
+                      coachUsage ? 'Monthly Coach usage' : undefined
+                    }
+                    accessibilityValue={
+                      coachUsage
+                        ? { min: 0, max: 100, now: coachUsage.percentUsed }
+                        : undefined
+                    }
+                  >
+                    {coachUsage && (
                       <View
-                        className="mt-3 h-2 rounded-full overflow-hidden"
-                        style={{ backgroundColor: colors.toggleTrack }}
-                        accessible
-                        accessibilityRole="progressbar"
-                        accessibilityLabel="Monthly Coach usage"
-                        accessibilityValue={{
-                          min: 0,
-                          max: 100,
-                          now: coachUsage.percentUsed,
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${coachUsage.percentUsed}%`,
+                          backgroundColor: colors.primary.main,
                         }}
-                      >
-                        <View
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${coachUsage.percentUsed}%`,
-                            backgroundColor: colors.primary.main,
-                          }}
-                        />
-                      </View>
-                      <Text
-                        className="text-sm mt-2"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        Resets {formatCoachReset(coachUsage.resetsAt)}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text
-                      className="text-sm mt-2"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      {usageUnavailable
+                      />
+                    )}
+                  </View>
+                  <Text
+                    className="text-sm mt-2"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {coachUsage
+                      ? `Resets ${formatCoachReset(coachUsage.resetsAt)}`
+                      : usageUnavailable
                         ? 'Usage unavailable'
                         : 'Loading usage…'}
-                    </Text>
-                  )}
+                  </Text>
                 </View>
               )}
             </View>

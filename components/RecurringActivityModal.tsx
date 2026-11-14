@@ -123,7 +123,7 @@ export default function RecurringActivityModal({
       <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
         {/* Header */}
         <View
-          className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+          className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
         >
           <View className="flex-row justify-between items-center">
             <TouchableOpacity onPress={onClose}>
@@ -179,7 +179,7 @@ export default function RecurringActivityModal({
                   backgroundColor:
                     pattern === 'daily'
                       ? isDark
-                        ? '#23263a'
+                        ? colors.surfaceSecondary
                         : '#e0e7ff'
                       : isDark
                         ? '#1a1a1a'
@@ -210,7 +210,7 @@ export default function RecurringActivityModal({
                   backgroundColor:
                     pattern === 'weekly'
                       ? isDark
-                        ? '#23263a'
+                        ? colors.surfaceSecondary
                         : '#e0e7ff'
                       : isDark
                         ? '#1a1a1a'
@@ -253,7 +253,7 @@ export default function RecurringActivityModal({
                     backgroundColor:
                       frequency === 'every'
                         ? isDark
-                          ? '#23263a'
+                          ? colors.surfaceSecondary
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
@@ -284,7 +284,7 @@ export default function RecurringActivityModal({
                     backgroundColor:
                       frequency === 'this'
                         ? isDark
-                          ? '#23263a'
+                          ? colors.surfaceSecondary
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
@@ -328,7 +328,7 @@ export default function RecurringActivityModal({
                           : '#d1d5db',
                       backgroundColor: selectedDays.includes(day.value)
                         ? isDark
-                          ? '#23263a'
+                          ? colors.surfaceSecondary
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
@@ -360,7 +360,7 @@ export default function RecurringActivityModal({
                 keyboardType="numeric"
                 className={`px-3 py-2 border rounded-lg ${
                   isDark
-                    ? 'bg-gray-700 border-gray-600 text-white'
+                    ? 'bg-zinc-700 border-zinc-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 placeholder="4"

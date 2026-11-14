@@ -813,9 +813,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   onLayout={day.isToday ? registerTodayCard : undefined}
                   className={`mb-4 p-4 rounded-xl shadow-sm`}
                   style={{
-                    backgroundColor: day.isToday
-                      ? colors.accent.background
-                      : colors.cardBackground,
+                    backgroundColor: colors.cardBackground,
                     borderColor: day.isToday
                       ? colors.accent.main
                       : 'transparent',

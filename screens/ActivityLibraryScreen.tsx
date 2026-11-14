@@ -229,8 +229,9 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <View
             key={item.id}
-            className={`p-4 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className="p-4 rounded-lg mb-3"
             style={{
+              backgroundColor: colors.cardBackground,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.1,
@@ -352,7 +353,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
         <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           {/* Modal Header */}
           <View
-            className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+            className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
           >
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={closeModal}>
@@ -404,7 +405,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 placeholderTextColor={colors.textSecondary}
                 className={`px-4 border rounded-lg ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600 text-white'
+                    ? 'bg-zinc-800 border-zinc-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 style={{

@@ -218,7 +218,7 @@ export default function SetCard({
                   onPress={() => setShowDurationPicker(true)}
                   className={`px-3 py-2 border rounded-lg ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600'
+                      ? 'bg-zinc-700 border-zinc-600'
                       : 'bg-white border-gray-300'
                   }`}
                   style={{ minHeight: 42 }}
@@ -245,7 +245,7 @@ export default function SetCard({
                   placeholder="e.g. Red Heavy"
                   className={`px-3 py-2 border rounded-lg ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white'
+                      ? 'bg-zinc-700 border-zinc-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                   placeholderTextColor={colors.textSecondary}
@@ -257,7 +257,7 @@ export default function SetCard({
                   onPress={() => setNumericWheelField(field)}
                   className={`px-3 py-2 border rounded-lg ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600'
+                      ? 'bg-zinc-700 border-zinc-600'
                       : 'bg-white border-gray-300'
                   }`}
                   style={{ minHeight: 42, justifyContent: 'center' }}
@@ -322,7 +322,7 @@ export default function SetCard({
                   }
                   className={`px-3 py-2 border rounded-lg ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white'
+                      ? 'bg-zinc-700 border-zinc-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                   placeholderTextColor={colors.textSecondary}
