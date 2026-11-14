@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, {
   LinearTransition,
   useReducedMotion,
@@ -11,6 +11,7 @@ import {
   ExecutionSetChange,
 } from '../utils/workoutExecution';
 import { getSupersetLabel } from '../utils/supersetUtils';
+import { secondsToTimeString } from '../utils/timeFormat';
 import SetCard from './SetCard';
 import SetCompletionButton from './SetCompletionButton';
 import WorkoutSetSummary from './WorkoutSetSummary';
@@ -21,11 +22,15 @@ export default function WorkoutExecutionSets({
   activities,
   grouped = false,
   onChange,
+  onStartTimedSet,
+  activeTimedSetId,
   onOpenPlateCalculator,
 }: {
   activities: Activity[];
   grouped?: boolean;
   onChange: (changes: ExecutionSetChange[]) => void;
+  onStartTimedSet?: (setId: string, name: string, seconds: number) => void;
+  activeTimedSetId?: string;
   onOpenPlateCalculator?: (activityId: string, setId: string) => void;
 }) {
   const { colors } = useTheme();
@@ -88,30 +93,62 @@ export default function WorkoutExecutionSets({
               />
             </View>
           )}
-          {unit.entries.map(({ activity, set, setIndex }) => (
-            <SetCard
-              key={`${activity.id}-${set.id}`}
-              set={set}
-              index={setIndex}
-              title={grouped ? activity.name : undefined}
-              trackingFields={
-                activity.trackingFields ||
-                DEFAULT_TRACKING_FIELDS[activity.type]
-              }
-              activityType={activity.type}
-              onUpdateSet={(setId, updates) =>
-                onChange([{ activityId: activity.id, setId, updates }])
-              }
-              onShowOptions={() => {}}
-              onOpenPlateCalculator={
-                onOpenPlateCalculator
-                  ? setId => onOpenPlateCalculator(activity.id, setId)
-                  : undefined
-              }
-              showCompletionButton={!grouped}
-              readOnly
-            />
-          ))}
+          {unit.entries.map(({ activity, set, setIndex }) => {
+            const duration = set.time ?? 0;
+            return (
+              <SetCard
+                key={`${activity.id}-${set.id}`}
+                set={set}
+                index={setIndex}
+                title={grouped ? activity.name : undefined}
+                trackingFields={
+                  activity.trackingFields ||
+                  DEFAULT_TRACKING_FIELDS[activity.type]
+                }
+                activityType={activity.type}
+                onUpdateSet={(setId, updates) =>
+                  onChange([{ activityId: activity.id, setId, updates }])
+                }
+                onShowOptions={() => {}}
+                onOpenPlateCalculator={
+                  onOpenPlateCalculator
+                    ? setId => onOpenPlateCalculator(activity.id, setId)
+                    : undefined
+                }
+                timerAction={
+                  onStartTimedSet &&
+                  !set.completed &&
+                  set.id !== activeTimedSetId &&
+                  Number.isFinite(duration) &&
+                  duration > 0 ? (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      onPress={() =>
+                        onStartTimedSet(
+                          set.id,
+                          activity.name,
+                          Math.ceil(duration)
+                        )
+                      }
+                      style={{ paddingVertical: 12, alignItems: 'center' }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.primary.main,
+                          fontWeight: '600',
+                        }}
+                      >
+                        Start {activity.name} timer ·{' '}
+                        {secondsToTimeString(Math.ceil(duration))}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : undefined
+                }
+                showCompletionButton={!grouped}
+                readOnly
+              />
+            );
+          })}
           {grouped && (
             <SetCompletionButton
               completed={unit.completed}

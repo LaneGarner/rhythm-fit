@@ -14,6 +14,7 @@ import {
   getSupersetNames,
 } from '../utils/supersetUtils';
 import {
+  buildExecutionUnits,
   ExecutionSetChange,
   getExecutionOutcome,
 } from '../utils/workoutExecution';
@@ -34,7 +35,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { autoRestTimer } = usePreferences();
   const timer = useTimerMetadata();
-  const { startCountdown } = useTimerActions();
+  const { startCountdown, stopTimer, getTimerState } = useTimerActions();
   const sessionControls = useWorkoutSession();
   const [plateTarget, setPlateTarget] = useState<{
     activityId: string;
@@ -78,15 +79,20 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     const outcome = getExecutionOutcome(latest, changes);
     if (!outcome.updated.length) return;
     dispatch(batchUpdateActivities(outcome.updated));
+    const active = getTimerState();
+    const countdown = active.activityCountdown;
+    if (
+      active.activityId === timerId &&
+      countdown &&
+      changes.some(
+        change =>
+          change.setId === countdown.setId && change.updates.completed === true
+      )
+    ) {
+      stopTimer();
+    }
     if (outcome.finished && inSession) {
-      const next = moveNext();
-      if (next) {
-        if (inSession || restEnabled)
-          sessionControls.startRest(
-            next,
-            sessionControls.session?.restDuration || 120
-          );
-      } else {
+      if (!moveNext()) {
         Alert.alert(
           'Session complete',
           'Your workouts are saved. Anything left for later is still on your day.',
@@ -152,7 +158,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           })
         }
         restToggle={
-          inSession
+          inSession || buildExecutionUnits(activities, grouped).length <= 1
             ? undefined
             : {
                 enabled: restEnabled,
@@ -171,7 +177,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           inSession &&
           sessionControls.session &&
           timer.activityId === timerId &&
-          timer.mode === 'countDown' &&
+          timer.isRest &&
           timer.hasTimeRemaining
             ? sessionControls.skipRest
             : undefined
@@ -223,6 +229,26 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           activities={activities}
           grouped={grouped}
           onChange={handleChanges}
+          activeTimedSetId={
+            timer.activityId === timerId
+              ? timer.activityCountdown?.setId
+              : undefined
+          }
+          onStartTimedSet={(setId, name, seconds) => {
+            const active = getTimerState();
+            if (
+              active.isRunning &&
+              (active.activityId !== timerId || !active.isRest)
+            ) {
+              Alert.alert(
+                'Timer already running',
+                'Pause or reset the current timer before starting another.'
+              );
+              return;
+            }
+            if (inSession && active.isRest) sessionControls.skipRest();
+            startCountdown(timerId, name, seconds, setId);
+          }}
           onOpenPlateCalculator={(activityId, setId) =>
             setPlateTarget({ activityId, setId })
           }

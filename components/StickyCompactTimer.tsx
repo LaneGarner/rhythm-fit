@@ -34,6 +34,7 @@ export default function StickyCompactTimer({
   const {
     timer,
     startTimer,
+    startCountdown,
     switchTimer,
     pauseTimer,
     resumeTimer,
@@ -49,7 +50,8 @@ export default function StickyCompactTimer({
     !timer.isRunning &&
     ((timer.mode === 'countUp' && timerSeconds > 0) ||
       (timer.mode === 'countDown' &&
-        timerSeconds < timer.targetSeconds &&
+        timerSeconds <
+          (timer.activityCountdown?.seconds ?? timer.targetSeconds) &&
         timerSeconds > 0) ||
       (timer.mode === 'emom' &&
         timer.emomCurrentRound > 0 &&
@@ -76,6 +78,15 @@ export default function StickyCompactTimer({
         });
 
   const handleStart = () => {
+    if (isTimerOwner && timer.activityCountdown) {
+      startCountdown(
+        activityId,
+        timer.activityName,
+        timer.activityCountdown.seconds,
+        timer.activityCountdown.setId
+      );
+      return;
+    }
     const success = startTimer(activityId, activityName);
     if (!success) {
       Alert.alert(
@@ -105,6 +116,17 @@ export default function StickyCompactTimer({
         gap: 4,
       }}
     >
+      {isTimerOwner && (timer.activityCountdown || timer.isRest) && (
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontWeight: '600',
+            textAlign: 'center',
+          }}
+        >
+          {timer.activityCountdown ? 'Activity timer' : 'Rest timer'}
+        </Text>
+      )}
       <View
         style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}
       >

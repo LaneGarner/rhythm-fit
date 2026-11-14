@@ -116,7 +116,7 @@ export function WorkoutSessionProvider({
     }
     const seconds = getTimerState().seconds;
     const rest =
-      timer.mode === 'countDown' && seconds > 0
+      timer.isRest && seconds > 0
         ? {
             remaining: seconds,
             ...(timer.isRunning ? { endsAt: Date.now() + seconds * 1000 } : {}),
@@ -128,6 +128,7 @@ export function WorkoutSessionProvider({
     timer.startedAt,
     timer.activityId,
     timer.mode,
+    timer.isRest,
     loadedKey,
     key,
     commit,
@@ -142,6 +143,7 @@ export function WorkoutSessionProvider({
       !value ||
       value.rest ||
       timer.isRunning ||
+      timer.activityCountdown ||
       timer.mode !== 'countDown'
     )
       return;
@@ -154,6 +156,7 @@ export function WorkoutSessionProvider({
       commit({ ...value, restDuration: timer.targetSeconds });
   }, [
     timer.targetSeconds,
+    timer.activityCountdown,
     timer.isRunning,
     timer.mode,
     loadedKey,

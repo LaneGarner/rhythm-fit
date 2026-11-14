@@ -36,7 +36,9 @@ export default function CollapsibleTimer({
   const isEmom = timer.mode === 'emom';
   const duration = isEmom ? timer.emomIntervalSeconds : timer.targetSeconds;
   const durationLabel = isEmom ? 'EMOM interval' : 'Countdown duration';
-  const showDuration = isEmom || timer.mode === 'countDown';
+  const showDuration =
+    isEmom ||
+    (timer.mode === 'countDown' && !(isTimerOwner && timer.activityCountdown));
 
   return (
     <View className="px-4 pt-2 pb-1">
