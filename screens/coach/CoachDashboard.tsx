@@ -97,20 +97,6 @@ export default function CoachDashboard({
         }}
       >
         <QuickAction
-          label="Regenerate"
-          description="Build a fresh plan from your profile."
-          icon="refresh"
-          colors={colors}
-          onPress={onRegenerate}
-        />
-        <QuickAction
-          label="Reschedule"
-          description="Shift this week's workouts to other days."
-          icon="calendar"
-          colors={colors}
-          onPress={onReschedule}
-        />
-        <QuickAction
           label="Reconfigure"
           description="Update your goals, equipment, or schedule."
           icon="options"
@@ -123,6 +109,20 @@ export default function CoachDashboard({
           icon="chatbubble-ellipses"
           colors={colors}
           onPress={() => onOpenChat()}
+        />
+        <QuickAction
+          label="Regenerate"
+          description="Build a fresh plan from your profile."
+          icon="refresh"
+          colors={colors}
+          onPress={onRegenerate}
+        />
+        <QuickAction
+          label="Reschedule"
+          description="Shift this week's workouts to other days."
+          icon="calendar"
+          colors={colors}
+          onPress={onReschedule}
         />
       </View>
 
