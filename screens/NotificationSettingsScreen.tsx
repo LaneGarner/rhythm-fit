@@ -49,7 +49,9 @@ function formatDisplayTime(value: string): string {
 }
 
 export default function NotificationSettingsScreen({ navigation }: any) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
+  const buttonTextColor =
+    colorScheme === 'dark' ? colors.text : colors.textInverse;
   const { insets } = useResponsiveLayout();
   const { notificationSettings, setNotificationSettings } = usePreferences();
   const [permissionStatus, setPermissionStatus] =
@@ -236,7 +238,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
               accessibilityRole="button"
               accessibilityLabel="Open device settings"
             >
-              <Text style={{ color: colors.textInverse, fontWeight: '600' }}>
+              <Text style={{ color: buttonTextColor, fontWeight: '600' }}>
                 Open Settings
               </Text>
             </TouchableOpacity>
@@ -258,7 +260,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
             >
               <Text
                 style={{
-                  color: colors.textInverse,
+                  color: buttonTextColor,
                   fontWeight: '600',
                   fontSize: 16,
                 }}

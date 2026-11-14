@@ -82,12 +82,11 @@ export default function SetCard({
       className="p-4 rounded-lg mb-3 shadow-sm"
       style={{ backgroundColor: colors.cardBackground }}
     >
-      <View className="flex-row justify-between items-center mb-3">
+      <View className="flex-row justify-between items-center mb-3 pt-3">
         <View className="flex-row items-center" style={{ gap: 8 }}>
           <Text
-            className={`text-lg font-semibold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
+            className="text-lg font-semibold"
+            style={{ color: colors.text, opacity: 0.85 }}
           >
             {title || `Set ${index + 1}`}
           </Text>
@@ -132,6 +131,7 @@ export default function SetCard({
         {trackingFields.map(field => {
           const config = FIELD_CONFIG[field];
           const value = set[field];
+          const fullWidth = field === 'band' && !readOnly;
           const showPlateIcon =
             field === 'weight' && activityType === 'weight-training';
 
@@ -139,12 +139,10 @@ export default function SetCard({
             <View
               key={field}
               style={{
-                flex: field === 'band' ? undefined : 1,
-                width: field === 'band' ? '100%' : undefined,
+                flex: fullWidth ? undefined : 1,
+                width: fullWidth ? '100%' : undefined,
                 minWidth:
-                  trackingFields.length > 2 && field !== 'band'
-                    ? '45%'
-                    : undefined,
+                  trackingFields.length > 2 && !fullWidth ? '45%' : undefined,
               }}
             >
               <View className="flex-row items-center mb-1">

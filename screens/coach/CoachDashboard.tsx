@@ -93,7 +93,7 @@ export default function CoachDashboard({
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: 10,
-          marginBottom: 12,
+          marginBottom: 16,
         }}
       >
         <QuickAction
@@ -127,7 +127,7 @@ export default function CoachDashboard({
       </View>
 
       {/* Coach tips */}
-      <Card colors={colors}>
+      <Card colors={colors} marginBottom={16}>
         <View
           style={{
             flexDirection: 'row',
@@ -309,8 +309,10 @@ function deriveTips(activities: Activity[]): Tip[] {
 function Card({
   children,
   colors,
+  marginBottom = 12,
 }: {
   children: React.ReactNode;
+  marginBottom?: number;
   colors: ReturnType<typeof useTheme>['colors'];
 }) {
   return (
@@ -321,7 +323,7 @@ function Card({
         borderWidth: 1,
         borderColor: colors.border,
         padding: 16,
-        marginBottom: 12,
+        marginBottom,
       }}
     >
       {children}
@@ -338,15 +340,20 @@ function TipRow({
   colors: ReturnType<typeof useTheme>['colors'];
   onPress: () => void;
 }) {
-  const toneColor =
+  const { colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
+  const accent =
     tip.tone === 'success'
-      ? colors.success
+      ? isDark
+        ? colors.success.main
+        : '#15803d'
       : tip.tone === 'warning'
-        ? colors.warning
-        : colors.primary;
-  const accent = (toneColor as any).main ?? colors.primary.main;
-  // Subtle tinted surface with a colored left accent; text stays high-contrast
-  // (bright accent for the title, theme text for the body) in both light/dark.
+        ? isDark
+          ? colors.warning.main
+          : colors.warning.dark
+        : isDark
+          ? '#93c5fd'
+          : colors.primary.main;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -359,8 +366,6 @@ function TipRow({
         padding: 12,
         borderRadius: 10,
         backgroundColor: colors.surfaceSecondary,
-        borderLeftWidth: 3,
-        borderLeftColor: accent,
         marginBottom: 8,
       }}
     >
@@ -382,7 +387,11 @@ function TipRow({
           {tip.title}
         </Text>
         <Text
-          style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}
+          style={{
+            color: isDark ? '#adb5c2' : '#4b5563',
+            fontSize: 13,
+            lineHeight: 18,
+          }}
         >
           {tip.body}
         </Text>

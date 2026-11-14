@@ -192,8 +192,11 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         {inSession && sessionControls.session && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Text style={{ flex: 1, color: colors.textSecondary }}>
-              Session mode on • {sessionIndex + 1} of{' '}
-              {sessionControls.session.items.length}
+              <Text style={{ color: colors.text, fontWeight: '700' }}>
+                Session mode
+              </Text>
+              {'\u2002\u2009'}
+              {sessionIndex + 1} of {sessionControls.session.items.length}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
@@ -202,7 +205,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               }}
               style={{ paddingVertical: 8 }}
             >
-              <Text style={{ color: colors.primary.main }}>
+              <Text style={{ color: colors.textSecondary }}>
                 Skip {grouped ? 'group' : 'activity'}
               </Text>
             </TouchableOpacity>

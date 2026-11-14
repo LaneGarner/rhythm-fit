@@ -57,23 +57,34 @@ export default function WorkoutExecutionSets({
                 alignItems: 'center',
                 gap: 12,
                 marginBottom: 12,
-                marginTop: position > 0 ? 8 : 0,
+                marginTop: position > 0 ? 20 : 12,
               }}
             >
               <View
-                style={{ flex: 1, height: 1, backgroundColor: colors.border }}
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: colors.text,
+                  opacity: 0.55,
+                }}
               />
               <Text
                 style={{
                   fontSize: 14,
                   fontWeight: '600',
-                  color: colors.textSecondary,
+                  color: colors.text,
+                  opacity: 0.78,
                 }}
               >
                 {groupLabel} {unit.number}
               </Text>
               <View
-                style={{ flex: 1, height: 1, backgroundColor: colors.border }}
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: colors.text,
+                  opacity: 0.55,
+                }}
               />
             </View>
           )}

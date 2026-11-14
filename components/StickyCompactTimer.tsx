@@ -26,7 +26,9 @@ export default function StickyCompactTimer({
   onSkipRest,
   threshold,
 }: StickyCompactTimerProps) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
+  const backgroundColor =
+    colorScheme === 'dark' ? colors.background : colors.surface;
   const { fontScale } = useWindowDimensions();
   const actionButtonWidth = Math.ceil(32 + 56 * fontScale);
   const {
@@ -93,7 +95,7 @@ export default function StickyCompactTimer({
   return (
     <Animated.View
       style={{
-        backgroundColor: colors.surface,
+        backgroundColor,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         paddingTop: topPadding,
@@ -140,7 +142,7 @@ export default function StickyCompactTimer({
           <TouchableOpacity
             onPress={isPaused ? resumeTimer : handleStart}
             style={{
-              backgroundColor: colors.surface,
+              backgroundColor,
               borderWidth: 2,
               borderColor: colors.success.main,
               paddingHorizontal: 14,
@@ -166,7 +168,7 @@ export default function StickyCompactTimer({
           <TouchableOpacity
             onPress={pauseTimer}
             style={{
-              backgroundColor: colors.surface,
+              backgroundColor,
               borderWidth: 2,
               borderColor: colors.warning.main,
               paddingHorizontal: 14,
@@ -193,7 +195,7 @@ export default function StickyCompactTimer({
           onPress={onSkipRest ?? resetTimer}
           disabled={!isTimerOwner}
           style={{
-            backgroundColor: colors.surface,
+            backgroundColor,
             borderWidth: 2,
             borderColor: isTimerOwner ? colors.error.main : colors.border,
             width: actionButtonWidth,

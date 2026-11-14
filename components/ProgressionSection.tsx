@@ -24,11 +24,13 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
   activity,
   title,
 }) => {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
+  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
   const activities = useSelector((state: RootState) => state.activities.data);
   const navigation = useNavigation<any>();
   const reduceMotion = useReducedMotion();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const sessions = useMemo(
     () =>
@@ -84,7 +86,11 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
         </Text>
         {sessions.length > 0 && (
           <Text
-            style={{ fontSize: 13, color: colors.textTertiary, marginRight: 8 }}
+            style={{
+              fontSize: 13,
+              color: isDark ? colors.textSecondary : colors.textTertiary,
+              marginRight: 8,
+            }}
           >
             {sessions.length} {sessions.length === 1 ? 'day' : 'days'}
           </Text>
@@ -147,7 +153,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
                         style={{
                           fontSize: 11,
                           fontWeight: '600',
-                          color: colors.primary.main,
+                          color: actionColor,
                         }}
                       >
                         Most recent
@@ -205,18 +211,14 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
                   flexShrink: 1,
                   fontSize: 14,
                   fontWeight: '600',
-                  color: colors.primary.main,
+                  color: actionColor,
                   marginRight: 4,
                   textAlign: 'center',
                 }}
               >
                 View all stats for {activity.name}
               </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.primary.main}
-              />
+              <Ionicons name="chevron-forward" size={16} color={actionColor} />
             </TouchableOpacity>
           )}
         </View>

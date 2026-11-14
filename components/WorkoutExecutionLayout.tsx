@@ -168,7 +168,12 @@ export default function WorkoutExecutionLayout({
               restToggle={restToggle}
             />
           </View>
-          <View style={{ backgroundColor: colors.surface }}>
+          <View
+            style={{
+              backgroundColor:
+                colorScheme === 'dark' ? colors.background : colors.surface,
+            }}
+          >
             <Animated.View
               style={{
                 height: dockedTitleSpace,

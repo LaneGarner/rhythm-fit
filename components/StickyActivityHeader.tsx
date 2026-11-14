@@ -25,7 +25,9 @@ export function StickyCompactHeader({
   onLayout,
   opacity,
 }: StickyActivityHeaderProps) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
+  const backgroundColor =
+    colorScheme === 'dark' ? colors.background : colors.surface;
 
   const stickyOpacity = scrollY.interpolate({
     inputRange: [COLLAPSE_THRESHOLD - 20, COLLAPSE_THRESHOLD],
@@ -43,7 +45,7 @@ export function StickyCompactHeader({
         right: 0,
         zIndex: 100,
         opacity: opacity ?? stickyOpacity,
-        backgroundColor: colors.surface,
+        backgroundColor,
         paddingTop: 8,
         paddingHorizontal: 16,
       }}
