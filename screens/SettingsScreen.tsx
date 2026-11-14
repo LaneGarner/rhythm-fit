@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -36,6 +37,7 @@ import {
 } from '../services/legalLinks';
 
 export default function SettingsScreen({ navigation }: any) {
+  const appVersion = Constants.expoConfig?.version;
   const { themePreference, setThemePreference, colorScheme, colors } =
     useTheme();
   const isDark = colorScheme === 'dark';
@@ -1010,6 +1012,14 @@ export default function SettingsScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={18} color={chevronColor} />
           </TouchableOpacity>
         </View>
+        {appVersion && (
+          <Text
+            className="mt-6 text-center text-sm"
+            style={{ color: colors.textSecondary }}
+          >
+            Version {appVersion}
+          </Text>
+        )}
       </ScrollView>
     </View>
   );
