@@ -37,9 +37,8 @@ export default function WorkoutExecutionLayout({
   footer?: React.ReactNode;
   testID?: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   const { insets, hasTopTabBar } = useResponsiveLayout();
-  const [expanded, setExpanded] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
   const contentRef = useRef<View>(null);
@@ -110,7 +109,7 @@ export default function WorkoutExecutionLayout({
           activityId={timerId}
           activityName={timerName}
           scrollY={scrollY}
-          isExpanded={expanded}
+          isExpanded={true}
           clockBottom={clockBottom}
           headerHeight={headerHeight}
         />
@@ -128,19 +127,25 @@ export default function WorkoutExecutionLayout({
           scrollEventThrottle={16}
         >
           <View ref={contentRef} collapsable={false} onLayout={measureClock}>
-            <ContentHeader title={title} subtitle="" scrollY={scrollY} />
-            <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
+            <View
+              style={{
+                backgroundColor:
+                  colorScheme === 'dark' ? colors.background : colors.surface,
+              }}
+            >
+              <ContentHeader title={title} subtitle="" scrollY={scrollY} />
               <CollapsibleTimer
                 key={timerId}
                 activityId={timerId}
                 activityName={timerName}
-                onExpandedChange={setExpanded}
                 onClockLayout={clock => {
                   clockRef.current = clock;
                   measureClock();
                 }}
                 restToggle={restToggle}
               />
+            </View>
+            <View className="px-4 pt-4 pb-4" style={{ gap: 16 }}>
               {children}
               <NotesCard notes={notes || ''} />
               {progression}
