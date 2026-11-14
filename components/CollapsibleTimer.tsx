@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import DurationPickerModal from './DurationPickerModal';
 import {
   Keyboard,
   Switch,
@@ -31,6 +32,11 @@ export default function CollapsibleTimer({
     setEmomRounds,
   } = useTimer();
   const isTimerOwner = timer.activityId === activityId;
+  const [editingDuration, setEditingDuration] = useState(false);
+  const isEmom = timer.mode === 'emom';
+  const duration = isEmom ? timer.emomIntervalSeconds : timer.targetSeconds;
+  const durationLabel = isEmom ? 'EMOM interval' : 'Countdown duration';
+  const showDuration = isEmom || timer.mode === 'countDown';
 
   return (
     <View className="px-4 pt-2 pb-1">
@@ -125,153 +131,49 @@ export default function CollapsibleTimer({
         </TouchableOpacity>
       </View>
 
-      {/* Countdown Duration Input */}
-      {timer.mode === 'countDown' && (
-        <View className="flex-row justify-center items-center mt-5 mb-1">
-          <TextInput
-            accessibilityLabel="Countdown minutes"
-            editable={!timer.isRunning}
-            accessibilityState={{ disabled: timer.isRunning }}
-            value={
-              Math.floor(timer.targetSeconds / 60) > 0
-                ? Math.floor(timer.targetSeconds / 60).toString()
-                : ''
-            }
-            onChangeText={text => {
-              const mins = parseInt(text) || 0;
-              const secs = timer.targetSeconds % 60;
-              setTargetSeconds(mins * 60 + secs);
+      {showDuration && (
+        <View className="items-center mt-5 mb-1">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={durationLabel}
+            accessibilityValue={{
+              text: `${Math.floor(duration / 60)} minutes, ${duration % 60} seconds`,
             }}
-            keyboardType="numeric"
-            maxLength={3}
-            className="w-16 px-3 py-2 border rounded-lg"
+            accessibilityState={{ disabled: timer.isRunning }}
+            disabled={timer.isRunning}
+            onPress={() => setEditingDuration(true)}
+            className="px-4 py-2 border rounded-lg"
             style={{
-              textAlign: 'center',
               backgroundColor: colors.inputBackground,
               borderColor: colors.border,
-              color: colors.text,
             }}
-            placeholder="0"
-            placeholderTextColor={colors.textSecondary}
-            returnKeyType="done"
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          <Text
-            className="mx-2 text-base"
-            style={{ color: colors.textSecondary }}
           >
-            min
-          </Text>
-          <TextInput
-            accessibilityLabel="Countdown seconds"
-            editable={!timer.isRunning}
-            accessibilityState={{ disabled: timer.isRunning }}
-            value={
-              timer.targetSeconds % 60 > 0
-                ? (timer.targetSeconds % 60).toString()
-                : ''
-            }
-            onChangeText={text => {
-              const secs = Math.min(parseInt(text) || 0, 59);
-              const mins = Math.floor(timer.targetSeconds / 60);
-              setTargetSeconds(mins * 60 + secs);
-            }}
-            keyboardType="numeric"
-            maxLength={2}
-            className="w-16 px-3 py-2 border rounded-lg"
-            style={{
-              textAlign: 'center',
-              backgroundColor: colors.inputBackground,
-              borderColor: colors.border,
-              color: colors.text,
-            }}
-            placeholder="0"
-            placeholderTextColor={colors.textSecondary}
-            returnKeyType="done"
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          <Text
-            className="ml-2 text-base"
-            style={{ color: colors.textSecondary }}
-          >
-            sec
-          </Text>
+            <Text style={{ color: colors.text }}>
+              {Math.floor(duration / 60)} min{' '}
+              {String(duration % 60).padStart(2, '0')} sec
+              {isEmom ? ' interval' : ''}
+            </Text>
+          </TouchableOpacity>
+          {editingDuration && (
+            <DurationPickerModal
+              visible
+              value={Math.min(duration, 99 * 60 + 59)}
+              maxMinutes={99}
+              onCancel={() => setEditingDuration(false)}
+              onConfirm={seconds => {
+                if (!timer.isRunning) {
+                  if (isEmom) setEmomInterval(seconds ?? 1);
+                  else setTargetSeconds(seconds ?? 0);
+                }
+                setEditingDuration(false);
+              }}
+            />
+          )}
         </View>
       )}
 
-      {/* EMOM Duration + Rounds Input */}
-      {timer.mode === 'emom' && (
-        <View className="mt-5 mb-1">
-          <View className="flex-row justify-center items-center mb-3">
-            <TextInput
-              editable={!timer.isRunning}
-              accessibilityState={{ disabled: timer.isRunning }}
-              value={
-                Math.floor(timer.emomIntervalSeconds / 60) > 0
-                  ? Math.floor(timer.emomIntervalSeconds / 60).toString()
-                  : ''
-              }
-              onChangeText={text => {
-                const mins = parseInt(text) || 0;
-                const secs = timer.emomIntervalSeconds % 60;
-                setEmomInterval(mins * 60 + secs);
-              }}
-              keyboardType="numeric"
-              maxLength={3}
-              className="w-16 px-3 py-2 border rounded-lg"
-              style={{
-                textAlign: 'center',
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text,
-              }}
-              placeholder="0"
-              placeholderTextColor={colors.textSecondary}
-              returnKeyType="done"
-              onSubmitEditing={() => Keyboard.dismiss()}
-              accessibilityLabel="Interval minutes"
-            />
-            <Text
-              className="mx-2 text-base"
-              style={{ color: colors.textSecondary }}
-            >
-              min
-            </Text>
-            <TextInput
-              editable={!timer.isRunning}
-              accessibilityState={{ disabled: timer.isRunning }}
-              value={
-                timer.emomIntervalSeconds % 60 > 0
-                  ? (timer.emomIntervalSeconds % 60).toString()
-                  : ''
-              }
-              onChangeText={text => {
-                const secs = Math.min(parseInt(text) || 0, 59);
-                const mins = Math.floor(timer.emomIntervalSeconds / 60);
-                setEmomInterval(mins * 60 + secs);
-              }}
-              keyboardType="numeric"
-              maxLength={2}
-              className="w-16 px-3 py-2 border rounded-lg"
-              style={{
-                textAlign: 'center',
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text,
-              }}
-              placeholder="0"
-              placeholderTextColor={colors.textSecondary}
-              returnKeyType="done"
-              onSubmitEditing={() => Keyboard.dismiss()}
-              accessibilityLabel="Interval seconds"
-            />
-            <Text
-              className="ml-2 text-base"
-              style={{ color: colors.textSecondary }}
-            >
-              sec interval
-            </Text>
-          </View>
+      {isEmom && (
+        <View className="mt-2 mb-1">
           <View className="flex-row justify-center items-center">
             <TextInput
               editable={!timer.isRunning}
