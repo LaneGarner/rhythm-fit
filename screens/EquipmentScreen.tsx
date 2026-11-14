@@ -428,7 +428,7 @@ export default function EquipmentScreen({ navigation }: any) {
       >
         <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
-            className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+            className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
           >
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowAddBarbell(false)}>
@@ -472,7 +472,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 returnKeyType="done"
                 className={`px-3 border rounded-lg ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600 text-white'
+                    ? 'bg-zinc-800 border-zinc-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 style={{ height: 44, fontSize: 16 }}
@@ -493,7 +493,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 keyboardType="numeric"
                 className={`px-3 border rounded-lg ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600 text-white'
+                    ? 'bg-zinc-800 border-zinc-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 style={{ height: 44, fontSize: 16 }}
@@ -516,7 +516,7 @@ export default function EquipmentScreen({ navigation }: any) {
       >
         <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
-            className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+            className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
           >
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowAddPlate(false)}>
@@ -561,7 +561,7 @@ export default function EquipmentScreen({ navigation }: any) {
                 returnKeyType="done"
                 className={`px-3 border rounded-lg ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600 text-white'
+                    ? 'bg-zinc-800 border-zinc-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
                 style={{ height: 44, fontSize: 16 }}
@@ -641,7 +641,7 @@ export default function EquipmentScreen({ navigation }: any) {
       >
         <View style={{ flex: 1, backgroundColor: colors.modalBackground }}>
           <View
-            className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+            className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
           >
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowEditPlate(null)}>
@@ -697,7 +697,7 @@ export default function EquipmentScreen({ navigation }: any) {
                     autoFocus
                     className={`px-3 border rounded-lg ${
                       isDark
-                        ? 'bg-gray-800 border-gray-600 text-white'
+                        ? 'bg-zinc-800 border-zinc-600 text-white'
                         : 'bg-white border-gray-300 text-gray-900'
                     }`}
                     style={{ height: 44, fontSize: 16 }}

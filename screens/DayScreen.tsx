@@ -1684,7 +1684,7 @@ export default function DayScreen({ navigation, route }: any) {
             placeholderTextColor={colors.textSecondary}
             className={`px-4 py-3 border rounded-lg mb-4 ${
               isDark
-                ? 'bg-gray-700 border-gray-600 text-white'
+                ? 'bg-zinc-700 border-zinc-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
             }`}
             returnKeyType="done"

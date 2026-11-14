@@ -556,7 +556,7 @@ function ActivityForm(
               numberOfLines={3}
               className={`px-4 py-3 border rounded-lg text-base ${
                 isDark
-                  ? 'bg-gray-800 border-gray-600 text-white'
+                  ? 'bg-zinc-800 border-zinc-600 text-white'
                   : 'bg-white border-gray-300 text-gray-900'
               }`}
               textAlignVertical="top"
@@ -587,7 +587,7 @@ function ActivityForm(
                 }}
                 className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600'
+                    ? 'bg-zinc-800 border-zinc-600'
                     : 'bg-white border-gray-300'
                 }`}
               >
@@ -640,7 +640,7 @@ function ActivityForm(
                           : '#d1d5db',
                       backgroundColor: isSelected
                         ? isDark
-                          ? '#23263a'
+                          ? colors.surfaceSecondary
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
@@ -712,7 +712,7 @@ function ActivityForm(
                           : '#d1d5db',
                       backgroundColor: isSelected
                         ? isDark
-                          ? '#23263a'
+                          ? colors.surfaceSecondary
                           : '#e0e7ff'
                         : isDark
                           ? '#1a1a1a'
@@ -822,7 +822,7 @@ function ActivityForm(
                             onPress={() => setDurationPickerSetId(set.id)}
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
-                                ? 'bg-gray-700 border-gray-600'
+                                ? 'bg-zinc-700 border-zinc-600'
                                 : 'bg-white border-gray-300'
                             }`}
                             style={{ minHeight: 42 }}
@@ -853,7 +853,7 @@ function ActivityForm(
                             placeholder="e.g. Red Heavy"
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
-                                ? 'bg-gray-700 border-gray-600 text-white'
+                                ? 'bg-zinc-700 border-zinc-600 text-white'
                                 : 'bg-white border-gray-300 text-gray-900'
                             }`}
                             placeholderTextColor={colors.textSecondary}
@@ -867,7 +867,7 @@ function ActivityForm(
                             }
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
-                                ? 'bg-gray-700 border-gray-600'
+                                ? 'bg-zinc-700 border-zinc-600'
                                 : 'bg-white border-gray-300'
                             }`}
                             style={{ minHeight: 42, justifyContent: 'center' }}
@@ -935,7 +935,7 @@ function ActivityForm(
                             }
                             className={`px-3 py-2 border rounded-lg ${
                               isDark
-                                ? 'bg-gray-700 border-gray-600 text-white'
+                                ? 'bg-zinc-700 border-zinc-600 text-white'
                                 : 'bg-white border-gray-300 text-gray-900'
                             }`}
                             placeholderTextColor={colors.textSecondary}
@@ -1029,7 +1029,7 @@ function ActivityForm(
                 onPress={() => setShowRecurringModal(true)}
                 className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
                   isDark
-                    ? 'bg-gray-800 border-gray-600'
+                    ? 'bg-zinc-800 border-zinc-600'
                     : 'bg-white border-gray-300'
                 }`}
               >
@@ -1066,7 +1066,7 @@ function ActivityForm(
                 borderColor: supersetMode ? colors.primary.main : colors.border,
                 backgroundColor: supersetMode
                   ? isDark
-                    ? '#23263a'
+                    ? colors.surfaceSecondary
                     : '#e0e7ff'
                   : colors.surface,
               }}
@@ -1151,7 +1151,9 @@ function ActivityForm(
                       paddingVertical: 10,
                       minHeight: 44,
                       borderRadius: 20,
-                      backgroundColor: isDark ? '#23263a' : '#e0e7ff',
+                      backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : '#e0e7ff',
                       borderWidth: 1,
                       borderColor: isDark
                         ? colors.primary.main + '40'
@@ -1243,12 +1245,12 @@ function ActivityForm(
           />
           {/* Bottom Sheet Content */}
           <View
-            className={`rounded-t-3xl ${isDark ? 'bg-gray-900' : 'bg-white'}`}
+            className={`rounded-t-3xl ${isDark ? 'bg-zinc-900' : 'bg-white'}`}
             style={{ paddingBottom: 32, paddingTop: 8, paddingHorizontal: 0 }}
           >
             {/* Header */}
             <View
-              className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+              className={`p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
             >
               <View className="flex-row justify-between items-center">
                 <TouchableOpacity onPress={handleDatePickerCancel}>
@@ -1274,7 +1276,7 @@ function ActivityForm(
             </View>
             {/* Selected Date Display + Today Button */}
             <View
-              className={`flex-row items-center justify-between p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+              className={`flex-row items-center justify-between p-4 border-b ${isDark ? 'border-zinc-700' : 'border-gray-200'}`}
             >
               <Text
                 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
