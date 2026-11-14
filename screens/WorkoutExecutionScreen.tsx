@@ -192,7 +192,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         {inSession && sessionControls.session && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Text style={{ flex: 1, color: colors.textSecondary }}>
-              Session on · {sessionIndex + 1} of{' '}
+              Session mode on • {sessionIndex + 1} of{' '}
               {sessionControls.session.items.length}
             </Text>
             <TouchableOpacity
@@ -203,12 +203,12 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               style={{ paddingVertical: 8 }}
             >
               <Text style={{ color: colors.primary.main }}>
-                Skip {grouped ? 'Group' : 'Activity'}
+                Skip {grouped ? 'group' : 'activity'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Turn session off"
+              accessibilityLabel="Turn session mode off"
               onPress={sessionControls.end}
               style={{ paddingVertical: 8 }}
             >

@@ -66,10 +66,10 @@ export default function StickyCompactTimer({
 
   const topPadding =
     threshold === null
-      ? 10
+      ? 0
       : scrollY.interpolate({
           inputRange: [Math.max(0, dockAt - 80), dockAt],
-          outputRange: [10, 4],
+          outputRange: [0, 4],
           extrapolate: 'clamp',
         });
 

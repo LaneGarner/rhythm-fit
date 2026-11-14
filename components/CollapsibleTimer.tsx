@@ -35,7 +35,7 @@ export default function CollapsibleTimer({
   return (
     <View className="px-4 pt-2 pb-1">
       {/* Mode Toggle */}
-      <View className="flex-row justify-center mb-1">
+      <View className="flex-row justify-center">
         <TouchableOpacity
           onPress={() => setTimerMode('countUp')}
           disabled={timer.isRunning}
