@@ -27,9 +27,17 @@ export function previewCoachCalendar(
 
   for (const operation of proposal) {
     if (!operation || typeof operation !== 'object') return;
-    const { action, ids, date, days, name, sets } = operation;
+    const { action, date, days, name, sets, sourceStart, sourceEnd } = operation;
+    let { ids } = operation;
+    if (sourceStart !== undefined || sourceEnd !== undefined) {
+      if (action !== 'copy' || ids !== undefined ||
+          !validDate(sourceStart) || !validDate(sourceEnd) ||
+          sourceStart > sourceEnd || dayjs(sourceEnd).diff(sourceStart, 'day') > 31) return;
+      ids = calendar.filter(activity => activity.date >= sourceStart && activity.date <= sourceEnd)
+        .map(activity => activity.id);
+    }
     if (!Array.isArray(ids) || !ids.length || ids.length > 200 ||
-        ids.some(id => typeof id !== 'string' || !candidates.has(id))) return;
+        ids.some((id: unknown) => typeof id !== 'string' || !candidates.has(id))) return;
     const selected = new Set(ids);
     const source = calendar.filter(activity => selected.has(activity.id));
     if (source.length !== selected.size) return;
@@ -63,7 +71,8 @@ export function previewCoachCalendar(
       const destination = date ?? (days === undefined ? activity.date : dayjs(activity.date).add(days, 'day').format('YYYY-MM-DD'));
       if (action === 'copy') {
         const key = JSON.stringify([activity.id, destination]);
-        if (copies.has(key) || !validDate(destination)) return;
+        if (!validDate(destination) || destination === activity.date) return;
+        if (copies.has(key)) continue;
         copies.add(key);
         let supersetId: string | undefined;
         if (activity.supersetId) {
