@@ -36,11 +36,7 @@ export default function WorkoutExecutionSets({
   const groupLabel = getSupersetLabel(activities.length);
   return (
     <View>
-      <WorkoutSetSummary
-        label={grouped ? 'Rounds' : 'Sets'}
-        completed={completed}
-        total={units.length}
-      />
+      <WorkoutSetSummary completed={completed} total={units.length} />
       {units.map((unit, position) => (
         <ReAnimated.View
           key={unit.id}
