@@ -1,5 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import {
   Alert,
   Animated,
@@ -17,8 +16,7 @@ interface StickyCompactTimerProps {
   activityName: string;
   scrollY: Animated.Value;
   onSkipRest?: () => void;
-  clockTop: number | null;
-  headerHeight: number;
+  threshold: number | null;
 }
 
 export default function StickyCompactTimer({
@@ -26,8 +24,7 @@ export default function StickyCompactTimer({
   activityName,
   scrollY,
   onSkipRest,
-  clockTop,
-  headerHeight,
+  threshold,
 }: StickyCompactTimerProps) {
   const { colors } = useTheme();
   const { fontScale } = useWindowDimensions();
@@ -41,22 +38,6 @@ export default function StickyCompactTimer({
     resetTimer,
     formatTime,
   } = useTimer();
-
-  const threshold =
-    clockTop === null ? 1 : Math.max(1, clockTop - headerHeight);
-  const [isSticky, setIsSticky] = useState(false);
-  const lastScroll = useRef(0);
-
-  useEffect(() => {
-    setIsSticky(lastScroll.current >= threshold);
-    const id = scrollY.addListener(({ value }) => {
-      lastScroll.current = value;
-      setIsSticky(value >= threshold);
-    });
-    return () => scrollY.removeListener(id);
-  }, [scrollY, threshold]);
-
-  if (clockTop === null) return null;
 
   const isTimerOwner = timer.activityId === activityId;
   const isTimerRunning = isTimerOwner && timer.isRunning;
@@ -73,11 +54,24 @@ export default function StickyCompactTimer({
         timerSeconds < timer.emomIntervalSeconds &&
         timerSeconds > 0));
 
-  const opacity = scrollY.interpolate({
-    inputRange: [threshold - 0.001, threshold],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
+  const dockAt = Math.max(1, threshold ?? 1);
+  const digitsSize =
+    threshold === null
+      ? 72
+      : scrollY.interpolate({
+          inputRange: [Math.max(0, dockAt - 80), dockAt],
+          outputRange: [72, 32],
+          extrapolate: 'clamp',
+        });
+
+  const topPadding =
+    threshold === null
+      ? 10
+      : scrollY.interpolate({
+          inputRange: [Math.max(0, dockAt - 80), dockAt],
+          outputRange: [10, 4],
+          extrapolate: 'clamp',
+        });
 
   const handleStart = () => {
     const success = startTimer(activityId, activityName);
@@ -99,35 +93,21 @@ export default function StickyCompactTimer({
   return (
     <Animated.View
       style={{
-        position: 'absolute',
-        top: headerHeight - 2,
-        left: 0,
-        right: 0,
-        zIndex: 99,
-        opacity,
         backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        paddingVertical: 10,
+        paddingTop: topPadding,
+        paddingBottom: 10,
         paddingHorizontal: 16,
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 4,
       }}
-      accessibilityElementsHidden={!isSticky}
-      importantForAccessibility={isSticky ? 'auto' : 'no-hide-descendants'}
-      pointerEvents={isSticky ? 'auto' : 'none'}
     >
       <View
         style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}
       >
-        <Ionicons
-          name="timer-outline"
-          size={24}
-          color={colors.textSecondary}
-          style={{ marginRight: 6 }}
-        />
         <TimerDigits
+          animatedSize={digitsSize}
           compact
           value={formatTime(
             isTimerOwner

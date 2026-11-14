@@ -202,7 +202,9 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               }}
               style={{ paddingVertical: 8 }}
             >
-              <Text style={{ color: colors.primary.main }}>Skip for now</Text>
+              <Text style={{ color: colors.primary.main }}>
+                Skip {grouped ? 'Group' : 'Activity'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"

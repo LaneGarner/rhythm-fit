@@ -36,12 +36,17 @@ export default function WorkoutExecutionSets({
   const groupLabel = getSupersetLabel(activities.length);
   return (
     <View>
-      <WorkoutSetSummary completed={completed} total={units.length} />
+      {units.length === 0 && (
+        <WorkoutSetSummary completed={completed} total={0} />
+      )}
       {units.map((unit, position) => (
         <ReAnimated.View
           key={unit.id}
-          layout={reduceMotion ? undefined : LinearTransition.duration(300)}
+          layout={reduceMotion ? undefined : LinearTransition.duration(150)}
         >
+          {position === 0 && (
+            <WorkoutSetSummary completed={completed} total={units.length} />
+          )}
           {position === firstCompleted && (
             <CompletedDivider count={completed} />
           )}

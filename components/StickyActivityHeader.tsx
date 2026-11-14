@@ -10,10 +10,11 @@ interface StickyActivityHeaderProps {
   subtitle: string;
   badge?: string;
   scrollY: Animated.Value;
+  opacity?: Animated.AnimatedInterpolation<number>;
   onLayout?: (event: LayoutChangeEvent) => void;
 }
 
-const COLLAPSE_THRESHOLD = 80;
+export const COLLAPSE_THRESHOLD = 80;
 
 /**
  * Sticky compact header - renders OUTSIDE the ScrollView, fixed below nav header
@@ -22,6 +23,7 @@ export function StickyCompactHeader({
   title,
   scrollY,
   onLayout,
+  opacity,
 }: StickyActivityHeaderProps) {
   const { colors } = useTheme();
 
@@ -40,11 +42,9 @@ export function StickyCompactHeader({
         left: 0,
         right: 0,
         zIndex: 100,
-        opacity: stickyOpacity,
+        opacity: opacity ?? stickyOpacity,
         backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        paddingVertical: 10,
+        paddingTop: 8,
         paddingHorizontal: 16,
       }}
       pointerEvents="none"

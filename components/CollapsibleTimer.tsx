@@ -1,23 +1,17 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
-  Alert,
   Keyboard,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import TimerDigits from './TimerDigits';
 import { useTimer } from '../context/TimerContext';
 import { useTheme } from '../theme/ThemeContext';
 
 interface CollapsibleTimerProps {
   activityId: string;
-  onSkipRest?: () => void;
-  activityName: string;
-  onClockLayout?: (clock: View) => void;
   restToggle?: {
     enabled: boolean;
     onToggle: (value: boolean) => void;
@@ -26,84 +20,22 @@ interface CollapsibleTimerProps {
 
 export default function CollapsibleTimer({
   activityId,
-  activityName,
-  onClockLayout,
   restToggle,
-  onSkipRest,
 }: CollapsibleTimerProps) {
-  const clockRef = useRef<View>(null);
   const { colors } = useTheme();
-  const { fontScale } = useWindowDimensions();
-  const actionButtonWidth = Math.ceil(52 + 64 * fontScale);
-
   const {
     timer,
-    startTimer,
-    switchTimer,
-    pauseTimer,
-    resumeTimer,
-    resetTimer,
     setTimerMode,
     setTargetSeconds,
     setEmomInterval,
     setEmomRounds,
-    formatTime,
   } = useTimer();
-
-  // Check if this activity owns the timer
   const isTimerOwner = timer.activityId === activityId;
-  const isTimerRunning = isTimerOwner && timer.isRunning;
-  const timerSeconds = isTimerOwner ? timer.seconds : 0;
-
-  const handleStartTimer = () => {
-    const success = startTimer(activityId, activityName);
-    if (!success) {
-      Alert.alert(
-        'Timer Already Running',
-        `You have a timer running for "${timer.activityName}". Only one timer can run at a time.`,
-        [
-          { text: 'Keep Current Timer', style: 'cancel' },
-          {
-            text: 'Switch to This Activity',
-            onPress: () => {
-              switchTimer(activityId, activityName);
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  const handlePauseTimer = () => {
-    pauseTimer();
-  };
-
-  const handleResumeTimer = () => {
-    resumeTimer();
-  };
-
-  const handleResetTimer = () => {
-    resetTimer();
-  };
-
-  const isPaused =
-    isTimerOwner &&
-    !timer.isRunning &&
-    ((timer.mode === 'countUp' && timerSeconds > 0) ||
-      (timer.mode === 'countDown' &&
-        timerSeconds < timer.targetSeconds &&
-        timerSeconds > 0) ||
-      (timer.mode === 'emom' &&
-        timer.emomCurrentRound > 0 &&
-        timerSeconds < timer.emomIntervalSeconds &&
-        timerSeconds > 0));
-
-  const showResumeButton = isPaused;
 
   return (
-    <View className="px-4 pt-2 pb-4">
+    <View className="px-4 pt-2 pb-1">
       {/* Mode Toggle */}
-      <View className="flex-row justify-center mb-4">
+      <View className="flex-row justify-center mb-1">
         <TouchableOpacity
           onPress={() => setTimerMode('countUp')}
           disabled={timer.isRunning}
@@ -345,9 +277,7 @@ export default function CollapsibleTimer({
               editable={!timer.isRunning}
               accessibilityState={{ disabled: timer.isRunning }}
               value={
-                timer.emomTotalRounds > 0
-                  ? String(timer.emomTotalRounds)
-                  : ''
+                timer.emomTotalRounds > 0 ? String(timer.emomTotalRounds) : ''
               }
               onChangeText={text => {
                 setEmomRounds(parseInt(text) || 0);
@@ -378,37 +308,15 @@ export default function CollapsibleTimer({
       )}
 
       {/* Round indicator (EMOM while running/paused) */}
-      {timer.mode === 'emom' &&
-        isTimerOwner &&
-        timer.emomCurrentRound > 0 && (
-          <Text
-            className="text-center text-base font-semibold mb-1"
-            style={{ color: colors.textSecondary }}
-            accessibilityLabel={`Round ${timer.emomCurrentRound} of ${timer.emomTotalRounds}`}
-          >
-            Round {timer.emomCurrentRound} of {timer.emomTotalRounds}
-          </Text>
-        )}
-
-      <View
-        ref={clockRef}
-        collapsable={false}
-        onLayout={() => {
-          if (clockRef.current) onClockLayout?.(clockRef.current);
-        }}
-      >
-        <TimerDigits
-          value={formatTime(
-            isTimerOwner
-              ? timerSeconds
-              : timer.mode === 'countDown'
-                ? timer.targetSeconds
-                : timer.mode === 'emom'
-                  ? timer.emomIntervalSeconds
-                  : 0
-          )}
-        />
-      </View>
+      {timer.mode === 'emom' && isTimerOwner && timer.emomCurrentRound > 0 && (
+        <Text
+          className="text-center text-base font-semibold mb-1"
+          style={{ color: colors.textSecondary }}
+          accessibilityLabel={`Round ${timer.emomCurrentRound} of ${timer.emomTotalRounds}`}
+        >
+          Round {timer.emomCurrentRound} of {timer.emomTotalRounds}
+        </Text>
+      )}
 
       {/* Show notice if timer is running on another activity */}
       {timer.isRunning && !isTimerOwner && (
@@ -419,82 +327,6 @@ export default function CollapsibleTimer({
           Timer running on: {timer.activityName}
         </Text>
       )}
-
-      <View className="flex-row justify-center space-x-4">
-        {!isTimerRunning ? (
-          <TouchableOpacity
-            onPress={
-              showResumeButton ? handleResumeTimer : handleStartTimer
-            }
-            className="px-6 py-2 rounded-lg"
-            style={{
-              width: actionButtonWidth,
-              alignItems: 'center',
-              backgroundColor: colors.surface,
-              borderWidth: 2,
-              borderColor: colors.success.main,
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={
-              showResumeButton ? 'Resume timer' : 'Start timer'
-            }
-          >
-            <Text
-              className="font-semibold"
-              style={{ color: colors.success.main }}
-            >
-              {showResumeButton ? 'Resume' : 'Start'}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={handlePauseTimer}
-            className="px-6 py-2 rounded-lg"
-            style={{
-              width: actionButtonWidth,
-              alignItems: 'center',
-              backgroundColor: colors.surface,
-              borderWidth: 2,
-              borderColor: colors.warning.main,
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Pause timer"
-          >
-            <Text
-              className="font-semibold"
-              style={{ color: colors.warning.main }}
-            >
-              Pause
-            </Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={onSkipRest ?? handleResetTimer}
-          disabled={!isTimerOwner}
-          className="px-6 py-2 rounded-lg"
-          style={{
-            width: actionButtonWidth,
-            alignItems: 'center',
-            backgroundColor: colors.surface,
-            borderWidth: 2,
-            borderColor: isTimerOwner ? colors.error.main : colors.border,
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={onSkipRest ? 'Skip rest' : 'Reset timer'}
-          accessibilityState={{ disabled: !isTimerOwner }}
-        >
-          <Text
-            className="font-semibold"
-            style={{
-              color: isTimerOwner
-                ? colors.error.main
-                : colors.textSecondary,
-            }}
-          >
-            {onSkipRest ? 'Skip' : 'Reset'}
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       {restToggle && (
         <View
@@ -509,10 +341,7 @@ export default function CollapsibleTimer({
               >
                 Auto rest countdown
               </Text>
-              <Text
-                className="text-sm"
-                style={{ color: colors.textSecondary }}
-              >
+              <Text className="text-sm" style={{ color: colors.textSecondary }}>
                 Start automatically after completed sets
               </Text>
             </View>
