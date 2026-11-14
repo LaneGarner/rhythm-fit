@@ -1,3 +1,7 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { useContext } from 'react';
+import { BottomTabBarHeightContext } from 'react-native-bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSavedCoachEquipment } from '../services/equipmentService';
 import { buildCoachPersonalContext } from '../services/coachPersonalContext';
 import {
@@ -39,7 +43,6 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import AppHeader, { AppHeaderTitle } from '../components/AppHeader';
 import { ChatSuggestions } from '../components/ChatSuggestions';
-import { StreamingText } from '../components/StreamingText';
 import { WorkoutContentWithLinks } from '../components/WorkoutContentWithLinks';
 import {
   getBackendConfigErrorMessage,
@@ -58,7 +61,6 @@ import { createActivitiesFromRequest } from '../services/activityScheduler';
 import { generateAndSchedulePlan } from '../services/planGenerationService';
 import { AppDispatch, RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
-import { useTabBarInset } from '../hooks/useTabBarInset';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
 import { useCoachProfile } from '../context/CoachProfileContext';
@@ -111,7 +113,14 @@ export default function CoachScreen({ navigation, route }: any) {
 
   // The native tab bar floats over content; lift the input composer above it,
   // but collapse that inset while the keyboard is open so there's no gap.
-  const tabBarInset = useTabBarInset();
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
+  const measuredTabBar = useContext(BottomTabBarHeightContext) ?? 0;
+  const { bottom } = useSafeAreaInsets();
+  const usesClassicTabBar =
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const composerInset = usesClassicTabBar
+    ? 8
+    : (measuredTabBar > 0 ? measuredTabBar : 49 + bottom) + 8;
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', () =>
@@ -759,6 +768,7 @@ export default function CoachScreen({ navigation, route }: any) {
   }, []);
 
   const startNewChat = () => {
+    setSuggestionsDismissed(false);
     // Abort any in-flight stream
     if (streamAbortRef.current) {
       streamAbortRef.current.abort();
@@ -1184,14 +1194,7 @@ export default function CoachScreen({ navigation, route }: any) {
                         </Text>
                       </View>
                     )}
-                    {message.id === streamingMessageId ? (
-                      <StreamingText text={message.text} isDark={isDark} />
-                    ) : (
-                      <WorkoutContentWithLinks
-                        text={message.text}
-                        isDark={isDark}
-                      />
-                    )}
+                    <WorkoutContentWithLinks text={message.text} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1235,14 +1238,17 @@ export default function CoachScreen({ navigation, route }: any) {
 
           <ChatSuggestions
             onSuggestionPress={handleSuggestionPress}
-            visible={!isProcessing && messages.length <= 1}
+            onDismiss={() => setSuggestionsDismissed(true)}
+            visible={
+              !suggestionsDismissed && !isProcessing && messages.length <= 1
+            }
           />
 
           <View
             style={{
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
-              paddingBottom: keyboardVisible ? 16 : tabBarInset,
+              paddingBottom: keyboardVisible ? 16 : composerInset,
             }}
             className="p-4 border-t"
           >

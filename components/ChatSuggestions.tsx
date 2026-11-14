@@ -10,6 +10,7 @@ import { useTheme } from '../theme/ThemeContext';
 interface ChatSuggestionsProps {
   onSuggestionPress: (suggestion: string) => void;
   visible?: boolean;
+  onDismiss: () => void;
 }
 
 // Fallback suggestions in case API fails
@@ -28,7 +29,7 @@ const FALLBACK_SUGGESTIONS = [
 let cachedSuggestions: string[] | null = null;
 
 export const ChatSuggestions = (props: ChatSuggestionsProps) => {
-  const { onSuggestionPress, visible = true } = props;
+  const { onSuggestionPress, onDismiss, visible = true } = props;
   const { colors } = useTheme();
   const [refreshKey, setRefreshKey] = useState(0);
   const [allSuggestions, setAllSuggestions] = useState<string[]>(
@@ -157,6 +158,19 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
             </TouchableOpacity>
           </View>
         </ScrollView>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss suggested prompts"
+          onPress={onDismiss}
+          style={{
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="close" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
     </View>
   );
