@@ -103,6 +103,10 @@ function ActivityForm(
     }
     return [];
   });
+  const [bulkEdit, setBulkEdit] = useState<{
+    setId: string;
+    original: Partial<Pick<SetData, 'weight' | 'reps' | 'time'>>;
+  } | null>(null);
   const [selectedDate, setSelectedDate] = useState(
     initialActivity?.date ? dayjs(initialActivity.date).toDate() : new Date()
   );
@@ -345,6 +349,60 @@ function ActivityForm(
     setSets(sets.map(set => (set.id === setId ? { ...set, ...updates } : set)));
   };
 
+  const confirmSetField = (
+    setId: string,
+    field: 'weight' | 'reps' | 'time',
+    value: number | undefined
+  ) => {
+    const set = sets.find(item => item.id === setId);
+    if (!set) return;
+
+    if (mode === 'edit') {
+      setBulkEdit(previous => {
+        const current = previous?.setId === setId ? previous : null;
+        if ((set[field] || undefined) === value) return current;
+
+        const original = current?.original ?? {};
+        if (field in original) return current;
+        return {
+          setId,
+          original: { ...original, [field]: set[field] || undefined },
+        };
+      });
+    }
+
+    handleUpdateSet(setId, { [field]: value });
+  };
+
+  const bulkSource = sets.find(set => set.id === bulkEdit?.setId);
+  const bulkFields = (['weight', 'reps', 'time'] as const).filter(field => {
+    return (
+      sets.length > 1 &&
+      bulkEdit &&
+      bulkSource &&
+      trackingFields.includes(field) &&
+      field in bulkEdit.original &&
+      bulkSource[field] !== bulkEdit.original[field] &&
+      sets.some(set => set[field] !== bulkSource[field])
+    );
+  });
+  const bulkValues = bulkFields.map(field => {
+    const value = bulkSource?.[field];
+    if (value == null) {
+      return { weight: 'no weight', reps: 'no reps', time: 'no time' }[field];
+    }
+    if (field === 'time') return secondsToTimeString(value);
+    return field === 'weight' ? `${value} lb` : `${value} reps`;
+  });
+
+  const applyToAllSets = () => {
+    if (!bulkSource || !bulkFields.length) return;
+    const updates: Partial<SetData> = {};
+    for (const field of bulkFields) updates[field] = bulkSource[field];
+    setSets(previous => previous.map(set => ({ ...set, ...updates })));
+    setBulkEdit(null);
+  };
+
   const handleDuplicateSet = (setToDuplicate: SetData) => {
     const newSet: SetData = {
       id: Date.now().toString(),
@@ -359,6 +417,7 @@ function ActivityForm(
   };
 
   const handleDeleteSet = (setId: string) => {
+    if (bulkEdit?.setId === setId || sets.length <= 2) setBulkEdit(null);
     setSets(sets.filter(set => set.id !== setId));
   };
 
@@ -694,9 +753,8 @@ function ActivityForm(
             {sets.map((set, index) => (
               <View
                 key={set.id}
-                className={`p-4 rounded-lg mb-3 ${
-                  isDark ? 'bg-gray-800' : 'bg-white'
-                } shadow-sm`}
+                className="p-4 rounded-lg mb-3 shadow-sm"
+                style={{ backgroundColor: colors.cardBackground }}
               >
                 <Text
                   className={`text-lg font-semibold mb-3 ${
@@ -901,6 +959,29 @@ function ActivityForm(
                     );
                   })}
                 </View>
+                {bulkSource?.id === set.id && bulkFields.length > 0 && (
+                  <TouchableOpacity
+                    onPress={applyToAllSets}
+                    accessibilityRole="button"
+                    style={{
+                      minHeight: 44,
+                      justifyContent: 'center',
+                      marginTop: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      backgroundColor: colors.surfaceSecondary,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.primary.main,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {`Apply ${bulkValues.join(' and ')} to all ${sets.length} sets`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <View className="flex-row space-x-3 mt-3">
                   <TouchableOpacity
                     onPress={() => handleDuplicateSet(set)}
@@ -1263,7 +1344,7 @@ function ActivityForm(
         }
         onConfirm={seconds => {
           if (durationPickerSetId) {
-            handleUpdateSet(durationPickerSetId, { time: seconds });
+            confirmSetField(durationPickerSetId, 'time', seconds);
           }
           setDurationPickerSetId(null);
         }}
@@ -1285,9 +1366,7 @@ function ActivityForm(
         stepOptions={wheelTarget?.field === 'weight' ? [2.5, 5, 10] : undefined}
         onConfirm={nextValue => {
           if (wheelTarget) {
-            handleUpdateSet(wheelTarget.setId, {
-              [wheelTarget.field]: nextValue,
-            });
+            confirmSetField(wheelTarget.setId, wheelTarget.field, nextValue);
           }
           setWheelTarget(null);
         }}
@@ -1305,7 +1384,7 @@ function ActivityForm(
         }
         onSelectWeight={weight => {
           if (plateCalcSetId) {
-            handleUpdateSet(plateCalcSetId, { weight });
+            confirmSetField(plateCalcSetId, 'weight', weight);
           }
           setPlateCalcSetId(null);
         }}
