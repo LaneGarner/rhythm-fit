@@ -21,6 +21,8 @@ export default {
       supportsTablet: true,
       requireFullScreen: false,
       infoPlist: {
+        NSBluetoothAlwaysUsageDescription:
+          'Rhythm uses Bluetooth to start and stop timers on your workout timer.',
         ITSAppUsesNonExemptEncryption: false,
         RCTAsyncStorageExcludeFromBackup: false,
         UIBackgroundModes: ['remote-notification'],

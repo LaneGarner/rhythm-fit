@@ -1,0 +1,6 @@
+{
+  "name": "rogue-timer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bluetooth control for Rogue Home Timer 2.0"
+}

@@ -10,6 +10,7 @@ import React, {
 import { Alert, AppState, AppStateStatus, Vibration } from 'react-native';
 import type { AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import { rogueTimer } from '../modules/rogue-timer';
 import { usePreferences } from './PreferencesContext';
 import {
   cancelTimerCompletion,
@@ -86,7 +87,55 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const finishAlertRef = useRef<string | null>(null);
-  const { timerVibration, timerSound, notificationSettings } = usePreferences();
+  const {
+    timerVibration,
+    timerSound,
+    notificationSettings,
+    rogueTimerEnabled,
+  } = usePreferences();
+
+  const rogueDeadline =
+    rogueTimerEnabled &&
+    timer.mode === 'countDown' &&
+    timer.isRunning &&
+    timer.startedAt !== null &&
+    timer.targetSeconds > 0
+      ? timer.startedAt + timer.targetSeconds * 1000
+      : null;
+  const rogueCountUpStartedAt =
+    rogueTimerEnabled && timer.mode === 'countUp' && timer.isRunning
+      ? timer.startedAt
+      : null;
+  useEffect(() => {
+    const subscription = rogueTimer?.addListener(
+      'onTimerChoices',
+      ({ devices }) => {
+        Alert.alert(
+          'Choose a workout timer',
+          'Match the device identifier, or bring only your timer into range.',
+          [
+            ...devices.map(({ id, name }) => ({
+              text: `${name} · ${id.slice(-4)}`,
+              onPress: () => rogueTimer?.selectTimer(id).catch(console.warn),
+            })),
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
+    );
+    return () => subscription?.remove();
+  }, []);
+
+  const hadExternalTimer = useRef(false);
+  useEffect(() => {
+    const active = rogueDeadline !== null || rogueCountUpStartedAt !== null;
+    if (!active && !hadExternalTimer.current) return;
+    hadExternalTimer.current = active;
+    rogueTimer
+      ?.setWorkoutTimer(rogueDeadline, rogueCountUpStartedAt !== null)
+      .catch(console.warn);
+  }, [rogueDeadline, rogueCountUpStartedAt]);
+
   const timerVibrationRef = useRef(timerVibration);
   const timerSoundRef = useRef(timerSound);
   const notificationSettingsRef = useRef(notificationSettings);

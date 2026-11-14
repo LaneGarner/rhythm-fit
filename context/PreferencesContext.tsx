@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
   useContext,
@@ -32,6 +33,8 @@ import {
   updatePreferences,
 } from '../services/preferencesService';
 
+const ROGUE_TIMER_KEY = 'rhythm.rogueTimerEnabled';
+
 interface PreferencesContextProps {
   firstDayOfWeek: WeekStartDay;
   setFirstDayOfWeek: (day: WeekStartDay) => void;
@@ -39,6 +42,8 @@ interface PreferencesContextProps {
   setAutoRestTimer: (enabled: boolean) => void;
   timerVibration: boolean;
   setTimerVibration: (enabled: boolean) => void;
+  rogueTimerEnabled: boolean;
+  setRogueTimerEnabled: (enabled: boolean) => void;
   timerSound: boolean;
   setTimerSound: (enabled: boolean) => void;
   liveActivity: boolean;
@@ -55,6 +60,8 @@ export const PreferencesContext = createContext<PreferencesContextProps>({
   setAutoRestTimer: () => {},
   timerVibration: true,
   setTimerVibration: () => {},
+  rogueTimerEnabled: false,
+  setRogueTimerEnabled: () => {},
   timerSound: true,
   setTimerSound: () => {},
   liveActivity: true,
@@ -72,6 +79,23 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [autoRestTimer, setAutoRestTimerState] = useState(false);
   const [timerVibration, setTimerVibrationState] = useState(true);
+  const [rogueTimerEnabled, setRogueTimerState] = useState(false);
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(ROGUE_TIMER_KEY)
+      .then(value => {
+        if (active) setRogueTimerState(value === 'true');
+      })
+      .catch(console.warn);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const setRogueTimerEnabled = useCallback((enabled: boolean) => {
+    setRogueTimerState(enabled);
+    AsyncStorage.setItem(ROGUE_TIMER_KEY, String(enabled)).catch(console.warn);
+  }, []);
   const [timerSound, setTimerSoundState] = useState(true);
   const [liveActivity, setLiveActivityState] = useState(true);
   const [notificationSettings, setNotificationSettingsState] =
@@ -191,6 +215,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
         setAutoRestTimer: handleSetAutoRestTimer,
         timerVibration,
         setTimerVibration: handleSetTimerVibration,
+        rogueTimerEnabled,
+        setRogueTimerEnabled,
         timerSound,
         setTimerSound: handleSetTimerSound,
         liveActivity,
