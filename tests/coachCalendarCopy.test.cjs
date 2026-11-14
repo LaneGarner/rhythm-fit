@@ -20,3 +20,10 @@ test('copy a week by date range, preserving weekdays and leaving originals intac
   assert.equal(calendar[0].completed, true);
   assert.equal(previewCoachCalendar([copy], calendar, new Set(['a'])), undefined);
 });
+
+test('date ranges resolve workouts outside the IDs sent to Coach', () => {
+  const calendar = [{ id: 'a', date: '2026-11-09', name: 'Squat', completed: false }];
+  const proposal = [{ action: 'copy', sourceStart: '2026-11-09', sourceEnd: '2026-11-15', days: 7 }];
+  const patch = previewCoachCalendar(proposal, calendar, new Set(), new Set(['a']));
+  assert.equal(patch.after[0].date, '2026-11-16');
+});

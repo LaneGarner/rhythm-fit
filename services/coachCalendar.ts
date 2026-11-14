@@ -17,7 +17,8 @@ const metrics = ['reps', 'weight', 'time', 'distance'] as const;
 export function previewCoachCalendar(
   proposal: unknown,
   calendar: Activity[],
-  candidates: ReadonlySet<string>
+  candidates: ReadonlySet<string>,
+  rangeCandidates: ReadonlySet<string> = candidates
 ): CalendarPatch | undefined {
   if (!Array.isArray(proposal) || !proposal.length || proposal.length > 30) return;
   const before = new Map<string, Activity>();
@@ -29,23 +30,26 @@ export function previewCoachCalendar(
     if (!operation || typeof operation !== 'object') return;
     const { action, date, days, name, sets, sourceStart, sourceEnd } = operation;
     let { ids } = operation;
-    if (sourceStart !== undefined || sourceEnd !== undefined) {
+    const hasRange = sourceStart !== undefined || sourceEnd !== undefined;
+    const allowedIds = hasRange ? rangeCandidates : candidates;
+    if (hasRange) {
       if (action !== 'copy' || ids !== undefined ||
           !validDate(sourceStart) || !validDate(sourceEnd) ||
           sourceStart > sourceEnd || dayjs(sourceEnd).diff(sourceStart, 'day') > 31) return;
       ids = calendar.filter(activity => activity.date >= sourceStart && activity.date <= sourceEnd)
         .map(activity => activity.id);
     }
-    if (!Array.isArray(ids) || !ids.length || ids.length > 200 ||
-        ids.some((id: unknown) => typeof id !== 'string' || !candidates.has(id))) return;
+    if (!Array.isArray(ids) || !ids.length || (!hasRange && ids.length > 200) ||
+        ids.some((id: unknown) => typeof id !== 'string' || !allowedIds.has(id))) return;
     const selected = new Set(ids);
     const source = calendar.filter(activity => selected.has(activity.id));
     if (source.length !== selected.size) return;
     if (['move', 'copy', 'remove'].includes(action)) {
-      const groups = new Set(source.map(activity => activity.supersetId).filter(Boolean));
+      const groups = new Set(source.filter(activity => activity.supersetId)
+        .map(activity => JSON.stringify([activity.date, activity.supersetId])));
       for (const member of calendar) {
-        if (member.supersetId && groups.has(member.supersetId) && !selected.has(member.id)) {
-          if (!candidates.has(member.id)) return;
+        if (member.supersetId && groups.has(JSON.stringify([member.date, member.supersetId])) && !selected.has(member.id)) {
+          if (!allowedIds.has(member.id)) return;
           source.push(member);
         }
       }
@@ -76,8 +80,9 @@ export function previewCoachCalendar(
         copies.add(key);
         let supersetId: string | undefined;
         if (activity.supersetId) {
-          supersetId = groups.get(activity.supersetId) ?? Crypto.randomUUID();
-          groups.set(activity.supersetId, supersetId);
+          const groupKey = JSON.stringify([activity.date, activity.supersetId]);
+          supersetId = groups.get(groupKey) ?? Crypto.randomUUID();
+          groups.set(groupKey, supersetId);
         }
         const copy = { ...activity, id: Crypto.randomUUID(), date: destination, completed: false,
           recurring: undefined, supersetId,
