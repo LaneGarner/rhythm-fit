@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useSelector } from 'react-redux';
 import { usePreferences } from '../context/PreferencesContext';
-import { RootState } from '../redux/store';
+import { RootState, store } from '../redux/store';
 import {
   evaluateAndScheduleNotifications,
   getPermissionStatus,
+  reconcileUnfinishedWorkouts,
 } from '../services/notifications';
 
 // Debounced re-evaluation of scheduled notifications on activity/preference
@@ -31,6 +32,14 @@ export function useNotificationScheduler() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  }, [activities, notificationSettings, isLoading]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    void reconcileUnfinishedWorkouts(
+      () => store.getState().activities.data,
+      notificationSettings.enabled && notificationSettings.unfinishedWorkout
+    );
   }, [activities, notificationSettings, isLoading]);
 
   // Re-evaluate when app returns to foreground (day may have rolled over,

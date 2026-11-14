@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -36,8 +37,13 @@ import {
 } from '../services/legalLinks';
 
 export default function SettingsScreen({ navigation }: any) {
+  const appVersion = Constants.expoConfig?.version;
   const { themePreference, setThemePreference, colorScheme, colors } =
     useTheme();
+  const isDark = colorScheme === 'dark';
+  const cardColor = isDark ? colors.surface : colors.surfaceSecondary;
+  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
+  const chevronColor = isDark ? colors.textSecondary : colors.textTertiary;
   const { user, signOut, isConfigured, getAccessToken } = useAuth();
   const {
     firstDayOfWeek,
@@ -316,7 +322,7 @@ export default function SettingsScreen({ navigation }: any) {
               <View style={{ marginBottom: 32 }}>
                 <View
                   style={{
-                    backgroundColor: colors.surfaceSecondary,
+                    backgroundColor: cardColor,
                     borderRadius: 10,
                     overflow: 'hidden',
                   }}
@@ -344,32 +350,21 @@ export default function SettingsScreen({ navigation }: any) {
                   />
                   <TouchableOpacity
                     hitSlop={14}
-                    className="p-4"
-                    onPress={handleLogout}
-                  >
-                    <Text className="text-red-500 text-center font-medium">
-                      Sign Out
-                    </Text>
-                  </TouchableOpacity>
-                  <View
-                    style={{
-                      height: 0.5,
-                      backgroundColor: colors.border,
-                      marginLeft: 16,
-                    }}
-                  />
-                  <TouchableOpacity
-                    hitSlop={14}
-                    className="p-4"
+                    className="p-4 flex-row items-center justify-between"
                     onPress={() => openLink(MANAGE_SUBSCRIPTIONS_URL)}
                     accessibilityRole="link"
                   >
                     <Text
-                      className="text-center font-medium"
-                      style={{ color: colors.primary.main }}
+                      className="flex-1 font-medium"
+                      style={{ color: actionColor }}
                     >
-                      Manage Apple Subscription
+                      Manage Subscription
                     </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={chevronColor}
+                    />
                   </TouchableOpacity>
                   <View
                     style={{
@@ -381,26 +376,45 @@ export default function SettingsScreen({ navigation }: any) {
                   <TouchableOpacity
                     hitSlop={14}
                     className="p-4"
-                    onPress={confirmAccountDeletion}
-                    disabled={isDeletingAccount}
+                    onPress={handleLogout}
                     accessibilityRole="button"
-                    accessibilityLabel="Delete account"
-                    accessibilityState={{ disabled: isDeletingAccount }}
-                    style={{ opacity: isDeletingAccount ? 0.6 : 1 }}
                   >
-                    <Text className="text-red-500 text-center font-medium">
-                      {isDeletingAccount
-                        ? 'Deleting Account…'
-                        : 'Delete Account'}
+                    <Text
+                      className="text-red-500 font-medium"
+                      style={isDark ? { color: '#fca5a5' } : undefined}
+                    >
+                      Sign Out
                     </Text>
                   </TouchableOpacity>
                 </View>
+                <TouchableOpacity
+                  hitSlop={14}
+                  className="p-4"
+                  onPress={confirmAccountDeletion}
+                  disabled={isDeletingAccount}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete account"
+                  accessibilityState={{ disabled: isDeletingAccount }}
+                  style={{
+                    backgroundColor: cardColor,
+                    borderRadius: 10,
+                    marginTop: 12,
+                    opacity: isDeletingAccount ? 0.6 : 1,
+                  }}
+                >
+                  <Text
+                    className="text-red-500 font-medium"
+                    style={isDark ? { color: '#fca5a5' } : undefined}
+                  >
+                    {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <View style={{ marginBottom: 32 }}>
                 <View
                   style={{
-                    backgroundColor: colors.surfaceSecondary,
+                    backgroundColor: cardColor,
                     borderRadius: 10,
                     overflow: 'hidden',
                   }}
@@ -431,7 +445,7 @@ export default function SettingsScreen({ navigation }: any) {
                     }
                   >
                     <Text
-                      style={{ color: colors.primary.main }}
+                      style={{ color: actionColor }}
                       className="text-center font-medium"
                     >
                       Sign In
@@ -458,7 +472,7 @@ export default function SettingsScreen({ navigation }: any) {
             </Text>
             <View
               style={{
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: cardColor,
                 borderRadius: 10,
                 marginBottom: 32,
                 overflow: 'hidden',
@@ -480,9 +494,8 @@ export default function SettingsScreen({ navigation }: any) {
                     className="text-sm mt-1"
                     style={{ color: colors.textSecondary }}
                   >
-                    Allow coach messages and relevant fitness context to be
-                    processed by OpenAI. Turning this off disables AI Coach
-                    requests.
+                    Share Coach messages and relevant fitness details with
+                    OpenAI for replies. Turning this off disables AI Coach.
                   </Text>
                 </View>
                 <Switch
@@ -514,7 +527,7 @@ export default function SettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: cardColor,
             borderRadius: 10,
             marginBottom: 32,
             overflow: 'hidden',
@@ -541,11 +554,7 @@ export default function SettingsScreen({ navigation }: any) {
                 Configure your barbells & plates
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={colors.textTertiary}
-            />
+            <Ionicons name="chevron-forward" size={16} color={chevronColor} />
           </TouchableOpacity>
           <View
             style={{
@@ -573,11 +582,7 @@ export default function SettingsScreen({ navigation }: any) {
                 Manage activities you've created
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={colors.textTertiary}
-            />
+            <Ionicons name="chevron-forward" size={16} color={chevronColor} />
           </TouchableOpacity>
         </View>
 
@@ -595,7 +600,7 @@ export default function SettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: cardColor,
             borderRadius: 10,
             marginBottom: 32,
             overflow: 'hidden',
@@ -620,11 +625,7 @@ export default function SettingsScreen({ navigation }: any) {
                 Find which plates to load for a target weight
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={colors.textTertiary}
-            />
+            <Ionicons name="chevron-forward" size={16} color={chevronColor} />
           </TouchableOpacity>
         </View>
 
@@ -642,7 +643,7 @@ export default function SettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: cardColor,
             borderRadius: 10,
             overflow: 'hidden',
           }}
@@ -676,7 +677,9 @@ export default function SettingsScreen({ navigation }: any) {
                   className="text-center font-medium"
                   style={{
                     color:
-                      firstDayOfWeek === 0 ? colors.textInverse : colors.text,
+                      firstDayOfWeek === 0 && !isDark
+                        ? colors.textInverse
+                        : colors.text,
                   }}
                 >
                   Sunday
@@ -702,7 +705,9 @@ export default function SettingsScreen({ navigation }: any) {
                   className="text-center font-medium"
                   style={{
                     color:
-                      firstDayOfWeek === 1 ? colors.textInverse : colors.text,
+                      firstDayOfWeek === 1 && !isDark
+                        ? colors.textInverse
+                        : colors.text,
                   }}
                 >
                   Monday
@@ -887,11 +892,7 @@ export default function SettingsScreen({ navigation }: any) {
                 Reminders, timers, and summaries
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={colors.textTertiary}
-            />
+            <Ionicons name="chevron-forward" size={16} color={chevronColor} />
           </TouchableOpacity>
           <View
             style={{
@@ -925,7 +926,7 @@ export default function SettingsScreen({ navigation }: any) {
             <Ionicons
               name="play-circle-outline"
               size={22}
-              color={colors.primary.main}
+              color={actionColor}
             />
           </TouchableOpacity>
         </View>
@@ -944,7 +945,7 @@ export default function SettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: cardColor,
             borderRadius: 10,
             overflow: 'hidden',
           }}
@@ -975,11 +976,7 @@ export default function SettingsScreen({ navigation }: any) {
                 <Text className="text-base" style={{ color: colors.text }}>
                   {label}
                 </Text>
-                <Ionicons
-                  name="open-outline"
-                  size={18}
-                  color={colors.textTertiary}
-                />
+                <Ionicons name="open-outline" size={18} color={chevronColor} />
               </TouchableOpacity>
             </React.Fragment>
           ))}
@@ -998,7 +995,7 @@ export default function SettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: cardColor,
             borderRadius: 10,
             overflow: 'hidden',
           }}
@@ -1012,13 +1009,17 @@ export default function SettingsScreen({ navigation }: any) {
             <Text className="text-base" style={{ color: colors.text }}>
               Export workout data
             </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={colors.textTertiary}
-            />
+            <Ionicons name="chevron-forward" size={18} color={chevronColor} />
           </TouchableOpacity>
         </View>
+        {appVersion && (
+          <Text
+            className="mt-6 text-center text-sm"
+            style={{ color: colors.textSecondary }}
+          >
+            Version {appVersion}
+          </Text>
+        )}
       </ScrollView>
     </View>
   );

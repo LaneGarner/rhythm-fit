@@ -1,22 +1,24 @@
 import React from 'react';
-import { Platform, Text } from 'react-native';
+import { Animated, Platform } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function TimerDigits({
   value,
   compact = false,
+  animatedSize,
 }: {
   value: string;
   compact?: boolean;
+  animatedSize?: number | Animated.AnimatedInterpolation<number>;
 }) {
   const { colors } = useTheme();
   return (
-    <Text
+    <Animated.Text
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.5}
       style={{
-        fontSize: compact ? 40 : 72,
+        fontSize: animatedSize ?? (compact ? 40 : 72),
         fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
         fontWeight: '500',
         fontVariant: ['tabular-nums'],
@@ -27,6 +29,6 @@ export default function TimerDigits({
       }}
     >
       {value}
-    </Text>
+    </Animated.Text>
   );
 }

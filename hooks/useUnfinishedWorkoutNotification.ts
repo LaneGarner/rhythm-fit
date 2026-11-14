@@ -6,6 +6,7 @@ import {
   getPermissionStatus,
   scheduleUnfinishedWorkout,
 } from '../services/notifications';
+import { store } from '../redux/store';
 import { Activity } from '../types/activity';
 
 // Shared execution reminder lifecycle for one or several activities.
@@ -22,37 +23,34 @@ export function useUnfinishedWorkoutNotifications(activities: Activity[]) {
     settingsRef.current = notificationSettings;
   }, [notificationSettings]);
 
-  // Cancel notifications as activities become completed.
-  useEffect(() => {
-    activities.forEach(a => {
-      if (a.completed) cancelUnfinishedWorkout(a.id);
-    });
-  }, [activities]);
-
-  const evaluateAndSchedule = async () => {
-    const settings = settingsRef.current;
-    if (!settings.enabled || !settings.unfinishedWorkout) return;
+  const evaluateAndSchedule = async (wasResumed: () => boolean) => {
     const status = await getPermissionStatus();
     if (status !== 'granted') return;
 
-    for (const activity of activitiesRef.current) {
-      if (activity.completed) continue;
-      const sets = activity.sets ?? [];
-      const completed = sets.filter(s => s.completed).length;
-      if (completed > 0 && completed < sets.length) {
-        await scheduleUnfinishedWorkout(activity, completed, sets.length, 30);
-      }
+    for (const { id } of activitiesRef.current) {
+      await scheduleUnfinishedWorkout(() => {
+        const settings = settingsRef.current;
+        if (!settings.enabled || !settings.unfinishedWorkout || wasResumed()) {
+          return;
+        }
+        return store
+          .getState()
+          .activities.data.find(activity => activity.id === id);
+      });
     }
   };
 
   useEffect(() => {
     const stateRef = { current: AppState.currentState as AppStateStatus };
+    let foregroundCount = 0;
     const subscription = AppState.addEventListener('change', next => {
       const was = stateRef.current;
       stateRef.current = next;
       if (was === 'active' && next.match(/inactive|background/)) {
-        evaluateAndSchedule();
+        const foregroundAtStart = foregroundCount;
+        void evaluateAndSchedule(() => foregroundCount !== foregroundAtStart);
       } else if (was.match(/inactive|background/) && next === 'active') {
+        foregroundCount += 1;
         activitiesRef.current.forEach(a => cancelUnfinishedWorkout(a.id));
       }
     });
@@ -61,7 +59,7 @@ export function useUnfinishedWorkoutNotifications(activities: Activity[]) {
 
   useEffect(() => {
     return () => {
-      evaluateAndSchedule();
+      void evaluateAndSchedule(() => false);
     };
   }, []);
 }

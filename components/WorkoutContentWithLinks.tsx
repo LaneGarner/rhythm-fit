@@ -1,146 +1,71 @@
 import React from 'react';
 import { View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
-import { getActivityTypes } from '../services/activityTypeService';
-import { getExerciseNames } from '../services/exerciseService';
+import Markdown, { MarkdownIt } from 'react-native-markdown-display';
 import { useTheme } from '../theme/ThemeContext';
-import {
-  generateYouTubeSearchQuery,
-  openYouTubeSearch,
-} from '../utils/youtube';
+
+const markdown = MarkdownIt({ typographer: false, linkify: true });
+
+function isYouTubeLink(url: string) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return ['youtube.com', 'youtu.be', 'youtube-nocookie.com'].some(
+      domain => host === domain || host.endsWith('.' + domain)
+    );
+  } catch {
+    return false;
+  }
+}
+
+interface MarkdownToken {
+  type: string;
+  markup: string;
+  content: string;
+  children: MarkdownToken[] | null;
+  attrGet(name: string): string | null;
+}
+
+markdown.core.ruler.after(
+  'linkify',
+  'remove_youtube_links',
+  (state: { tokens: MarkdownToken[] }) => {
+    for (const token of state.tokens) {
+      const children = token.children;
+      if (!children) continue;
+      for (let index = children.length - 1; index >= 0; index--) {
+        const child = children[index];
+        if (
+          child.type !== 'link_open' ||
+          !isYouTubeLink(child.attrGet('href') ?? '')
+        )
+          continue;
+        const close = children.findIndex(
+          (item, position) => position > index && item.type === 'link_close'
+        );
+        if (close < 0) continue;
+        const label = children.slice(index + 1, close);
+        const labelText = label.map(item => item.content).join('');
+        children.splice(
+          index,
+          close - index + 1,
+          ...(child.markup === 'linkify' ||
+          child.markup === 'autolink' ||
+          isYouTubeLink(labelText)
+            ? []
+            : label)
+        );
+      }
+    }
+  }
+);
 
 interface WorkoutContentWithLinksProps {
   text: string;
-  isDark?: boolean; // Kept for backward compatibility but not used
 }
 
 export const WorkoutContentWithLinks = React.memo(
   (props: WorkoutContentWithLinksProps) => {
     const { text } = props;
     const { colors } = useTheme();
-
-    // Extract exercise names for matching
-    const exerciseNames = getExerciseNames();
-    const activityTypeLabels = getActivityTypes().map(type => type.label);
-
-    // Custom link handler for YouTube links
-    const handleLinkPress = (url: string) => {
-      // Decode URL-encoded exercise names
-      const decodedUrl = decodeURIComponent(url);
-
-      // Check if this is an exercise name
-      const isExercise = exerciseNames.some(
-        name => name.toLowerCase() === decodedUrl.toLowerCase()
-      );
-      const isActivityType = activityTypeLabels.some(
-        label => label.toLowerCase() === decodedUrl.toLowerCase()
-      );
-
-      if (isExercise || isActivityType) {
-        const searchQuery = generateYouTubeSearchQuery({
-          searchTerm: decodedUrl,
-          searchType: isActivityType ? 'routine' : 'exercise',
-        });
-        openYouTubeSearch(searchQuery);
-        return false; // Prevent default link handling
-      }
-      return true; // Allow default handling for other links
-    };
-
-    // Preprocess text to convert exercise names into markdown links
-    const preprocessText = (inputText: string): string => {
-      let processedText = inputText;
-
-      // Combined terms for linking (exercises + activity types)
-      const allTerms = [...exerciseNames, ...activityTypeLabels];
-
-      // Sort by length (longest first) to avoid partial matches
-      const sortedTerms = allTerms.sort((a, b) => b.length - a.length);
-
-      // Track which terms have already been processed to avoid duplicates
-      const processedTerms = new Set<string>();
-
-      sortedTerms.forEach(term => {
-        const termLower = term.toLowerCase();
-
-        // Skip if this term was already processed
-        if (processedTerms.has(termLower)) {
-          return;
-        }
-
-        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        let hasMatches = false;
-
-        // Handle backticks `Exercise` - only first occurrence
-        const backtickPattern = '`' + escapedTerm + '`';
-        const backtickRegex = new RegExp(backtickPattern, 'i'); // Remove 'g' flag for single match
-        if (backtickRegex.test(processedText)) {
-          processedText = processedText.replace(backtickRegex, match => {
-            const exerciseName = match.slice(1, -1);
-            hasMatches = true;
-            return `[${exerciseName}](${encodeURIComponent(exerciseName)})`;
-          });
-        }
-
-        // Handle bold **Exercise** - only first occurrence
-        if (!hasMatches) {
-          const boldPattern = '\\*\\*' + escapedTerm + '\\*\\*';
-          const boldRegex = new RegExp(boldPattern, 'i'); // Remove 'g' flag for single match
-          if (boldRegex.test(processedText)) {
-            processedText = processedText.replace(boldRegex, match => {
-              const exerciseName = match.slice(2, -2);
-              hasMatches = true;
-              return `**[${exerciseName}](${encodeURIComponent(exerciseName)})**`;
-            });
-          }
-        }
-
-        // Handle brackets [Exercise] - only first occurrence
-        if (!hasMatches) {
-          const bracketPattern = '\\[' + escapedTerm + '\\](?!\\()'; // Negative lookahead to avoid existing links
-          const bracketRegex = new RegExp(bracketPattern, 'i'); // Remove 'g' flag for single match
-          if (bracketRegex.test(processedText)) {
-            processedText = processedText.replace(bracketRegex, match => {
-              const exerciseName = match.slice(1, -1);
-              hasMatches = true;
-              return `[${exerciseName}](${encodeURIComponent(exerciseName)})`;
-            });
-          }
-        }
-
-        // Handle plain text - only first occurrence
-        if (!hasMatches) {
-          const plainPattern = '\\b' + escapedTerm + '\\b(?![\\]\\)])'; // Negative lookahead to avoid existing links
-          const plainRegex = new RegExp(plainPattern, 'i'); // Remove 'g' flag for single match
-          if (plainRegex.test(processedText)) {
-            processedText = processedText.replace(plainRegex, match => {
-              // Double-check we're not inside a link
-              const beforeMatch = processedText.substring(
-                0,
-                processedText.indexOf(match)
-              );
-              const lastOpenBracket = beforeMatch.lastIndexOf('[');
-              const lastCloseBracket = beforeMatch.lastIndexOf(']');
-
-              // If we're inside unclosed brackets, skip
-              if (lastOpenBracket > lastCloseBracket) {
-                return match;
-              }
-
-              hasMatches = true;
-              return `[${match}](${encodeURIComponent(match)})`;
-            });
-          }
-        }
-
-        // Mark this term as processed if we found matches
-        if (hasMatches) {
-          processedTerms.add(termLower);
-        }
-      });
-
-      return processedText;
-    };
 
     const markdownStyles = {
       body: {
@@ -228,8 +153,8 @@ export const WorkoutContentWithLinks = React.memo(
 
     return (
       <View style={{ flex: 1 }}>
-        <Markdown style={markdownStyles} onLinkPress={handleLinkPress}>
-          {preprocessText(text)}
+        <Markdown style={markdownStyles} markdownit={markdown}>
+          {text}
         </Markdown>
       </View>
     );

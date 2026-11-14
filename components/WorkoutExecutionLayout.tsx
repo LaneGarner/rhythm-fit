@@ -1,9 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import HeaderButton from './HeaderButton';
-import { ContentHeader, StickyCompactHeader } from './StickyActivityHeader';
+import {
+  COLLAPSE_THRESHOLD,
+  ContentHeader,
+  StickyCompactHeader,
+} from './StickyActivityHeader';
 import StickyCompactTimer from './StickyCompactTimer';
 import CollapsibleTimer from './CollapsibleTimer';
 import NotesCard from './NotesCard';
@@ -15,6 +19,7 @@ export default function WorkoutExecutionLayout({
   onBack,
   onEdit,
   restToggle,
+  onSkipRest,
   children,
   notes,
   progression,
@@ -29,6 +34,7 @@ export default function WorkoutExecutionLayout({
   onBack: () => void;
   onEdit: () => void;
   restToggle?: { enabled: boolean; onToggle: (value: boolean) => void };
+  onSkipRest?: () => void;
   children: React.ReactNode;
   notes?: string;
   progression?: React.ReactNode;
@@ -37,24 +43,48 @@ export default function WorkoutExecutionLayout({
   footer?: React.ReactNode;
   testID?: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   const { insets, hasTopTabBar } = useResponsiveLayout();
-  const [expanded, setExpanded] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const contentRef = useRef<View>(null);
-  const clockRef = useRef<View | null>(null);
-  const [clockBottom, setClockBottom] = useState<number | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(42);
-  const measureClock = useCallback(() => {
-    const content = contentRef.current;
-    if (!content || !clockRef.current) return;
-    clockRef.current.measureLayout(
-      content,
-      (_x, y, _width, height) => setClockBottom(y + height),
-      () => setClockBottom(null)
-    );
-  }, []);
+  const [sectionBottom, setSectionBottom] = useState<number | null>(null);
+  const [dockedTitleHeight, setDockedTitleHeight] = useState(0);
+  const dockedTitleOpacity =
+    sectionBottom === null || sectionBottom <= 0
+      ? 0
+      : scrollY.interpolate({
+          inputRange: [sectionBottom, sectionBottom + 12],
+          outputRange: [0, 1],
+          extrapolate: 'clamp',
+        });
+
+  const dockedTitleSpace =
+    sectionBottom === null || sectionBottom <= 0
+      ? 0
+      : scrollY.interpolate({
+          inputRange: [
+            Math.max(0, sectionBottom - dockedTitleHeight - 16),
+            sectionBottom,
+          ],
+          outputRange: [0, dockedTitleHeight],
+          extrapolate: 'clamp',
+        });
+
+  const titleHandoffEnd = Math.max(
+    COLLAPSE_THRESHOLD + 13,
+    (sectionBottom ?? COLLAPSE_THRESHOLD) + 12
+  );
+  const floatingTitleOpacity = scrollY.interpolate({
+    inputRange: [
+      COLLAPSE_THRESHOLD - 12,
+      COLLAPSE_THRESHOLD,
+      titleHandoffEnd - 12,
+      titleHandoffEnd,
+    ],
+    outputRange: [0, 1, 1, 0],
+    extrapolate: 'clamp',
+  });
+
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', event =>
       setKeyboardHeight(event.endCoordinates.height)
@@ -100,22 +130,17 @@ export default function WorkoutExecutionLayout({
         <HeaderButton label="Edit" onPress={onEdit} />
       </View>
       <View style={{ flex: 1, position: 'relative' }}>
-        <StickyCompactHeader
-          title={title}
-          subtitle=""
-          scrollY={scrollY}
-          onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
-        />
-        <StickyCompactTimer
-          activityId={timerId}
-          activityName={timerName}
-          scrollY={scrollY}
-          isExpanded={expanded}
-          clockBottom={clockBottom}
-          headerHeight={headerHeight}
-        />
+        {sectionBottom !== null && sectionBottom > COLLAPSE_THRESHOLD + 12 && (
+          <StickyCompactHeader
+            title={title}
+            subtitle=""
+            scrollY={scrollY}
+            opacity={floatingTitleOpacity}
+          />
+        )}
         <Animated.ScrollView
           ref={scrollRef}
+          stickyHeaderIndices={[1]}
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingBottom: keyboardHeight ? keyboardHeight + 100 : 200,
@@ -123,28 +148,73 @@ export default function WorkoutExecutionLayout({
           keyboardShouldPersistTaps="handled"
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true }
+            { useNativeDriver: false }
           )}
           scrollEventThrottle={16}
         >
-          <View ref={contentRef} collapsable={false} onLayout={measureClock}>
+          <View
+            onLayout={({ nativeEvent: { layout } }) =>
+              setSectionBottom(layout.y + layout.height)
+            }
+            style={{
+              backgroundColor:
+                colorScheme === 'dark' ? colors.background : colors.surface,
+            }}
+          >
             <ContentHeader title={title} subtitle="" scrollY={scrollY} />
-            <View className="px-4 pt-2 pb-4" style={{ gap: 16 }}>
-              <CollapsibleTimer
-                key={timerId}
-                activityId={timerId}
-                activityName={timerName}
-                onExpandedChange={setExpanded}
-                onClockLayout={clock => {
-                  clockRef.current = clock;
-                  measureClock();
+            <CollapsibleTimer
+              key={timerId}
+              activityId={timerId}
+              restToggle={restToggle}
+            />
+          </View>
+          <View
+            style={{
+              backgroundColor:
+                colorScheme === 'dark' ? colors.background : colors.surface,
+            }}
+          >
+            <Animated.View
+              style={{
+                height: dockedTitleSpace,
+                opacity: dockedTitleOpacity,
+                overflow: 'hidden',
+              }}
+            >
+              <Text
+                accessibilityRole="header"
+                numberOfLines={1}
+                onLayout={({ nativeEvent: { layout } }) =>
+                  setDockedTitleHeight(layout.height)
+                }
+                style={{
+                  color: colors.text,
+                  fontSize: 16,
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  paddingHorizontal: 16,
+                  paddingTop: 8,
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
                 }}
-                restToggle={restToggle}
-              />
-              {children}
-              <NotesCard notes={notes || ''} />
-              {progression}
-            </View>
+              >
+                {title}
+              </Text>
+            </Animated.View>
+            <StickyCompactTimer
+              activityId={timerId}
+              activityName={timerName}
+              scrollY={scrollY}
+              threshold={sectionBottom}
+              onSkipRest={onSkipRest}
+            />
+          </View>
+          <View className="px-4 pt-4 pb-4" style={{ gap: 16 }}>
+            {children}
+            <NotesCard notes={notes || ''} />
+            {progression}
           </View>
         </Animated.ScrollView>
       </View>

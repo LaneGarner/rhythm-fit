@@ -58,7 +58,7 @@ function Choice({
   selected: boolean;
   onPress: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   return (
     <TouchableOpacity
       accessibilityRole="radio"
@@ -90,14 +90,23 @@ function Choice({
       <Ionicons
         name={selected ? 'radio-button-on' : 'radio-button-off'}
         size={22}
-        color={selected ? colors.primary.main : colors.textTertiary}
+        color={
+          colorScheme === 'dark'
+            ? selected
+              ? '#93c5fd'
+              : colors.textSecondary
+            : selected
+              ? colors.primary.main
+              : colors.textTertiary
+        }
       />
     </TouchableOpacity>
   );
 }
 export default function ExportWorkoutScreen({ navigation }: any) {
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
+  const actionColor = colorScheme === 'dark' ? '#93c5fd' : colors.primary.main;
   const { insets, hasTopTabBar } = useResponsiveLayout();
   const [source, setSource] = useState<WorkoutBackupData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +149,8 @@ export default function ExportWorkoutScreen({ navigation }: any) {
     [source, range, invalid]
   );
   const panel = {
-    backgroundColor: colors.surfaceSecondary,
+    backgroundColor:
+      colorScheme === 'dark' ? colors.surface : colors.surfaceSecondary,
     borderRadius: 10,
     overflow: 'hidden' as const,
   };
@@ -166,7 +176,10 @@ export default function ExportWorkoutScreen({ navigation }: any) {
           borderBottomColor: colors.border,
         }}
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        <HeaderButton
+          label="Back"
+          onPress={() => navigation.goBack()}
+        />
         <Text
           accessibilityRole="header"
           style={{
@@ -216,7 +229,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
                   <Text style={{ color: colors.text }}>
                     {key === 'from' ? 'Start date' : 'End date'}
                   </Text>
-                  <Text style={{ color: colors.primary.main }}>
+                  <Text style={{ color: actionColor }}>
                     {dayjs(key === 'from' ? from : to).format('MMM D, YYYY')}
                   </Text>
                 </TouchableOpacity>
@@ -257,7 +270,11 @@ export default function ExportWorkoutScreen({ navigation }: any) {
               >
                 {error}
               </Text>
-              <HeaderButton label="Try again" onPress={load} />
+              <HeaderButton
+                label="Try again"
+                color={actionColor}
+                onPress={load}
+              />
             </>
           )}
           {summary && (
@@ -322,7 +339,8 @@ export default function ExportWorkoutScreen({ navigation }: any) {
             }
           }}
           style={{
-            backgroundColor: colors.primary.main,
+            backgroundColor:
+              colorScheme === 'dark' ? '#0069e0' : colors.primary.main,
             padding: 16,
             borderRadius: 10,
             opacity: !summary || busy || invalid ? 0.5 : 1,
@@ -331,7 +349,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
           <Text
             style={{
               textAlign: 'center',
-              color: colors.textInverse,
+              color: colorScheme === 'dark' ? colors.text : colors.textInverse,
               fontSize: 16,
               fontWeight: '600',
             }}
@@ -363,9 +381,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
             }}
             style={{ padding: 16, alignItems: 'center' }}
           >
-            <Text style={{ color: colors.primary.main, fontSize: 16 }}>
-              Copy text
-            </Text>
+            <Text style={{ color: actionColor, fontSize: 16 }}>Copy text</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -400,12 +416,17 @@ export default function ExportWorkoutScreen({ navigation }: any) {
                   <Text style={{ color: colors.text, fontWeight: '600' }}>
                     {picker === 'from' ? 'Start date' : 'End date'}
                   </Text>
-                  <HeaderButton label="Done" onPress={() => setPicker(null)} />
+                  <HeaderButton
+                    label="Done"
+                    color={actionColor}
+                    onPress={() => setPicker(null)}
+                  />
                 </View>
                 <DateTimePicker
                   value={dayjs(picker === 'from' ? from : to).toDate()}
                   mode="date"
                   display="spinner"
+                  themeVariant={colorScheme}
                   onChange={(_event, date) => {
                     if (date)
                       (picker === 'from' ? setFrom : setTo)(

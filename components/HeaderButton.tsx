@@ -6,6 +6,7 @@ interface HeaderButtonProps {
   label: string;
   onPress: () => void;
   style?: ViewStyle;
+  color?: string;
 }
 
 /**
@@ -16,6 +17,7 @@ export default function HeaderButton({
   label,
   onPress,
   style,
+  color,
 }: HeaderButtonProps) {
   const { colors } = useTheme();
 
@@ -29,7 +31,7 @@ export default function HeaderButton({
     >
       <Text
         style={{
-          color: colors.primary.main,
+          color: color ?? colors.primary.main,
           fontSize: 17,
           fontWeight: '600',
         }}
