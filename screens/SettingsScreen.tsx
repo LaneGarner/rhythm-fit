@@ -989,6 +989,11 @@ export default function SettingsScreen({ navigation }: any) {
                   accessibilityLabel="Use a nearby workout timer"
                   value={rogueTimerEnabled}
                   onValueChange={setRogueTimerEnabled}
+                  trackColor={{
+                    false: colors.toggleTrack,
+                    true: colors.primary.main,
+                  }}
+                  thumbColor="#ffffff"
                 />
               </View>
             </>
