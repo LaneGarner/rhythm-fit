@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
@@ -201,8 +202,7 @@ export default function DayScreen({ navigation, route }: any) {
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
-  const { insets, width: screenWidth, hasTopTabBar } = useResponsiveLayout();
-  const topTabBarClearance = hasTopTabBar ? 56 : 0;
+  const { width: screenWidth } = useResponsiveLayout();
   // Extra room so the last card scrolls clear of the floating + button.
   const tabBarInset = useTabBarInset(88);
   const isDark = colorScheme === 'dark';
@@ -1973,40 +1973,63 @@ export default function DayScreen({ navigation, route }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      {/* Header */}
-      <View
-        style={{
-          position: 'relative',
-          flexDirection: 'row',
-          alignItems: 'center',
-          height: insets.top + topTabBarClearance + 52,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        clearsTopTabBar
+        leftAction={
+          <HeaderButton
+            label={isBulkMode ? 'Cancel' : 'Back'}
+            onPress={() => {
+              if (isBulkMode) {
+                discardChanges();
+                setIsBulkMode(false);
+                setSelectedActivities(new Set());
+              }
+              navigation.popToTop();
+            }}
+            style={{ height: 44, justifyContent: 'center' }}
+          />
+        }
+        rightAction={
+          (dayActivities.length > 0 || isBulkMode) && (
+            <View
+              style={{
+                height: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+              }}
+            >
+              {!isBulkMode && dayActivities.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setShowShareModal(true)}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share workout"
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={22}
+                    color={colors.primary.foreground}
+                  />
+                </TouchableOpacity>
+              )}
+              <HeaderButton
+                label={isBulkMode ? 'Save' : 'Edit'}
+                onPress={() => {
+                  if (isBulkMode) {
+                    saveChanges();
+                    setIsBulkMode(false);
+                    setSelectedActivities(new Set());
+                  } else {
+                    setIsBulkMode(true);
+                  }
+                }}
+              />
+            </View>
+          )
+        }
       >
-        {/* Left: Back/Cancel button */}
-        <HeaderButton
-          label={isBulkMode ? 'Cancel' : 'Back'}
-          onPress={() => {
-            if (isBulkMode) {
-              discardChanges();
-              setIsBulkMode(false);
-              setSelectedActivities(new Set());
-            }
-            navigation.popToTop();
-          }}
-          style={{
-            position: 'absolute',
-            left: 16,
-            top: insets.top + topTabBarClearance + 4,
-            height: 44,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        />
-        {/* Center: Title */}
         <TouchableOpacity
           onPress={() => {
             if (isAnimatingRef.current) return;
@@ -2018,15 +2041,7 @@ export default function DayScreen({ navigation, route }: any) {
           accessibilityRole="button"
           accessibilityLabel="Return to today"
           accessibilityHint="Jumps to today's workouts"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: insets.top + topTabBarClearance + 4,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={{ minHeight: 44, justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -2039,50 +2054,7 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </TouchableOpacity>
-        {/* Right: Share + Edit/Save buttons */}
-        {(dayActivities.length > 0 || isBulkMode) && (
-          <View
-            style={{
-              position: 'absolute',
-              right: 16,
-              top: insets.top + topTabBarClearance + 4,
-              height: 44,
-              flexDirection: 'row',
-              alignItems: 'center',
-              zIndex: 2,
-              gap: 16,
-            }}
-          >
-            {!isBulkMode && dayActivities.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setShowShareModal(true)}
-                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                accessibilityRole="button"
-                accessibilityLabel="Share workout"
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name="share-outline"
-                  size={22}
-                  color={colors.primary.foreground}
-                />
-              </TouchableOpacity>
-            )}
-            <HeaderButton
-              label={isBulkMode ? 'Save' : 'Edit'}
-              onPress={() => {
-                if (isBulkMode) {
-                  saveChanges();
-                  setIsBulkMode(false);
-                  setSelectedActivities(new Set());
-                } else {
-                  setIsBulkMode(true);
-                }
-              }}
-            />
-          </View>
-        )}
-      </View>
+      </AppHeader>
 
       {/* Swipeable content area */}
       <GestureDetector gesture={swipeGesture}>

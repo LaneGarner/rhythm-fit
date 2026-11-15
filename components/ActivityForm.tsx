@@ -1,3 +1,5 @@
+import AppHeader from './AppHeader';
+import HeaderButton from './HeaderButton';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
@@ -423,89 +425,16 @@ function ActivityForm(
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
       {!hideHeader && (
-        <View
-          style={{
-            height: 132,
-            paddingHorizontal: 16,
-            backgroundColor: colors.surface,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
+        <AppHeader
+          clearsTopTabBar
+          leftAction={<HeaderButton label="Cancel" onPress={onCancel} />}
+          rightAction={<HeaderButton label={saveButtonLabel || 'Save'} onPress={handleSave} />}
         >
-          {/* Left: Cancel button */}
-          <TouchableOpacity
-            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-            onPress={onCancel}
-            style={{
-              position: 'absolute',
-              left: 16,
-              top: 44,
-              height: 88,
-              justifyContent: 'center',
-              zIndex: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.primary.foreground,
-                fontSize: 18,
-                fontWeight: '500',
-              }}
-            >
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          {/* Center: Title */}
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 44,
-              height: 88,
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: '600',
-                color: colors.text,
-                textAlign: 'center',
-              }}
-            >
-              {headerTitle ||
-                (mode === 'create' ? 'New Activity' : 'Edit Activity')}
-            </Text>
-          </View>
-          {/* Right: Save button */}
-          <TouchableOpacity
-            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-            onPress={handleSave}
-            style={{
-              position: 'absolute',
-              right: 16,
-              top: 44,
-              height: 88,
-              justifyContent: 'center',
-              zIndex: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.primary.foreground,
-                fontSize: 18,
-                fontWeight: '600',
-              }}
-            >
-              {saveButtonLabel || 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, textAlign: 'center' }}>
+            {headerTitle || (mode === 'create' ? 'New Activity' : 'Edit Activity')}
+          </Text>
+        </AppHeader>
       )}
 
       <ScrollView

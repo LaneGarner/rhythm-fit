@@ -1118,10 +1118,7 @@ export default function CoachScreen({ navigation, route }: any) {
   if (!hasCoachAccess) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader
-          clearsTopTabBar
-          rightAction={<View style={{ width: 44, height: 44 }} />}
-        >
+        <AppHeader clearsTopTabBar>
           <AppHeaderTitle title="Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>

@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,7 +104,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
   const { user } = useAuth();
   const { colors, colorScheme } = useTheme();
   const actionColor = colors.primary.foreground;
-  const { insets, hasTopTabBar } = useResponsiveLayout();
+  const { insets } = useResponsiveLayout();
   const [source, setSource] = useState<WorkoutBackupData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rangeType, setRangeType] = useState<'all' | 'dates'>('all');
@@ -159,26 +160,18 @@ export default function ExportWorkoutScreen({ navigation }: any) {
   };
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + (hasTopTabBar ? 64 : 16),
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        clearsTopTabBar
+        leftAction={
+          <HeaderButton
+            label="Back"
+            onPress={() => navigation.goBack()}
+          />
+        }
       >
-        <HeaderButton
-          label="Back"
-          onPress={() => navigation.goBack()}
-        />
         <Text
           accessibilityRole="header"
           style={{
-            flex: 1,
             textAlign: 'center',
             fontSize: 18,
             fontWeight: '600',
@@ -187,8 +180,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
         >
           Export workout data
         </Text>
-        <View style={{ width: 55 }} />
-      </View>
+      </AppHeader>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 24,

@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -12,7 +13,6 @@ import {
 } from 'react-native';
 import HeaderButton from '../components/HeaderButton';
 import { usePreferences } from '../context/PreferencesContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   getPermissionStatus,
   requestPermission,
@@ -52,7 +52,6 @@ export default function NotificationSettingsScreen({ navigation }: any) {
   const { colors, colorScheme } = useTheme();
   const buttonTextColor =
     colorScheme === 'dark' ? colors.text : colors.textInverse;
-  const { insets } = useResponsiveLayout();
   const { notificationSettings, setNotificationSettings } = usePreferences();
   const [permissionStatus, setPermissionStatus] =
     useState<string>('undetermined');
@@ -181,25 +180,17 @@ export default function NotificationSettingsScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 px-4 flex-row items-center"
-        style={{
-          paddingTop: insets.top + 8,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-          borderBottomWidth: 1,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
-        <View className="flex-1 items-center">
+        <View className="items-center">
           <Text className="text-2xl font-bold" style={{ color: colors.text }}>
             Notifications
           </Text>
         </View>
-        <View style={{ width: 40 }} />
-      </View>
+      </AppHeader>
 
       <ScrollView
         className="flex-1 px-6 pt-6"

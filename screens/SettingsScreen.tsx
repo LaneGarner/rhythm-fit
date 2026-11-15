@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { rogueTimer } from '../modules/rogue-timer';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,7 +73,7 @@ export default function SettingsScreen({ navigation }: any) {
     isActive: tutorialActive,
   } = useTutorial();
   const dispatch = useDispatch();
-  const { insets, isLandscape } = useResponsiveLayout();
+  const { isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [aiDataSharingEnabled, setAIDataSharingEnabled] = useState(false);
@@ -317,18 +318,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 px-4 bg-white border-b border-gray-200 flex-row items-center"
-        style={{
-          paddingTop: insets.top + 8,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
-        <View className="flex-1 items-center">
+        <View className="items-center">
           <Text
             className="text-2xl font-bold mt-0"
             style={{ color: colors.text }}
@@ -336,8 +331,7 @@ export default function SettingsScreen({ navigation }: any) {
             Settings
           </Text>
         </View>
-        <View style={{ width: 40 }} />
-      </View>
+      </AppHeader>
 
       <ScrollView
         className="flex-1 px-6 pt-8"

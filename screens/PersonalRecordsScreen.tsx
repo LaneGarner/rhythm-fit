@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -6,12 +7,10 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { calculatePersonalRecords } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function PersonalRecordsScreen({ navigation }: any) {
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colors } = useTheme();
-  const { insets } = useResponsiveLayout();
 
   const personalRecords = useMemo(
     () => calculatePersonalRecords(activities, 365),
@@ -21,28 +20,20 @@ export default function PersonalRecordsScreen({ navigation }: any) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={14}
+            style={{ paddingVertical: 4, paddingRight: 16 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary.foreground} />
+          </TouchableOpacity>
+        }
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          hitSlop={14}
-          style={{ paddingVertical: 4, paddingRight: 16 }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.primary.foreground} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+        <View style={{ alignItems: 'center' }}>
           <Text
             style={{
               fontSize: 17,
@@ -53,7 +44,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
             Personal Records
           </Text>
         </View>
-      </View>
+      </AppHeader>
 
       <FlatList
         style={{ flex: 1 }}

@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -27,13 +28,11 @@ import {
   updatePlateCount,
 } from '../services/equipmentService';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function EquipmentScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
-  const { insets } = useResponsiveLayout();
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,21 +176,13 @@ export default function EquipmentScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -204,8 +195,7 @@ export default function EquipmentScreen({ navigation }: any) {
             Equipment
           </Text>
         </View>
-        <View style={{ width: 50 }} />
-      </View>
+      </AppHeader>
 
       {/* Content */}
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">

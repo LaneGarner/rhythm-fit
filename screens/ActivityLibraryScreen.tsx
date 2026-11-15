@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -147,21 +148,13 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -174,8 +167,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             Activity Library
           </Text>
         </View>
-        <View style={{ width: 50 }} />
-      </View>
+      </AppHeader>
 
       {/* Content */}
       <FlatList

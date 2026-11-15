@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
@@ -43,7 +44,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
-  const { insets, width: screenWidth, isTablet, hasTopTabBar } =
+  const { width: screenWidth, isTablet } =
     useResponsiveLayout();
   // Extra room so the last card scrolls clear of the floating + button
   // (56pt button + the gap it sits above the bar + breathing room).
@@ -672,21 +673,7 @@ export default function WeeklyScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 border-b border-grey-200"
-        style={{
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-          marginTop: 2,
-          // The native Liquid Glass tab bar floats at the top on iPadOS.
-          // Reserve its visual layer while keeping this content header compact.
-          paddingTop: insets.top + (hasTopTabBar ? 56 : 0),
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-        }}
-      >
-        {/* Settings now lives in the footer tab bar (see TabNavigator). */}
-
+      <AppHeader clearsTopTabBar>
         {/* Centered week navigation container */}
         <View
           ref={weekHeaderRef}
@@ -728,10 +715,12 @@ export default function WeeklyScreen({ navigation }: any) {
               style={{ flex: 1, alignItems: 'center' }}
             >
               <Text
-                className="text-2xl font-bold"
+                className="font-bold"
                 style={{
                   color: colors.text,
                   textAlign: 'center',
+                  fontSize: 20,
+                  lineHeight: 24,
                 }}
               >
                 {getWeekLabel(weekOffset)}
@@ -741,8 +730,8 @@ export default function WeeklyScreen({ navigation }: any) {
                   color: colors.textSecondary,
                   textAlign: 'center',
                   fontSize: 14,
-                  lineHeight: 18,
-                  marginTop: 4,
+                  lineHeight: 16,
+                  marginTop: 2,
                 }}
               >
                 {getWeekDateRange(weekOffset)}
@@ -769,7 +758,7 @@ export default function WeeklyScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </AppHeader>
       <GestureDetector gesture={swipeGesture}>
         <Animated.View
           style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
