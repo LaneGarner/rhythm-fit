@@ -1052,14 +1052,14 @@ function ActivityForm(
                   name="link-outline"
                   size={20}
                   color={
-                    supersetMode ? colors.primary.main : colors.textSecondary
+                    supersetMode ? colors.primary.foreground : colors.textSecondary
                   }
                 />
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: '500',
-                    color: supersetMode ? colors.primary.main : colors.text,
+                    color: supersetMode ? colors.primary.foreground : colors.text,
                   }}
                 >
                   Superset

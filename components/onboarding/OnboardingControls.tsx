@@ -211,7 +211,7 @@ export function SelectChip({
       ) : null}
       <Text
         style={{
-          color: selected ? colors.primary.main : colors.text,
+          color: selected ? colors.primary.foreground : colors.text,
           fontSize: 14,
           fontWeight: selected ? '600' : '400',
         }}

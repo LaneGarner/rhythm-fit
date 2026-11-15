@@ -1183,7 +1183,7 @@ export default function CoachScreen({ navigation, route }: any) {
               <Text
                 className="text-center font-medium"
                 style={{
-                  color: selected ? colors.primary.main : colors.textSecondary,
+                  color: selected ? colors.primary.foreground : colors.textSecondary,
                 }}
               >
                 {tab === 'chat' ? 'Chat' : 'History'}

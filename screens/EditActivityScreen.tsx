@@ -766,13 +766,13 @@ export default function EditActivityScreen({ navigation, route }: any) {
             <Ionicons
               name="add"
               size={18}
-              color={isAddingNew ? colors.primary.main : colors.textSecondary}
+              color={isAddingNew ? colors.primary.foreground : colors.textSecondary}
             />
             <Text
               style={{
                 fontSize: 14,
                 fontWeight: '500',
-                color: isAddingNew ? colors.primary.main : colors.textSecondary,
+                color: isAddingNew ? colors.primary.foreground : colors.textSecondary,
               }}
             >
               Add
