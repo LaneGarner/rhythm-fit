@@ -82,11 +82,30 @@ const GLOW_COLOR_DARK = palette.blue[500];
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
+const CHAT_TITLE_LIMIT = 50;
+
+function makeChatTitle(text: string) {
+  return text.length > CHAT_TITLE_LIMIT
+    ? `${text.slice(0, CHAT_TITLE_LIMIT - 1).trimEnd()}…`
+    : text;
+}
+
 interface ChatSession {
   id: string;
   title: string;
   messages: any[];
   timestamp: Date;
+}
+
+function formatHistoryTitle(session: ChatSession) {
+  const title = session.title;
+  if (title.length !== CHAT_TITLE_LIMIT || title.endsWith('…')) return title;
+
+  const firstMessage = session.messages.find(message => message.type === 'user');
+  const isLegacyPreview = firstMessage
+    ? firstMessage.text.startsWith(title) && firstMessage.text.length > title.length
+    : true;
+  return isLegacyPreview ? `${title.trimEnd()}…` : title;
 }
 
 export default function CoachScreen({ navigation, route }: any) {
@@ -152,6 +171,8 @@ export default function CoachScreen({ navigation, route }: any) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const clearingHistoryRef = useRef(false);
 
   const HISTORY_PREVIEW_COUNT = 5;
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -397,7 +418,7 @@ export default function CoachScreen({ navigation, route }: any) {
     // Find the first user message for the title
     const firstUserMessage = messages.find(m => m.type === 'user');
     const sessionTitle = firstUserMessage
-      ? firstUserMessage.text.substring(0, 50)
+      ? makeChatTitle(firstUserMessage.text)
       : 'Chat Session';
 
     const newSession: ChatSession = {
@@ -506,20 +527,67 @@ export default function CoachScreen({ navigation, route }: any) {
     );
   };
 
-  const deleteAllSessions = async () => {
+  const deleteAllSessions = () => {
     Alert.alert(
-      'Delete All Chats',
-      'Are you sure you want to delete all chat sessions?',
+      'Clear chat history?',
+      'This permanently deletes your saved Coach conversations.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete All',
+          text: 'Clear history',
           style: 'destructive',
           onPress: async () => {
-            setChatHistory([]);
-            saveChatHistory([]);
-            // Always start a new chat when all sessions are deleted
-            startNewChat();
+            if (clearingHistoryRef.current) return;
+            clearingHistoryRef.current = true;
+            setIsClearingHistory(true);
+            try {
+              const token = getAccessToken();
+              if (!token) throw new Error('Sign in to clear chat history.');
+
+              const sessions = await getChatSessions(token);
+              const failedIds = new Set<string>();
+              for (const session of sessions) {
+                try {
+                  await deleteChatSession(token, session.id);
+                } catch {
+                  failedIds.add(session.id);
+                }
+              }
+
+              if (failedIds.size) {
+                const remaining = chatHistory.filter(session => failedIds.has(session.id));
+                const remainingIds = new Set(remaining.map(session => session.id));
+                for (const session of sessions) {
+                  if (failedIds.has(session.id) && !remainingIds.has(session.id)) {
+                    remaining.push({
+                      id: session.id,
+                      title: session.title,
+                      messages: [],
+                      timestamp: new Date(session.updated_at),
+                    });
+                  }
+                }
+                await AsyncStorage.setItem(chatHistoryKey, JSON.stringify(remaining));
+                setChatHistory(remaining);
+                if (!failedIds.has(currentSessionId)) {
+                  startNewChat();
+                  setActiveTab('history');
+                }
+                Alert.alert('Some chats could not be deleted', 'Try clearing chat history again.');
+                return;
+              }
+
+              await AsyncStorage.removeItem(chatHistoryKey);
+              setChatHistory([]);
+              setShowAllHistory(false);
+              startNewChat();
+              setActiveTab('history');
+            } catch {
+              Alert.alert('Could not clear chat history', 'Please try again.');
+            } finally {
+              clearingHistoryRef.current = false;
+              setIsClearingHistory(false);
+            }
           },
         },
       ]
@@ -550,6 +618,7 @@ export default function CoachScreen({ navigation, route }: any) {
   };
 
   const handleSend = async () => {
+    if (clearingHistoryRef.current) return;
     if (!inputText.trim() || isProcessing || coachLimited || calendarPreview) return;
 
     if (user && isAuthenticated) {
@@ -627,8 +696,8 @@ export default function CoachScreen({ navigation, route }: any) {
       ];
       const isFirstUserMessage = messages.length === 1;
       const sessionTitle = isFirstUserMessage
-        ? currentInput.substring(0, 50)
-        : messages[1]?.text?.substring(0, 50) || 'Chat Session';
+        ? makeChatTitle(currentInput)
+        : makeChatTitle(messages[1]?.text || 'Chat Session');
 
       // Create bot message ID but don't add to messages yet - show "Thinking..." first
       const botMessageId = (Date.now() + 1).toString();
@@ -948,9 +1017,11 @@ export default function CoachScreen({ navigation, route }: any) {
                     <View className="flex-1">
                       <Text
                         className="font-semibold"
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
                         style={{ color: colors.text }}
                       >
-                        {session.title}
+                        {formatHistoryTitle(session)}
                       </Text>
                       <Text
                         style={{ color: colors.textSecondary }}
@@ -1014,6 +1085,27 @@ export default function CoachScreen({ navigation, route }: any) {
                   </Text>
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                onPress={deleteAllSessions}
+                disabled={isClearingHistory || isProcessing}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isClearingHistory || isProcessing, busy: isClearingHistory }}
+                style={{
+                  alignSelf: 'center',
+                  justifyContent: 'center',
+                  minHeight: 44,
+                  marginTop: 8,
+                  paddingHorizontal: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                  opacity: isClearingHistory || isProcessing ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: colors.error.foreground, fontWeight: '600' }}>
+                  {isClearingHistory ? 'Clearing history…' : 'Clear chat history'}
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </ScrollView>
