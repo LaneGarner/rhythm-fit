@@ -64,7 +64,6 @@ export default function PersonalRecordsScreen({ navigation }: any) {
         windowSize={7}
         ListHeaderComponent={
           <>
-            {' '}
             {personalRecords.records.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 48 }}>
                 <Ionicons
