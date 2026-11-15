@@ -21,6 +21,7 @@ export default function WorkoutExecutionLayout({
   restToggle,
   onSkipRest,
   children,
+  sessionBanner,
   notes,
   progression,
   screenTitle = 'Activity',
@@ -36,6 +37,7 @@ export default function WorkoutExecutionLayout({
   restToggle?: { enabled: boolean; onToggle: (value: boolean) => void };
   onSkipRest?: () => void;
   children: React.ReactNode;
+  sessionBanner?: React.ReactNode;
   notes?: string;
   progression?: React.ReactNode;
   screenTitle?: string;
@@ -211,6 +213,7 @@ export default function WorkoutExecutionLayout({
               onSkipRest={onSkipRest}
             />
           </View>
+          {sessionBanner}
           <View className="px-4 pt-4 pb-4" style={{ gap: 16 }}>
             {children}
             <NotesCard notes={notes || ''} />

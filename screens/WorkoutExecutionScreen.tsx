@@ -37,7 +37,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     (state: RootState) => state.activities.data
   );
   const dispatch = useDispatch();
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   const { autoRestTimer } = usePreferences();
   const timer = useTimerMetadata();
   const { startCountdown, stopTimer, getTimerState } = useTimerActions();
@@ -199,6 +199,37 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
             ? sessionControls.skipRest
             : undefined
         }
+        sessionBanner={inSession && sessionControls.session && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 16,
+              minHeight: 48,
+              paddingHorizontal: 16,
+              backgroundColor: colorScheme === 'dark' ? '#4C4029' : '#F1E8CF',
+            }}
+          >
+            <Text style={{ flex: 1, color: colors.text }}>
+              <Text style={{ fontWeight: '700' }}>
+                Session active
+              </Text>
+              {'\u2002\u2009'}
+              {sessionIndex + 1} of {sessionControls.session.items.length}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => {
+                if (!moveNext()) navigation.goBack();
+              }}
+              style={{ paddingVertical: 8 }}
+            >
+              <Text style={{ color: colors.text }}>
+                Skip {grouped ? 'group' : 'activity'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         notes={notes}
         progression={
           <View
@@ -250,36 +281,6 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           </View>
         }
       >
-        {inSession && sessionControls.session && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Text style={{ flex: 1, color: colors.textSecondary }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>
-                Session mode
-              </Text>
-              {'\u2002\u2009'}
-              {sessionIndex + 1} of {sessionControls.session.items.length}
-            </Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => {
-                if (!moveNext()) navigation.goBack();
-              }}
-              style={{ paddingVertical: 8 }}
-            >
-              <Text style={{ color: colors.textSecondary }}>
-                Skip {grouped ? 'group' : 'activity'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Turn session mode off"
-              onPress={sessionControls.end}
-              style={{ paddingVertical: 8 }}
-            >
-              <Text style={{ color: colors.textSecondary }}>Turn off</Text>
-            </TouchableOpacity>
-          </View>
-        )}
         <WorkoutExecutionSets
           activities={activities}
           grouped={grouped}

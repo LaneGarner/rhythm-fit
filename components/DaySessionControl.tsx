@@ -83,7 +83,9 @@ export default function DaySessionControl({
               }
             }}
             style={{
-              flex: current ? 1 : undefined,
+              flexBasis: current ? 0 : undefined,
+              flexGrow: current ? 1 : 0,
+              minWidth: 0,
               minHeight: 44,
               paddingHorizontal: 12,
               justifyContent: 'center',
@@ -109,8 +111,11 @@ export default function DaySessionControl({
               accessibilityRole="button"
               onPress={controls.end}
               style={{
-                flex: 1,
+                flexBasis: 0,
+                flexGrow: 1,
+                minWidth: 0,
                 minHeight: 44,
+                paddingHorizontal: 12,
                 justifyContent: 'center',
                 alignItems: 'center',
                 borderWidth: 1,
@@ -118,7 +123,7 @@ export default function DaySessionControl({
                 borderRadius: 10,
               }}
             >
-              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600', textAlign: 'center' }}>
                 End session
               </Text>
             </TouchableOpacity>
