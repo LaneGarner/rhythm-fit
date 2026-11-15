@@ -352,14 +352,23 @@ export default function AuthScreen() {
               disabled={isLoading}
               accessibilityRole="button"
               accessibilityLabel={isLogin ? 'Sign In' : 'Create Account'}
-              accessibilityState={{ disabled: isLoading }}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-semibold text-base">
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </Text>
+              <Text
+                className="text-white font-semibold text-base"
+                style={isLoading ? { opacity: 0 } : undefined}
+                accessibilityElementsHidden={isLoading}
+                importantForAccessibility={isLoading ? 'no-hide-descendants' : 'auto'}
+              >
+                {isLogin ? 'Sign In' : 'Create Account'}
+              </Text>
+              {isLoading && (
+                <View
+                  className="absolute inset-0 items-center justify-center"
+                  pointerEvents="none"
+                >
+                  <ActivityIndicator color="#fff" />
+                </View>
               )}
             </TouchableOpacity>
 
