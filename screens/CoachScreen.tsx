@@ -63,6 +63,7 @@ import { previewCoachCalendar, type CalendarPatch } from '../services/coachCalen
 import { applyCoachCalendarPatch } from '../redux/activitySlice';
 import { AppDispatch, RootState, store } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
 import { useCoachProfile } from '../context/CoachProfileContext';
@@ -201,6 +202,7 @@ export default function CoachScreen({ navigation, route }: any) {
   const dispatch = useDispatch<AppDispatch>();
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme, colors } = useTheme();
+  const historyBottomInset = useTabBarInset();
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   useEffect(() => {
@@ -902,7 +904,10 @@ export default function CoachScreen({ navigation, route }: any) {
   const renderChatHistory = () => {
     return (
       <View className="flex-1">
-        <ScrollView className="flex-1 px-4 pt-4">
+        <ScrollView
+          className="flex-1 px-4 pt-4"
+          contentContainerStyle={{ paddingBottom: historyBottomInset }}
+        >
           {chatHistory.length === 0 ? (
             <View className="items-center py-8">
               <Ionicons
