@@ -10,7 +10,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
-import { buildSessionItems } from '../utils/workoutSession';
+import { buildSessionItems, nextSessionIndex } from '../utils/workoutSession';
 import { useTheme } from '../theme/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,8 +31,10 @@ export default function DaySessionControl({
   );
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const sameDay = controls.session?.date === date;
-  if (!items.length && !sameDay) return null;
+  const session = controls.session?.date === date ? controls.session : null;
+  const currentIndex = session ? nextSessionIndex(session, activities, session.index) : -1;
+  const current = session?.items[currentIndex];
+  if (!items.length && !current) return null;
   const navigate = (item: (typeof items)[number]) =>
     navigation.navigate(item.route, item.params);
   const begin = () => {
@@ -56,52 +58,63 @@ export default function DaySessionControl({
   };
   return (
     <>
-      <View style={{ marginHorizontal: 16, marginVertical: 12, gap: 6 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text
-            style={{
-              flex: 1,
-              color: colors.text,
-              fontSize: 17,
-              fontWeight: '600',
-            }}
-          >
-            Session {sameDay ? 'on' : 'off'}
+      <View
+        style={{
+          marginHorizontal: 16,
+          marginVertical: 12,
+          padding: 16,
+          gap: 8,
+          borderRadius: 12,
+          backgroundColor: colors.cardBackground,
+          borderWidth: 1,
+          borderColor: colors.border,
+        }}
+      >
+        <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>
+          {current ? 'Session in progress' : 'Workout session'}
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+          {current && session
+            ? `Activity ${currentIndex + 1} of ${session.items.length} · ${current.label}`
+            : 'Choose which activities to do in order. Rest timers start automatically.'}
+        </Text>
+        <TouchableOpacity
+          disabled={!controls.ready}
+          accessibilityRole="button"
+          onPress={() => {
+            if (current) {
+              const item = controls.resume();
+              if (item) navigate(item);
+            } else {
+              setSelected(new Set(items.map(item => item.id)));
+              setOpen(true);
+            }
+          }}
+          style={{
+            marginTop: 4,
+            minHeight: 44,
+            padding: 12,
+            justifyContent: 'center',
+            borderRadius: 10,
+            backgroundColor: colors.primary.main,
+            opacity: controls.ready ? 1 : 0.4,
+          }}
+        >
+          <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>
+            {current ? 'Resume session' : 'Choose activities'}
           </Text>
+        </TouchableOpacity>
+        {current && (
           <TouchableOpacity
-            disabled={!controls.ready}
             accessibilityRole="button"
-            accessibilityLabel={sameDay ? 'Turn session off' : 'Start session'}
-            onPress={() => {
-              if (sameDay) controls.end();
-              else {
-                setSelected(new Set(items.map(item => item.id)));
-                setOpen(true);
-              }
-            }}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              borderWidth: 1,
-              borderColor: sameDay ? colors.border : colors.primary.main,
-              backgroundColor: sameDay ? 'transparent' : colors.primary.main,
-              opacity: controls.ready ? 1 : 0.4,
-              borderRadius: 10,
-            }}
+            onPress={controls.end}
+            style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            <Text
-              style={{
-                color: sameDay ? colors.primary.main : '#fff',
-                fontWeight: '600',
-              }}
-            >
-              {sameDay ? 'Turn off' : 'Start session'}
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', fontWeight: '600' }}>
+              End session
             </Text>
           </TouchableOpacity>
-        </View>
-        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-          Do workouts in order. Rest timers start automatically.
-        </Text>
+        )}
       </View>
       <Modal
         visible={open}
@@ -189,6 +202,9 @@ export default function DaySessionControl({
               );
             })}
           </ScrollView>
+          <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
+            {selected.size} of {items.length} selected
+          </Text>
           <TouchableOpacity
             disabled={!selected.size}
             onPress={begin}
