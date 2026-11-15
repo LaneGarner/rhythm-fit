@@ -83,11 +83,18 @@ export default function DaySessionControl({
               paddingVertical: 10,
               paddingHorizontal: 14,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: sameDay ? colors.border : colors.primary.main,
+              backgroundColor: sameDay ? 'transparent' : colors.primary.main,
+              opacity: controls.ready ? 1 : 0.4,
               borderRadius: 10,
             }}
           >
-            <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+            <Text
+              style={{
+                color: sameDay ? colors.primary.main : '#fff',
+                fontWeight: '600',
+              }}
+            >
               {sameDay ? 'Turn off' : 'Start session'}
             </Text>
           </TouchableOpacity>
