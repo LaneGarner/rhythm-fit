@@ -184,9 +184,10 @@ export default function CoachScreen({ navigation, route }: any) {
   const { bottom } = useSafeAreaInsets();
   const usesClassicTabBar =
     Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const composerPadding = 12;
   const composerInset = usesClassicTabBar
-    ? 8
-    : (measuredTabBar > 0 ? measuredTabBar : 49 + bottom) + 8;
+    ? composerPadding
+    : (measuredTabBar > 0 ? measuredTabBar : 49 + bottom) + composerPadding;
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', () =>
@@ -1462,9 +1463,10 @@ export default function CoachScreen({ navigation, route }: any) {
             style={{
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
+              paddingTop: keyboardVisible ? 16 : composerPadding,
               paddingBottom: keyboardVisible ? 16 : composerInset,
             }}
-            className="p-4 border-t"
+            className="px-4 border-t"
           >
             {coachLimited ? (
               <View accessibilityLiveRegion="polite">
