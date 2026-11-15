@@ -1,17 +1,15 @@
-import { darkColors } from '../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { darkColors } from '../theme/colors';
 import { Activity } from '../types/activity';
-import { palette } from '../theme/colors';
+import { formatActivitySetsSummary } from '../utils/shareUtils';
 import {
-  ActivityGroup,
   groupActivitiesWithSupersets,
   getSupersetLabel,
   isActivityComplete,
 } from '../utils/supersetUtils';
-import { formatActivitySetsSummary } from '../utils/shareUtils';
 import Logo from './Logo';
 
 interface ShareWorkoutCardProps {
@@ -20,20 +18,13 @@ interface ShareWorkoutCardProps {
   includeDetails: boolean;
 }
 
-// Dark card palette
-const card = {
-  bg: '#0F0F13',
-  surface: '#1A1A22',
-  surfaceLight: '#22222E',
-  border: '#2A2A36',
-  text: '#F0F0F5',
-  textSecondary: '#8E8E9A',
-  textTertiary: '#5C5C6A',
+const colors = {
+  background: '#17181B',
+  divider: '#34363C',
+  text: '#F4F4F5',
+  secondary: '#ADB0BA',
   accent: darkColors.primary.foreground,
-  badgeBackground: '#27272A',
-  success: darkColors.success.foreground,
-  successGlow: darkColors.success.foreground + '1F',
-  incomplete: '#3A3A48',
+  complete: darkColors.success.foreground,
 };
 
 export default function ShareWorkoutCard({
@@ -45,222 +36,169 @@ export default function ShareWorkoutCard({
   const completedCount = activities.filter(isActivityComplete).length;
   const totalCount = activities.length;
   const allCompleted = totalCount > 0 && completedCount === totalCount;
-
-  const formattedDate = dayjs(date).format('dddd, MMMM D');
-
-  const renderActivityRow = (
-    activity: Activity,
-    isLast: boolean,
-    inSuperset: boolean
-  ) => {
-    const completed = isActivityComplete(activity);
-    const setsSummary = includeDetails
-      ? formatActivitySetsSummary(activity)
-      : '';
-
-    return (
-      <View
-        key={activity.id}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: inSuperset ? 16 : 14,
-          paddingVertical: 12,
-          backgroundColor: card.surface,
-          borderBottomWidth: isLast ? 0 : 1,
-          borderBottomColor: card.border,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: '600',
-              color: completed ? card.textSecondary : card.text,
-            }}
-          >
-            {activity.name || activity.type}
-          </Text>
-          {setsSummary.length > 0 && (
-            <Text
-              style={{
-                fontSize: 12,
-                color: card.textTertiary,
-                marginTop: 3,
-              }}
-            >
-              {setsSummary}
-            </Text>
-          )}
-        </View>
-        <Ionicons
-          name={completed ? 'checkmark-circle' : 'ellipse-outline'}
-          size={20}
-          color={completed ? card.success : card.incomplete}
-        />
-      </View>
-    );
-  };
-
-  const renderGroup = (group: ActivityGroup, groupIndex: number) => {
-    const isLastGroup = groupIndex === groups.length - 1;
-
-    if (group.type === 'single') {
-      return renderActivityRow(group.activities[0], isLastGroup, false);
-    }
-
-    // Superset group
-    return (
-      <View
-        key={group.supersetId}
-        style={{
-          borderBottomWidth: isLastGroup ? 0 : 1,
-          borderBottomColor: card.border,
-        }}
-      >
-        {/* Badge */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 10,
-            paddingBottom: 2,
-            backgroundColor: card.surface,
-          }}
-        >
-          <View
-            style={{
-              alignSelf: 'flex-start',
-              backgroundColor: card.badgeBackground,
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 6,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: '600',
-                color: card.accent,
-              }}
-            >
-              {getSupersetLabel(group.activities.length)}
-            </Text>
-          </View>
-        </View>
-        {group.activities.map((activity, i) =>
-          renderActivityRow(
-            activity,
-            i === group.activities.length - 1 && isLastGroup,
-            true
-          )
-        )}
-      </View>
-    );
-  };
+  const workoutDate = dayjs(date);
 
   return (
-    <View
-      style={{
-        width: 390,
-        backgroundColor: card.bg,
-        borderRadius: 20,
-        overflow: 'hidden',
-      }}
-    >
-      {/* Branded header */}
-      <View
-        style={{
-          backgroundColor: '#131318',
-          paddingHorizontal: 20,
-          paddingTop: 20,
-          paddingBottom: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: card.border,
-        }}
-      >
-        {/* Brand stamp */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 10,
-          }}
-        >
-          <Logo showText={false} height={28} color={card.textTertiary} />
-          <View style={{ marginLeft: 4, flexDirection: 'column' }}>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: '700',
-                color: card.textTertiary,
-                lineHeight: 16,
-              }}
-            >
-              Rhythm Fitness
-            </Text>
-            <Text
-              style={{
-                fontSize: 9,
-                fontWeight: '600',
-                color: card.textTertiary,
-                letterSpacing: 0.3,
-                opacity: 0.7,
-                lineHeight: 12,
-              }}
-            >
-              AI Workout Tracker & Coach
-            </Text>
-          </View>
+    <View style={styles.card}>
+      <View style={styles.brand}>
+        <Logo showText={false} height={24} color={colors.text} />
+        <View style={styles.brandText}>
+          <Text style={styles.brandName}>Rhythm Fitness</Text>
+          <Text style={styles.tagline}>AI Workout Tracker &amp; Coach</Text>
         </View>
+      </View>
 
-        {/* Date + completion pill */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-          }}
-        >
+      <View style={styles.summary}>
+        <View style={styles.date}>
+          <Text style={styles.weekday}>{workoutDate.format('dddd')}</Text>
+          <Text style={styles.dateTitle}>{workoutDate.format('MMMM D')}</Text>
+        </View>
+        <View style={styles.completion}>
           <Text
-            style={{
-              fontSize: 22,
-              fontWeight: '700',
-              color: card.text,
-              letterSpacing: -0.3,
-              flex: 1,
-            }}
+            style={[
+              styles.completionCount,
+              allCompleted && { color: colors.complete },
+            ]}
           >
-            {formattedDate}
+            {completedCount}/{totalCount}
           </Text>
-          <View
-            style={{
-              backgroundColor: allCompleted
-                ? card.successGlow
-                : card.badgeBackground,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 20,
-              marginLeft: 12,
-              marginTop: 2,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: allCompleted ? card.success : card.accent,
-              }}
-            >
-              {completedCount}/{totalCount}
-            </Text>
-          </View>
+          <Text style={styles.completionLabel}>Complete</Text>
         </View>
       </View>
 
-      {/* Activity rows */}
-      <View style={{ paddingVertical: 4 }}>
-        {groups.map((group, i) => renderGroup(group, i))}
-      </View>
+      {groups.map((group, index) => (
+        <View
+          key={group.supersetId || group.activities[0].id}
+          style={[styles.group, index > 0 && styles.groupDivider]}
+        >
+          {group.type === 'superset' && (
+            <Text style={styles.groupLabel}>
+              {getSupersetLabel(group.activities.length)}
+            </Text>
+          )}
+          {group.activities.map(activity => {
+            const completed = isActivityComplete(activity);
+            const details = includeDetails
+              ? formatActivitySetsSummary(activity)
+              : '';
+            return (
+              <View key={activity.id} style={styles.activityRow}>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityName}>
+                    {activity.name || activity.type}
+                  </Text>
+                  {!!details && <Text style={styles.details}>{details}</Text>}
+                </View>
+                <Ionicons
+                  name={completed ? 'checkmark' : 'ellipse-outline'}
+                  size={19}
+                  color={completed ? colors.complete : colors.secondary}
+                />
+              </View>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    width: 390,
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandText: {
+    flexShrink: 1,
+  },
+  brandName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  tagline: {
+    color: colors.secondary,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  summary: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    paddingBottom: 16,
+    marginTop: 22,
+  },
+  date: {
+    flex: 1,
+  },
+  weekday: {
+    color: colors.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dateTitle: {
+    color: colors.text,
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.8,
+  },
+  completion: {
+    alignItems: 'flex-end',
+    paddingBottom: 3,
+  },
+  completionCount: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  completionLabel: {
+    color: colors.secondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  group: {
+    paddingVertical: 4,
+  },
+  groupDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  groupLabel: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 9,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityName: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  details: {
+    color: colors.secondary,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+});
