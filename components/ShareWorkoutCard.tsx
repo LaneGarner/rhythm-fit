@@ -118,54 +118,42 @@ export default function ShareWorkoutCard({
           borderBottomColor: card.border,
         }}
       >
-        <View style={{ flexDirection: 'row' }}>
+        {/* Badge */}
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            paddingBottom: 2,
+            backgroundColor: card.surface,
+          }}
+        >
           <View
             style={{
-              width: 4,
-              backgroundColor: card.accent,
-              borderTopLeftRadius: 4,
-              borderBottomLeftRadius: 4,
+              alignSelf: 'flex-start',
+              backgroundColor: card.badgeBackground,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
             }}
-          />
-          <View style={{ flex: 1 }}>
-            {/* Badge */}
-            <View
+          >
+            <Text
               style={{
-                paddingHorizontal: 16,
-                paddingTop: 10,
-                paddingBottom: 2,
-                backgroundColor: card.surface,
+                fontSize: 11,
+                fontWeight: '600',
+                color: card.accent,
               }}
             >
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: card.badgeBackground,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 6,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '600',
-                    color: card.accent,
-                  }}
-                >
-                  {getSupersetLabel(group.activities.length)}
-                </Text>
-              </View>
-            </View>
-            {group.activities.map((activity, i) =>
-              renderActivityRow(
-                activity,
-                i === group.activities.length - 1 && isLastGroup,
-                true
-              )
-            )}
+              {getSupersetLabel(group.activities.length)}
+            </Text>
           </View>
         </View>
+        {group.activities.map((activity, i) =>
+          renderActivityRow(
+            activity,
+            i === group.activities.length - 1 && isLastGroup,
+            true
+          )
+        )}
       </View>
     );
   };

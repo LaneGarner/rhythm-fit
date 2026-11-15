@@ -840,22 +840,6 @@ export default function DayScreen({ navigation, route }: any) {
 
     return (
       <View style={{ marginBottom }}>
-        {/* Superset indicator line on the left */}
-        {supersetInfo.isInSuperset && (
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: supersetInfo.isFirstInSuperset ? 8 : 0,
-              bottom: supersetInfo.isLastInSuperset ? 8 : 0,
-              width: 4,
-              backgroundColor: colors.primary.main,
-              borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 4 : 0,
-              borderBottomLeftRadius: supersetInfo.isLastInSuperset ? 4 : 0,
-              zIndex: 1,
-            }}
-          />
-        )}
         <TouchableOpacity
           onPress={handlePress}
           onLongPress={handleLongPress}
@@ -864,7 +848,6 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             ...borderRadius,
             backgroundColor: colors.cardBackground,
-            marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
             borderColor: colors.primary.main,
             borderTopWidth:

@@ -21,11 +21,11 @@ export const palette = {
     700: '#56291F',
   },
   amber: {
-    100: '#fef3c7',
-    300: '#fbbf24',
-    400: '#eab308',
-    600: '#92400e',
-    800: '#422006',
+    100: '#FAF2B1',
+    300: '#F5D93A',
+    400: '#EDD126',
+    600: '#725900',
+    800: '#413714',
   },
   gray: {
     50: '#f9fafb',
@@ -95,6 +95,8 @@ export interface ThemeColors {
   };
 
   // Semantic
+  achievement: string;
+  achievementIcon: string;
   success: {
     main: string;
     foreground: string;
@@ -166,6 +168,8 @@ export const lightColors: ThemeColors = {
   },
 
   // Semantic
+  achievement: '#867500',
+  achievementIcon: '#AD9100',
   success: {
     main: palette.green[400],
     foreground: palette.green[400],
@@ -181,7 +185,7 @@ export const lightColors: ThemeColors = {
     main: palette.amber[400],
     dark: palette.amber[600],
     background: palette.amber[100],
-    foreground: '#805107',
+    foreground: palette.amber[600],
     mutedBackground: '#F1E8CF',
   },
 
@@ -237,6 +241,8 @@ export const darkColors: ThemeColors = {
   },
 
   // Semantic
+  achievement: palette.amber[400],
+  achievementIcon: palette.amber[400],
   success: {
     main: palette.green[400],
     foreground: palette.green[300],
@@ -250,7 +256,7 @@ export const darkColors: ThemeColors = {
   },
   warning: {
     main: palette.amber[400],
-    dark: palette.amber[600],
+    dark: palette.amber[300],
     background: palette.amber[800],
     foreground: palette.amber[400],
     mutedBackground: '#4C4029',

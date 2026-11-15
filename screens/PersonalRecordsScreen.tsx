@@ -99,7 +99,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                       <Ionicons
                         name="flame"
                         size={18}
-                        color={colors.warning.foreground}
+                        color={colors.achievementIcon}
                       />
                       <Text
                         style={{
@@ -125,8 +125,6 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                           padding: 16,
                           borderRadius: 12,
                           marginBottom: 8,
-                          borderLeftWidth: 3,
-                          borderLeftColor: colors.warning.main,
                         }}
                       >
                         <Text

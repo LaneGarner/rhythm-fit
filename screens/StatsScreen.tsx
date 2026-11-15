@@ -153,8 +153,6 @@ export default function StatsScreen({ navigation }: any) {
               marginTop: 16,
               padding: 16,
               borderRadius: 12,
-              borderLeftWidth: 3,
-              borderLeftColor: colors.warning.main,
             }}
           >
             <View
@@ -166,7 +164,7 @@ export default function StatsScreen({ navigation }: any) {
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="trophy" size={20} color={colors.warning.foreground} />
+                <Ionicons name="trophy" size={20} color={colors.achievementIcon} />
                 <Text
                   style={{
                     color: colors.text,
@@ -233,7 +231,7 @@ export default function StatsScreen({ navigation }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text
                     style={{
-                      color: colors.warning.foreground,
+                      color: colors.achievement,
                       fontWeight: '600',
                       marginRight: 8,
                     }}
@@ -342,7 +340,7 @@ export default function StatsScreen({ navigation }: any) {
             >
               <Text
                 className="text-2xl font-bold"
-                style={{ color: colors.warning.foreground }}
+                style={{ color: colors.achievement }}
               >
                 {overallStats.currentStreak}
               </Text>

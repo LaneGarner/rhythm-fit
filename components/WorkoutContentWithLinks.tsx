@@ -129,13 +129,9 @@ export const WorkoutContentWithLinks = React.memo(
         marginVertical: 8,
       },
       blockquote: {
-        borderLeftWidth: 4,
-        borderLeftColor: colors.primary.main,
-        paddingLeft: 12,
         marginVertical: 8,
         backgroundColor: colors.backgroundSecondary,
-        paddingVertical: 8,
-        paddingRight: 8,
+        padding: 8,
       },
       strong: {
         fontWeight: 'bold' as const,
