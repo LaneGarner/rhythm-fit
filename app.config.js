@@ -17,6 +17,8 @@ export default {
       backgroundColor: '#000000',
     },
     ios: {
+      // A black launch screen hands off to the animated in-app splash.
+      splash: { backgroundColor: '#000000' },
       bundleIdentifier: 'com.yourname.rhythm',
       supportsTablet: true,
       requireFullScreen: false,
