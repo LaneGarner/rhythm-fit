@@ -1016,7 +1016,9 @@ export default function WeeklyScreen({ navigation }: any) {
             </Text>
             <View
               style={{
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+                borderWidth: 1,
                 borderRadius: 12,
                 padding: 12,
                 marginBottom: 16,
@@ -1037,7 +1039,9 @@ export default function WeeklyScreen({ navigation }: any) {
             {/* Date Picker */}
             <View
               style={{
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+                borderWidth: 1,
                 borderRadius: 12,
                 marginBottom: 20,
                 overflow: 'hidden',

@@ -361,7 +361,7 @@ function TipRow({
         gap: 10,
         padding: 12,
         borderRadius: 10,
-        backgroundColor: colors.surfaceSecondary,
+        backgroundColor: colors.cardBackground,
         marginBottom: 8,
       }}
     >

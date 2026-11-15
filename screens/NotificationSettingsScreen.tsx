@@ -106,7 +106,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       <View className="flex-1 mr-3">
         <Text
           className="text-base"
-          style={{ color: disabled ? colors.textSecondary : colors.text }}
+          style={{ color: colors.text }}
         >
           {label}
         </Text>
@@ -159,7 +159,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       <Text
         className="text-base"
         style={{
-          color: disabled ? colors.textSecondary : colors.primary.main,
+          color: disabled ? colors.textSecondary : colors.primary.foreground,
         }}
       >
         {formatDisplayTime(value)}
@@ -208,7 +208,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         {permissionDenied && (
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
               borderRadius: 10,
               padding: 16,
               marginBottom: 24,
@@ -273,7 +273,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
 
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -306,7 +306,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -361,7 +361,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -400,7 +400,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
                     fontSize: 16,
                     color: disabled
                       ? colors.textSecondary
-                      : colors.primary.main,
+                      : colors.primary.foreground,
                   }}
                   accessibilityLabel="Inactivity threshold in days"
                 />

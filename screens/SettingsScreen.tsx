@@ -49,7 +49,7 @@ export default function SettingsScreen({ navigation }: any) {
   const { themePreference, setThemePreference, colorScheme, colors } =
     useTheme();
   const isDark = colorScheme === 'dark';
-  const cardColor = isDark ? colors.surface : colors.surfaceSecondary;
+  const cardColor = colors.cardBackground;
   const actionColor = colors.primary.foreground;
   const chevronColor = isDark ? colors.textSecondary : colors.textTertiary;
   const { user, signOut, isConfigured, getAccessToken } = useAuth();
@@ -389,31 +389,6 @@ export default function SettingsScreen({ navigation }: any) {
                   />
                   <TouchableOpacity
                     hitSlop={14}
-                    className="p-4 flex-row items-center justify-between"
-                    onPress={() => openLink(MANAGE_SUBSCRIPTIONS_URL)}
-                    accessibilityRole="link"
-                  >
-                    <Text
-                      className="flex-1 font-medium"
-                      style={{ color: actionColor }}
-                    >
-                      Manage Subscription
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={chevronColor}
-                    />
-                  </TouchableOpacity>
-                  <View
-                    style={{
-                      height: 0.5,
-                      backgroundColor: colors.border,
-                      marginLeft: 16,
-                    }}
-                  />
-                  <TouchableOpacity
-                    hitSlop={14}
                     className="p-4"
                     onPress={handleLogout}
                     accessibilityRole="button"
@@ -426,28 +401,6 @@ export default function SettingsScreen({ navigation }: any) {
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  hitSlop={14}
-                  className="p-4"
-                  onPress={confirmAccountDeletion}
-                  disabled={isDeletingAccount}
-                  accessibilityRole="button"
-                  accessibilityLabel="Delete account"
-                  accessibilityState={{ disabled: isDeletingAccount }}
-                  style={{
-                    backgroundColor: cardColor,
-                    borderRadius: 10,
-                    marginTop: 12,
-                    opacity: isDeletingAccount ? 0.6 : 1,
-                  }}
-                >
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.error.foreground }}
-                  >
-                    {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
-                  </Text>
-                </TouchableOpacity>
               </View>
             ) : (
               <View style={{ marginBottom: 32 }}>
@@ -1122,6 +1075,31 @@ export default function SettingsScreen({ navigation }: any) {
               </TouchableOpacity>
             </React.Fragment>
           ))}
+          {user && (
+            <>
+              <View
+                style={{
+                  height: 0.5,
+                  backgroundColor: colors.border,
+                  marginLeft: 16,
+                }}
+              />
+              <TouchableOpacity
+                hitSlop={14}
+                className="p-4"
+                onPress={confirmAccountDeletion}
+                disabled={isDeletingAccount}
+                accessibilityRole="button"
+                accessibilityLabel="Delete account"
+                accessibilityState={{ disabled: isDeletingAccount }}
+                style={{ opacity: isDeletingAccount ? 0.6 : 1 }}
+              >
+                <Text className="text-base" style={{ color: colors.error.foreground }}>
+                  {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
         <Text
           style={{

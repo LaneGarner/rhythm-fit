@@ -145,8 +145,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
     [source, range, invalid]
   );
   const panel = {
-    backgroundColor:
-      colorScheme === 'dark' ? colors.surface : colors.surfaceSecondary,
+    backgroundColor: colors.cardBackground,
     borderRadius: 10,
     overflow: 'hidden' as const,
   };

@@ -104,7 +104,11 @@ export default function PlateCalculatorModal({
         <ScrollView className="flex-1 p-4">
           {/* Target Weight Display */}
           <View
-            style={{ backgroundColor: colors.surfaceSecondary }}
+            style={{
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+            }}
             className="p-4 rounded-xl mb-4"
           >
             <Text

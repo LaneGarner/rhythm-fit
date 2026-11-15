@@ -1744,7 +1744,9 @@ export default function DayScreen({ navigation, route }: any) {
           </Text>
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
               borderRadius: 12,
               padding: 12,
               marginBottom: 16,
@@ -1764,7 +1766,9 @@ export default function DayScreen({ navigation, route }: any) {
 
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
               borderRadius: 12,
               marginBottom: 20,
               overflow: 'hidden',
