@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -12,7 +13,6 @@ import {
 } from 'react-native';
 import HeaderButton from '../components/HeaderButton';
 import { usePreferences } from '../context/PreferencesContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   getPermissionStatus,
   requestPermission,
@@ -52,7 +52,6 @@ export default function NotificationSettingsScreen({ navigation }: any) {
   const { colors, colorScheme } = useTheme();
   const buttonTextColor =
     colorScheme === 'dark' ? colors.text : colors.textInverse;
-  const { insets } = useResponsiveLayout();
   const { notificationSettings, setNotificationSettings } = usePreferences();
   const [permissionStatus, setPermissionStatus] =
     useState<string>('undetermined');
@@ -106,7 +105,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       <View className="flex-1 mr-3">
         <Text
           className="text-base"
-          style={{ color: disabled ? colors.textSecondary : colors.text }}
+          style={{ color: colors.text }}
         >
           {label}
         </Text>
@@ -159,7 +158,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       <Text
         className="text-base"
         style={{
-          color: disabled ? colors.textSecondary : colors.primary.main,
+          color: disabled ? colors.textSecondary : colors.primary.foreground,
         }}
       >
         {formatDisplayTime(value)}
@@ -181,25 +180,17 @@ export default function NotificationSettingsScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 px-4 flex-row items-center"
-        style={{
-          paddingTop: insets.top + 8,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-          borderBottomWidth: 1,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
-        <View className="flex-1 items-center">
+        <View className="items-center">
           <Text className="text-2xl font-bold" style={{ color: colors.text }}>
             Notifications
           </Text>
         </View>
-        <View style={{ width: 40 }} />
-      </View>
+      </AppHeader>
 
       <ScrollView
         className="flex-1 px-6 pt-6"
@@ -208,7 +199,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         {permissionDenied && (
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
               borderRadius: 10,
               padding: 16,
               marginBottom: 24,
@@ -273,7 +264,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
 
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -306,7 +297,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -361,7 +352,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         </Text>
         <View
           style={{
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.cardBackground,
             borderRadius: 10,
             marginBottom: 24,
             overflow: 'hidden',
@@ -400,7 +391,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
                     fontSize: 16,
                     color: disabled
                       ? colors.textSecondary
-                      : colors.primary.main,
+                      : colors.primary.foreground,
                   }}
                   accessibilityLabel="Inactivity threshold in days"
                 />
@@ -468,7 +459,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
             >
               <Text
                 style={{
-                  color: colors.primary.main,
+                  color: colors.primary.foreground,
                   fontSize: 17,
                   fontWeight: '600',
                 }}

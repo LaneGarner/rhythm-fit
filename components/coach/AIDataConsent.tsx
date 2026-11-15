@@ -1,3 +1,4 @@
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -26,6 +27,7 @@ interface Props {
 
 export default function AIDataConsent({ userId, onAllowed, onNotNow }: Props) {
   const { colors } = useTheme();
+  const tabBarInset = useTabBarInset(24);
   const { insets } = useResponsiveLayout();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function AIDataConsent({ userId, onAllowed, onNotNow }: Props) {
         flexGrow: 1,
         justifyContent: 'center',
         paddingTop: 24,
-        paddingBottom: Math.max(24, insets.bottom + 24),
+        paddingBottom: tabBarInset,
         paddingLeft: Math.max(24, insets.left + 16),
         paddingRight: Math.max(24, insets.right + 16),
       }}
@@ -80,7 +82,7 @@ export default function AIDataConsent({ userId, onAllowed, onNotNow }: Props) {
         <Ionicons
           name="shield-checkmark-outline"
           size={36}
-          color={colors.primary.main}
+          color={colors.primary.foreground}
           style={{ alignSelf: 'center', marginBottom: 16 }}
         />
         <Text
@@ -161,14 +163,14 @@ export default function AIDataConsent({ userId, onAllowed, onNotNow }: Props) {
             accessibilityRole="link"
             style={{ minHeight: 44, justifyContent: 'center', padding: 8 }}
           >
-            <Text style={{ color: colors.primary.main }}>Privacy Policy</Text>
+            <Text style={{ color: colors.primary.foreground }}>Privacy Policy</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => openLink(TERMS_OF_USE_URL)}
             accessibilityRole="link"
             style={{ minHeight: 44, justifyContent: 'center', padding: 8 }}
           >
-            <Text style={{ color: colors.primary.main }}>Terms of Use</Text>
+            <Text style={{ color: colors.primary.foreground }}>Terms of Use</Text>
           </TouchableOpacity>
         </View>
 
@@ -176,7 +178,7 @@ export default function AIDataConsent({ userId, onAllowed, onNotNow }: Props) {
           <Text
             accessibilityLiveRegion="polite"
             style={{
-              color: colors.error.main,
+              color: colors.error.foreground,
               fontSize: 13,
               textAlign: 'center',
               marginTop: 8,

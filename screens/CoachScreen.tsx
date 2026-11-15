@@ -63,6 +63,7 @@ import { previewCoachCalendar, type CalendarPatch } from '../services/coachCalen
 import { applyCoachCalendarPatch } from '../redux/activitySlice';
 import { AppDispatch, RootState, store } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
+import { useTabBarInset } from '../hooks/useTabBarInset';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
 import { useEntitlements } from '../context/EntitlementContext';
 import { useCoachProfile } from '../context/CoachProfileContext';
@@ -81,11 +82,30 @@ const GLOW_COLOR_DARK = palette.blue[500];
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
+const CHAT_TITLE_LIMIT = 50;
+
+function makeChatTitle(text: string) {
+  return text.length > CHAT_TITLE_LIMIT
+    ? `${text.slice(0, CHAT_TITLE_LIMIT - 1).trimEnd()}…`
+    : text;
+}
+
 interface ChatSession {
   id: string;
   title: string;
   messages: any[];
   timestamp: Date;
+}
+
+function formatHistoryTitle(session: ChatSession) {
+  const title = session.title;
+  if (title.length !== CHAT_TITLE_LIMIT || title.endsWith('…')) return title;
+
+  const firstMessage = session.messages.find(message => message.type === 'user');
+  const isLegacyPreview = firstMessage
+    ? firstMessage.text.startsWith(title) && firstMessage.text.length > title.length
+    : true;
+  return isLegacyPreview ? `${title.trimEnd()}…` : title;
 }
 
 export default function CoachScreen({ navigation, route }: any) {
@@ -151,6 +171,8 @@ export default function CoachScreen({ navigation, route }: any) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const clearingHistoryRef = useRef(false);
 
   const HISTORY_PREVIEW_COUNT = 5;
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -162,9 +184,10 @@ export default function CoachScreen({ navigation, route }: any) {
   const { bottom } = useSafeAreaInsets();
   const usesClassicTabBar =
     Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const composerPadding = 12;
   const composerInset = usesClassicTabBar
-    ? 8
-    : (measuredTabBar > 0 ? measuredTabBar : 49 + bottom) + 8;
+    ? composerPadding
+    : (measuredTabBar > 0 ? measuredTabBar : 49 + bottom) + composerPadding;
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', () =>
@@ -201,6 +224,7 @@ export default function CoachScreen({ navigation, route }: any) {
   const dispatch = useDispatch<AppDispatch>();
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colorScheme, colors } = useTheme();
+  const historyBottomInset = useTabBarInset();
   const isDark = colorScheme === 'dark';
   const { user, getAccessToken } = useAuth();
   useEffect(() => {
@@ -395,7 +419,7 @@ export default function CoachScreen({ navigation, route }: any) {
     // Find the first user message for the title
     const firstUserMessage = messages.find(m => m.type === 'user');
     const sessionTitle = firstUserMessage
-      ? firstUserMessage.text.substring(0, 50)
+      ? makeChatTitle(firstUserMessage.text)
       : 'Chat Session';
 
     const newSession: ChatSession = {
@@ -504,20 +528,67 @@ export default function CoachScreen({ navigation, route }: any) {
     );
   };
 
-  const deleteAllSessions = async () => {
+  const deleteAllSessions = () => {
     Alert.alert(
-      'Delete All Chats',
-      'Are you sure you want to delete all chat sessions?',
+      'Clear chat history?',
+      'This permanently deletes your saved Coach conversations.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete All',
+          text: 'Clear history',
           style: 'destructive',
           onPress: async () => {
-            setChatHistory([]);
-            saveChatHistory([]);
-            // Always start a new chat when all sessions are deleted
-            startNewChat();
+            if (clearingHistoryRef.current) return;
+            clearingHistoryRef.current = true;
+            setIsClearingHistory(true);
+            try {
+              const token = getAccessToken();
+              if (!token) throw new Error('Sign in to clear chat history.');
+
+              const sessions = await getChatSessions(token);
+              const failedIds = new Set<string>();
+              for (const session of sessions) {
+                try {
+                  await deleteChatSession(token, session.id);
+                } catch {
+                  failedIds.add(session.id);
+                }
+              }
+
+              if (failedIds.size) {
+                const remaining = chatHistory.filter(session => failedIds.has(session.id));
+                const remainingIds = new Set(remaining.map(session => session.id));
+                for (const session of sessions) {
+                  if (failedIds.has(session.id) && !remainingIds.has(session.id)) {
+                    remaining.push({
+                      id: session.id,
+                      title: session.title,
+                      messages: [],
+                      timestamp: new Date(session.updated_at),
+                    });
+                  }
+                }
+                await AsyncStorage.setItem(chatHistoryKey, JSON.stringify(remaining));
+                setChatHistory(remaining);
+                if (!failedIds.has(currentSessionId)) {
+                  startNewChat();
+                  setActiveTab('history');
+                }
+                Alert.alert('Some chats could not be deleted', 'Try clearing chat history again.');
+                return;
+              }
+
+              await AsyncStorage.removeItem(chatHistoryKey);
+              setChatHistory([]);
+              setShowAllHistory(false);
+              startNewChat();
+              setActiveTab('history');
+            } catch {
+              Alert.alert('Could not clear chat history', 'Please try again.');
+            } finally {
+              clearingHistoryRef.current = false;
+              setIsClearingHistory(false);
+            }
           },
         },
       ]
@@ -548,6 +619,7 @@ export default function CoachScreen({ navigation, route }: any) {
   };
 
   const handleSend = async () => {
+    if (clearingHistoryRef.current) return;
     if (!inputText.trim() || isProcessing || coachLimited || calendarPreview) return;
 
     if (user && isAuthenticated) {
@@ -625,8 +697,8 @@ export default function CoachScreen({ navigation, route }: any) {
       ];
       const isFirstUserMessage = messages.length === 1;
       const sessionTitle = isFirstUserMessage
-        ? currentInput.substring(0, 50)
-        : messages[1]?.text?.substring(0, 50) || 'Chat Session';
+        ? makeChatTitle(currentInput)
+        : makeChatTitle(messages[1]?.text || 'Chat Session');
 
       // Create bot message ID but don't add to messages yet - show "Thinking..." first
       const botMessageId = (Date.now() + 1).toString();
@@ -902,7 +974,10 @@ export default function CoachScreen({ navigation, route }: any) {
   const renderChatHistory = () => {
     return (
       <View className="flex-1">
-        <ScrollView className="flex-1 px-4 pt-4">
+        <ScrollView
+          className="flex-1 px-4 pt-4"
+          contentContainerStyle={{ paddingBottom: historyBottomInset }}
+        >
           {chatHistory.length === 0 ? (
             <View className="items-center py-8">
               <Ionicons
@@ -943,9 +1018,11 @@ export default function CoachScreen({ navigation, route }: any) {
                     <View className="flex-1">
                       <Text
                         className="font-semibold"
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
                         style={{ color: colors.text }}
                       >
-                        {session.title}
+                        {formatHistoryTitle(session)}
                       </Text>
                       <Text
                         style={{ color: colors.textSecondary }}
@@ -968,7 +1045,7 @@ export default function CoachScreen({ navigation, route }: any) {
                       <Ionicons
                         name="trash"
                         size={16}
-                        color={colors.error.main}
+                        color={colors.error.foreground}
                       />
                     </TouchableOpacity>
                   </View>
@@ -997,11 +1074,11 @@ export default function CoachScreen({ navigation, route }: any) {
                   <Ionicons
                     name={showAllHistory ? 'chevron-up' : 'chevron-down'}
                     size={18}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                     style={{ marginRight: 6 }}
                   />
                   <Text
-                    style={{ color: colors.primary.main, fontWeight: '500' }}
+                    style={{ color: colors.primary.foreground, fontWeight: '500' }}
                   >
                     {showAllHistory
                       ? 'Show Less'
@@ -1009,6 +1086,27 @@ export default function CoachScreen({ navigation, route }: any) {
                   </Text>
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                onPress={deleteAllSessions}
+                disabled={isClearingHistory || isProcessing}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isClearingHistory || isProcessing, busy: isClearingHistory }}
+                style={{
+                  alignSelf: 'center',
+                  justifyContent: 'center',
+                  minHeight: 44,
+                  marginTop: 8,
+                  paddingHorizontal: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                  opacity: isClearingHistory || isProcessing ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: colors.error.foreground, fontWeight: '600' }}>
+                  {isClearingHistory ? 'Clearing history…' : 'Clear chat history'}
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </ScrollView>
@@ -1020,10 +1118,7 @@ export default function CoachScreen({ navigation, route }: any) {
   if (!hasCoachAccess) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <AppHeader
-          clearsTopTabBar
-          rightAction={<View style={{ width: 44, height: 44 }} />}
-        >
+        <AppHeader clearsTopTabBar>
           <AppHeaderTitle title="Coach" />
         </AppHeader>
         <CoachGate>{null}</CoachGate>
@@ -1178,7 +1273,7 @@ export default function CoachScreen({ navigation, route }: any) {
               <Text
                 className="text-center font-medium"
                 style={{
-                  color: selected ? colors.primary.main : colors.textSecondary,
+                  color: selected ? colors.primary.foreground : colors.textSecondary,
                 }}
               >
                 {tab === 'chat' ? 'Chat' : 'History'}
@@ -1245,9 +1340,8 @@ export default function CoachScreen({ navigation, route }: any) {
                     }
                     delayLongPress={300}
                     activeOpacity={0.8}
-                    className={`max-w-[80%] p-3 rounded-2xl ${
-                      isDark ? 'bg-blue-700' : 'bg-blue-500'
-                    }`}
+                    className="max-w-[80%] p-3 rounded-2xl"
+                    style={{ backgroundColor: colors.primary.main }}
                   >
                     {copiedMessageId === message.id && (
                       <View
@@ -1338,7 +1432,7 @@ export default function CoachScreen({ navigation, route }: any) {
                   <Text style={{ color: colors.text }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarPreview)}>
-                  <Text style={{ color: colors.primary.main }}>Apply changes</Text>
+                  <Text style={{ color: colors.primary.foreground }}>Apply changes</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1347,7 +1441,7 @@ export default function CoachScreen({ navigation, route }: any) {
             <View className="flex-row items-center justify-between px-4" accessibilityLiveRegion="polite">
               <Text style={{ color: colors.text }}>Calendar updated</Text>
               <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarUndo)}>
-                <Text style={{ color: colors.primary.main }}>Undo</Text>
+                <Text style={{ color: colors.primary.foreground }}>Undo</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -1366,9 +1460,10 @@ export default function CoachScreen({ navigation, route }: any) {
             style={{
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
+              paddingTop: keyboardVisible ? 16 : composerPadding,
               paddingBottom: keyboardVisible ? 16 : composerInset,
             }}
-            className="p-4 border-t"
+            className="px-4 border-t"
           >
             {coachLimited ? (
               <View accessibilityLiveRegion="polite">

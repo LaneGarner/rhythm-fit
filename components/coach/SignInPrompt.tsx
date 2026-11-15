@@ -1,13 +1,15 @@
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 // Shown to users without Coach access. Today that's "not signed in"; when the
 // paywall lands, this same surface (or its payment sibling) sits behind CoachGate.
 export default function SignInPrompt() {
   const { colors } = useTheme();
+  const tabBarInset = useTabBarInset(24);
   const navigation = useNavigation<any>();
 
   return (
@@ -15,7 +17,14 @@ export default function SignInPrompt() {
       style={{ flex: 1, backgroundColor: colors.background }}
       accessibilityLabel="Coach is available after signing in"
     >
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 24 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: 24,
+          paddingBottom: tabBarInset,
+        }}
+      >
         <View
           style={{
             alignItems: 'center',
@@ -37,7 +46,7 @@ export default function SignInPrompt() {
               marginBottom: 16,
             }}
           >
-            <Ionicons name="sparkles" size={24} color={colors.primary.main} />
+            <Ionicons name="sparkles" size={24} color={colors.primary.foreground} />
           </View>
           <Text
             accessibilityRole="header"
@@ -97,7 +106,7 @@ export default function SignInPrompt() {
             The rest of the app keeps working without an account.
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

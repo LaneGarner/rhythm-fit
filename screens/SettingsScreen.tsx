@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { rogueTimer } from '../modules/rogue-timer';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,8 +50,8 @@ export default function SettingsScreen({ navigation }: any) {
   const { themePreference, setThemePreference, colorScheme, colors } =
     useTheme();
   const isDark = colorScheme === 'dark';
-  const cardColor = isDark ? colors.surface : colors.surfaceSecondary;
-  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
+  const cardColor = colors.cardBackground;
+  const actionColor = colors.primary.foreground;
   const chevronColor = isDark ? colors.textSecondary : colors.textTertiary;
   const { user, signOut, isConfigured, getAccessToken } = useAuth();
   const {
@@ -72,7 +73,7 @@ export default function SettingsScreen({ navigation }: any) {
     isActive: tutorialActive,
   } = useTutorial();
   const dispatch = useDispatch();
-  const { insets, isLandscape } = useResponsiveLayout();
+  const { isLandscape } = useResponsiveLayout();
   const equipmentRef = useRef<View>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [aiDataSharingEnabled, setAIDataSharingEnabled] = useState(false);
@@ -317,18 +318,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 px-4 bg-white border-b border-gray-200 flex-row items-center"
-        style={{
-          paddingTop: insets.top + 8,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
-        <View className="flex-1 items-center">
+        <View className="items-center">
           <Text
             className="text-2xl font-bold mt-0"
             style={{ color: colors.text }}
@@ -336,8 +331,7 @@ export default function SettingsScreen({ navigation }: any) {
             Settings
           </Text>
         </View>
-        <View style={{ width: 40 }} />
-      </View>
+      </AppHeader>
 
       <ScrollView
         className="flex-1 px-6 pt-8"
@@ -389,65 +383,18 @@ export default function SettingsScreen({ navigation }: any) {
                   />
                   <TouchableOpacity
                     hitSlop={14}
-                    className="p-4 flex-row items-center justify-between"
-                    onPress={() => openLink(MANAGE_SUBSCRIPTIONS_URL)}
-                    accessibilityRole="link"
-                  >
-                    <Text
-                      className="flex-1 font-medium"
-                      style={{ color: actionColor }}
-                    >
-                      Manage Subscription
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={chevronColor}
-                    />
-                  </TouchableOpacity>
-                  <View
-                    style={{
-                      height: 0.5,
-                      backgroundColor: colors.border,
-                      marginLeft: 16,
-                    }}
-                  />
-                  <TouchableOpacity
-                    hitSlop={14}
                     className="p-4"
                     onPress={handleLogout}
                     accessibilityRole="button"
                   >
                     <Text
-                      className="text-red-500 font-medium"
-                      style={isDark ? { color: '#fca5a5' } : undefined}
+                      className="font-medium"
+                      style={{ color: colors.error.foreground }}
                     >
                       Sign Out
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  hitSlop={14}
-                  className="p-4"
-                  onPress={confirmAccountDeletion}
-                  disabled={isDeletingAccount}
-                  accessibilityRole="button"
-                  accessibilityLabel="Delete account"
-                  accessibilityState={{ disabled: isDeletingAccount }}
-                  style={{
-                    backgroundColor: cardColor,
-                    borderRadius: 10,
-                    marginTop: 12,
-                    opacity: isDeletingAccount ? 0.6 : 1,
-                  }}
-                >
-                  <Text
-                    className="text-red-500 font-medium"
-                    style={isDark ? { color: '#fca5a5' } : undefined}
-                  >
-                    {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
-                  </Text>
-                </TouchableOpacity>
               </View>
             ) : (
               <View style={{ marginBottom: 32 }}>
@@ -1122,6 +1069,31 @@ export default function SettingsScreen({ navigation }: any) {
               </TouchableOpacity>
             </React.Fragment>
           ))}
+          {user && (
+            <>
+              <View
+                style={{
+                  height: 0.5,
+                  backgroundColor: colors.border,
+                  marginLeft: 16,
+                }}
+              />
+              <TouchableOpacity
+                hitSlop={14}
+                className="p-4"
+                onPress={confirmAccountDeletion}
+                disabled={isDeletingAccount}
+                accessibilityRole="button"
+                accessibilityLabel="Delete account"
+                accessibilityState={{ disabled: isDeletingAccount }}
+                style={{ opacity: isDeletingAccount ? 0.6 : 1 }}
+              >
+                <Text className="text-base" style={{ color: colors.error.foreground }}>
+                  {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
         <Text
           style={{

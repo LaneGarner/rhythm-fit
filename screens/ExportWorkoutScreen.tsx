@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -91,13 +92,9 @@ function Choice({
         name={selected ? 'radio-button-on' : 'radio-button-off'}
         size={22}
         color={
-          colorScheme === 'dark'
-            ? selected
-              ? '#93c5fd'
-              : colors.textSecondary
-            : selected
-              ? colors.primary.main
-              : colors.textTertiary
+          selected
+            ? colors.primary.main
+            : colorScheme === 'dark' ? colors.textSecondary : colors.textTertiary
         }
       />
     </TouchableOpacity>
@@ -106,8 +103,8 @@ function Choice({
 export default function ExportWorkoutScreen({ navigation }: any) {
   const { user } = useAuth();
   const { colors, colorScheme } = useTheme();
-  const actionColor = colorScheme === 'dark' ? '#93c5fd' : colors.primary.main;
-  const { insets, hasTopTabBar } = useResponsiveLayout();
+  const actionColor = colors.primary.foreground;
+  const { insets } = useResponsiveLayout();
   const [source, setSource] = useState<WorkoutBackupData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rangeType, setRangeType] = useState<'all' | 'dates'>('all');
@@ -149,8 +146,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
     [source, range, invalid]
   );
   const panel = {
-    backgroundColor:
-      colorScheme === 'dark' ? colors.surface : colors.surfaceSecondary,
+    backgroundColor: colors.cardBackground,
     borderRadius: 10,
     overflow: 'hidden' as const,
   };
@@ -164,26 +160,18 @@ export default function ExportWorkoutScreen({ navigation }: any) {
   };
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + (hasTopTabBar ? 64 : 16),
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        clearsTopTabBar
+        leftAction={
+          <HeaderButton
+            label="Back"
+            onPress={() => navigation.goBack()}
+          />
+        }
       >
-        <HeaderButton
-          label="Back"
-          onPress={() => navigation.goBack()}
-        />
         <Text
           accessibilityRole="header"
           style={{
-            flex: 1,
             textAlign: 'center',
             fontSize: 18,
             fontWeight: '600',
@@ -192,8 +180,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
         >
           Export workout data
         </Text>
-        <View style={{ width: 55 }} />
-      </View>
+      </AppHeader>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 24,
@@ -240,7 +227,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
         {invalid && (
           <Text
             accessibilityRole="alert"
-            style={{ color: colors.error.main, marginTop: 8 }}
+            style={{ color: colors.error.foreground, marginTop: 8 }}
           >
             End date must be on or after start date.
           </Text>
@@ -266,7 +253,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
             <>
               <Text
                 accessibilityRole="alert"
-                style={{ color: colors.error.main }}
+                style={{ color: colors.error.foreground }}
               >
                 {error}
               </Text>
@@ -340,7 +327,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
           }}
           style={{
             backgroundColor:
-              colorScheme === 'dark' ? '#0069e0' : colors.primary.main,
+              colors.primary.main,
             padding: 16,
             borderRadius: 10,
             opacity: !summary || busy || invalid ? 0.5 : 1,
@@ -349,7 +336,7 @@ export default function ExportWorkoutScreen({ navigation }: any) {
           <Text
             style={{
               textAlign: 'center',
-              color: colorScheme === 'dark' ? colors.text : colors.textInverse,
+              color: '#fff',
               fontSize: 16,
               fontWeight: '600',
             }}

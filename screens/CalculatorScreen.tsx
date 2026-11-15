@@ -210,7 +210,7 @@ export default function CalculatorScreen({ navigation }: any) {
           accessibilityRole="button"
           accessibilityLabel="Configure Equipment"
         >
-          <Text style={{ color: '#3b82f6' }}>Configure Equipment</Text>
+          <Text style={{ color: colors.primary.foreground }}>Configure Equipment</Text>
         </TouchableOpacity>
 
         {/* Mode Toggle */}
@@ -283,7 +283,7 @@ export default function CalculatorScreen({ navigation }: any) {
             onPress={() => setShowBarbellPicker(!showBarbellPicker)}
             style={{
               backgroundColor: colors.inputBackground,
-              borderColor: colors.border,
+              borderColor: colors.inputBorder,
             }}
             className="p-3 rounded-lg border flex-row justify-between items-center"
             accessibilityRole="button"
@@ -313,12 +313,13 @@ export default function CalculatorScreen({ navigation }: any) {
                   style={{
                     backgroundColor:
                       selectedBarbell?.id === barbell.id
-                        ? isDark
-                          ? '#3b82f6'
-                          : '#dbeafe'
-                        : isDark
-                          ? '#27272a'
-                          : '#f9fafb',
+                        ? colors.surfaceSecondary
+                        : colors.background,
+                    borderWidth: 1,
+                    borderColor:
+                      selectedBarbell?.id === barbell.id
+                        ? colors.primary.main
+                        : 'transparent',
                   }}
                   className="p-3 rounded-lg mb-1"
                   accessibilityRole="button"
@@ -329,14 +330,7 @@ export default function CalculatorScreen({ navigation }: any) {
                 >
                   <Text
                     style={{
-                      color:
-                        selectedBarbell?.id === barbell.id
-                          ? isDark
-                            ? '#fff'
-                            : '#1d4ed8'
-                          : isDark
-                            ? '#e5e5e5'
-                            : '#374151',
+                      color: colors.text,
                     }}
                   >
                     {barbell.name} ({barbell.weight} lbs)
@@ -371,7 +365,7 @@ export default function CalculatorScreen({ navigation }: any) {
                   returnKeyType="done"
                   style={{
                     backgroundColor: colors.inputBackground,
-                    borderColor: colors.border,
+                    borderColor: colors.inputBorder,
                     color: colors.text,
                     height: 44,
                     fontSize: 16,
@@ -381,7 +375,7 @@ export default function CalculatorScreen({ navigation }: any) {
                 />
                 <TouchableOpacity
                   onPress={handleCalculate}
-                  style={{ backgroundColor: '#3b82f6', height: 44 }}
+                  style={{ backgroundColor: colors.primary.main, height: 44 }}
                   className="ml-3 px-6 rounded-lg justify-center"
                   accessibilityRole="button"
                   accessibilityLabel="Calculate plate breakdown"
@@ -465,7 +459,7 @@ export default function CalculatorScreen({ navigation }: any) {
                               style={{
                                 backgroundColor:
                                   targetWeight === weight.toString()
-                                    ? '#3b82f6'
+                                    ? colors.primary.main
                                     : isDark
                                       ? '#27272a'
                                       : '#e5e7eb',
@@ -505,7 +499,7 @@ export default function CalculatorScreen({ navigation }: any) {
                               : 'Show more weight options'
                           }
                         >
-                          <Text style={{ color: '#3b82f6' }}>
+                          <Text style={{ color: colors.primary.foreground }}>
                             {showAllWeights ? 'Show less' : 'Show more'}
                           </Text>
                         </TouchableOpacity>
@@ -534,7 +528,7 @@ export default function CalculatorScreen({ navigation }: any) {
                     {/* Plate breakdown text */}
                     <Text
                       className="text-xl font-bold mb-2"
-                      style={{ color: colors.primary.main }}
+                      style={{ color: colors.primary.foreground }}
                     >
                       {formatPlateResult(result)}
                     </Text>
@@ -543,7 +537,7 @@ export default function CalculatorScreen({ navigation }: any) {
                     <View className="flex-row items-center mb-4">
                       <Text
                         className="text-2xl font-bold"
-                        style={{ color: colors.success.main }}
+                        style={{ color: colors.success.foreground }}
                       >
                         = {result.achievedWeight} lbs
                       </Text>
@@ -583,7 +577,7 @@ export default function CalculatorScreen({ navigation }: any) {
                         }}
                         className="p-3 rounded-lg mb-4"
                       >
-                        <Text style={{ color: colors.warning.main }}>
+                        <Text style={{ color: colors.warning.foreground }}>
                           Target: {targetWeight} lbs ({result.remainder} lbs
                           short)
                         </Text>
@@ -766,7 +760,7 @@ export default function CalculatorScreen({ navigation }: any) {
                   accessibilityRole="button"
                   accessibilityLabel="Clear all selected plates"
                 >
-                  <Text style={{ color: colors.primary.main }}>Clear All</Text>
+                  <Text style={{ color: colors.primary.foreground }}>Clear All</Text>
                 </TouchableOpacity>
               )}
             </View>

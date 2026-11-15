@@ -104,7 +104,11 @@ export default function PlateCalculatorModal({
         <ScrollView className="flex-1 p-4">
           {/* Target Weight Display */}
           <View
-            style={{ backgroundColor: colors.surfaceSecondary }}
+            style={{
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+            }}
             className="p-4 rounded-xl mb-4"
           >
             <Text
@@ -130,7 +134,7 @@ export default function PlateCalculatorModal({
               onPress={() => setShowBarbellPicker(!showBarbellPicker)}
               style={{
                 backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
+                borderColor: colors.inputBorder,
               }}
               className="p-3 rounded-lg border flex-row justify-between items-center"
             >
@@ -193,7 +197,7 @@ export default function PlateCalculatorModal({
                   {/* Plate breakdown text */}
                   <Text
                     className="text-xl font-bold mb-3"
-                    style={{ color: colors.primary.main }}
+                    style={{ color: colors.primary.foreground }}
                   >
                     + {formatPlateResult(result)}
                   </Text>
@@ -223,7 +227,7 @@ export default function PlateCalculatorModal({
                       }}
                       className="p-3 rounded-lg mt-4"
                     >
-                      <Text style={{ color: colors.warning.main }}>
+                      <Text style={{ color: colors.warning.foreground }}>
                         Closest achievable: {result.achievedWeight} lbs (
                         {result.remainder} lbs short of {targetWeight})
                       </Text>

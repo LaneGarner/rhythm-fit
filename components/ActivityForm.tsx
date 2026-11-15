@@ -1,3 +1,5 @@
+import AppHeader from './AppHeader';
+import HeaderButton from './HeaderButton';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
@@ -423,89 +425,16 @@ function ActivityForm(
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
       {!hideHeader && (
-        <View
-          style={{
-            height: 132,
-            paddingHorizontal: 16,
-            backgroundColor: colors.surface,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
+        <AppHeader
+          clearsTopTabBar
+          leftAction={<HeaderButton label="Cancel" onPress={onCancel} />}
+          rightAction={<HeaderButton label={saveButtonLabel || 'Save'} onPress={handleSave} />}
         >
-          {/* Left: Cancel button */}
-          <TouchableOpacity
-            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-            onPress={onCancel}
-            style={{
-              position: 'absolute',
-              left: 16,
-              top: 44,
-              height: 88,
-              justifyContent: 'center',
-              zIndex: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.primary.main,
-                fontSize: 18,
-                fontWeight: '500',
-              }}
-            >
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          {/* Center: Title */}
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 44,
-              height: 88,
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: '600',
-                color: colors.text,
-                textAlign: 'center',
-              }}
-            >
-              {headerTitle ||
-                (mode === 'create' ? 'New Activity' : 'Edit Activity')}
-            </Text>
-          </View>
-          {/* Right: Save button */}
-          <TouchableOpacity
-            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-            onPress={handleSave}
-            style={{
-              position: 'absolute',
-              right: 16,
-              top: 44,
-              height: 88,
-              justifyContent: 'center',
-              zIndex: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.primary.main,
-                fontSize: 18,
-                fontWeight: '600',
-              }}
-            >
-              {saveButtonLabel || 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, textAlign: 'center' }}>
+            {headerTitle || (mode === 'create' ? 'New Activity' : 'Edit Activity')}
+          </Text>
+        </AppHeader>
       )}
 
       <ScrollView
@@ -554,11 +483,8 @@ function ActivityForm(
               placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
-              className={`px-4 py-3 border rounded-lg text-base ${
-                isDark
-                  ? 'bg-zinc-800 border-zinc-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
+              className="px-4 py-3 border rounded-lg text-base"
+              style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
               textAlignVertical="top"
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
@@ -585,11 +511,8 @@ function ActivityForm(
                   setTempSelectedDate(selectedDate);
                   setShowDatePicker(true);
                 }}
-                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                  isDark
-                    ? 'bg-zinc-800 border-zinc-600'
-                    : 'bg-white border-gray-300'
-                }`}
+                className="px-4 py-3 border rounded-lg flex-row justify-between items-center"
+                style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }}
               >
                 <Text
                   className={`text-base ${
@@ -634,14 +557,12 @@ function ActivityForm(
                       borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
-                          : '#a5b4fc'
+                          : colors.primary.main
                         : isDark
                           ? '#444'
                           : '#d1d5db',
                       backgroundColor: isSelected
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -659,7 +580,7 @@ function ActivityForm(
               })}
             </View>
             {errors.type && (
-              <Text className="text-red-500 text-sm mt-1">{errors.type}</Text>
+              <Text className="text-sm mt-1" style={{ color: colors.error.foreground }}>{errors.type}</Text>
             )}
           </View>
 
@@ -706,14 +627,12 @@ function ActivityForm(
                       borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
-                          : '#a5b4fc'
+                          : colors.primary.main
                         : isDark
                           ? '#444'
                           : '#d1d5db',
                       backgroundColor: isSelected
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -744,7 +663,7 @@ function ActivityForm(
               </Text>
               <TouchableOpacity
                 onPress={handleAddSet}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
+                className="px-4 py-2 rounded-lg" style={{ backgroundColor: colors.primary.main }}
               >
                 <Text className="text-white font-semibold">Add Set</Text>
               </TouchableOpacity>
@@ -820,12 +739,8 @@ function ActivityForm(
                         {field === 'time' ? (
                           <TouchableOpacity
                             onPress={() => setDurationPickerSetId(set.id)}
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600'
-                                : 'bg-white border-gray-300'
-                            }`}
-                            style={{ minHeight: 42 }}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, minHeight: 42 }}
                           >
                             <Text
                               style={{
@@ -851,11 +766,8 @@ function ActivityForm(
                             keyboardType="default"
                             autoCapitalize="words"
                             placeholder="e.g. Red Heavy"
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
                             placeholderTextColor={colors.textSecondary}
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
@@ -865,12 +777,8 @@ function ActivityForm(
                             onPress={() =>
                               setWheelTarget({ setId: set.id, field })
                             }
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600'
-                                : 'bg-white border-gray-300'
-                            }`}
-                            style={{ minHeight: 42, justifyContent: 'center' }}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, minHeight: 42, justifyContent: 'center' }}
                             accessibilityRole="button"
                             accessibilityLabel={`Edit ${config.label.toLowerCase()} for set ${index + 1}`}
                           >
@@ -933,11 +841,8 @@ function ActivityForm(
                             keyboardType={
                               field === 'distance' ? 'decimal-pad' : 'numeric'
                             }
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
                             placeholderTextColor={colors.textSecondary}
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
@@ -974,7 +879,7 @@ function ActivityForm(
                   >
                     <Text
                       style={{
-                        color: colors.primary.main,
+                        color: colors.primary.foreground,
                         fontWeight: '600',
                       }}
                     >
@@ -994,7 +899,7 @@ function ActivityForm(
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteSet(set.id)}
-                    className="flex-1 bg-red-500 px-4 py-2 rounded-lg"
+                    className="flex-1 px-4 py-2 rounded-lg" style={{ backgroundColor: colors.error.main }}
                   >
                     <Text className="text-white text-center font-semibold">
                       Delete
@@ -1027,11 +932,8 @@ function ActivityForm(
               </Text>
               <TouchableOpacity
                 onPress={() => setShowRecurringModal(true)}
-                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                  isDark
-                    ? 'bg-zinc-800 border-zinc-600'
-                    : 'bg-white border-gray-300'
-                }`}
+                className="px-4 py-3 border rounded-lg flex-row justify-between items-center"
+                style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }}
               >
                 <Text
                   className={`text-base ${
@@ -1065,9 +967,7 @@ function ActivityForm(
                 borderWidth: 1,
                 borderColor: supersetMode ? colors.primary.main : colors.border,
                 backgroundColor: supersetMode
-                  ? isDark
-                    ? colors.surfaceSecondary
-                    : '#e0e7ff'
+                  ? colors.surfaceSecondary
                   : colors.surface,
               }}
               accessibilityRole="switch"
@@ -1081,14 +981,14 @@ function ActivityForm(
                   name="link-outline"
                   size={20}
                   color={
-                    supersetMode ? colors.primary.main : colors.textSecondary
+                    supersetMode ? colors.primary.foreground : colors.textSecondary
                   }
                 />
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: '500',
-                    color: supersetMode ? colors.primary.main : colors.text,
+                    color: supersetMode ? colors.primary.foreground : colors.text,
                   }}
                 >
                   Superset
@@ -1151,13 +1051,11 @@ function ActivityForm(
                       paddingVertical: 10,
                       minHeight: 44,
                       borderRadius: 20,
-                      backgroundColor: isDark
-                        ? colors.surfaceSecondary
-                        : '#e0e7ff',
+                      backgroundColor: colors.surfaceSecondary,
                       borderWidth: 1,
                       borderColor: isDark
                         ? colors.primary.main + '40'
-                        : '#a5b4fc',
+                        : colors.primary.main,
                       gap: 6,
                     }}
                   >
@@ -1220,7 +1118,7 @@ function ActivityForm(
           {/* Delete Activity Link */}
           {mode === 'edit' && onDelete && (
             <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
-              <Text className="text-red-500 text-center text-base">
+              <Text className="text-center text-base" style={{ color: colors.error.foreground }}>
                 {deleteButtonLabel || 'Delete Activity'}
               </Text>
             </TouchableOpacity>
@@ -1255,7 +1153,7 @@ function ActivityForm(
               <View className="flex-row justify-between items-center">
                 <TouchableOpacity onPress={handleDatePickerCancel}>
                   <Text
-                    className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                    className="text-lg" style={{ color: colors.primary.foreground }}
                   >
                     Cancel
                   </Text>
@@ -1267,7 +1165,7 @@ function ActivityForm(
                 </Text>
                 <TouchableOpacity onPress={handleDatePickerDone}>
                   <Text
-                    className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                    className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                   >
                     Done
                   </Text>
@@ -1295,7 +1193,7 @@ function ActivityForm(
               >
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontWeight: '600',
                     fontSize: 16,
                   }}

@@ -252,7 +252,7 @@ export default function ActivityNameInput({
           fontSize: 16,
           textAlignVertical: 'center',
           backgroundColor: colors.inputBackground,
-          borderColor: error ? colors.error.main : colors.border,
+          borderColor: error ? colors.error.foreground : colors.inputBorder,
           color: colors.text,
         }}
         onFocus={handleFocus}
@@ -265,7 +265,7 @@ export default function ActivityNameInput({
       />
 
       {error && (
-        <Text className="text-sm mt-1" style={{ color: colors.error.main }}>
+        <Text className="text-sm mt-1" style={{ color: colors.error.foreground }}>
           {error}
         </Text>
       )}
@@ -319,7 +319,7 @@ export default function ActivityNameInput({
                     {isRecent && (
                       <Text
                         className="text-xs"
-                        style={{ color: colors.primary.main }}
+                        style={{ color: colors.primary.foreground }}
                       >
                         Recent
                       </Text>
@@ -343,11 +343,11 @@ export default function ActivityNameInput({
                 <Ionicons
                   name="add-circle-outline"
                   size={20}
-                  color={colors.primary.main}
+                  color={colors.primary.foreground}
                 />
                 <Text
                   className="ml-2 font-medium"
-                  style={{ color: colors.primary.main }}
+                  style={{ color: colors.primary.foreground }}
                 >
                   Add "{localValue.trim()}" to library
                 </Text>

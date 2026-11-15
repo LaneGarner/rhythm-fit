@@ -1,10 +1,10 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
-import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
 import { useTutorial } from '../components/tutorial';
 import {
@@ -44,7 +44,7 @@ export default function WeeklyScreen({ navigation }: any) {
   const isDark = colorScheme === 'dark';
   const { setWeekOffset: setContextWeekOffset } = useWeekContext();
   const { getWeekStartByOffset, firstDayOfWeek } = useWeekBoundaries();
-  const { insets, width: screenWidth, isTablet, hasTopTabBar } =
+  const { width: screenWidth, isTablet } =
     useResponsiveLayout();
   // Extra room so the last card scrolls clear of the floating + button
   // (56pt button + the gap it sits above the bar + breathing room).
@@ -58,7 +58,6 @@ export default function WeeklyScreen({ navigation }: any) {
 
   // Refs for tutorial targets
   const weekHeaderRef = useRef<View>(null);
-  const addButtonRef = useRef<View>(null);
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -231,21 +230,6 @@ export default function WeeklyScreen({ navigation }: any) {
     }
   }, [registerTarget]);
 
-  const registerAddButton = useCallback(() => {
-    if (addButtonRef.current) {
-      addButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
-        registerTarget('floating-add-button', {
-          x,
-          y,
-          width,
-          height,
-          pageX,
-          pageY,
-        });
-      });
-    }
-  }, [registerTarget]);
-
   const registerTodayCard = useCallback(() => {
     if (currentDayRef.current) {
       currentDayRef.current.measure((x, y, width, height, pageX, pageY) => {
@@ -259,20 +243,17 @@ export default function WeeklyScreen({ navigation }: any) {
     if (tutorialActive) {
       const timer = setTimeout(() => {
         registerWeekHeader();
-        registerAddButton();
         registerTodayCard();
       }, 100);
       return () => clearTimeout(timer);
     }
     return () => {
       unregisterTarget('week-header');
-      unregisterTarget('floating-add-button');
       unregisterTarget('today-card');
     };
   }, [
     tutorialActive,
     registerWeekHeader,
-    registerAddButton,
     registerTodayCard,
     unregisterTarget,
   ]);
@@ -692,21 +673,7 @@ export default function WeeklyScreen({ navigation }: any) {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      <View
-        className="pb-4 border-b border-grey-200"
-        style={{
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-          marginTop: 2,
-          // The native Liquid Glass tab bar floats at the top on iPadOS.
-          // Reserve its visual layer while keeping this content header compact.
-          paddingTop: insets.top + (hasTopTabBar ? 56 : 0),
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-        }}
-      >
-        {/* Settings now lives in the footer tab bar (see TabNavigator). */}
-
+      <AppHeader clearsTopTabBar>
         {/* Centered week navigation container */}
         <View
           ref={weekHeaderRef}
@@ -748,10 +715,12 @@ export default function WeeklyScreen({ navigation }: any) {
               style={{ flex: 1, alignItems: 'center' }}
             >
               <Text
-                className="text-2xl font-bold"
+                className="font-bold"
                 style={{
                   color: colors.text,
                   textAlign: 'center',
+                  fontSize: 20,
+                  lineHeight: 24,
                 }}
               >
                 {getWeekLabel(weekOffset)}
@@ -761,8 +730,8 @@ export default function WeeklyScreen({ navigation }: any) {
                   color: colors.textSecondary,
                   textAlign: 'center',
                   fontSize: 14,
-                  lineHeight: 18,
-                  marginTop: 4,
+                  lineHeight: 16,
+                  marginTop: 2,
                 }}
               >
                 {getWeekDateRange(weekOffset)}
@@ -789,7 +758,7 @@ export default function WeeklyScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </AppHeader>
       <GestureDetector gesture={swipeGesture}>
         <Animated.View
           style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
@@ -815,7 +784,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   style={{
                     backgroundColor: colors.cardBackground,
                     borderColor: day.isToday
-                      ? colors.accent.main
+                      ? colors.primary.foreground
                       : 'transparent',
                     borderWidth: day.isToday ? 2 : 0,
                   }}
@@ -838,7 +807,7 @@ export default function WeeklyScreen({ navigation }: any) {
                       className="text-sm font-medium"
                       style={{
                         color: day.isToday
-                          ? colors.accent.main
+                          ? colors.primary.foreground
                           : colors.textSecondary,
                       }}
                     >
@@ -977,17 +946,6 @@ export default function WeeklyScreen({ navigation }: any) {
         </Animated.View>
       </GestureDetector>
 
-      <FloatingAddButton
-        ref={addButtonRef}
-        onLayout={registerAddButton}
-        onPress={() =>
-          navigation.navigate('Activity', {
-            date: dayjs().format('YYYY-MM-DD'),
-          })
-        }
-        accessibilityLabel="Add Activity"
-      />
-
       {/* Copy to Date Modal */}
       <Modal
         visible={showCopyModal}
@@ -1047,7 +1005,9 @@ export default function WeeklyScreen({ navigation }: any) {
             </Text>
             <View
               style={{
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+                borderWidth: 1,
                 borderRadius: 12,
                 padding: 12,
                 marginBottom: 16,
@@ -1068,7 +1028,9 @@ export default function WeeklyScreen({ navigation }: any) {
             {/* Date Picker */}
             <View
               style={{
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.border,
+                borderWidth: 1,
                 borderRadius: 12,
                 marginBottom: 20,
                 overflow: 'hidden',

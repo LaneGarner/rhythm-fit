@@ -1,3 +1,4 @@
+import { darkColors } from '../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -28,10 +29,10 @@ const card = {
   text: '#F0F0F5',
   textSecondary: '#8E8E9A',
   textTertiary: '#5C5C6A',
-  accent: '#3B82F6',
-  accentGlow: 'rgba(59, 130, 246, 0.15)',
-  success: '#34D399',
-  successGlow: 'rgba(52, 211, 153, 0.12)',
+  accent: darkColors.primary.foreground,
+  badgeBackground: '#27272A',
+  success: darkColors.success.foreground,
+  successGlow: darkColors.success.foreground + '1F',
   incomplete: '#3A3A48',
 };
 
@@ -117,54 +118,42 @@ export default function ShareWorkoutCard({
           borderBottomColor: card.border,
         }}
       >
-        <View style={{ flexDirection: 'row' }}>
+        {/* Badge */}
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            paddingBottom: 2,
+            backgroundColor: card.surface,
+          }}
+        >
           <View
             style={{
-              width: 4,
-              backgroundColor: card.accent,
-              borderTopLeftRadius: 4,
-              borderBottomLeftRadius: 4,
+              alignSelf: 'flex-start',
+              backgroundColor: card.badgeBackground,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
             }}
-          />
-          <View style={{ flex: 1 }}>
-            {/* Badge */}
-            <View
+          >
+            <Text
               style={{
-                paddingHorizontal: 16,
-                paddingTop: 10,
-                paddingBottom: 2,
-                backgroundColor: card.surface,
+                fontSize: 11,
+                fontWeight: '600',
+                color: card.accent,
               }}
             >
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: card.accentGlow,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 6,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '600',
-                    color: card.accent,
-                  }}
-                >
-                  {getSupersetLabel(group.activities.length)}
-                </Text>
-              </View>
-            </View>
-            {group.activities.map((activity, i) =>
-              renderActivityRow(
-                activity,
-                i === group.activities.length - 1 && isLastGroup,
-                true
-              )
-            )}
+              {getSupersetLabel(group.activities.length)}
+            </Text>
           </View>
         </View>
+        {group.activities.map((activity, i) =>
+          renderActivityRow(
+            activity,
+            i === group.activities.length - 1 && isLastGroup,
+            true
+          )
+        )}
       </View>
     );
   };
@@ -247,7 +236,7 @@ export default function ShareWorkoutCard({
             style={{
               backgroundColor: allCompleted
                 ? card.successGlow
-                : card.accentGlow,
+                : card.badgeBackground,
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 20,

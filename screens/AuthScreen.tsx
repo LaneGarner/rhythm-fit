@@ -51,6 +51,8 @@ function PasswordField({
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: colors.inputBackground,
+          borderWidth: 1,
+          borderColor: colors.inputBorder,
           borderRadius: 12,
           paddingHorizontal: 16,
         }}
@@ -252,6 +254,8 @@ export default function AuthScreen() {
               <TextInput
                 style={{
                   backgroundColor: colors.inputBackground,
+                  borderWidth: 1,
+                  borderColor: colors.inputBorder,
                   color: colors.text,
                   fontSize: 16,
                   borderRadius: 12,
@@ -293,7 +297,7 @@ export default function AuthScreen() {
               >
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 13,
                     fontWeight: '600',
                   }}
@@ -319,22 +323,22 @@ export default function AuthScreen() {
             {/* Error Message */}
             {error && (
               <View
-                className="mt-4 p-3 rounded-lg bg-red-500/10"
+                className="mt-4 p-3 rounded-lg" style={{ backgroundColor: colors.error.main + '1A' }}
                 accessibilityLiveRegion="polite"
                 accessibilityRole="alert"
               >
-                <Text className="text-red-500 text-center">{error}</Text>
+                <Text className="text-center" style={{ color: colors.error.foreground }}>{error}</Text>
               </View>
             )}
 
             {/* Success Message */}
             {successMessage && (
               <View
-                className="mt-4 p-3 rounded-lg bg-green-500/10"
+                className="mt-4 p-3 rounded-lg" style={{ backgroundColor: colors.success.main + '1A' }}
                 accessibilityLiveRegion="polite"
                 accessibilityRole="alert"
               >
-                <Text className="text-green-500 text-center">
+                <Text className="text-center" style={{ color: colors.success.foreground }}>
                   {successMessage}
                 </Text>
               </View>
@@ -348,14 +352,23 @@ export default function AuthScreen() {
               disabled={isLoading}
               accessibilityRole="button"
               accessibilityLabel={isLogin ? 'Sign In' : 'Create Account'}
-              accessibilityState={{ disabled: isLoading }}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-semibold text-base">
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </Text>
+              <Text
+                className="text-white font-semibold text-base"
+                style={isLoading ? { opacity: 0 } : undefined}
+                accessibilityElementsHidden={isLoading}
+                importantForAccessibility={isLoading ? 'no-hide-descendants' : 'auto'}
+              >
+                {isLogin ? 'Sign In' : 'Create Account'}
+              </Text>
+              {isLoading && (
+                <View
+                  className="absolute inset-0 items-center justify-center"
+                  pointerEvents="none"
+                >
+                  <ActivityIndicator color="#fff" />
+                </View>
               )}
             </TouchableOpacity>
 
@@ -368,7 +381,7 @@ export default function AuthScreen() {
                 {isLogin
                   ? "Don't have an account? "
                   : 'Already have an account? '}
-                <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+                <Text style={{ color: colors.primary.foreground, fontWeight: '600' }}>
                   {isLogin ? 'Sign Up' : 'Sign In'}
                 </Text>
               </Text>

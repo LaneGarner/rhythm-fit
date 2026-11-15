@@ -26,7 +26,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
 }) => {
   const { colors, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
+  const actionColor = colors.primary.foreground;
   const activities = useSelector((state: RootState) => state.activities.data);
   const navigation = useNavigation<any>();
   const reduceMotion = useReducedMotion();
@@ -124,7 +124,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
                     flexWrap: 'wrap',
                     alignItems: 'center',
                     gap: 8,
-                    marginBottom: 6,
+                    marginBottom: 10,
                   }}
                 >
                   <Text
@@ -153,7 +153,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
                         style={{
                           fontSize: 11,
                           fontWeight: '600',
-                          color: actionColor,
+                          color: colors.text,
                         }}
                       >
                         Most recent

@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import dayjs from 'dayjs';
@@ -32,7 +33,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
-import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import DaySessionControl from '../components/DaySessionControl';
 import ProgressBar from '../components/ProgressBar';
@@ -202,8 +202,7 @@ export default function DayScreen({ navigation, route }: any) {
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   const { colorScheme, colors } = useTheme();
-  const { insets, width: screenWidth, hasTopTabBar } = useResponsiveLayout();
-  const topTabBarClearance = hasTopTabBar ? 56 : 0;
+  const { width: screenWidth } = useResponsiveLayout();
   // Extra room so the last card scrolls clear of the floating + button.
   const tabBarInset = useTabBarInset(88);
   const isDark = colorScheme === 'dark';
@@ -841,22 +840,6 @@ export default function DayScreen({ navigation, route }: any) {
 
     return (
       <View style={{ marginBottom }}>
-        {/* Superset indicator line on the left */}
-        {supersetInfo.isInSuperset && (
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: supersetInfo.isFirstInSuperset ? 8 : 0,
-              bottom: supersetInfo.isLastInSuperset ? 8 : 0,
-              width: 4,
-              backgroundColor: colors.primary.main,
-              borderTopLeftRadius: supersetInfo.isFirstInSuperset ? 4 : 0,
-              borderBottomLeftRadius: supersetInfo.isLastInSuperset ? 4 : 0,
-              zIndex: 1,
-            }}
-          />
-        )}
         <TouchableOpacity
           onPress={handlePress}
           onLongPress={handleLongPress}
@@ -865,11 +848,8 @@ export default function DayScreen({ navigation, route }: any) {
           style={{
             ...borderRadius,
             backgroundColor: colors.cardBackground,
-            marginLeft: supersetInfo.isInSuperset ? 8 : 0,
             borderWidth: isSelected ? 2 : 0,
-            borderColor: supersetInfo.isInSuperset
-              ? colors.primary.main
-              : '#3B82F6',
+            borderColor: colors.primary.main,
             borderTopWidth:
               supersetInfo.isInSuperset && !supersetInfo.isFirstInSuperset
                 ? 1
@@ -881,9 +861,7 @@ export default function DayScreen({ navigation, route }: any) {
                 ? isDark
                   ? '#374151'
                   : '#E5E7EB'
-                : supersetInfo.isInSuperset
-                  ? colors.primary.main
-                  : '#3B82F6',
+                : colors.primary.main,
           }}
         >
           {/* Superset label for first item */}
@@ -968,7 +946,7 @@ export default function DayScreen({ navigation, route }: any) {
                           <Ionicons
                             name="arrow-up"
                             size={14}
-                            color={colors.primary.main}
+                            color={colors.primary.foreground}
                           />
                         </TouchableOpacity>
                       )}
@@ -1010,7 +988,7 @@ export default function DayScreen({ navigation, route }: any) {
                           <Ionicons
                             name="arrow-down"
                             size={14}
-                            color={colors.primary.main}
+                            color={colors.primary.foreground}
                           />
                         </TouchableOpacity>
                       )}
@@ -1023,7 +1001,7 @@ export default function DayScreen({ navigation, route }: any) {
                     <Ionicons
                       name={isSelected ? 'checkbox' : 'square-outline'}
                       size={24}
-                      color={isSelected ? '#3B82F6' : '#6B7280'}
+                      color={isSelected ? colors.primary.main : '#6B7280'}
                     />
                   </TouchableOpacity>
                 </>
@@ -1037,7 +1015,7 @@ export default function DayScreen({ navigation, route }: any) {
                   }
                   size={20}
                   color={
-                    isActivityComplete(activity) ? '#22C55E' : colors.border
+                    isActivityComplete(activity) ? colors.success.main : colors.border
                   }
                   style={{ marginRight: 6 }}
                 />
@@ -1072,7 +1050,7 @@ export default function DayScreen({ navigation, route }: any) {
               >
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 14,
                     fontWeight: '600',
                   }}
@@ -1081,7 +1059,7 @@ export default function DayScreen({ navigation, route }: any) {
                 </Text>
               </TouchableOpacity>
             ) : isActivityComplete(activity) ? (
-              <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+              <Ionicons name="checkmark-circle" size={24} color={colors.success.main} />
             ) : (
               <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
             )}
@@ -1321,7 +1299,7 @@ export default function DayScreen({ navigation, route }: any) {
             </Text>
           </View>
           {supersetComplete ? (
-            <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+            <Ionicons name="checkmark-circle" size={24} color={colors.success.main} />
           ) : (
             <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
           )}
@@ -1377,7 +1355,7 @@ export default function DayScreen({ navigation, route }: any) {
                   <Ionicons
                     name="arrow-up"
                     size={14}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                   />
                 </TouchableOpacity>
               )}
@@ -1405,7 +1383,7 @@ export default function DayScreen({ navigation, route }: any) {
                   <Ionicons
                     name="arrow-down"
                     size={14}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                   />
                 </TouchableOpacity>
               )}
@@ -1418,7 +1396,7 @@ export default function DayScreen({ navigation, route }: any) {
             <Ionicons
               name={isSelected ? 'checkbox' : 'square-outline'}
               size={24}
-              color={isSelected ? '#3B82F6' : '#6B7280'}
+              color={isSelected ? colors.primary.main : '#6B7280'}
             />
           </TouchableOpacity>
           <Ionicons
@@ -1428,7 +1406,7 @@ export default function DayScreen({ navigation, route }: any) {
                 : 'ellipse-outline'
             }
             size={18}
-            color={isActivityComplete(activity) ? '#22C55E' : colors.border}
+            color={isActivityComplete(activity) ? colors.success.main : colors.border}
             style={{ marginRight: 4 }}
           />
           <View className="flex-1">
@@ -1452,7 +1430,7 @@ export default function DayScreen({ navigation, route }: any) {
           >
             <Text
               style={{
-                color: colors.primary.main,
+                color: colors.primary.foreground,
                 fontSize: 14,
                 fontWeight: '600',
               }}
@@ -1498,10 +1476,8 @@ export default function DayScreen({ navigation, route }: any) {
             style={{
               borderWidth: hasSelectedActivity ? 2 : isActive ? 2 : 0,
               borderColor: isActive
-                ? '#10B981'
-                : isSuperset
-                  ? colors.primary.main
-                  : '#3B82F6',
+                ? colors.success.main
+                : colors.primary.main,
               backgroundColor: isActive
                 ? colors.surfaceSecondary
                 : colors.cardBackground,
@@ -1559,7 +1535,7 @@ export default function DayScreen({ navigation, route }: any) {
                       size={24}
                       color={
                         selectedActivities.has(activities[0].id)
-                          ? '#3B82F6'
+                          ? colors.primary.main
                           : '#6B7280'
                       }
                     />
@@ -1573,7 +1549,7 @@ export default function DayScreen({ navigation, route }: any) {
                     size={20}
                     color={
                       isActivityComplete(activities[0])
-                        ? '#22C55E'
+                        ? colors.success.main
                         : colors.border
                     }
                     style={{ marginRight: 6 }}
@@ -1599,7 +1575,7 @@ export default function DayScreen({ navigation, route }: any) {
                   >
                     <Text
                       style={{
-                        color: colors.primary.main,
+                        color: colors.primary.foreground,
                         fontSize: 14,
                         fontWeight: '600',
                       }}
@@ -1701,7 +1677,7 @@ export default function DayScreen({ navigation, route }: any) {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={confirmBulkMove}
-              className="bg-blue-500 px-4 py-2 rounded-lg"
+              className="px-4 py-2 rounded-lg" style={{ backgroundColor: colors.primary.main }}
             >
               <Text className="text-white font-semibold">Move</Text>
             </TouchableOpacity>
@@ -1768,7 +1744,9 @@ export default function DayScreen({ navigation, route }: any) {
           </Text>
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
               borderRadius: 12,
               padding: 12,
               marginBottom: 16,
@@ -1788,7 +1766,9 @@ export default function DayScreen({ navigation, route }: any) {
 
           <View
             style={{
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
               borderRadius: 12,
               marginBottom: 20,
               overflow: 'hidden',
@@ -1862,11 +1842,34 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
+  const addActivityButton = (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={() => navigation.navigate('Activity', { date })}
+      style={{
+        alignSelf: 'flex-end',
+        minHeight: 44,
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 10,
+      }}
+    >
+      <Text style={{ color: colors.primary.foreground, fontWeight: '600' }}>
+        Add activity
+      </Text>
+    </TouchableOpacity>
+  );
+
   // Render the appropriate list based on environment
   const renderActivitiesList = () => {
     if (dayActivities.length === 0) {
       return (
-        <ScrollView className="flex-1 p-4">
+        <ScrollView
+          className="flex-1 p-4"
+          contentContainerStyle={{ paddingBottom: tabBarInset }}
+        >
           <View className="items-center py-12">
             <Text
               className={`text-lg font-semibold ${
@@ -1876,31 +1879,8 @@ export default function DayScreen({ navigation, route }: any) {
             >
               No activities yet for this day
             </Text>
-            <Text
-              className={`text-base mt-2 ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
-              }`}
-              style={{ textAlign: 'center', maxWidth: 260, lineHeight: 22 }}
-            >
-              Start your day strong! Tap the{' '}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Activity', { date })}
-                hitSlop={12}
-              >
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    color: '#2563eb',
-                    lineHeight: 20,
-                    top: 8,
-                  }}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>{' '}
-              button below to add your first activity.
-            </Text>
           </View>
+          {addActivityButton}
         </ScrollView>
       );
     }
@@ -1940,6 +1920,7 @@ export default function DayScreen({ navigation, route }: any) {
                   />
                 )
               )}
+          {!isBulkMode && addActivityButton}
         </ScrollView>
       );
     }
@@ -1985,46 +1966,70 @@ export default function DayScreen({ navigation, route }: any) {
             />
           )
         )}
+        {addActivityButton}
       </ScrollView>
     );
   };
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
-      {/* Header */}
-      <View
-        style={{
-          position: 'relative',
-          flexDirection: 'row',
-          alignItems: 'center',
-          height: insets.top + topTabBarClearance + 52,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        clearsTopTabBar
+        leftAction={
+          <HeaderButton
+            label={isBulkMode ? 'Cancel' : 'Back'}
+            onPress={() => {
+              if (isBulkMode) {
+                discardChanges();
+                setIsBulkMode(false);
+                setSelectedActivities(new Set());
+              }
+              navigation.popToTop();
+            }}
+            style={{ height: 44, justifyContent: 'center' }}
+          />
+        }
+        rightAction={
+          (dayActivities.length > 0 || isBulkMode) && (
+            <View
+              style={{
+                height: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+              }}
+            >
+              {!isBulkMode && dayActivities.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setShowShareModal(true)}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share workout"
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={22}
+                    color={colors.primary.foreground}
+                  />
+                </TouchableOpacity>
+              )}
+              <HeaderButton
+                label={isBulkMode ? 'Save' : 'Edit'}
+                onPress={() => {
+                  if (isBulkMode) {
+                    saveChanges();
+                    setIsBulkMode(false);
+                    setSelectedActivities(new Set());
+                  } else {
+                    setIsBulkMode(true);
+                  }
+                }}
+              />
+            </View>
+          )
+        }
       >
-        {/* Left: Back/Cancel button */}
-        <HeaderButton
-          label={isBulkMode ? 'Cancel' : 'Back'}
-          onPress={() => {
-            if (isBulkMode) {
-              discardChanges();
-              setIsBulkMode(false);
-              setSelectedActivities(new Set());
-            }
-            navigation.popToTop();
-          }}
-          style={{
-            position: 'absolute',
-            left: 16,
-            top: insets.top + topTabBarClearance + 4,
-            height: 44,
-            justifyContent: 'center',
-            zIndex: 2,
-          }}
-        />
-        {/* Center: Title */}
         <TouchableOpacity
           onPress={() => {
             if (isAnimatingRef.current) return;
@@ -2036,15 +2041,7 @@ export default function DayScreen({ navigation, route }: any) {
           accessibilityRole="button"
           accessibilityLabel="Return to today"
           accessibilityHint="Jumps to today's workouts"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: insets.top + topTabBarClearance + 4,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={{ minHeight: 44, justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -2057,50 +2054,7 @@ export default function DayScreen({ navigation, route }: any) {
             {formattedDate}
           </Text>
         </TouchableOpacity>
-        {/* Right: Share + Edit/Save buttons */}
-        {(dayActivities.length > 0 || isBulkMode) && (
-          <View
-            style={{
-              position: 'absolute',
-              right: 16,
-              top: insets.top + topTabBarClearance + 4,
-              height: 44,
-              flexDirection: 'row',
-              alignItems: 'center',
-              zIndex: 2,
-              gap: 16,
-            }}
-          >
-            {!isBulkMode && dayActivities.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setShowShareModal(true)}
-                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-                accessibilityRole="button"
-                accessibilityLabel="Share workout"
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name="share-outline"
-                  size={22}
-                  color={colors.primary.main}
-                />
-              </TouchableOpacity>
-            )}
-            <HeaderButton
-              label={isBulkMode ? 'Save' : 'Edit'}
-              onPress={() => {
-                if (isBulkMode) {
-                  saveChanges();
-                  setIsBulkMode(false);
-                  setSelectedActivities(new Set());
-                } else {
-                  setIsBulkMode(true);
-                }
-              }}
-            />
-          </View>
-        )}
-      </View>
+      </AppHeader>
 
       {/* Swipeable content area */}
       <GestureDetector gesture={swipeGesture}>
@@ -2134,7 +2088,7 @@ export default function DayScreen({ navigation, route }: any) {
                       ? deselectAll
                       : selectAll
                   }
-                  className="px-3 py-1 rounded bg-blue-500"
+                  className="px-3 py-1 rounded" style={{ backgroundColor: colors.primary.main }}
                 >
                   <Text className="text-white text-sm">
                     {selectedActivities.size === dayActivities.length &&
@@ -2149,8 +2103,8 @@ export default function DayScreen({ navigation, route }: any) {
               <View className="flex-row space-x-2 mb-2">
                 <TouchableOpacity
                   onPress={handleBulkDelete}
-                  className="flex-1 bg-red-500 py-2 rounded-lg"
-                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  className="flex-1 py-2 rounded-lg"
+                  style={{ backgroundColor: colors.error.main, opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
                   disabled={selectedActivities.size === 0}
                 >
                   <Text className="text-white text-center font-semibold">
@@ -2159,8 +2113,8 @@ export default function DayScreen({ navigation, route }: any) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleBulkMove}
-                  className="flex-1 bg-blue-500 py-2 rounded-lg"
-                  style={{ opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
+                  className="flex-1 py-2 rounded-lg"
+                  style={{ backgroundColor: colors.primary.main, opacity: selectedActivities.size === 0 ? 0.5 : 1 }}
                   disabled={selectedActivities.size === 0}
                 >
                   <Text className="text-white text-center font-semibold">
@@ -2204,15 +2158,18 @@ export default function DayScreen({ navigation, route }: any) {
             </View>
           )}
 
+          {!isBulkMode && (
+            <DaySessionControl date={date} navigation={navigation} />
+          )}
+
           {/* Sticky Progress Bar */}
           {totalCount > 0 && !isBulkMode && (
             <View
               style={{
                 paddingHorizontal: 16,
-                paddingVertical: 12,
+                paddingTop: 12,
+                paddingBottom: 8,
                 backgroundColor: colors.background,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
               }}
             >
               <View
@@ -2226,7 +2183,7 @@ export default function DayScreen({ navigation, route }: any) {
                   <Ionicons
                     name="checkmark-circle"
                     size={16}
-                    color="#22C55E"
+                    color={colors.success.main}
                     style={{ marginRight: 6 }}
                   />
                 )}
@@ -2247,19 +2204,10 @@ export default function DayScreen({ navigation, route }: any) {
             </View>
           )}
 
-          {!isBulkMode && (
-            <DaySessionControl date={date} navigation={navigation} />
-          )}
-
           {/* Activities List */}
           {renderActivitiesList()}
         </Animated.View>
       </GestureDetector>
-
-      <FloatingAddButton
-        onPress={() => navigation.navigate('Activity', { date })}
-        accessibilityLabel="Add Activity"
-      />
 
       <DayModal render={renderMoveToDateModal} />
       <DayModal render={renderCopyToDateModal} />

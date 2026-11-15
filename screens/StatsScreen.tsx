@@ -153,8 +153,6 @@ export default function StatsScreen({ navigation }: any) {
               marginTop: 16,
               padding: 16,
               borderRadius: 12,
-              borderLeftWidth: 3,
-              borderLeftColor: colors.warning.main,
             }}
           >
             <View
@@ -166,7 +164,7 @@ export default function StatsScreen({ navigation }: any) {
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="trophy" size={20} color={colors.warning.main} />
+                <Ionicons name="trophy" size={20} color={colors.achievementIcon} />
                 <Text
                   style={{
                     color: colors.text,
@@ -187,7 +185,7 @@ export default function StatsScreen({ navigation }: any) {
               >
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 14,
                     fontWeight: '500',
                     marginRight: 4,
@@ -198,7 +196,7 @@ export default function StatsScreen({ navigation }: any) {
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={colors.primary.main}
+                  color={colors.primary.foreground}
                 />
               </TouchableOpacity>
             </View>
@@ -233,7 +231,7 @@ export default function StatsScreen({ navigation }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text
                     style={{
-                      color: colors.warning.main,
+                      color: colors.achievement,
                       fontWeight: '600',
                       marginRight: 8,
                     }}
@@ -311,7 +309,7 @@ export default function StatsScreen({ navigation }: any) {
             >
               <Text
                 className="text-2xl font-bold"
-                style={{ color: colors.primary.main }}
+                style={{ color: colors.primary.foreground }}
               >
                 {overallStats.totalActivities}
               </Text>
@@ -325,7 +323,7 @@ export default function StatsScreen({ navigation }: any) {
             >
               <Text
                 className="text-2xl font-bold"
-                style={{ color: colors.success.main }}
+                style={{ color: colors.success.foreground }}
               >
                 {overallStats.completionRate}%
               </Text>
@@ -342,7 +340,7 @@ export default function StatsScreen({ navigation }: any) {
             >
               <Text
                 className="text-2xl font-bold"
-                style={{ color: colors.warning.main }}
+                style={{ color: colors.achievement }}
               >
                 {overallStats.currentStreak}
               </Text>
@@ -412,7 +410,7 @@ export default function StatsScreen({ navigation }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 18,
                     fontWeight: '600',
                   }}
@@ -487,7 +485,7 @@ export default function StatsScreen({ navigation }: any) {
                     </Text>
                     <Text
                       style={{
-                        color: colors.success.main,
+                        color: colors.success.foreground,
                         fontSize: 18,
                         fontWeight: '600',
                       }}
@@ -585,7 +583,7 @@ export default function StatsScreen({ navigation }: any) {
                   >
                     <Text
                       style={{
-                        color: colors.primary.main,
+                        color: colors.primary.foreground,
                         fontSize: 16,
                         fontWeight: '600',
                         marginRight: 12,
@@ -689,10 +687,10 @@ export default function StatsScreen({ navigation }: any) {
                 <Ionicons
                   name={showAllExercises ? 'chevron-up' : 'chevron-down'}
                   size={18}
-                  color={colors.primary.main}
+                  color={colors.primary.foreground}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={{ color: colors.primary.main, fontWeight: '500' }}>
+                <Text style={{ color: colors.primary.foreground, fontWeight: '500' }}>
                   {showAllExercises
                     ? 'Show Less'
                     : `Show ${uniqueExercises.length - 5} More`}

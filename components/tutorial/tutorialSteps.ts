@@ -24,19 +24,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     tooltipPosition: 'bottom',
   },
   {
-    id: 'add-activity',
-    title: 'Add Activities',
-    description:
-      'Tap here to schedule a new activity from the library or create your own.',
-    targetId: 'floating-add-button',
-    navigateTo: { type: 'tab', screen: 'Weekly' },
-    tooltipPosition: 'top',
-  },
-  {
     id: 'day-view',
     title: 'Daily Details',
     description:
-      'Tap any day to add activities, press edit to reorder with drag & drop, or link exercises into supersets.',
+      'Open a day and tap Add activity to pick an activity from the library or create your own. Use Edit to reorder activities or link them into supersets.',
     targetId: 'today-card',
     navigateTo: { type: 'tab', screen: 'Weekly' },
     tooltipPosition: 'bottom',

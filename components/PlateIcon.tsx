@@ -16,8 +16,9 @@ export default function PlateIcon({
   count,
   variant = 'default',
 }: PlateIconProps) {
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   const isTooltip = variant === 'tooltip';
+  const lightPlate = isTooltip && colorScheme === 'dark';
   const iconSize = size ?? (isTooltip ? 20 : 60);
 
   // Tooltip variant: blank plate
@@ -36,8 +37,8 @@ export default function PlateIcon({
           cx={iconSize / 2}
           cy={iconSize / 2}
           r={iconSize / 2 - 2}
-          fill="#1a1a1a"
-          stroke="#333"
+          fill={lightPlate ? '#E4E4E7' : '#1a1a1a'}
+          stroke={lightPlate ? '#E4E4E7' : '#333'}
           strokeWidth={1}
         />
         {/* Inner circle (center hole) */}
@@ -45,8 +46,8 @@ export default function PlateIcon({
           cx={iconSize / 2}
           cy={iconSize / 2}
           r={iconSize / 6}
-          fill="#333"
-          stroke="#444"
+          fill={lightPlate ? colors.background : '#333'}
+          stroke={lightPlate ? colors.background : '#444'}
           strokeWidth={1}
         />
         {/* Label text (not shown for tooltip variant) */}
@@ -66,7 +67,7 @@ export default function PlateIcon({
       </Svg>
       {count !== undefined && count > 0 && (
         <View style={[styles.badge, { backgroundColor: colors.primary.main }]}>
-          <Text style={[styles.badgeText, { color: colors.textInverse }]}>
+          <Text style={[styles.badgeText, { color: '#fff' }]}>
             {count}
           </Text>
         </View>

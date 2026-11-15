@@ -15,6 +15,7 @@ import {
 } from '../utils/storage';
 import { clearExerciseCache } from '../services/exerciseService';
 import { useWeekContext } from '../WeekContext';
+import { useTheme } from '../theme/ThemeContext';
 
 interface DevModeButtonProps {
   visible?: boolean;
@@ -22,6 +23,7 @@ interface DevModeButtonProps {
 
 const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors } = useTheme();
   const [isPressed, setIsPressed] = useState(false);
   const { weekOffset } = useWeekContext();
   const { insets } = useResponsiveLayout();
@@ -213,12 +215,12 @@ const DevModeButton: React.FC<DevModeButtonProps> = ({ visible = true }) => {
         onPressIn={() => setIsPressed(true)}
         onPressOut={() => setIsPressed(false)}
         style={{
-          backgroundColor: isPressed ? '#dc2626' : '#ef4444', // Red colors
+          backgroundColor: isPressed ? colors.error.dark : colors.error.main,
           paddingHorizontal: 8,
           paddingVertical: 4,
           borderRadius: 4,
           borderWidth: 1,
-          borderColor: '#991b1b',
+          borderColor: colors.error.dark,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.3,

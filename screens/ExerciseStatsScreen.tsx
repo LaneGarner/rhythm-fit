@@ -1,3 +1,5 @@
+import HeaderButton from '../components/HeaderButton';
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
@@ -15,7 +17,6 @@ import {
   BODY_PART_COLORS,
 } from '../services/statsService';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type MetricType = 'weight' | 'reps' | 'volume' | 'time' | 'distance';
 
@@ -23,7 +24,6 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
   const { exerciseName } = route.params;
   const activities = useSelector((state: RootState) => state.activities.data);
   const { colors, colorScheme } = useTheme();
-  const { insets } = useResponsiveLayout();
   const isDark = colorScheme === 'dark';
 
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('weight');
@@ -69,35 +69,13 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
   if (!stats) {
     return (
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingTop: insets.top + 16,
-            paddingBottom: 16,
-            paddingLeft: Math.max(16, insets.left),
-            paddingRight: Math.max(16, insets.right),
-            backgroundColor: colors.surface,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
+        <AppHeader
+          leftAction={<HeaderButton label="Back" onPress={() => navigation.goBack()} />}
         >
-          <TouchableOpacity
-            hitSlop={14}
-            onPress={() => navigation.goBack()}
-            style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
-          >
-            <Text
-              style={{
-                color: colors.primary.main,
-                fontSize: 18,
-                fontWeight: '500',
-              }}
-            >
-              Back
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <Text numberOfLines={1} style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
+            {exerciseName}
+          </Text>
+        </AppHeader>
         <View className="flex-1 items-center justify-center p-4">
           <Ionicons
             name="stats-chart-outline"
@@ -115,34 +93,25 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
-      >
-        <TouchableOpacity
-          hitSlop={14}
-          onPress={() => navigation.goBack()}
-          style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
-        >
-          <Text
-            style={{
-              color: colors.primary.main,
-              fontSize: 18,
-              fontWeight: '500',
-            }}
+      <AppHeader
+        leftAction={
+          <TouchableOpacity
+            hitSlop={14}
+            onPress={() => navigation.goBack()}
+            style={{ paddingVertical: 4, paddingHorizontal: 8, marginRight: 8 }}
           >
-            Back
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: colors.primary.foreground,
+                fontSize: 18,
+                fontWeight: '500',
+              }}
+            >
+              Back
+            </Text>
+          </TouchableOpacity>
+        }
+      >
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text
             style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}
@@ -151,8 +120,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
             {exerciseName}
           </Text>
         </View>
-        <View style={{ width: 50 }} />
-      </View>
+      </AppHeader>
 
       <ScrollView className="flex-1 px-4 pt-4">
         {/* Muscle Groups */}
@@ -254,7 +222,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.success.main,
+                    color: colors.success.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -270,7 +238,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.success.main,
+                    color: colors.success.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -318,7 +286,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -375,7 +343,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
         <ProgressionChart
           data={chartData}
           title={`${selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} Progression`}
-          color={colors.primary.main}
+          color={colors.primary.foreground}
           suffix={getMetricSuffix(selectedMetric)}
         />
 

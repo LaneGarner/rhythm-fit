@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -27,13 +28,11 @@ import {
   updatePlateCount,
 } from '../services/equipmentService';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export default function EquipmentScreen({ navigation }: any) {
   const { colorScheme, colors } = useTheme();
   const isDark = colorScheme === 'dark';
   const { getAccessToken } = useAuth();
-  const { insets } = useResponsiveLayout();
 
   const [equipment, setEquipment] = useState<EquipmentConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,21 +176,13 @@ export default function EquipmentScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -204,8 +195,7 @@ export default function EquipmentScreen({ navigation }: any) {
             Equipment
           </Text>
         </View>
-        <View style={{ width: 50 }} />
-      </View>
+      </AppHeader>
 
       {/* Content */}
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
@@ -235,9 +225,9 @@ export default function EquipmentScreen({ navigation }: any) {
                   <Ionicons
                     name="add-circle"
                     size={24}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                   />
-                  <Text style={{ color: colors.primary.main, marginLeft: 4 }}>
+                  <Text style={{ color: colors.primary.foreground, marginLeft: 4 }}>
                     Add
                   </Text>
                 </TouchableOpacity>
@@ -268,7 +258,7 @@ export default function EquipmentScreen({ navigation }: any) {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.primary.main}
+                        color={colors.primary.foreground}
                         style={{ marginRight: 8 }}
                       />
                     )}
@@ -318,9 +308,9 @@ export default function EquipmentScreen({ navigation }: any) {
                   <Ionicons
                     name="add-circle"
                     size={24}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                   />
-                  <Text style={{ color: colors.primary.main, marginLeft: 4 }}>
+                  <Text style={{ color: colors.primary.foreground, marginLeft: 4 }}>
                     Add
                   </Text>
                 </TouchableOpacity>
@@ -433,7 +423,7 @@ export default function EquipmentScreen({ navigation }: any) {
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowAddBarbell(false)}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg" style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -445,7 +435,7 @@ export default function EquipmentScreen({ navigation }: any) {
               </Text>
               <TouchableOpacity onPress={handleSaveBarbell}>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                 >
                   Save
                 </Text>
@@ -521,7 +511,7 @@ export default function EquipmentScreen({ navigation }: any) {
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowAddPlate(false)}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg" style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -533,7 +523,7 @@ export default function EquipmentScreen({ navigation }: any) {
               </Text>
               <TouchableOpacity onPress={handleSavePlate}>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                 >
                   Save
                 </Text>
@@ -584,7 +574,7 @@ export default function EquipmentScreen({ navigation }: any) {
               <Switch
                 value={addAsPair}
                 onValueChange={setAddAsPair}
-                trackColor={{ false: '#767577', true: '#3b82f6' }}
+                trackColor={{ false: '#767577', true: colors.primary.main }}
                 thumbColor="#fff"
               />
             </View>
@@ -617,7 +607,7 @@ export default function EquipmentScreen({ navigation }: any) {
                         borderWidth: 2,
                         borderColor:
                           newPlateWeight === weight.toString()
-                            ? '#3b82f6'
+                            ? colors.primary.main
                             : 'transparent',
                         borderRadius: 44,
                         padding: 4,
@@ -646,7 +636,7 @@ export default function EquipmentScreen({ navigation }: any) {
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={() => setShowEditPlate(null)}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg" style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -658,7 +648,7 @@ export default function EquipmentScreen({ navigation }: any) {
               </Text>
               <TouchableOpacity onPress={handleUpdatePlateCount}>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                 >
                   Save
                 </Text>
@@ -723,7 +713,7 @@ export default function EquipmentScreen({ navigation }: any) {
                       style={{
                         backgroundColor:
                           editPlateCount === count.toString()
-                            ? '#3b82f6'
+                            ? colors.primary.main
                             : isDark
                               ? '#27272a'
                               : '#e5e7eb',

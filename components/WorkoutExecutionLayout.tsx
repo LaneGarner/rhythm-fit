@@ -1,7 +1,7 @@
+import AppHeader from './AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import HeaderButton from './HeaderButton';
 import {
   COLLAPSE_THRESHOLD,
@@ -21,6 +21,7 @@ export default function WorkoutExecutionLayout({
   restToggle,
   onSkipRest,
   children,
+  sessionBanner,
   notes,
   progression,
   screenTitle = 'Activity',
@@ -36,6 +37,7 @@ export default function WorkoutExecutionLayout({
   restToggle?: { enabled: boolean; onToggle: (value: boolean) => void };
   onSkipRest?: () => void;
   children: React.ReactNode;
+  sessionBanner?: React.ReactNode;
   notes?: string;
   progression?: React.ReactNode;
   screenTitle?: string;
@@ -44,7 +46,6 @@ export default function WorkoutExecutionLayout({
   testID?: string;
 }) {
   const { colors, colorScheme } = useTheme();
-  const { insets, hasTopTabBar } = useResponsiveLayout();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [sectionBottom, setSectionBottom] = useState<number | null>(null);
@@ -102,23 +103,15 @@ export default function WorkoutExecutionLayout({
       style={{ flex: 1, backgroundColor: colors.background }}
       testID={testID}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + (hasTopTabBar ? 64 : 16),
-          paddingBottom: 16,
-          paddingLeft: Math.max(16, insets.left),
-          paddingRight: Math.max(16, insets.right),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        clearsTopTabBar
+        leftAction={
+          <HeaderButton label="Back" onPress={onBack} />
+        }
+        rightAction={<HeaderButton label="Edit" onPress={onEdit} />}
       >
-        <HeaderButton label="Back" onPress={onBack} />
         <Text
           style={{
-            flex: 1,
             fontSize: 17,
             fontWeight: '600',
             color: colors.text,
@@ -127,8 +120,7 @@ export default function WorkoutExecutionLayout({
         >
           {screenTitle}
         </Text>
-        <HeaderButton label="Edit" onPress={onEdit} />
-      </View>
+      </AppHeader>
       <View style={{ flex: 1, position: 'relative' }}>
         {sectionBottom !== null && sectionBottom > COLLAPSE_THRESHOLD + 12 && (
           <StickyCompactHeader
@@ -211,6 +203,7 @@ export default function WorkoutExecutionLayout({
               onSkipRest={onSkipRest}
             />
           </View>
+          {sessionBanner}
           <View className="px-4 pt-4 pb-4" style={{ gap: 16 }}>
             {children}
             <NotesCard notes={notes || ''} />

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, Platform, useColorScheme } from 'react-native';
 import { loadThemeMode, saveThemeMode } from '../utils/storage';
 import { getColors, ThemeColors } from './colors';
 
@@ -48,6 +48,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     };
     loadSavedTheme();
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      Appearance.setColorScheme(
+        themePreference === 'system' ? null : themePreference
+      );
+    }
+  }, [themePreference]);
 
   const handleSetThemePreference = (pref: ThemePreference) => {
     setThemePreference(pref);

@@ -91,7 +91,7 @@ export default function NumericWheelModal({
               <TouchableOpacity onPress={onCancel}>
                 <Text
                   className="text-lg"
-                  style={{ color: colors.primary.main }}
+                  style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -104,7 +104,7 @@ export default function NumericWheelModal({
               <TouchableOpacity onPress={handleDone}>
                 <Text
                   className="text-lg font-semibold"
-                  style={{ color: colors.primary.main }}
+                  style={{ color: colors.primary.foreground }}
                 >
                   Done
                 </Text>

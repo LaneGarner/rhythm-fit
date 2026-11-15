@@ -1,3 +1,4 @@
+import AppHeader from '../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -147,21 +148,13 @@ export default function ActivityLibraryScreen({ navigation }: any) {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: Math.max(16, insets.left),
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <AppHeader
+        leftAction={
+          <HeaderButton label="Back" onPress={() => navigation.goBack()} />
+        }
       >
-        <HeaderButton label="Back" onPress={() => navigation.goBack()} />
         <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
         >
           <Text
             style={{
@@ -174,8 +167,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             Activity Library
           </Text>
         </View>
-        <View style={{ width: 50 }} />
-      </View>
+      </AppHeader>
 
       {/* Content */}
       <FlatList
@@ -304,7 +296,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                     >
                       <Text
                         style={{
-                          color: colors.primary.main,
+                          color: colors.primary.foreground,
                           fontSize: 16,
                           fontWeight: '600',
                         }}
@@ -324,10 +316,10 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                       <Ionicons
                         name="trash-outline"
                         size={18}
-                        color={colors.error.main}
+                        color={colors.error.foreground}
                         style={{ marginRight: 10 }}
                       />
-                      <Text style={{ color: colors.error.main, fontSize: 16 }}>
+                      <Text style={{ color: colors.error.foreground, fontSize: 16 }}>
                         Delete
                       </Text>
                     </TouchableOpacity>
@@ -358,7 +350,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={closeModal}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg" style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -372,7 +364,7 @@ export default function ActivityLibraryScreen({ navigation }: any) {
                 onPress={isCreating ? handleSaveCreate : handleSaveEdit}
               >
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                 >
                   Save
                 </Text>

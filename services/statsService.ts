@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { palette } from '../theme/colors';
 import { Activity, ActivityType, SetData } from '../types/activity';
 import { isActivityComplete } from '../utils/supersetUtils';
 
@@ -131,7 +132,7 @@ export const BODY_PART_LABELS: Record<BodyPart, string> = {
 
 // Colors for each body part (for charts)
 export const BODY_PART_COLORS: Record<BodyPart, string> = {
-  chest: '#ef4444',
+  chest: palette.red[400],
   back: '#3b82f6',
   shoulders: '#f97316',
   biceps: '#eab308',
@@ -144,7 +145,7 @@ export const BODY_PART_COLORS: Record<BodyPart, string> = {
   calves: '#6366f1',
   'hip-flexors': '#f59e0b',
   'full-body': '#22c55e',
-  cardio: '#ef4444',
+  cardio: palette.red[400],
   none: '#9ca3af',
 };
 
@@ -267,7 +268,7 @@ export interface ActivityTypeStats {
 export const ACTIVITY_TYPE_COLORS: Record<ActivityType, string> = {
   'weight-training': '#3b82f6',
   calisthenics: '#22c55e',
-  cardio: '#ef4444',
+  cardio: palette.red[400],
   mobility: '#a855f7',
   recovery: '#14b8a6',
   sports: '#f97316',

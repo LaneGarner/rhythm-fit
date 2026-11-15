@@ -18,6 +18,11 @@ import {
   ExecutionSetChange,
   getExecutionOutcome,
 } from '../utils/workoutExecution';
+import {
+  buildSessionItems,
+  getUpcomingActivities,
+  summarizeUpcomingSets,
+} from '../utils/workoutSession';
 import WorkoutExecutionLayout from '../components/WorkoutExecutionLayout';
 import WorkoutExecutionSets from '../components/WorkoutExecutionSets';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
@@ -65,6 +70,18 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
       ? sessionControls.session?.items[sessionIndex]
       : undefined;
   const inSession = Boolean(sessionItem);
+  const upcoming = useMemo(() => {
+    if (!activities.length) return [];
+    const items =
+      sessionControls.session && sessionIndex >= 0
+        ? sessionControls.session.items
+        : buildSessionItems(allActivities, activities[0].date, true);
+    const currentIndex =
+      sessionIndex >= 0
+        ? sessionIndex
+        : items.findIndex(item => item.activityIds.includes(activities[0].id));
+    return getUpcomingActivities(items, currentIndex, allActivities);
+  }, [sessionControls.session, sessionIndex, activities, allActivities]);
   const moveNext = () => {
     const next = sessionControls.advance(timerId);
     if (next) navigation.replace(next.route, next.params);
@@ -182,24 +199,20 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
             ? sessionControls.skipRest
             : undefined
         }
-        notes={notes}
-        progression={
-          <View style={{ gap: 8 }}>
-            {activities.map(activity => (
-              <ProgressionSection
-                key={activity.id}
-                activity={activity}
-                title={grouped ? `${activity.name} progression` : undefined}
-              />
-            ))}
-          </View>
-        }
-      >
-        {inSession && sessionControls.session && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Text style={{ flex: 1, color: colors.textSecondary }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>
-                Session mode
+        sessionBanner={inSession && sessionControls.session && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 16,
+              minHeight: 48,
+              paddingHorizontal: 16,
+              backgroundColor: colors.warning.mutedBackground,
+            }}
+          >
+            <Text style={{ flex: 1, color: colors.text }}>
+              <Text style={{ fontWeight: '700' }}>
+                Session active
               </Text>
               {'\u2002\u2009'}
               {sessionIndex + 1} of {sessionControls.session.items.length}
@@ -211,20 +224,63 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               }}
               style={{ paddingVertical: 8 }}
             >
-              <Text style={{ color: colors.textSecondary }}>
+              <Text style={{ color: colors.text }}>
                 Skip {grouped ? 'group' : 'activity'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Turn session mode off"
-              onPress={sessionControls.end}
-              style={{ paddingVertical: 8 }}
-            >
-              <Text style={{ color: colors.textSecondary }}>Turn off</Text>
-            </TouchableOpacity>
           </View>
         )}
+        notes={notes}
+        progression={
+          <View
+            style={{
+              gap: 8,
+              // Account for the last set card's 12 pt bottom margin.
+              marginTop: !notes && activities.some(activity => activity.sets?.length)
+                ? -8
+                : 4,
+            }}
+          >
+            {activities.map(activity => (
+              <ProgressionSection
+                key={activity.id}
+                activity={activity}
+                title={grouped ? `${activity.name} progression` : undefined}
+              />
+            ))}
+            {upcoming.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  padding: 12,
+                  marginTop: 12,
+                  gap: 6,
+                }}
+              >
+                <Text accessibilityRole="header" style={{ color: colors.textSecondary }}>
+                  Up next
+                </Text>
+                {upcoming.map(activity => {
+                  const summary = summarizeUpcomingSets(activity);
+                  return (
+                    <View key={activity.id} style={{ gap: 2 }}>
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>
+                        {activity.name}
+                      </Text>
+                      {!!summary && (
+                        <Text style={{ color: colors.textSecondary }}>{summary}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        }
+      >
         <WorkoutExecutionSets
           activities={activities}
           grouped={grouped}

@@ -166,7 +166,7 @@ export default function StickyCompactTimer({
             style={{
               backgroundColor,
               borderWidth: 2,
-              borderColor: colors.success.main,
+              borderColor: colors.success.foreground,
               paddingHorizontal: 14,
               width: actionButtonWidth,
               alignItems: 'center',
@@ -178,7 +178,7 @@ export default function StickyCompactTimer({
           >
             <Text
               style={{
-                color: colors.success.main,
+                color: colors.success.foreground,
                 fontWeight: '600',
                 fontSize: 13,
               }}
@@ -192,7 +192,7 @@ export default function StickyCompactTimer({
             style={{
               backgroundColor,
               borderWidth: 2,
-              borderColor: colors.warning.main,
+              borderColor: colors.warning.foreground,
               paddingHorizontal: 14,
               width: actionButtonWidth,
               alignItems: 'center',
@@ -204,7 +204,7 @@ export default function StickyCompactTimer({
           >
             <Text
               style={{
-                color: colors.warning.main,
+                color: colors.warning.foreground,
                 fontWeight: '600',
                 fontSize: 13,
               }}
@@ -219,7 +219,7 @@ export default function StickyCompactTimer({
           style={{
             backgroundColor,
             borderWidth: 2,
-            borderColor: isTimerOwner ? colors.error.main : colors.border,
+            borderColor: isTimerOwner ? colors.error.foreground : colors.border,
             width: actionButtonWidth,
             alignItems: 'center',
             paddingVertical: 6,
@@ -231,7 +231,7 @@ export default function StickyCompactTimer({
         >
           <Text
             style={{
-              color: isTimerOwner ? colors.error.main : colors.textSecondary,
+              color: isTimerOwner ? colors.error.foreground : colors.textSecondary,
               fontWeight: '600',
               fontSize: 13,
             }}

@@ -312,14 +312,14 @@ export const ProgressionChart = ({
           <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
             High
           </Text>
-          <Text style={{ color: colors.success.main, fontWeight: '600' }}>
+          <Text style={{ color: colors.success.foreground, fontWeight: '600' }}>
             {maxValue}
             {suffix}
           </Text>
         </View>
         <View style={{ alignItems: 'center' }}>
           <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Low</Text>
-          <Text style={{ color: colors.error.main, fontWeight: '600' }}>
+          <Text style={{ color: colors.error.foreground, fontWeight: '600' }}>
             {minValue}
             {suffix}
           </Text>

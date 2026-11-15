@@ -85,7 +85,8 @@ export const ChatSuggestions = (props: ChatSuggestionsProps) => {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingHorizontal: 16,
+          paddingLeft: 16,
+          paddingRight: 1,
           flex: 1,
         }}
       >
