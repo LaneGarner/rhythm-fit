@@ -32,7 +32,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootState } from '../redux/store';
 import { useTheme } from '../theme/ThemeContext';
 import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
-import FloatingAddButton from '../components/FloatingAddButton';
 import HeaderButton from '../components/HeaderButton';
 import DaySessionControl from '../components/DaySessionControl';
 import ProgressBar from '../components/ProgressBar';
@@ -1862,11 +1861,34 @@ export default function DayScreen({ navigation, route }: any) {
     </Modal>
   );
 
+  const addActivityButton = (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={() => navigation.navigate('Activity', { date })}
+      style={{
+        alignSelf: 'flex-end',
+        minHeight: 44,
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 10,
+      }}
+    >
+      <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+        Add activity
+      </Text>
+    </TouchableOpacity>
+  );
+
   // Render the appropriate list based on environment
   const renderActivitiesList = () => {
     if (dayActivities.length === 0) {
       return (
-        <ScrollView className="flex-1 p-4">
+        <ScrollView
+          className="flex-1 p-4"
+          contentContainerStyle={{ paddingBottom: tabBarInset }}
+        >
           <View className="items-center py-12">
             <Text
               className={`text-lg font-semibold ${
@@ -1876,31 +1898,8 @@ export default function DayScreen({ navigation, route }: any) {
             >
               No activities yet for this day
             </Text>
-            <Text
-              className={`text-base mt-2 ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
-              }`}
-              style={{ textAlign: 'center', maxWidth: 260, lineHeight: 22 }}
-            >
-              Start your day strong! Tap the{' '}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Activity', { date })}
-                hitSlop={12}
-              >
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    color: '#2563eb',
-                    lineHeight: 20,
-                    top: 8,
-                  }}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>{' '}
-              button below to add your first activity.
-            </Text>
           </View>
+          {addActivityButton}
         </ScrollView>
       );
     }
@@ -1940,6 +1939,7 @@ export default function DayScreen({ navigation, route }: any) {
                   />
                 )
               )}
+          {!isBulkMode && addActivityButton}
         </ScrollView>
       );
     }
@@ -1985,6 +1985,7 @@ export default function DayScreen({ navigation, route }: any) {
             />
           )
         )}
+        {addActivityButton}
       </ScrollView>
     );
   };
@@ -2209,10 +2210,9 @@ export default function DayScreen({ navigation, route }: any) {
             <View
               style={{
                 paddingHorizontal: 16,
-                paddingVertical: 12,
+                paddingTop: 12,
+                paddingBottom: 8,
                 backgroundColor: colors.background,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
               }}
             >
               <View
@@ -2255,11 +2255,6 @@ export default function DayScreen({ navigation, route }: any) {
           {renderActivitiesList()}
         </Animated.View>
       </GestureDetector>
-
-      <FloatingAddButton
-        onPress={() => navigation.navigate('Activity', { date })}
-        accessibilityLabel="Add Activity"
-      />
 
       <DayModal render={renderMoveToDateModal} />
       <DayModal render={renderCopyToDateModal} />

@@ -58,23 +58,18 @@ export default function DaySessionControl({
   };
   return (
     <>
-      <View
-        style={{
-          marginHorizontal: 16,
-          marginVertical: 8,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          gap: 4,
-          borderRadius: 12,
-          backgroundColor: colors.cardBackground,
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '600' }}>
-            {current ? 'Session in progress' : 'Workout session'}
-          </Text>
+      <View style={{ marginHorizontal: 16, marginTop: 8, gap: 8 }}>
+        {current && session && (
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>
+              Session in progress
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+              {`Activity ${currentIndex + 1} of ${session.items.length} · ${current.label}`}
+            </Text>
+          </View>
+        )}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
             disabled={!controls.ready}
             accessibilityRole="button"
@@ -88,30 +83,40 @@ export default function DaySessionControl({
               }
             }}
             style={{
+              flex: current ? 1 : undefined,
               minHeight: 44,
               paddingHorizontal: 12,
               justifyContent: 'center',
               borderRadius: 10,
               backgroundColor: colors.primary.main,
+              borderWidth: 1,
+              borderColor: colors.primary.main,
               opacity: controls.ready ? 1 : 0.4,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>
-              {current ? 'Resume' : 'Start session'}
+            <Text
+              style={{
+                color: '#fff',
+                fontWeight: '600',
+                textAlign: 'center',
+              }}
+            >
+              {current ? 'Resume session' : 'Start session'}
             </Text>
           </TouchableOpacity>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 14 }}>
-            {current && session
-              ? `Activity ${currentIndex + 1} of ${session.items.length} · ${current.label}`
-              : 'Choose activities to do in order with automatic rest timers.'}
-          </Text>
           {current && (
             <TouchableOpacity
               accessibilityRole="button"
               onPress={controls.end}
-              style={{ minHeight: 44, justifyContent: 'center' }}
+              style={{
+                flex: 1,
+                minHeight: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 10,
+              }}
             >
               <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>
                 End session

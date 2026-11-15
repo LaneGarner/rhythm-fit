@@ -27,7 +27,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'day-view',
     title: 'Daily Details',
     description:
-      'Open a day and tap + to add an activity from the library or create your own. Use Edit to reorder activities or link them into supersets.',
+      'Open a day and tap Add activity to pick an activity from the library or create your own. Use Edit to reorder activities or link them into supersets.',
     targetId: 'today-card',
     navigateTo: { type: 'tab', screen: 'Weekly' },
     tooltipPosition: 'bottom',
