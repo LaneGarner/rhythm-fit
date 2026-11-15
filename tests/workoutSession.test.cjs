@@ -17,7 +17,13 @@ function load(file) {
   );
   return exports;
 }
-const { buildSessionItems, nextSessionIndex, parseWorkoutSession } = load(
+const {
+  buildSessionItems,
+  getUpcomingActivities,
+  nextSessionIndex,
+  parseWorkoutSession,
+  summarizeUpcomingSets,
+} = load(
   path.resolve(__dirname, '../utils/workoutSession.ts')
 );
 const row = (id, extra = {}) => ({
@@ -93,4 +99,49 @@ test('corrupt and incompatible stored sessions cannot become active', () => {
     JSON.stringify({ ...session(), version: 2 }),
   ])
     assert.equal(parseWorkoutSession(value), null);
+});
+
+test('preview includes separately listed repeats, skips completed entries, and keeps superset order', () => {
+  const day = [
+    row('squat', { order: 0 }),
+    row('squat-again', { name: ' Squat ', order: 1 }),
+    row('done', { order: 2 }),
+    ...records.slice(2, 4),
+  ];
+  const s = session(buildSessionItems(day, day[0].date));
+  day[2].completed = true;
+  assert.equal(getUpcomingActivities(s.items, 0, day)[0].id, 'squat-again');
+  const preview = getUpcomingActivities(s.items, 1, day);
+  assert.deepEqual(Array.from(preview, activity => activity.id), ['pull', 'raise']);
+  assert.equal(getUpcomingActivities(s.items, 3, day).length, 0);
+});
+
+test('preview summarizes remaining sets with matching and varied targets', () => {
+  const activity = row('intervals', {
+    trackingFields: ['reps', 'time'],
+    sets: [
+      { reps: 12, completed: true },
+      { reps: 8, time: 90 },
+      { reps: 8, time: 90 },
+      { reps: 6, time: 45 },
+    ],
+  });
+  assert.equal(
+    summarizeUpcomingSets(activity),
+    '2 sets · 8 reps · 1:30 / 1 set · 6 reps · 0:45'
+  );
+});
+
+test('normal execution can preview from a completed activity in day order', () => {
+  const day = [row('squat', { completed: true, order: 0 }), row('press', { order: 1 })];
+  const items = buildSessionItems(day, day[0].date, true);
+  const preview = getUpcomingActivities(items, 0, day);
+  assert.deepEqual(Array.from(preview, activity => activity.id), ['press']);
+});
+
+test('session preview only looks at the selected entries', () => {
+  const day = [row('squat', { order: 0 }), row('press', { order: 1 }), row('pull', { order: 2 })];
+  const selected = buildSessionItems([day[0], day[2]], day[0].date);
+  assert.equal(getUpcomingActivities(selected, 0, day)[0].id, 'pull');
+  assert.equal(getUpcomingActivities(selected, 1, day).length, 0);
 });

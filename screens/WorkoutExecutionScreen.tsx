@@ -18,6 +18,11 @@ import {
   ExecutionSetChange,
   getExecutionOutcome,
 } from '../utils/workoutExecution';
+import {
+  buildSessionItems,
+  getUpcomingActivities,
+  summarizeUpcomingSets,
+} from '../utils/workoutSession';
 import WorkoutExecutionLayout from '../components/WorkoutExecutionLayout';
 import WorkoutExecutionSets from '../components/WorkoutExecutionSets';
 import PlateCalculatorModal from '../components/PlateCalculatorModal';
@@ -65,6 +70,18 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
       ? sessionControls.session?.items[sessionIndex]
       : undefined;
   const inSession = Boolean(sessionItem);
+  const upcoming = useMemo(() => {
+    if (!activities.length) return [];
+    const items =
+      sessionControls.session && sessionIndex >= 0
+        ? sessionControls.session.items
+        : buildSessionItems(allActivities, activities[0].date, true);
+    const currentIndex =
+      sessionIndex >= 0
+        ? sessionIndex
+        : items.findIndex(item => item.activityIds.includes(activities[0].id));
+    return getUpcomingActivities(items, currentIndex, allActivities);
+  }, [sessionControls.session, sessionIndex, activities, allActivities]);
   const moveNext = () => {
     const next = sessionControls.advance(timerId);
     if (next) navigation.replace(next.route, next.params);
@@ -184,7 +201,15 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         }
         notes={notes}
         progression={
-          <View style={{ gap: 8 }}>
+          <View
+            style={{
+              gap: 8,
+              // Account for the last set card's 12 pt bottom margin.
+              marginTop: !notes && activities.some(activity => activity.sets?.length)
+                ? -8
+                : 4,
+            }}
+          >
             {activities.map(activity => (
               <ProgressionSection
                 key={activity.id}
@@ -192,6 +217,36 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
                 title={grouped ? `${activity.name} progression` : undefined}
               />
             ))}
+            {upcoming.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  padding: 12,
+                  marginTop: 12,
+                  gap: 6,
+                }}
+              >
+                <Text accessibilityRole="header" style={{ color: colors.textSecondary }}>
+                  Up next
+                </Text>
+                {upcoming.map(activity => {
+                  const summary = summarizeUpcomingSets(activity);
+                  return (
+                    <View key={activity.id} style={{ gap: 2 }}>
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>
+                        {activity.name}
+                      </Text>
+                      {!!summary && (
+                        <Text style={{ color: colors.textSecondary }}>{summary}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         }
       >

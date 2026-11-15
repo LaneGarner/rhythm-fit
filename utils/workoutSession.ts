@@ -1,4 +1,4 @@
-import { Activity } from '../types/activity';
+import { Activity, DEFAULT_TRACKING_FIELDS } from '../types/activity';
 import {
   groupActivitiesWithSupersets,
   getSupersetNames,
@@ -23,7 +23,8 @@ export interface WorkoutSession {
 
 export function buildSessionItems(
   activities: Activity[],
-  date: string
+  date: string,
+  includeCompleted = false
 ): SessionItem[] {
   const day = activities
     .filter(activity => activity.date === date)
@@ -33,7 +34,7 @@ export function buildSessionItems(
         (b.order ?? Number.MAX_SAFE_INTEGER)
     );
   return groupActivitiesWithSupersets(day)
-    .filter(group => !group.activities.every(isActivityComplete))
+    .filter(group => includeCompleted || !group.activities.every(isActivityComplete))
     .map(group => ({
       id: group.supersetId || group.activities[0].id,
       activityIds: group.activities.map(activity => activity.id),
@@ -59,6 +60,51 @@ export function nextSessionIndex(
     if (records.some(activity => !isActivityComplete(activity))) return index;
   }
   return -1;
+}
+
+export function getUpcomingActivities(
+  items: SessionItem[],
+  currentIndex: number,
+  activities: Activity[]
+): Activity[] {
+  const byId = new Map(activities.map(activity => [activity.id, activity]));
+
+  if (currentIndex < 0) return [];
+  for (const item of items.slice(currentIndex + 1)) {
+    const upcoming = item.activityIds.flatMap(id => {
+      const activity = byId.get(id);
+      return activity &&
+        !isActivityComplete(activity)
+        ? [activity]
+        : [];
+    });
+    if (upcoming.length) return upcoming;
+  }
+  return [];
+}
+
+export function summarizeUpcomingSets(activity: Activity): string {
+  const fields = activity.trackingFields || DEFAULT_TRACKING_FIELDS[activity.type];
+  const groups: { targets: string; count: number }[] = [];
+
+  for (const set of activity.sets || []) {
+    if (set.completed) continue;
+    const values = {
+      reps: set.reps ? `${set.reps} reps` : '',
+      weight: set.weight ? `${set.weight} lbs` : '',
+      time: set.time ? `${Math.floor(set.time / 60)}:${String(set.time % 60).padStart(2, '0')}` : '',
+      distance: set.distance ? `${set.distance} mi` : '',
+      band: set.band ? `${set.band} band` : '',
+    };
+    const targets = fields.map(field => values[field]).filter(Boolean).join(' · ');
+    const previous = groups[groups.length - 1];
+    if (previous?.targets === targets) previous.count++;
+    else groups.push({ targets, count: 1 });
+  }
+
+  return groups.map(({ count, targets }) =>
+    [`${count} ${count === 1 ? 'set' : 'sets'}`, targets].filter(Boolean).join(' · ')
+  ).join(' / ');
 }
 
 export function parseWorkoutSession(
