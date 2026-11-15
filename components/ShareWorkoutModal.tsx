@@ -112,7 +112,7 @@ export default function ShareWorkoutModal({
             >
               <Text
                 style={{
-                  color: colors.primary.main,
+                  color: colors.primary.foreground,
                   fontSize: 17,
                   fontWeight: '600',
                 }}

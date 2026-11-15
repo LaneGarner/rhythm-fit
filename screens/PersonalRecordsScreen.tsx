@@ -40,7 +40,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
+          <Ionicons name="chevron-back" size={24} color={colors.primary.foreground} />
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
           <Text
@@ -99,7 +99,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                       <Ionicons
                         name="flame"
                         size={18}
-                        color={colors.warning.main}
+                        color={colors.warning.foreground}
                       />
                       <Text
                         style={{
@@ -238,7 +238,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                   </Text>
                   <Text
                     style={{
-                      color: colors.primary.main,
+                      color: colors.primary.foreground,
                       fontSize: 16,
                       fontWeight: '600',
                     }}
@@ -257,7 +257,7 @@ export default function PersonalRecordsScreen({ navigation }: any) {
                   </Text>
                   <Text
                     style={{
-                      color: colors.success.main,
+                      color: colors.success.foreground,
                       fontSize: 16,
                       fontWeight: '600',
                     }}

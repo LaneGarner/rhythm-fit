@@ -50,7 +50,7 @@ export default function SettingsScreen({ navigation }: any) {
     useTheme();
   const isDark = colorScheme === 'dark';
   const cardColor = isDark ? colors.surface : colors.surfaceSecondary;
-  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
+  const actionColor = colors.primary.foreground;
   const chevronColor = isDark ? colors.textSecondary : colors.textTertiary;
   const { user, signOut, isConfigured, getAccessToken } = useAuth();
   const {
@@ -419,8 +419,8 @@ export default function SettingsScreen({ navigation }: any) {
                     accessibilityRole="button"
                   >
                     <Text
-                      className="text-red-500 font-medium"
-                      style={isDark ? { color: '#fca5a5' } : undefined}
+                      className="font-medium"
+                      style={{ color: colors.error.foreground }}
                     >
                       Sign Out
                     </Text>
@@ -442,8 +442,8 @@ export default function SettingsScreen({ navigation }: any) {
                   }}
                 >
                   <Text
-                    className="text-red-500 font-medium"
-                    style={isDark ? { color: '#fca5a5' } : undefined}
+                    className="font-medium"
+                    style={{ color: colors.error.foreground }}
                   >
                     {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
                   </Text>

@@ -329,7 +329,7 @@ export default function OnboardingFlowScreen({
                 marginBottom: 18,
               }}
             >
-              <Ionicons name="sparkles" size={28} color={colors.primary.main} />
+              <Ionicons name="sparkles" size={28} color={colors.primary.foreground} />
             </View>
             <Text
               accessibilityRole="header"
@@ -429,7 +429,7 @@ export default function OnboardingFlowScreen({
             <Ionicons
               name="alert-circle"
               size={40}
-              color={colors.error.main}
+              color={colors.error.foreground}
               style={{ marginBottom: 12 }}
             />
             <Text
@@ -1024,7 +1024,7 @@ function GeneratingSteps() {
                   color={colors.success.main}
                 />
               ) : current ? (
-                <ActivityIndicator size="small" color={colors.primary.main} />
+                <ActivityIndicator size="small" color={colors.primary.foreground} />
               ) : (
                 <Ionicons
                   name="ellipse-outline"
@@ -1092,7 +1092,7 @@ function ReviewRow({
         </Text>
         <Text style={{ color: colors.text, fontSize: 14 }}>{value}</Text>
       </View>
-      <Ionicons name="pencil" size={16} color={colors.primary.main} />
+      <Ionicons name="pencil" size={16} color={colors.primary.foreground} />
     </TouchableOpacity>
   );
 }

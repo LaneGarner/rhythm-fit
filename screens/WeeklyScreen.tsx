@@ -795,7 +795,7 @@ export default function WeeklyScreen({ navigation }: any) {
                   style={{
                     backgroundColor: colors.cardBackground,
                     borderColor: day.isToday
-                      ? colors.accent.main
+                      ? colors.primary.foreground
                       : 'transparent',
                     borderWidth: day.isToday ? 2 : 0,
                   }}
@@ -818,7 +818,7 @@ export default function WeeklyScreen({ navigation }: any) {
                       className="text-sm font-medium"
                       style={{
                         color: day.isToday
-                          ? colors.accent.main
+                          ? colors.primary.foreground
                           : colors.textSecondary,
                       }}
                     >

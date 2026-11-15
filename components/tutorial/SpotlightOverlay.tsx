@@ -40,7 +40,6 @@ const FULL_SCREEN_TARGET_ID = 'full-screen';
 const DEFAULT_OVERLAY_OPACITY = 0.75;
 const SPOTLIGHT_PADDING = 8;
 const SPOTLIGHT_BORDER_RADIUS = 12;
-const TUTORIAL_ACCENT_COLOR = '#F59E0B'; // Amber/orange - stands out from app's blue
 
 export default function SpotlightOverlay({
   step,
@@ -284,7 +283,7 @@ export default function SpotlightOverlay({
                   width: Animated.add(spotlightWidthAnim, 4),
                   height: Animated.add(spotlightHeightAnim, 4),
                   borderRadius: SPOTLIGHT_BORDER_RADIUS + 2,
-                  borderColor: TUTORIAL_ACCENT_COLOR,
+                  borderColor: colors.warning.main,
                 },
               ]}
               pointerEvents="none"
@@ -314,7 +313,7 @@ export default function SpotlightOverlay({
                     styles.stepDot,
                     {
                       backgroundColor:
-                        i === stepIndex ? TUTORIAL_ACCENT_COLOR : colors.border,
+                        i === stepIndex ? colors.warning.main : colors.border,
                     },
                   ]}
                 />
@@ -363,7 +362,7 @@ export default function SpotlightOverlay({
                   hitSlop={14}
                   style={[
                     styles.nextButton,
-                    { backgroundColor: TUTORIAL_ACCENT_COLOR },
+                    { backgroundColor: colors.warning.main },
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel={

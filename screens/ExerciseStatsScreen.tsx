@@ -89,7 +89,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
           >
             <Text
               style={{
-                color: colors.primary.main,
+                color: colors.primary.foreground,
                 fontSize: 18,
                 fontWeight: '500',
               }}
@@ -135,7 +135,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
         >
           <Text
             style={{
-              color: colors.primary.main,
+              color: colors.primary.foreground,
               fontSize: 18,
               fontWeight: '500',
             }}
@@ -254,7 +254,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.success.main,
+                    color: colors.success.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -270,7 +270,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.success.main,
+                    color: colors.success.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -318,7 +318,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
                 </Text>
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontSize: 20,
                     fontWeight: 'bold',
                   }}
@@ -375,7 +375,7 @@ export default function ExerciseStatsScreen({ navigation, route }: any) {
         <ProgressionChart
           data={chartData}
           title={`${selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} Progression`}
-          color={colors.primary.main}
+          color={colors.primary.foreground}
           suffix={getMetricSuffix(selectedMetric)}
         />
 

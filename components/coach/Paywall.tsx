@@ -195,7 +195,7 @@ export default function Paywall() {
               marginBottom: 16,
             }}
           >
-            <Ionicons name="sparkles" size={24} color={colors.primary.main} />
+            <Ionicons name="sparkles" size={24} color={colors.primary.foreground} />
           </View>
           <Text
             accessibilityRole="header"
@@ -234,7 +234,7 @@ export default function Paywall() {
                 <Ionicons
                   name="checkmark-circle"
                   size={18}
-                  color={colors.primary.main}
+                  color={colors.primary.foreground}
                   style={{ marginRight: 8 }}
                 />
                 <Text
@@ -270,7 +270,7 @@ export default function Paywall() {
             </View>
           ) : isLoadingOffering ? (
             <ActivityIndicator
-              color={colors.primary.main}
+              color={colors.primary.foreground}
               style={{ marginBottom: 16 }}
               accessibilityLabel="Loading subscriptions"
             />
@@ -290,7 +290,7 @@ export default function Paywall() {
                 marginBottom: 12,
               }}
             >
-              <Text style={{ color: colors.primary.main, fontWeight: '600' }}>
+              <Text style={{ color: colors.primary.foreground, fontWeight: '600' }}>
                 Retry
               </Text>
             </TouchableOpacity>
@@ -414,11 +414,11 @@ export default function Paywall() {
               >
                 {isRestoring ? (
                   <ActivityIndicator
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                     accessibilityLabel="Restoring purchases"
                   />
                 ) : (
-                  <Text style={{ color: colors.primary.main, fontSize: 14 }}>
+                  <Text style={{ color: colors.primary.foreground, fontSize: 14 }}>
                     Restore purchases
                   </Text>
                 )}
@@ -430,7 +430,7 @@ export default function Paywall() {
             <Text
               accessibilityLiveRegion="polite"
               style={{
-                color: colors.error.main,
+                color: colors.error.foreground,
                 fontSize: 13,
                 lineHeight: 18,
                 textAlign: 'center',
@@ -480,7 +480,7 @@ export default function Paywall() {
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: colors.primary.main, fontSize: 13 }}>
+                <Text style={{ color: colors.primary.foreground, fontSize: 13 }}>
                   {label}
                 </Text>
               </TouchableOpacity>

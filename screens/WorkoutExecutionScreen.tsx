@@ -37,7 +37,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
     (state: RootState) => state.activities.data
   );
   const dispatch = useDispatch();
-  const { colors, colorScheme } = useTheme();
+  const { colors } = useTheme();
   const { autoRestTimer } = usePreferences();
   const timer = useTimerMetadata();
   const { startCountdown, stopTimer, getTimerState } = useTimerActions();
@@ -207,7 +207,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
               gap: 16,
               minHeight: 48,
               paddingHorizontal: 16,
-              backgroundColor: colorScheme === 'dark' ? '#4C4029' : '#F1E8CF',
+              backgroundColor: colors.warning.mutedBackground,
             }}
           >
             <Text style={{ flex: 1, color: colors.text }}>

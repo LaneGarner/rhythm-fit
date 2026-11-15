@@ -468,7 +468,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
             >
               <Text
                 style={{
-                  color: colors.primary.main,
+                  color: colors.primary.foreground,
                   fontSize: 17,
                   fontWeight: '600',
                 }}

@@ -190,7 +190,7 @@ export default function RescheduleSheet({ visible, onClose }: Props) {
               <Ionicons
                 name="arrow-forward-circle"
                 size={20}
-                color={colors.primary.main}
+                color={colors.primary.foreground}
               />
               <Text
                 style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}
@@ -345,7 +345,7 @@ export default function RescheduleSheet({ visible, onClose }: Props) {
             >
               <Text
                 style={{
-                  color: colors.primary.main,
+                  color: colors.primary.foreground,
                   fontSize: 14,
                   fontWeight: '600',
                 }}

@@ -968,7 +968,7 @@ export default function CoachScreen({ navigation, route }: any) {
                       <Ionicons
                         name="trash"
                         size={16}
-                        color={colors.error.main}
+                        color={colors.error.foreground}
                       />
                     </TouchableOpacity>
                   </View>
@@ -997,11 +997,11 @@ export default function CoachScreen({ navigation, route }: any) {
                   <Ionicons
                     name={showAllHistory ? 'chevron-up' : 'chevron-down'}
                     size={18}
-                    color={colors.primary.main}
+                    color={colors.primary.foreground}
                     style={{ marginRight: 6 }}
                   />
                   <Text
-                    style={{ color: colors.primary.main, fontWeight: '500' }}
+                    style={{ color: colors.primary.foreground, fontWeight: '500' }}
                   >
                     {showAllHistory
                       ? 'Show Less'
@@ -1245,9 +1245,8 @@ export default function CoachScreen({ navigation, route }: any) {
                     }
                     delayLongPress={300}
                     activeOpacity={0.8}
-                    className={`max-w-[80%] p-3 rounded-2xl ${
-                      isDark ? 'bg-blue-700' : 'bg-blue-500'
-                    }`}
+                    className="max-w-[80%] p-3 rounded-2xl"
+                    style={{ backgroundColor: colors.primary.main }}
                   >
                     {copiedMessageId === message.id && (
                       <View
@@ -1338,7 +1337,7 @@ export default function CoachScreen({ navigation, route }: any) {
                   <Text style={{ color: colors.text }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarPreview)}>
-                  <Text style={{ color: colors.primary.main }}>Apply changes</Text>
+                  <Text style={{ color: colors.primary.foreground }}>Apply changes</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1347,7 +1346,7 @@ export default function CoachScreen({ navigation, route }: any) {
             <View className="flex-row items-center justify-between px-4" accessibilityLiveRegion="polite">
               <Text style={{ color: colors.text }}>Calendar updated</Text>
               <TouchableOpacity accessibilityRole="button" className="p-3" onPress={() => applyCalendarChange(calendarUndo)}>
-                <Text style={{ color: colors.primary.main }}>Undo</Text>
+                <Text style={{ color: colors.primary.foreground }}>Undo</Text>
               </TouchableOpacity>
             </View>
           )}

@@ -1,3 +1,4 @@
+import { darkColors } from '../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -28,10 +29,10 @@ const card = {
   text: '#F0F0F5',
   textSecondary: '#8E8E9A',
   textTertiary: '#5C5C6A',
-  accent: '#3B82F6',
+  accent: darkColors.primary.foreground,
   badgeBackground: '#27272A',
-  success: '#34D399',
-  successGlow: 'rgba(52, 211, 153, 0.12)',
+  success: darkColors.success.foreground,
+  successGlow: darkColors.success.foreground + '1F',
   incomplete: '#3A3A48',
 };
 

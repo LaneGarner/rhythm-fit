@@ -449,7 +449,7 @@ function ActivityForm(
           >
             <Text
               style={{
-                color: colors.primary.main,
+                color: colors.primary.foreground,
                 fontSize: 18,
                 fontWeight: '500',
               }}
@@ -497,7 +497,7 @@ function ActivityForm(
           >
             <Text
               style={{
-                color: colors.primary.main,
+                color: colors.primary.foreground,
                 fontSize: 18,
                 fontWeight: '600',
               }}
@@ -554,11 +554,8 @@ function ActivityForm(
               placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
-              className={`px-4 py-3 border rounded-lg text-base ${
-                isDark
-                  ? 'bg-zinc-800 border-zinc-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
+              className="px-4 py-3 border rounded-lg text-base"
+              style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
               textAlignVertical="top"
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
@@ -585,11 +582,8 @@ function ActivityForm(
                   setTempSelectedDate(selectedDate);
                   setShowDatePicker(true);
                 }}
-                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                  isDark
-                    ? 'bg-zinc-800 border-zinc-600'
-                    : 'bg-white border-gray-300'
-                }`}
+                className="px-4 py-3 border rounded-lg flex-row justify-between items-center"
+                style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }}
               >
                 <Text
                   className={`text-base ${
@@ -634,7 +628,7 @@ function ActivityForm(
                       borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
-                          : '#a5b4fc'
+                          : colors.primary.main
                         : isDark
                           ? '#444'
                           : '#d1d5db',
@@ -657,7 +651,7 @@ function ActivityForm(
               })}
             </View>
             {errors.type && (
-              <Text className="text-red-500 text-sm mt-1">{errors.type}</Text>
+              <Text className="text-sm mt-1" style={{ color: colors.error.foreground }}>{errors.type}</Text>
             )}
           </View>
 
@@ -704,7 +698,7 @@ function ActivityForm(
                       borderColor: isSelected
                         ? isDark
                           ? colors.primary.main
-                          : '#a5b4fc'
+                          : colors.primary.main
                         : isDark
                           ? '#444'
                           : '#d1d5db',
@@ -740,7 +734,7 @@ function ActivityForm(
               </Text>
               <TouchableOpacity
                 onPress={handleAddSet}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
+                className="px-4 py-2 rounded-lg" style={{ backgroundColor: colors.primary.main }}
               >
                 <Text className="text-white font-semibold">Add Set</Text>
               </TouchableOpacity>
@@ -816,12 +810,8 @@ function ActivityForm(
                         {field === 'time' ? (
                           <TouchableOpacity
                             onPress={() => setDurationPickerSetId(set.id)}
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600'
-                                : 'bg-white border-gray-300'
-                            }`}
-                            style={{ minHeight: 42 }}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, minHeight: 42 }}
                           >
                             <Text
                               style={{
@@ -847,11 +837,8 @@ function ActivityForm(
                             keyboardType="default"
                             autoCapitalize="words"
                             placeholder="e.g. Red Heavy"
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
                             placeholderTextColor={colors.textSecondary}
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
@@ -861,12 +848,8 @@ function ActivityForm(
                             onPress={() =>
                               setWheelTarget({ setId: set.id, field })
                             }
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600'
-                                : 'bg-white border-gray-300'
-                            }`}
-                            style={{ minHeight: 42, justifyContent: 'center' }}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, minHeight: 42, justifyContent: 'center' }}
                             accessibilityRole="button"
                             accessibilityLabel={`Edit ${config.label.toLowerCase()} for set ${index + 1}`}
                           >
@@ -929,11 +912,8 @@ function ActivityForm(
                             keyboardType={
                               field === 'distance' ? 'decimal-pad' : 'numeric'
                             }
-                            className={`px-3 py-2 border rounded-lg ${
-                              isDark
-                                ? 'bg-zinc-700 border-zinc-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
+                            className="px-3 py-2 border rounded-lg"
+                            style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }}
                             placeholderTextColor={colors.textSecondary}
                             returnKeyType="done"
                             onSubmitEditing={() => Keyboard.dismiss()}
@@ -970,7 +950,7 @@ function ActivityForm(
                   >
                     <Text
                       style={{
-                        color: colors.primary.main,
+                        color: colors.primary.foreground,
                         fontWeight: '600',
                       }}
                     >
@@ -990,7 +970,7 @@ function ActivityForm(
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteSet(set.id)}
-                    className="flex-1 bg-red-500 px-4 py-2 rounded-lg"
+                    className="flex-1 px-4 py-2 rounded-lg" style={{ backgroundColor: colors.error.main }}
                   >
                     <Text className="text-white text-center font-semibold">
                       Delete
@@ -1023,11 +1003,8 @@ function ActivityForm(
               </Text>
               <TouchableOpacity
                 onPress={() => setShowRecurringModal(true)}
-                className={`px-4 py-3 border rounded-lg flex-row justify-between items-center ${
-                  isDark
-                    ? 'bg-zinc-800 border-zinc-600'
-                    : 'bg-white border-gray-300'
-                }`}
+                className="px-4 py-3 border rounded-lg flex-row justify-between items-center"
+                style={{ backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }}
               >
                 <Text
                   className={`text-base ${
@@ -1149,7 +1126,7 @@ function ActivityForm(
                       borderWidth: 1,
                       borderColor: isDark
                         ? colors.primary.main + '40'
-                        : '#a5b4fc',
+                        : colors.primary.main,
                       gap: 6,
                     }}
                   >
@@ -1212,7 +1189,7 @@ function ActivityForm(
           {/* Delete Activity Link */}
           {mode === 'edit' && onDelete && (
             <TouchableOpacity onPress={onDelete} className="mt-6 mb-4">
-              <Text className="text-red-500 text-center text-base">
+              <Text className="text-center text-base" style={{ color: colors.error.foreground }}>
                 {deleteButtonLabel || 'Delete Activity'}
               </Text>
             </TouchableOpacity>
@@ -1247,7 +1224,7 @@ function ActivityForm(
               <View className="flex-row justify-between items-center">
                 <TouchableOpacity onPress={handleDatePickerCancel}>
                   <Text
-                    className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                    className="text-lg" style={{ color: colors.primary.foreground }}
                   >
                     Cancel
                   </Text>
@@ -1259,7 +1236,7 @@ function ActivityForm(
                 </Text>
                 <TouchableOpacity onPress={handleDatePickerDone}>
                   <Text
-                    className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                    className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                   >
                     Done
                   </Text>
@@ -1287,7 +1264,7 @@ function ActivityForm(
               >
                 <Text
                   style={{
-                    color: colors.primary.main,
+                    color: colors.primary.foreground,
                     fontWeight: '600',
                     fontSize: 16,
                   }}

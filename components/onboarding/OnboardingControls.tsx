@@ -168,7 +168,7 @@ export function SelectCard({
         <Ionicons
           name="checkmark-circle"
           size={22}
-          color={colors.primary.main}
+          color={colors.primary.foreground}
         />
       ) : null}
     </TouchableOpacity>
@@ -207,7 +207,7 @@ export function SelectChip({
       }}
     >
       {selected ? (
-        <Ionicons name="checkmark" size={15} color={colors.primary.main} />
+        <Ionicons name="checkmark" size={15} color={colors.primary.foreground} />
       ) : null}
       <Text
         style={{
@@ -329,7 +329,7 @@ export function OnboardingTextArea({
         padding: 12,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: colors.inputBorder,
         backgroundColor: colors.inputBackground,
         color: colors.text,
         fontSize: 15,

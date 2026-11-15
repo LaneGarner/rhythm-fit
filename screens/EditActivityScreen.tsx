@@ -580,7 +580,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
         >
           <Text
             style={{
-              color: colors.primary.main,
+              color: colors.primary.foreground,
               fontSize: 18,
               fontWeight: '500',
             }}
@@ -625,7 +625,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
         >
           <Text
             style={{
-              color: colors.primary.main,
+              color: colors.primary.foreground,
               fontSize: 18,
               fontWeight: '600',
             }}
@@ -832,7 +832,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
           <TouchableOpacity onPress={handleDeleteSuperset}>
             <Text
               style={{
-                color: '#ef4444',
+                color: colors.error.foreground,
                 textAlign: 'center',
                 fontSize: 16,
               }}

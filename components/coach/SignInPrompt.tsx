@@ -37,7 +37,7 @@ export default function SignInPrompt() {
               marginBottom: 16,
             }}
           >
-            <Ionicons name="sparkles" size={24} color={colors.primary.main} />
+            <Ionicons name="sparkles" size={24} color={colors.primary.foreground} />
           </View>
           <Text
             accessibilityRole="header"

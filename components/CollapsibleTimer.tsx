@@ -66,7 +66,7 @@ export default function CollapsibleTimer({
             style={{
               color:
                 timer.mode === 'countUp'
-                  ? colors.textInverse
+                  ? '#fff'
                   : colors.textSecondary,
             }}
           >
@@ -95,7 +95,7 @@ export default function CollapsibleTimer({
             style={{
               color:
                 timer.mode === 'countDown'
-                  ? colors.textInverse
+                  ? '#fff'
                   : colors.textSecondary,
             }}
           >
@@ -124,7 +124,7 @@ export default function CollapsibleTimer({
             style={{
               color:
                 timer.mode === 'emom'
-                  ? colors.textInverse
+                  ? '#fff'
                   : colors.textSecondary,
             }}
           >
@@ -147,7 +147,7 @@ export default function CollapsibleTimer({
             className="px-4 py-2 border rounded-lg"
             style={{
               backgroundColor: colors.inputBackground,
-              borderColor: colors.border,
+              borderColor: colors.inputBorder,
             }}
           >
             <Text style={{ color: colors.text }}>
@@ -192,7 +192,7 @@ export default function CollapsibleTimer({
               style={{
                 textAlign: 'center',
                 backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
+                borderColor: colors.inputBorder,
                 color: colors.text,
               }}
               placeholder="0"
@@ -226,7 +226,7 @@ export default function CollapsibleTimer({
       {timer.isRunning && !isTimerOwner && (
         <Text
           className="text-sm text-center mb-3"
-          style={{ color: colors.warning.main }}
+          style={{ color: colors.warning.foreground }}
         >
           Timer running on: {timer.activityName}
         </Text>

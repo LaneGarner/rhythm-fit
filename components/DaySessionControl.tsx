@@ -149,7 +149,7 @@ export default function DaySessionControl({
               onPress={() => setOpen(false)}
               accessibilityRole="button"
             >
-              <Text style={{ color: colors.primary.main, fontSize: 16 }}>
+              <Text style={{ color: colors.primary.foreground, fontSize: 16 }}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -233,7 +233,7 @@ export default function DaySessionControl({
           >
             <Text
               style={{
-                color: colors.textInverse,
+                color: '#fff',
                 textAlign: 'center',
                 fontSize: 17,
                 fontWeight: '600',

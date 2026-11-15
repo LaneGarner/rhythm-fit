@@ -26,7 +26,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
 }) => {
   const { colors, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const actionColor = isDark ? '#93c5fd' : colors.primary.main;
+  const actionColor = colors.primary.foreground;
   const activities = useSelector((state: RootState) => state.activities.data);
   const navigation = useNavigation<any>();
   const reduceMotion = useReducedMotion();

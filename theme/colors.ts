@@ -3,22 +3,22 @@ export const palette = {
   blue: {
     100: '#dbeafe',
     200: '#93c5fd',
-    300: '#60a5fa',
-    400: '#3b82f6',
-    500: '#2563eb',
+    300: '#87B2ED',
+    400: '#386DB5',
+    500: '#244B88',
     600: '#1e40af',
     700: '#1e3a5f',
   },
   green: {
-    300: '#34d399',
-    400: '#22c55e',
-    500: '#16a34a',
+    300: '#7DBF94',
+    400: '#378353',
+    500: '#285C40',
   },
   red: {
-    300: '#f87171',
-    400: '#ef4444',
-    500: '#dc2626',
-    700: '#991b1b',
+    300: '#FF6347',
+    400: '#B83C2A',
+    500: '#993122',
+    700: '#56291F',
   },
   amber: {
     100: '#fef3c7',
@@ -76,6 +76,7 @@ export interface ThemeColors {
   // Primary
   primary: {
     main: string;
+    foreground: string;
     light: string;
     dark: string;
     background: string;
@@ -96,17 +97,21 @@ export interface ThemeColors {
   // Semantic
   success: {
     main: string;
+    foreground: string;
     dark: string;
   };
   error: {
     main: string;
+    foreground: string;
     dark: string;
     background: string;
   };
   warning: {
     main: string;
+    foreground: string;
     dark: string;
     background: string;
+    mutedBackground: string;
   };
 
   // UI elements
@@ -114,6 +119,7 @@ export interface ThemeColors {
   tabBarInactive: string;
   toggleTrack: string;
   inputBackground: string;
+  inputBorder: string;
   cardBackground: string;
   modalBackground: string;
   overlay: string;
@@ -130,8 +136,8 @@ export const lightColors: ThemeColors = {
 
   // Text
   text: palette.black,
-  textSecondary: palette.gray[500],
-  textTertiary: palette.gray[400],
+  textSecondary: '#535C69',
+  textTertiary: '#656C79',
   textInverse: palette.white,
 
   // Borders
@@ -140,9 +146,10 @@ export const lightColors: ThemeColors = {
 
   // Primary
   primary: {
-    main: palette.ios.blue,
-    light: '#4da3ff',
-    dark: '#0055b3',
+    main: palette.blue[400],
+    foreground: palette.blue[400],
+    light: palette.blue[300],
+    dark: palette.blue[500],
     background: '#f4f4f5',
   },
 
@@ -154,31 +161,36 @@ export const lightColors: ThemeColors = {
 
   // Accent (for highlighting "today" and other attention-drawing elements)
   accent: {
-    main: '#3b82f6',
+    main: palette.blue[400],
     background: '#f4f4f5',
   },
 
   // Semantic
   success: {
     main: palette.green[400],
+    foreground: palette.green[400],
     dark: palette.green[500],
   },
   error: {
     main: palette.red[400],
+    foreground: palette.red[400],
     dark: palette.red[500],
-    background: palette.red[300],
+    background: '#FBE8E3',
   },
   warning: {
     main: palette.amber[400],
     dark: palette.amber[600],
     background: palette.amber[100],
+    foreground: '#805107',
+    mutedBackground: '#F1E8CF',
   },
 
   // UI elements
-  tabBarActive: palette.ios.blue,
+  tabBarActive: palette.blue[400],
   tabBarInactive: palette.ios.gray,
   toggleTrack: palette.gray[200],
   inputBackground: palette.white,
+  inputBorder: '#85858D',
   cardBackground: palette.white,
   modalBackground: palette.white,
   overlay: 'rgba(0, 0, 0, 0.5)',
@@ -195,8 +207,8 @@ export const darkColors: ThemeColors = {
 
   // Text
   text: palette.white,
-  textSecondary: palette.gray[400],
-  textTertiary: palette.zinc[500],
+  textSecondary: '#B2B4BC',
+  textTertiary: '#ADADB7',
   textInverse: palette.black,
 
   // Borders
@@ -205,9 +217,10 @@ export const darkColors: ThemeColors = {
 
   // Primary
   primary: {
-    main: palette.ios.blue,
-    light: '#4da3ff',
-    dark: '#0055b3',
+    main: palette.blue[400],
+    foreground: palette.blue[300],
+    light: palette.blue[300],
+    dark: palette.blue[500],
     background: palette.zinc[700],
   },
 
@@ -219,17 +232,19 @@ export const darkColors: ThemeColors = {
 
   // Accent (for highlighting "today" and other attention-drawing elements)
   accent: {
-    main: '#3b82f6',
+    main: palette.blue[400],
     background: palette.zinc[800],
   },
 
   // Semantic
   success: {
     main: palette.green[400],
+    foreground: palette.green[300],
     dark: palette.green[500],
   },
   error: {
     main: palette.red[400],
+    foreground: palette.red[300],
     dark: palette.red[500],
     background: palette.red[700],
   },
@@ -237,13 +252,16 @@ export const darkColors: ThemeColors = {
     main: palette.amber[400],
     dark: palette.amber[600],
     background: palette.amber[800],
+    foreground: palette.amber[400],
+    mutedBackground: '#4C4029',
   },
 
   // UI elements
-  tabBarActive: palette.ios.blue,
+  tabBarActive: palette.blue[300],
   tabBarInactive: palette.ios.gray,
   toggleTrack: palette.zinc[600],
   inputBackground: palette.zinc[700],
+  inputBorder: '#96969F',
   cardBackground: palette.zinc[800],
   modalBackground: palette.zinc[850],
   overlay: 'rgba(0, 0, 0, 0.7)',

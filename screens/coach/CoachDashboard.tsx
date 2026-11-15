@@ -344,16 +344,12 @@ function TipRow({
   const isDark = colorScheme === 'dark';
   const accent =
     tip.tone === 'success'
-      ? isDark
-        ? colors.success.main
-        : '#15803d'
+      ? colors.success.foreground
       : tip.tone === 'warning'
         ? isDark
           ? colors.warning.main
           : colors.warning.dark
-        : isDark
-          ? '#93c5fd'
-          : colors.primary.main;
+        : colors.primary.foreground;
   return (
     <TouchableOpacity
       onPress={onPress}

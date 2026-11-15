@@ -99,7 +99,7 @@ export default function DemoActivityExecutionScreen({ navigation }: any) {
         >
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="bg-green-500 py-3 px-6 rounded-lg"
+            className="py-3 px-6 rounded-lg" style={{ backgroundColor: colors.success.main }}
             accessibilityRole="button"
             accessibilityLabel="Done with demo"
           >

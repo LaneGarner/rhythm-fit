@@ -122,7 +122,7 @@ export const WorkoutContentWithLinks = React.memo(
       },
       code_block: {
         backgroundColor: colors.backgroundTertiary,
-        color: colors.primary.main,
+        color: colors.primary.foreground,
         padding: 12,
         borderRadius: 6,
         fontFamily: 'monospace',
@@ -146,7 +146,7 @@ export const WorkoutContentWithLinks = React.memo(
         color: colors.text,
       },
       link: {
-        color: colors.primary.main,
+        color: colors.primary.foreground,
         textDecorationLine: 'underline' as const,
       },
     };

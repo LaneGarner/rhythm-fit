@@ -83,7 +83,7 @@ export default function DurationPickerModal({
             <View className="flex-row justify-between items-center">
               <TouchableOpacity onPress={onCancel}>
                 <Text
-                  className={`text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg" style={{ color: colors.primary.foreground }}
                 >
                   Cancel
                 </Text>
@@ -95,7 +95,7 @@ export default function DurationPickerModal({
               </Text>
               <TouchableOpacity onPress={handleDone}>
                 <Text
-                  className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                  className="text-lg font-semibold" style={{ color: colors.primary.foreground }}
                 >
                   Done
                 </Text>
