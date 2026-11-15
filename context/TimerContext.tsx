@@ -86,10 +86,8 @@ const TimerContext = createContext<TimerContextValue | undefined>(undefined);
 
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [timer, setTimer] = useState<TimerState>(initialState);
-  const [timerFinished, setTimerFinished] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const finishAlertRef = useRef<string | null>(null);
   const {
     timerVibration,
     timerSound,
@@ -265,11 +263,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     ]).catch(() => {});
   }, []);
 
-  const vibrationActiveRef = useRef(false);
-  const vibrationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
-
   const startLiveActivity = useCallback(
     async (
       activityId: string,
@@ -322,9 +315,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const playVibrationPattern = useCallback(async () => {
-    if (!vibrationActiveRef.current) return;
-    // Pattern: BUZZ tap tap [wait] BUZZ tap tap tap
+  const playCompletionFeedback = useCallback(async () => {
     if (timerSoundRef.current) {
       const player = await getTimerAudioPlayer();
       if (player) {
@@ -332,83 +323,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         player.play();
       }
     }
+    if (!timerVibrationRef.current) return;
     Vibration.vibrate();
     await delay(500);
-    if (!vibrationActiveRef.current) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     await delay(150);
-    if (!vibrationActiveRef.current) return;
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    await delay(400);
-    if (!vibrationActiveRef.current) return;
-    Vibration.vibrate();
-    await delay(500);
-    if (!vibrationActiveRef.current) return;
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    await delay(150);
-    if (!vibrationActiveRef.current) return;
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    await delay(150);
-    if (!vibrationActiveRef.current) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   }, [getTimerAudioPlayer]);
-
-  const stopVibration = useCallback(() => {
-    vibrationActiveRef.current = false;
-    Vibration.cancel();
-    if (vibrationIntervalRef.current) {
-      clearInterval(vibrationIntervalRef.current);
-      vibrationIntervalRef.current = null;
-    }
-  }, []);
-
-  const playCompletionFeedback = useCallback(() => {
-    if (timerVibrationRef.current) {
-      vibrationActiveRef.current = true;
-      playVibrationPattern();
-      vibrationIntervalRef.current = setInterval(() => {
-        playVibrationPattern();
-      }, 3000);
-    }
-  }, [playVibrationPattern]);
-
-  // One-shot variant for per-interval EMOM dings — no repeating setInterval.
-  const playIntervalFeedback = useCallback(() => {
-    if (timerVibrationRef.current) {
-      vibrationActiveRef.current = true;
-      playVibrationPattern();
-      setTimeout(() => {
-        vibrationActiveRef.current = false;
-      }, 2400);
-    }
-  }, [playVibrationPattern]);
-
-  // Show alert when countdown finishes
-  useEffect(() => {
-    if (timerFinished) {
-      Alert.alert(
-        'Timer Complete',
-        `Your timer for "${timerFinished}" has finished!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              stopVibration();
-              setTimerFinished(null);
-            },
-          },
-        ]
-      );
-    }
-  }, [timerFinished, stopVibration]);
-
-  // Check for pending finish alert after state updates
-  useEffect(() => {
-    if (finishAlertRef.current && !timer.isRunning && timer.seconds === 0) {
-      setTimerFinished(finishAlertRef.current);
-      finishAlertRef.current = null;
-    }
-  }, [timer.isRunning, timer.seconds]);
 
   // Handle app state changes (background/foreground)
   useEffect(() => {
@@ -438,7 +359,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               if (newRound > timer.emomTotalRounds) {
                 // All rounds finished while backgrounded
                 playCompletionFeedback();
-                setTimerFinished(timer.activityName);
                 cancelTimerNotification();
                 endLiveActivity();
                 setTimer(prev => ({
@@ -475,7 +395,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               if (remaining <= 0) {
                 // Timer finished while in background
                 playCompletionFeedback();
-                setTimerFinished(timer.activityName);
                 cancelTimerNotification();
                 endLiveActivity();
                 setTimer(prev => ({
@@ -529,7 +448,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                   prev.emomCurrentRound >= prev.emomTotalRounds;
                 if (isLastRound) {
                   playCompletionFeedback();
-                  finishAlertRef.current = prev.activityName;
                   cancelTimerNotification();
                   endLiveActivity();
                   return {
@@ -541,7 +459,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                   };
                 }
                 // Advance to next round — one-shot ding only
-                playIntervalFeedback();
+                playCompletionFeedback();
                 const nextStartedAt = Date.now();
                 const nextRound = prev.emomCurrentRound + 1;
                 updateLiveActivity(
@@ -575,7 +493,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               if (remaining === 0) {
                 // Timer finished
                 playCompletionFeedback();
-                finishAlertRef.current = prev.activityName;
                 cancelTimerNotification();
                 endLiveActivity();
                 return {

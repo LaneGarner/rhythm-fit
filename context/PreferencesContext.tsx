@@ -42,6 +42,8 @@ interface PreferencesContextProps {
   setAutoRestTimer: (enabled: boolean) => void;
   timerVibration: boolean;
   setTimerVibration: (enabled: boolean) => void;
+  autoRecordWatch: boolean;
+  setAutoRecordWatch: (enabled: boolean) => void;
   rogueTimerEnabled: boolean;
   setRogueTimerEnabled: (enabled: boolean) => void;
   timerSound: boolean;
@@ -60,6 +62,8 @@ export const PreferencesContext = createContext<PreferencesContextProps>({
   setAutoRestTimer: () => {},
   timerVibration: true,
   setTimerVibration: () => {},
+  autoRecordWatch: false,
+  setAutoRecordWatch: () => {},
   rogueTimerEnabled: false,
   setRogueTimerEnabled: () => {},
   timerSound: true,
@@ -79,6 +83,18 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [autoRestTimer, setAutoRestTimerState] = useState(false);
   const [timerVibration, setTimerVibrationState] = useState(true);
+  const [autoRecordWatch, setAutoRecordWatchState] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem('rhythm.autoRecordWatch')
+      .then(value => setAutoRecordWatchState(value === 'true'))
+      .catch(console.warn);
+  }, []);
+  const setAutoRecordWatch = (enabled: boolean) => {
+    setAutoRecordWatchState(enabled);
+    AsyncStorage.setItem('rhythm.autoRecordWatch', String(enabled)).catch(
+      console.warn
+    );
+  };
   const [rogueTimerEnabled, setRogueTimerState] = useState(false);
   useEffect(() => {
     let active = true;
@@ -215,6 +231,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
         setAutoRestTimer: handleSetAutoRestTimer,
         timerVibration,
         setTimerVibration: handleSetTimerVibration,
+        autoRecordWatch,
+        setAutoRecordWatch,
         rogueTimerEnabled,
         setRogueTimerEnabled,
         timerSound,

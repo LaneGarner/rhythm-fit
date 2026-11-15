@@ -1,3 +1,11 @@
+import { usePreferences } from '../context/PreferencesContext';
+import { useDispatch } from 'react-redux';
+import { updateActivity } from '../redux/activitySlice';
+import {
+  getCardioKind,
+  inferWorkoutLocation,
+  suggestWatchWorkout,
+} from '../utils/watchWorkoutType';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -11,6 +19,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { buildSessionItems, nextSessionIndex } from '../utils/workoutSession';
+import { watchWorkout, type WatchWorkoutType } from '../modules/watch-workout';
 import { useTheme } from '../theme/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,6 +40,13 @@ export default function DaySessionControl({
   );
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { autoRecordWatch } = usePreferences();
+  const dispatch = useDispatch();
+  const firstActivity = activities.find(
+    activity =>
+      activity.id === items.find(item => selected.has(item.id))?.activityIds[0]
+  );
+  const suggestion = firstActivity ? suggestWatchWorkout(firstActivity) : null;
   const session = controls.session?.date === date ? controls.session : null;
   const currentIndex = session ? nextSessionIndex(session, activities, session.index) : -1;
   const current = session?.items[currentIndex];
@@ -40,21 +56,53 @@ export default function DaySessionControl({
   const begin = () => {
     const chosen = items.filter(item => selected.has(item.id));
     if (!chosen.length) return;
-    const start = () => {
+    const start = (type: WatchWorkoutType | null) => {
       controls.start(date, chosen);
       setOpen(false);
       navigate(chosen[0]);
+      if (type) {
+        watchWorkout?.start(type).catch(console.warn);
+      }
     };
-    if (controls.session)
-      Alert.alert(
-        'Replace current session?',
-        'Completed workouts stay saved.',
-        [
-          { text: 'Keep Session', style: 'cancel' },
-          { text: 'Start New Session', onPress: start },
-        ]
-      );
-    else start();
+    const confirmStart = (type: WatchWorkoutType | null) => {
+      if (controls.session)
+        Alert.alert(
+          'Replace current session?',
+          'Completed workouts stay saved.',
+          [
+            { text: 'Keep Session', style: 'cancel' },
+            { text: 'Start New Session', onPress: () => start(type) },
+          ]
+        );
+      else start(type);
+    };
+    if (!autoRecordWatch || !watchWorkout || suggestion) {
+      confirmStart(autoRecordWatch && watchWorkout ? suggestion : null);
+      return;
+    }
+    const kind = firstActivity && getCardioKind(firstActivity.name);
+    if (
+      firstActivity &&
+      kind &&
+      kind !== 'ruck' &&
+      !firstActivity.workoutLocation &&
+      !inferWorkoutLocation(firstActivity.name)
+    ) {
+      Alert.alert('Indoor or outdoor?', firstActivity.name, [
+        ...(['indoor', 'outdoor'] as const).map(location => ({
+          text: location === 'indoor' ? 'Indoor' : 'Outdoor',
+          onPress: () => {
+            dispatch(
+              updateActivity({ ...firstActivity, workoutLocation: location })
+            );
+            confirmStart(suggestWatchWorkout(firstActivity, location));
+          },
+        })),
+        { text: 'Continue without Watch', onPress: () => confirmStart(null) },
+      ]);
+    } else {
+      confirmStart(null);
+    }
   };
   return (
     <>

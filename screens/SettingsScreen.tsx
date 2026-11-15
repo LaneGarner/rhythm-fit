@@ -1,4 +1,5 @@
 import AppHeader from '../components/AppHeader';
+import { watchWorkout } from '../modules/watch-workout';
 import { rogueTimer } from '../modules/rogue-timer';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +66,8 @@ export default function SettingsScreen({ navigation }: any) {
     setTimerSound,
     rogueTimerEnabled,
     setRogueTimerEnabled,
+    autoRecordWatch,
+    setAutoRecordWatch,
   } = usePreferences();
   const {
     startTutorial,
@@ -959,6 +962,35 @@ export default function SettingsScreen({ navigation }: any) {
               marginLeft: 16,
             }}
           />
+          {watchWorkout && (
+            <View
+              className="p-4 flex-row items-center justify-between"
+              style={{ gap: 12 }}
+            >
+              <View className="flex-1">
+                <Text className="text-base" style={{ color: colors.text }}>
+                  Record sessions on Apple Watch
+                </Text>
+                <Text
+                  className="mt-1 text-sm"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Automatically start a workout on your paired Watch when you
+                  start a session.
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Record sessions on Apple Watch"
+                value={autoRecordWatch}
+                onValueChange={setAutoRecordWatch}
+                trackColor={{
+                  false: colors.toggleTrack,
+                  true: colors.primary.main,
+                }}
+                thumbColor="#ffffff"
+              />
+            </View>
+          )}
           {/* Notifications */}
           <TouchableOpacity
             hitSlop={14}

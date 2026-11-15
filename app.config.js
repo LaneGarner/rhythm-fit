@@ -21,6 +21,7 @@ export default {
       splash: { backgroundColor: '#000000' },
       bundleIdentifier: 'com.yourname.rhythm',
       supportsTablet: true,
+      entitlements: { 'com.apple.developer.healthkit': true },
       requireFullScreen: false,
       infoPlist: {
         NSBluetoothAlwaysUsageDescription:
