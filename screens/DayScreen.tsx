@@ -2186,6 +2186,10 @@ export default function DayScreen({ navigation, route }: any) {
             </View>
           )}
 
+          {!isBulkMode && (
+            <DaySessionControl date={date} navigation={navigation} />
+          )}
+
           {/* Sticky Progress Bar */}
           {totalCount > 0 && !isBulkMode && (
             <View
@@ -2226,10 +2230,6 @@ export default function DayScreen({ navigation, route }: any) {
                 isDark={isDark}
               />
             </View>
-          )}
-
-          {!isBulkMode && (
-            <DaySessionControl date={date} navigation={navigation} />
           )}
 
           {/* Activities List */}

@@ -58,7 +58,7 @@ export default function DaySessionControl({
   };
   return (
     <>
-      <View style={{ marginHorizontal: 16, marginTop: 8, gap: 8 }}>
+      <View style={{ marginHorizontal: 16, marginTop: 16, gap: 8 }}>
         {current && session && (
           <View style={{ gap: 4 }}>
             <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>
@@ -69,64 +69,69 @@ export default function DaySessionControl({
             </Text>
           </View>
         )}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity
-            disabled={!controls.ready}
-            accessibilityRole="button"
-            onPress={() => {
-              if (current) {
-                const item = controls.resume();
-                if (item) navigate(item);
-              } else {
-                setSelected(new Set(items.map(item => item.id)));
-                setOpen(true);
-              }
-            }}
-            style={{
-              flexBasis: current ? 0 : undefined,
-              flexGrow: current ? 1 : 0,
-              minWidth: 0,
-              minHeight: 44,
-              paddingHorizontal: 12,
-              justifyContent: 'center',
-              borderRadius: 10,
-              backgroundColor: colors.primary.main,
-              borderWidth: 1,
-              borderColor: colors.primary.main,
-              opacity: controls.ready ? 1 : 0.4,
-            }}
-          >
-            <Text
-              style={{
-                color: '#fff',
-                fontWeight: '600',
-                textAlign: 'center',
-              }}
-            >
-              {current ? 'Resume session' : 'Start session'}
-            </Text>
-          </TouchableOpacity>
-          {current && (
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: current ? 'flex-start' : 'flex-end',
+          }}
+        >
+          <View style={current ? { width: '50%', paddingRight: 4 } : undefined}>
             <TouchableOpacity
+              disabled={!controls.ready}
               accessibilityRole="button"
-              onPress={controls.end}
+              onPress={() => {
+                if (current) {
+                  const item = controls.resume();
+                  if (item) navigate(item);
+                } else {
+                  setSelected(new Set(items.map(item => item.id)));
+                  setOpen(true);
+                }
+              }}
               style={{
-                flexBasis: 0,
-                flexGrow: 1,
-                minWidth: 0,
+                flexGrow: current ? 1 : 0,
                 minHeight: 44,
                 paddingHorizontal: 12,
                 justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: colors.border,
                 borderRadius: 10,
+                backgroundColor: colors.primary.main,
+                borderWidth: 1,
+                borderColor: colors.primary.main,
+                opacity: controls.ready ? 1 : 0.4,
               }}
             >
-              <Text style={{ color: colors.textSecondary, fontWeight: '600', textAlign: 'center' }}>
-                End session
+              <Text
+                style={{
+                  color: '#fff',
+                  fontWeight: '600',
+                  textAlign: 'center',
+                }}
+              >
+                {current ? 'Resume session' : 'Start session'}
               </Text>
             </TouchableOpacity>
+          </View>
+          {current && (
+            <View style={{ width: '50%', paddingLeft: 4 }}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={controls.end}
+                style={{
+                  flexGrow: 1,
+                  minHeight: 44,
+                  paddingHorizontal: 12,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                }}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', textAlign: 'center' }}>
+                  End session
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>
