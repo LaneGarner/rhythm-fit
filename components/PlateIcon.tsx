@@ -67,7 +67,7 @@ export default function PlateIcon({
       </Svg>
       {count !== undefined && count > 0 && (
         <View style={[styles.badge, { backgroundColor: colors.primary.main }]}>
-          <Text style={[styles.badgeText, { color: colors.textInverse }]}>
+          <Text style={[styles.badgeText, { color: '#fff' }]}>
             {count}
           </Text>
         </View>

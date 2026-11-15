@@ -33,7 +33,7 @@ export default function SupersetBadge({
     >
       <Text
         style={{
-          color: colors.textInverse,
+          color: '#fff',
           fontSize: isSmall ? 11 : 12,
           fontWeight: '600',
         }}
