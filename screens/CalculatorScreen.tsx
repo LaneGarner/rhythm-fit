@@ -313,12 +313,13 @@ export default function CalculatorScreen({ navigation }: any) {
                   style={{
                     backgroundColor:
                       selectedBarbell?.id === barbell.id
-                        ? isDark
-                          ? '#3b82f6'
-                          : '#dbeafe'
-                        : isDark
-                          ? '#27272a'
-                          : '#f9fafb',
+                        ? colors.surfaceSecondary
+                        : colors.background,
+                    borderWidth: 1,
+                    borderColor:
+                      selectedBarbell?.id === barbell.id
+                        ? colors.primary.main
+                        : 'transparent',
                   }}
                   className="p-3 rounded-lg mb-1"
                   accessibilityRole="button"
@@ -329,14 +330,7 @@ export default function CalculatorScreen({ navigation }: any) {
                 >
                   <Text
                     style={{
-                      color:
-                        selectedBarbell?.id === barbell.id
-                          ? isDark
-                            ? '#fff'
-                            : '#1d4ed8'
-                          : isDark
-                            ? '#e5e5e5'
-                            : '#374151',
+                      color: colors.text,
                     }}
                   >
                     {barbell.name} ({barbell.weight} lbs)

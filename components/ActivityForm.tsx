@@ -639,9 +639,7 @@ function ActivityForm(
                           ? '#444'
                           : '#d1d5db',
                       backgroundColor: isSelected
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -711,9 +709,7 @@ function ActivityForm(
                           ? '#444'
                           : '#d1d5db',
                       backgroundColor: isSelected
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -1065,9 +1061,7 @@ function ActivityForm(
                 borderWidth: 1,
                 borderColor: supersetMode ? colors.primary.main : colors.border,
                 backgroundColor: supersetMode
-                  ? isDark
-                    ? colors.surfaceSecondary
-                    : '#e0e7ff'
+                  ? colors.surfaceSecondary
                   : colors.surface,
               }}
               accessibilityRole="switch"
@@ -1151,9 +1145,7 @@ function ActivityForm(
                       paddingVertical: 10,
                       minHeight: 44,
                       borderRadius: 20,
-                      backgroundColor: isDark
-                        ? colors.surfaceSecondary
-                        : '#e0e7ff',
+                      backgroundColor: colors.surfaceSecondary,
                       borderWidth: 1,
                       borderColor: isDark
                         ? colors.primary.main + '40'

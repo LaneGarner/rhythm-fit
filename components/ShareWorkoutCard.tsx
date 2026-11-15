@@ -29,7 +29,7 @@ const card = {
   textSecondary: '#8E8E9A',
   textTertiary: '#5C5C6A',
   accent: '#3B82F6',
-  accentGlow: 'rgba(59, 130, 246, 0.15)',
+  badgeBackground: '#27272A',
   success: '#34D399',
   successGlow: 'rgba(52, 211, 153, 0.12)',
   incomplete: '#3A3A48',
@@ -139,7 +139,7 @@ export default function ShareWorkoutCard({
               <View
                 style={{
                   alignSelf: 'flex-start',
-                  backgroundColor: card.accentGlow,
+                  backgroundColor: card.badgeBackground,
                   paddingHorizontal: 8,
                   paddingVertical: 3,
                   borderRadius: 6,
@@ -247,7 +247,7 @@ export default function ShareWorkoutCard({
             style={{
               backgroundColor: allCompleted
                 ? card.successGlow
-                : card.accentGlow,
+                : card.badgeBackground,
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 20,

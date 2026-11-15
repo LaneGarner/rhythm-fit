@@ -678,9 +678,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
                   minHeight: 44,
                   borderRadius: 20,
                   backgroundColor: isActive
-                    ? isDark
-                      ? colors.surfaceSecondary
-                      : '#e0e7ff'
+                    ? colors.surfaceSecondary
                     : colors.surface,
                   borderWidth: 1,
                   borderColor: isActive ? colors.primary.main : colors.border,
@@ -758,9 +756,7 @@ export default function EditActivityScreen({ navigation, route }: any) {
               borderStyle: 'dashed',
               borderColor: isAddingNew ? colors.primary.main : colors.border,
               backgroundColor: isAddingNew
-                ? isDark
-                  ? colors.surfaceSecondary
-                  : '#e0e7ff'
+                ? colors.surfaceSecondary
                 : colors.surface,
               gap: 4,
             }}

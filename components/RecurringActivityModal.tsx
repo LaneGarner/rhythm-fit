@@ -178,9 +178,7 @@ export default function RecurringActivityModal({
                         : '#d1d5db',
                   backgroundColor:
                     pattern === 'daily'
-                      ? isDark
-                        ? colors.surfaceSecondary
-                        : '#e0e7ff'
+                      ? colors.surfaceSecondary
                       : isDark
                         ? '#1a1a1a'
                         : '#fff',
@@ -209,9 +207,7 @@ export default function RecurringActivityModal({
                         : '#d1d5db',
                   backgroundColor:
                     pattern === 'weekly'
-                      ? isDark
-                        ? colors.surfaceSecondary
-                        : '#e0e7ff'
+                      ? colors.surfaceSecondary
                       : isDark
                         ? '#1a1a1a'
                         : '#fff',
@@ -252,9 +248,7 @@ export default function RecurringActivityModal({
                           : '#d1d5db',
                     backgroundColor:
                       frequency === 'every'
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -283,9 +277,7 @@ export default function RecurringActivityModal({
                           : '#d1d5db',
                     backgroundColor:
                       frequency === 'this'
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',
@@ -327,9 +319,7 @@ export default function RecurringActivityModal({
                           ? '#444'
                           : '#d1d5db',
                       backgroundColor: selectedDays.includes(day.value)
-                        ? isDark
-                          ? colors.surfaceSecondary
-                          : '#e0e7ff'
+                        ? colors.surfaceSecondary
                         : isDark
                           ? '#1a1a1a'
                           : '#fff',

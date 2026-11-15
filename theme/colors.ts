@@ -143,7 +143,7 @@ export const lightColors: ThemeColors = {
     main: palette.ios.blue,
     light: '#4da3ff',
     dark: '#0055b3',
-    background: '#e6f3ff',
+    background: '#f4f4f5',
   },
 
   // Secondary (used for accents like supersets)
@@ -155,7 +155,7 @@ export const lightColors: ThemeColors = {
   // Accent (for highlighting "today" and other attention-drawing elements)
   accent: {
     main: '#3b82f6',
-    background: '#eff6ff',
+    background: '#f4f4f5',
   },
 
   // Semantic
@@ -208,7 +208,7 @@ export const darkColors: ThemeColors = {
     main: palette.ios.blue,
     light: '#4da3ff',
     dark: '#0055b3',
-    background: '#002952',
+    background: palette.zinc[700],
   },
 
   // Secondary (used for accents like supersets)
@@ -220,7 +220,7 @@ export const darkColors: ThemeColors = {
   // Accent (for highlighting "today" and other attention-drawing elements)
   accent: {
     main: '#3b82f6',
-    background: '#1F2233',
+    background: palette.zinc[800],
   },
 
   // Semantic
