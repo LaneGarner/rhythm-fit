@@ -4,7 +4,6 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useWeekBoundaries } from '../hooks/useWeekBoundaries';
-import FloatingAddButton from '../components/FloatingAddButton';
 import ProgressBar from '../components/ProgressBar';
 import { useTutorial } from '../components/tutorial';
 import {
@@ -58,7 +57,6 @@ export default function WeeklyScreen({ navigation }: any) {
 
   // Refs for tutorial targets
   const weekHeaderRef = useRef<View>(null);
-  const addButtonRef = useRef<View>(null);
 
   // State for tracking which week we're viewing (0 = current week, -1 = last week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -231,21 +229,6 @@ export default function WeeklyScreen({ navigation }: any) {
     }
   }, [registerTarget]);
 
-  const registerAddButton = useCallback(() => {
-    if (addButtonRef.current) {
-      addButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
-        registerTarget('floating-add-button', {
-          x,
-          y,
-          width,
-          height,
-          pageX,
-          pageY,
-        });
-      });
-    }
-  }, [registerTarget]);
-
   const registerTodayCard = useCallback(() => {
     if (currentDayRef.current) {
       currentDayRef.current.measure((x, y, width, height, pageX, pageY) => {
@@ -259,20 +242,17 @@ export default function WeeklyScreen({ navigation }: any) {
     if (tutorialActive) {
       const timer = setTimeout(() => {
         registerWeekHeader();
-        registerAddButton();
         registerTodayCard();
       }, 100);
       return () => clearTimeout(timer);
     }
     return () => {
       unregisterTarget('week-header');
-      unregisterTarget('floating-add-button');
       unregisterTarget('today-card');
     };
   }, [
     tutorialActive,
     registerWeekHeader,
-    registerAddButton,
     registerTodayCard,
     unregisterTarget,
   ]);
@@ -976,17 +956,6 @@ export default function WeeklyScreen({ navigation }: any) {
           </ScrollView>
         </Animated.View>
       </GestureDetector>
-
-      <FloatingAddButton
-        ref={addButtonRef}
-        onLayout={registerAddButton}
-        onPress={() =>
-          navigation.navigate('Activity', {
-            date: dayjs().format('YYYY-MM-DD'),
-          })
-        }
-        accessibilityLabel="Add Activity"
-      />
 
       {/* Copy to Date Modal */}
       <Modal
