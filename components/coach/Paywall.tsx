@@ -1,3 +1,4 @@
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -39,6 +40,7 @@ const BENEFITS = [
 // flips the gate to the Coach with no navigation.
 export default function Paywall() {
   const { colors } = useTheme();
+  const tabBarInset = useTabBarInset(24);
   const { refreshEntitlements } = useEntitlements();
 
   const purchasesAvailable = isPurchasesAvailable();
@@ -170,7 +172,11 @@ export default function Paywall() {
     >
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 24 }}
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: 24,
+          paddingBottom: tabBarInset,
+        }}
         keyboardShouldPersistTaps="handled"
         accessibilityLabel="Coach subscription options"
       >

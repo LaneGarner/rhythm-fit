@@ -1,3 +1,4 @@
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -115,6 +116,7 @@ export default function OnboardingFlowScreen({
   initialStep = 'welcome',
 }: Props) {
   const { colors } = useTheme();
+  const tabBarInset = useTabBarInset();
   const dispatch = useDispatch<AppDispatch>();
   const { getAccessToken, user } = useAuth();
   const { setCoachProfile, markOnboardingComplete, coachProfile } =
@@ -300,7 +302,7 @@ export default function OnboardingFlowScreen({
 
   const scrollContent = {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: Math.max(32, tabBarInset),
   } as const;
 
   if (step === 'welcome') {
