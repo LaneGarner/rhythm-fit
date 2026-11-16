@@ -44,6 +44,7 @@ export default {
     },
     plugins: [
       './plugins/withDeviceOrientation',
+      './plugins/withWatchWorkout',
       'expo-audio',
       'react-native-bottom-tabs',
       [
