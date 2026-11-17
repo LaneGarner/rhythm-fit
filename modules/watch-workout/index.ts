@@ -7,9 +7,16 @@ export {
   type WatchWorkoutType,
 } from '../../utils/watchWorkoutType';
 
+export type WatchInstallationStatus =
+  | 'unknown'
+  | 'unpaired'
+  | 'installed'
+  | 'missing';
+
 export const watchWorkout =
   Platform.OS === 'ios' && !Platform.isPad
     ? requireOptionalNativeModule<{
+        installationStatus?(): Promise<WatchInstallationStatus>;
         start(type: WatchWorkoutType): Promise<void>;
         exchangeSet(snapshot: string): Promise<string | null>;
         matches(type: WatchWorkoutType): Promise<boolean>;

@@ -36,6 +36,12 @@ public final class WatchWorkoutModule: Module {
          try await mirrored.switchWorkoutIfConnected(to: configuration) { return }
       try await self.store.startWatchApp(toHandle: configuration)
     }
+    AsyncFunction("installationStatus") { () -> String in
+      guard WCSession.isSupported(),
+            WCSession.default.activationState == .activated else { return "unknown" }
+      guard WCSession.default.isPaired else { return "unpaired" }
+      return WCSession.default.isWatchAppInstalled ? "installed" : "missing"
+    }.runOnQueue(.main)
     AsyncFunction("state") { () -> String? in
       guard #available(iOS 17, *) else { return nil }
       return self.companion.state ?? (self.mirrored as? MirroredWorkout)?.state
@@ -209,7 +215,13 @@ private final class SetCompanion: NSObject, WCSessionDelegate {
       self.onUpdate?()
     }
   }
-  func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+  func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+    DispatchQueue.main.async { self.onUpdate?() }
+  }
+
+  func sessionWatchStateDidChange(_ session: WCSession) {
+    DispatchQueue.main.async { self.onUpdate?() }
+  }
   func session(_ session: WCSession, didReceiveApplicationContext context: [String: Any]) {
     self.session(session, didReceiveMessage: context)
   }
