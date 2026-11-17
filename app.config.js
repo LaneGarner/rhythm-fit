@@ -24,6 +24,10 @@ export default {
       entitlements: { 'com.apple.developer.healthkit': true },
       requireFullScreen: false,
       infoPlist: {
+        NSHealthShareUsageDescription:
+          'Rhythm Fitness reads workout data, such as heart rate, to show it during workouts recorded on your Apple Watch.',
+        NSHealthUpdateUsageDescription:
+          'Rhythm Fitness saves workouts you record on your Apple Watch to Apple Health.',
         NSBluetoothAlwaysUsageDescription:
           'Rhythm uses Bluetooth to start and stop timers on your workout timer.',
         ITSAppUsesNonExemptEncryption: false,
