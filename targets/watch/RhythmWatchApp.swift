@@ -7,8 +7,15 @@ import SwiftUI
 struct RhythmWatchApp: App {
     @WKApplicationDelegateAdaptor(WorkoutController.self) private var workout
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
-        WindowGroup { WorkoutView(workout: workout) }
+        WindowGroup {
+            WorkoutView(workout: workout)
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    workout.updateRouteLocation(isActive: phase == .active)
+                }
+        }
     }
 }
 
@@ -109,7 +116,9 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
     private let store = HKHealthStore()
     private let location = CLLocationManager()
     private var routeBuilder: HKWorkoutRouteBuilder?
-    private var routePoints: [CLLocation] = []
+    private var routeWrites: Task<Int, Never>?
+    private var routeStartedAt: Date?
+    private var watchIsActive = false
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
 
@@ -146,6 +155,7 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
             }
             var read: Set<HKObjectType> = [HKQuantityType(.heartRate), HKQuantityType(.activeEnergyBurned)]
             if let distanceType { read.insert(distanceType) }
+            if outdoor { read.insert(HKSeriesType.workoutRoute()) }
             try await store.requestAuthorization(toShare: share, read: read)
             let session = try HKWorkoutSession(healthStore: store, configuration: configuration)
             session.delegate = self
@@ -164,12 +174,11 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
             startedAt = date
             publishState()
             if outdoor {
-                routePoints = []
                 routeBuilder = builder.seriesBuilder(for: HKSeriesType.workoutRoute()) as? HKWorkoutRouteBuilder
+                routeStartedAt = date
                 location.delegate = self
                 location.desiredAccuracy = kCLLocationAccuracyBest
-                location.requestWhenInUseAuthorization()
-                location.startUpdatingLocation()
+                updateRouteLocation(isActive: watchIsActive)
             }
             Task {
                 do { try await session.startMirroringToCompanionDevice() }
@@ -196,21 +205,29 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
         guard let session, let builder, !busy else { return }
         busy = true
         defer { busy = false }
+        let recordedOutdoorWorkout = routeStartedAt != nil
+        routeStartedAt = nil
         location.stopUpdatingLocation()
+        let pointCount = await routeWrites?.value ?? 0
         session.end()
         do {
             try await builder.endCollection(at: Date())
             if let workout = try await builder.finishWorkout() {
                 saved = true
-                if let routeBuilder, !routePoints.isEmpty {
-                    try await routeBuilder.insertRouteData(routePoints)
-                    _ = try await routeBuilder.finishRoute(with: workout, metadata: nil)
+                if let routeBuilder, pointCount > 0 {
+                    do {
+                        _ = try await routeBuilder.finishRoute(with: workout, metadata: nil)
+                    } catch {
+                        NSLog("Rhythm failed to save workout route: %@", error.localizedDescription)
+                    }
+                } else if recordedOutdoorWorkout {
+                    NSLog("Rhythm outdoor workout saved without route locations")
                 }
             }
         } catch {
             self.error = error.localizedDescription
         }
-        routePoints = []
+        routeWrites = nil
         routeBuilder = nil
         currentSet = nil
         self.session = nil
@@ -220,12 +237,48 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
         publishState()
     }
 
+    func updateRouteLocation(isActive: Bool) {
+        watchIsActive = isActive
+        guard routeBuilder != nil, routeStartedAt != nil else { return }
+        switch location.authorizationStatus {
+        case .notDetermined:
+            if isActive { location.requestWhenInUseAuthorization() }
+        case .authorizedAlways, .authorizedWhenInUse:
+            location.startUpdatingLocation()
+        default:
+            location.stopUpdatingLocation()
+        }
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor in updateRouteLocation(isActive: watchIsActive) }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if (error as? CLError)?.code != .locationUnknown {
+            NSLog("Rhythm workout location updates failed: %@", error.localizedDescription)
+        }
+    }
+
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         Task { @MainActor in
-            guard routeBuilder != nil, let startedAt, pausedAt == nil, !busy else { return }
-            routePoints.append(contentsOf: locations.filter {
-                $0.timestamp >= startedAt && $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy <= 50
-            })
+            guard let routeBuilder, let routeStartedAt, pausedAt == nil, !busy else { return }
+            let points = locations.filter {
+                $0.timestamp >= routeStartedAt && $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy <= 50
+            }
+            guard !points.isEmpty else { return }
+
+            let previousWrite = routeWrites
+            routeWrites = Task {
+                let count = await previousWrite?.value ?? 0
+                do {
+                    try await routeBuilder.insertRouteData(points)
+                    return count + points.count
+                } catch {
+                    NSLog("Rhythm failed to add workout route locations: %@", error.localizedDescription)
+                    return count
+                }
+            }
         }
     }
 
@@ -274,7 +327,8 @@ final class WorkoutController: NSObject, ObservableObject, WKApplicationDelegate
             self.error = error.localizedDescription
             location.stopUpdatingLocation()
             routeBuilder = nil
-            routePoints = []
+            routeWrites = nil
+            routeStartedAt = nil
             session = nil
             builder = nil
             startedAt = nil
