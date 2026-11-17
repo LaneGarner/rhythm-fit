@@ -1,4 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import {
+  getCardioKind,
+  suggestWatchWorkout,
+  watchWorkoutTypes,
+} from '../utils/watchWorkoutType';
+import { updateActivity } from '../redux/activitySlice';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from '../redux/store';
@@ -18,6 +24,7 @@ import {
   ExecutionSetChange,
   getExecutionOutcome,
 } from '../utils/workoutExecution';
+import { watchWorkout } from '../modules/watch-workout';
 import {
   buildSessionItems,
   getUpcomingActivities,
@@ -38,7 +45,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
   );
   const dispatch = useDispatch();
   const { colors } = useTheme();
-  const { autoRestTimer } = usePreferences();
+  const { autoRestTimer, autoRecordWatch } = usePreferences();
   const timer = useTimerMetadata();
   const { startCountdown, stopTimer, getTimerState } = useTimerActions();
   const sessionControls = useWorkoutSession();
@@ -70,6 +77,110 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
       ? sessionControls.session?.items[sessionIndex]
       : undefined;
   const inSession = Boolean(sessionItem);
+  const [watchState, setWatchState] = useState<'running' | 'paused' | null>(
+    null
+  );
+  useEffect(() => {
+    const module = watchWorkout;
+    if (!module?.state || !inSession) return;
+    let mounted = true;
+    const refresh = () => {
+      module
+        .state()
+        .then(state => {
+          if (mounted) setWatchState(state);
+        })
+        .catch(console.warn);
+    };
+    refresh();
+    const subscription = module.addListener('onCompanionUpdate', refresh);
+    const interval = setInterval(refresh, 1000);
+    return () => {
+      mounted = false;
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [inSession]);
+  const controlWatch = (command: 'pause' | 'resume' | 'end') => {
+    watchWorkout?.control(command).catch(() => {
+      Alert.alert(
+        'Apple Watch unavailable',
+        'Use Rhythm on your Watch to control the workout.'
+      );
+    });
+  };
+
+  const plannedActivity = allActivities.find(
+    activity => activity.id === sessionItem?.activityIds[0]
+  );
+  const previousActivity = allActivities.find(
+    activity =>
+      activity.id ===
+      sessionControls.session?.items[sessionIndex - 1]?.activityIds[0]
+  );
+  const plannedType = plannedActivity
+    ? suggestWatchWorkout(plannedActivity)
+    : null;
+  const previousType = previousActivity
+    ? suggestWatchWorkout(previousActivity)
+    : null;
+  const [matchesPlan, setMatchesPlan] = useState<boolean | null>(null);
+  useEffect(() => {
+    setMatchesPlan(null);
+    const module = watchWorkout;
+    if (!module?.matches || !plannedType || !watchState || !inSession) return;
+    let active = true;
+    const refresh = () => {
+      module
+        .matches(plannedType)
+        .then(matches => {
+          if (active) setMatchesPlan(matches);
+        })
+        .catch(console.warn);
+    };
+    refresh();
+    const timer = setInterval(refresh, 1000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [plannedType, watchState, inSession]);
+  const startWatchSegment = () => {
+    if (!plannedActivity) return;
+    const request = (type: NonNullable<typeof plannedType>) => {
+      watchWorkout?.start(type).catch(() => {
+        Alert.alert(
+          'Apple Watch unavailable',
+          'Your Rhythm session is still running.'
+        );
+      });
+    };
+    if (plannedType) {
+      request(plannedType);
+      return;
+    }
+    Alert.alert('Indoor or outdoor?', plannedActivity.name, [
+      ...(['indoor', 'outdoor'] as const).map(location => ({
+        text: location === 'indoor' ? 'Indoor' : 'Outdoor',
+        onPress: () => {
+          const type = suggestWatchWorkout(plannedActivity, location);
+          if (!type) return;
+          dispatch(
+            updateActivity({ ...plannedActivity, workoutLocation: location })
+          );
+          request(type);
+        },
+      })),
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+  const canStartWatch = Boolean(
+    plannedType || (plannedActivity && getCardioKind(plannedActivity.name))
+  );
+  const needsHandoff =
+    sessionIndex > 0 &&
+    canStartWatch &&
+    (!plannedType || plannedType !== previousType);
   const upcoming = useMemo(() => {
     if (!activities.length) return [];
     const items =
@@ -85,6 +196,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
   const moveNext = () => {
     const next = sessionControls.advance(timerId);
     if (next) navigation.replace(next.route, next.params);
+    else if (watchState) controlWatch('end');
     return next;
   };
   const handleChanges = (changes: ExecutionSetChange[]) => {
@@ -117,13 +229,7 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         );
       }
     } else if (outcome.finished) {
-      Alert.alert(
-        'Nice Work!',
-        grouped
-          ? 'Superset complete!'
-          : 'All sets complete. Activity finished!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      navigation.goBack();
     } else if (outcome.startRest && (inSession || restEnabled)) {
       if (inSession && sessionItem)
         sessionControls.startRest(
@@ -138,6 +244,120 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
         );
     }
   };
+  const watchSetExchange = useRef(async (_isActive: () => boolean) => {});
+  watchSetExchange.current = async isActive => {
+    const latest = store.getState().activities.data;
+    const units = buildExecutionUnits(
+      activities.flatMap(
+        activity => latest.find(item => item.id === activity.id) ?? []
+      ),
+      grouped
+    );
+    const unit = units.find(item => !item.completed);
+    const active = getTimerState();
+    const countdown =
+      active.activityId === timerId &&
+      (active.isRest || active.activityCountdown) &&
+      active.seconds > 0;
+    const key = unit
+      ? JSON.stringify([
+          timerId,
+          unit.id,
+          ...unit.entries.map(entry => entry.set.id),
+        ])
+      : null;
+    const setAction = await watchWorkout?.exchangeSet(
+      JSON.stringify({
+        key,
+        title: unit?.entries.map(entry => entry.activity.name).join(' → '),
+        detail: unit?.entries
+          .map(({ set }) =>
+            [
+              set.weight === undefined ? null : `${set.weight} lb`,
+              set.reps === undefined ? null : `${set.reps} reps`,
+              set.time ? `${set.time} sec` : null,
+            ]
+              .filter(Boolean)
+              .join(' × ')
+          )
+          .filter(Boolean)
+          .join(' / '),
+        number: unit?.number,
+        totalSets: units.length,
+        timerLabel: countdown
+          ? active.isRest
+            ? 'Rest timer'
+            : 'Activity timer'
+          : null,
+        remaining: countdown && !active.isRunning ? active.seconds : null,
+        deadline:
+          countdown && active.startedAt !== null
+            ? active.startedAt +
+              (active.activityCountdown?.seconds ?? active.targetSeconds) * 1000
+            : null,
+      })
+    );
+    if (!isActive() || !key || !unit) return;
+    const latestTimer = getTimerState();
+    if (
+      setAction === `endRest:${key}` &&
+      latestTimer.activityId === timerId &&
+      latestTimer.isRest
+    ) {
+      sessionControls.skipRest();
+      return;
+    }
+    if (setAction !== `complete:${key}`) return;
+    const current = store.getState().activities.data;
+    handleChanges(
+      unit.entries
+        .filter(({ activity, set }) =>
+          current
+            .find(item => item.id === activity.id)
+            ?.sets?.some(
+              latestSet => latestSet.id === set.id && !latestSet.completed
+            )
+        )
+        .map(({ activity, set }) => ({
+          activityId: activity.id,
+          setId: set.id,
+          updates: { completed: true },
+        }))
+    );
+  };
+  useEffect(() => {
+    if (
+      !watchWorkout?.exchangeSet ||
+      !inSession ||
+      (!watchState && !autoRecordWatch)
+    )
+      return;
+    let active = true;
+    let pending = false;
+    const exchange = async () => {
+      if (!active || pending) return;
+      pending = true;
+      try {
+        await watchSetExchange.current(() => active);
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        pending = false;
+      }
+    };
+    void exchange();
+    const subscription = watchWorkout.addListener(
+      'onCompanionUpdate',
+      exchange
+    );
+    const interval = setInterval(exchange, 750);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [watchState, inSession, timerId, autoRecordWatch]);
+
   if (!activities.length)
     return (
       <View
@@ -281,6 +501,76 @@ export default function WorkoutExecutionScreen({ navigation, route }: any) {
           </View>
         }
       >
+        {inSession && autoRecordWatch && watchWorkout && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Text style={{ flex: 1, color: colors.textSecondary }}>
+              {watchState === 'paused'
+                ? 'Apple Watch workout paused'
+                : watchState
+                  ? 'Recording on Apple Watch'
+                  : 'Watch recording unconfirmed'}
+            </Text>
+            {canStartWatch &&
+              (!watchState ||
+                (needsHandoff &&
+                  (plannedType ? matchesPlan === false : true))) && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={startWatchSegment}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    backgroundColor: colors.inputBackground,
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>
+                    {needsHandoff && plannedType
+                      ? `Start ${watchWorkoutTypes[plannedType].toLowerCase()}`
+                      : needsHandoff
+                        ? 'Start next workout'
+                        : 'Retry Watch'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+          </View>
+        )}
+        {inSession && watchState && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Text style={{ flex: 1, color: colors.text }}>
+              Apple Watch workout
+            </Text>
+            <Text
+              accessibilityRole="button"
+              style={{ color: colors.primary.foreground }}
+              onPress={() =>
+                controlWatch(watchState === 'paused' ? 'resume' : 'pause')
+              }
+            >
+              {watchState === 'paused' ? 'Resume' : 'Pause'}
+            </Text>
+            <Text
+              accessibilityRole="button"
+              style={{ color: colors.textSecondary }}
+              onPress={() =>
+                Alert.alert(
+                  'End Apple Watch workout?',
+                  'The workout will be saved to Apple Health.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'End workout',
+                      style: 'destructive',
+                      onPress: () => controlWatch('end'),
+                    },
+                  ]
+                )
+              }
+            >
+              End
+            </Text>
+          </View>
+        )}
         <WorkoutExecutionSets
           activities={activities}
           grouped={grouped}

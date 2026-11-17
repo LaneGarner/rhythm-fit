@@ -6,7 +6,7 @@ export default {
     description: 'AI-Powered Workout Tracker & Coach',
     slug: 'rhythm',
     scheme: 'rhythm',
-    version: '1.1.1',
+    version: '1.2.0',
     orientation: 'default',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
@@ -21,8 +21,13 @@ export default {
       splash: { backgroundColor: '#000000' },
       bundleIdentifier: 'com.yourname.rhythm',
       supportsTablet: true,
+      entitlements: { 'com.apple.developer.healthkit': true },
       requireFullScreen: false,
       infoPlist: {
+        NSHealthShareUsageDescription:
+          'Rhythm Fitness reads workout data, such as heart rate, to show it during workouts recorded on your Apple Watch.',
+        NSHealthUpdateUsageDescription:
+          'Rhythm Fitness saves workouts you record on your Apple Watch to Apple Health.',
         NSBluetoothAlwaysUsageDescription:
           'Rhythm uses Bluetooth to start and stop timers on your workout timer.',
         ITSAppUsesNonExemptEncryption: false,
@@ -43,6 +48,7 @@ export default {
     },
     plugins: [
       './plugins/withDeviceOrientation',
+      './plugins/withWatchWorkout',
       'expo-audio',
       'react-native-bottom-tabs',
       [

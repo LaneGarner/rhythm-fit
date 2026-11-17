@@ -1,4 +1,8 @@
 import AppHeader from '../components/AppHeader';
+import {
+  watchWorkout,
+  type WatchInstallationStatus,
+} from '../modules/watch-workout';
 import { rogueTimer } from '../modules/rogue-timer';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +10,7 @@ import Constants from 'expo-constants';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
   Linking,
   ScrollView,
   Switch,
@@ -65,7 +70,40 @@ export default function SettingsScreen({ navigation }: any) {
     setTimerSound,
     rogueTimerEnabled,
     setRogueTimerEnabled,
+    autoRecordWatch,
+    setAutoRecordWatch,
   } = usePreferences();
+  const [watchInstallation, setWatchInstallation] =
+    useState<WatchInstallationStatus>('unknown');
+  useFocusEffect(
+    useCallback(() => {
+      const module = watchWorkout;
+      if (!autoRecordWatch || !module?.installationStatus) return;
+      let active = true;
+      const refresh = () => {
+        module
+          .installationStatus?.()
+          .then(status => {
+            if (active) setWatchInstallation(status);
+          })
+          .catch(console.warn);
+      };
+      refresh();
+      const watchSubscription = module.addListener(
+        'onCompanionUpdate',
+        refresh
+      );
+      const appSubscription = AppState.addEventListener('change', state => {
+        if (state === 'active') refresh();
+      });
+      return () => {
+        active = false;
+        watchSubscription.remove();
+        appSubscription.remove();
+      };
+    }, [autoRecordWatch])
+  );
+
   const {
     startTutorial,
     registerTarget,
@@ -959,6 +997,48 @@ export default function SettingsScreen({ navigation }: any) {
               marginLeft: 16,
             }}
           />
+          {watchWorkout && (
+            <View
+              className="p-4 flex-row items-center justify-between"
+              style={{ gap: 12 }}
+            >
+              <View className="flex-1">
+                <Text className="text-base" style={{ color: colors.text }}>
+                  Record sessions on Apple Watch
+                </Text>
+                <Text
+                  className="mt-1 text-sm"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Automatically start a workout on your paired Watch when you
+                  start a session.
+                </Text>
+                {autoRecordWatch &&
+                  (watchInstallation === 'missing' ||
+                    watchInstallation === 'unpaired') && (
+                    <Text
+                      accessibilityLiveRegion="polite"
+                      className="mt-2 text-sm"
+                      style={{ color: colors.text }}
+                    >
+                      {watchInstallation === 'missing'
+                        ? 'Open the Watch app on your iPhone. In My Watch, find Rhythm Fitness under Available Apps and tap Install.'
+                        : 'Pair an Apple Watch with this iPhone to record sessions.'}
+                    </Text>
+                  )}
+              </View>
+              <Switch
+                accessibilityLabel="Record sessions on Apple Watch"
+                value={autoRecordWatch}
+                onValueChange={setAutoRecordWatch}
+                trackColor={{
+                  false: colors.toggleTrack,
+                  true: colors.primary.main,
+                }}
+                thumbColor="#ffffff"
+              />
+            </View>
+          )}
           {/* Notifications */}
           <TouchableOpacity
             hitSlop={14}
@@ -1088,7 +1168,10 @@ export default function SettingsScreen({ navigation }: any) {
                 accessibilityState={{ disabled: isDeletingAccount }}
                 style={{ opacity: isDeletingAccount ? 0.6 : 1 }}
               >
-                <Text className="text-base" style={{ color: colors.error.foreground }}>
+                <Text
+                  className="text-base"
+                  style={{ color: colors.error.foreground }}
+                >
                   {isDeletingAccount ? 'Deleting Account…' : 'Delete Account'}
                 </Text>
               </TouchableOpacity>

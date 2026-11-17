@@ -31,11 +31,14 @@ export interface RecurringConfig {
   occurrences?: number; // number of times to repeat
 }
 
+export type WorkoutLocation = 'indoor' | 'outdoor';
+
 export interface Activity {
   id: string;
   date: string;
   type: ActivityType;
   name: string;
+  workoutLocation?: WorkoutLocation;
   completed: boolean;
   notes?: string;
   sets?: SetData[];

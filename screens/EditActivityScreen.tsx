@@ -486,12 +486,14 @@ export default function EditActivityScreen({ navigation, route }: any) {
         notes: snapshot.notes,
         sets: snapshot.sets,
         trackingFields: snapshot.trackingFields,
+        workoutLocation: snapshot.workoutLocation,
       }) !==
         JSON.stringify({
           name: currentActivity.name,
           notes: currentActivity.notes,
           sets: currentActivity.sets,
           trackingFields: currentActivity.trackingFields,
+          workoutLocation: currentActivity.workoutLocation,
         });
 
     const hasChanges =

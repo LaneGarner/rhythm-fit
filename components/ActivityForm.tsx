@@ -1,5 +1,7 @@
 import AppHeader from './AppHeader';
 import HeaderButton from './HeaderButton';
+import { getCardioKind } from '../utils/watchWorkoutType';
+import type { WorkoutLocation } from '../types/activity';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
@@ -93,6 +95,11 @@ function ActivityForm(
   const [activityType, setActivityType] = useState<ActivityType>(
     initialActivity?.type || 'weight-training'
   );
+  const [workoutLocation, setWorkoutLocation] = useState<
+    WorkoutLocation | undefined
+  >(initialActivity?.workoutLocation);
+  const cardioKind = getCardioKind(activityName);
+  const showWorkoutLocation = cardioKind !== null && cardioKind !== 'ruck';
   const [trackingFields, setTrackingFields] = useState<TrackingField[]>(
     initialActivity?.trackingFields ||
       DEFAULT_TRACKING_FIELDS[initialActivity?.type || 'weight-training']
@@ -244,6 +251,7 @@ function ActivityForm(
       sets: sets,
       recurring: recurringConfig || undefined,
       trackingFields: trackingFields,
+      workoutLocation: showWorkoutLocation ? workoutLocation : undefined,
       supersetId: initialActivity?.supersetId,
       supersetPosition: initialActivity?.supersetPosition,
       order: initialActivity?.order,
@@ -268,6 +276,7 @@ function ActivityForm(
         sets: sets,
         recurring: recurringConfig || undefined,
         trackingFields: trackingFields,
+        workoutLocation: showWorkoutLocation ? workoutLocation : undefined,
         supersetId: initialActivity?.supersetId,
         supersetPosition: initialActivity?.supersetPosition,
         order: initialActivity?.order,
@@ -282,6 +291,8 @@ function ActivityForm(
       sets,
       recurringConfig,
       trackingFields,
+      showWorkoutLocation,
+      workoutLocation,
     ]
   );
 
@@ -466,6 +477,54 @@ function ActivityForm(
             />
           </View>
 
+          {showWorkoutLocation && (
+            <View>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontWeight: '600',
+                  marginBottom: 8,
+                }}
+              >
+                Workout location
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(['indoor', 'outdoor'] as const).map(location => (
+                  <TouchableOpacity
+                    key={location}
+                    accessibilityRole="button"
+                    accessibilityState={{
+                      selected: workoutLocation === location,
+                    }}
+                    onPress={() =>
+                      setWorkoutLocation(current =>
+                        current === location ? undefined : location
+                      )
+                    }
+                    style={{
+                      padding: 12,
+                      borderRadius: 8,
+                      backgroundColor:
+                        workoutLocation === location
+                          ? colors.primary.main
+                          : colors.backgroundTertiary,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color:
+                          workoutLocation === location
+                            ? colors.textInverse
+                            : colors.text,
+                      }}
+                    >
+                      {location === 'indoor' ? 'Indoor' : 'Outdoor'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
           {/* Notes */}
           <View>
             <Text

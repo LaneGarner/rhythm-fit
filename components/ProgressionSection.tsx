@@ -166,7 +166,7 @@ export const ProgressionSection: React.FC<ProgressionSectionProps> = ({
                 >
                   {session.sets.map((set, setIndex) => (
                     <View
-                      key={set.id}
+                      key={`${set.id}-${setIndex}`}
                       style={{
                         paddingHorizontal: 10,
                         paddingVertical: 4,
